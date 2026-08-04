@@ -1,0 +1,22 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+.env.staging
+
+# Osclass writable / generated
+oc-content/uploads/*
+!oc-content/uploads/.gitkeep
+oc-content/downloads/*
+!oc-content/downloads/.gitkeep
+oc-content/debug.log
+oc-content/queries.log
+oc-content/explain_queries.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,11 @@
+@media print {
+  html body {background:#fff;padding:5px;min-width:1024px;}
+  #item-image .swiper-thumbs li {width: calc(25% - 8px); height: 108px;}
+  body#item .container.primary {padding-bottom:6px;}
+  body header {box-shadow:none;border:none;margin-bottom:5px;position:relative;}
+  #navi-bar, #item .sticky-button, header .links, header .menu.btn-white, #item-side .master-button, #seller .show-rating.show-stars .lnk,
+  #item-side .seller-button, #item-side .report-button, #item-side .manage-button, #comments .add, #shortcuts, #rel-block, .banner-theme, #recent-ads,
+  footer, section.promo, #showcase-box, #debug-mode, #scroll-to-top, #item-main .basic .favorite, #item-main .mlink, #item-image .swiper-button,
+  #item-main .basic .mo-make-offer-price, #seller .ur-button.add-new-rating, #seller .ur-button.show-rating, 
+  #item-main .description .read-more-desc, #item-main .location .directions, #osc-database-logs, .navlinks {display:none!important;}
+}

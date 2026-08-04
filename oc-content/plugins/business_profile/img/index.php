@@ -1,0 +1,1 @@
+<?php // just another empty index ?>

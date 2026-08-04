@@ -1,0 +1,1478 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Business Profile Plugin\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-30 15:10+0200\n"
+"PO-Revision-Date: 2026-06-30 15:10+0200\n"
+"Last-Translator: Miso <miso546@azet.sk>\n"
+"Language-Team: MB Themes <info@mb-themes.com>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+"X-Poedit-KeywordsList: __;_e;_m\n"
+"X-Poedit-Basepath: ../..\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: languages/en_US\n"
+"X-Poedit-SearchPath-1: .\n"
+
+#: admin/banner.php:3 admin/banner.php:40 index.php:200 index.php:252
+msgid "Banners"
+msgstr ""
+
+#: admin/banner.php:22
+msgid "Banners were successfully updated"
+msgstr ""
+
+#: admin/banner.php:32
+msgid ""
+"If you use Banner Ads Plugin, you can use banner or advert directly in theme "
+"banner space by defining its ID in bellow form."
+msgstr ""
+
+#: admin/banner.php:33
+msgid ""
+"Usage examples: {{BANNER-ADS-PLUGIN-HOOK: my_custom_hook}}, {{BANNER-ADS-"
+"PLUGIN-BANNER: 123}}, {{BANNER-ADS-PLUGIN-ADVERT: 987}}"
+msgstr ""
+
+#: admin/banner.php:52
+msgid "Enable Banners"
+msgstr ""
+
+#: admin/banner.php:55
+msgid "When enabled, banners will be shown in business_profile."
+msgstr ""
+
+#: admin/banner.php:59
+msgid "Optimize for Google Adsense"
+msgstr ""
+
+#: admin/banner.php:62
+msgid ""
+"When enabled, banner sizes will be optimized for responsive google adsense "
+"ads."
+msgstr ""
+
+#: admin/banner.php:71
+#, php-format
+msgid "Will be shown on %s"
+msgstr ""
+
+#: admin/banner.php:79 admin/configure.php:319 admin/configure.php:321
+msgid "Save"
+msgstr ""
+
+#: admin/configure.php:3 admin/configure.php:118 index.php:188 index.php:198
+#: index.php:250
+msgid "Configure"
+msgstr ""
+
+#: admin/configure.php:47
+msgid "Settings were successfully saved"
+msgstr ""
+
+#: admin/configure.php:92
+msgid "Features were successfully updated"
+msgstr ""
+
+#: admin/configure.php:94
+msgid "Payments were successfully updated"
+msgstr ""
+
+#: admin/configure.php:101
+msgid "Sitemap generated correctly in"
+msgstr ""
+
+#: admin/configure.php:101
+msgid "seconds"
+msgstr ""
+
+#: admin/configure.php:112
+msgid ""
+"User labels \"Basic, Pro & VIP\" will be automatically overriden by Osclass "
+"Pay Membership Group Name, if seller is member of group. Color of group auto-"
+"apply as well to label. Auto-validation setting has no impact on this."
+msgstr ""
+
+#: admin/configure.php:130
+msgid "Require validation"
+msgstr ""
+
+#: admin/configure.php:133
+msgid ""
+"When enabled, each business profile must be validated by admin after "
+"submission. Unvalidated profile is visible just to owner and admin."
+msgstr ""
+
+#: admin/configure.php:137
+msgid "Hook Button to Header"
+msgstr ""
+
+#: admin/configure.php:140
+msgid ""
+"When enabled, \"Companies\" link/button is added to header. Require theme "
+"support for Osclass hooks 8.2."
+msgstr ""
+
+#: admin/configure.php:145
+msgid "Items per page"
+msgstr ""
+
+#: admin/configure.php:148
+msgid ""
+"How many items show at once on business profile. Note that there is "
+"pagination. Default: 24"
+msgstr ""
+
+#: admin/configure.php:152
+msgid "Companies per page"
+msgstr ""
+
+#: admin/configure.php:155
+msgid ""
+"How many companies show at once companies page. Note that there is "
+"pagination. Default: 24"
+msgstr ""
+
+#: admin/configure.php:159
+msgid "Color selectors"
+msgstr ""
+
+#: admin/configure.php:162
+msgid ""
+"Company can choose brand color. Enter css selectors on those will be applied "
+"background color of company. These must be valid CSS selectors. Example: "
+"#header-bar,#footer-partner,#footer,#top-bar,#footer-contact,#header"
+msgstr ""
+
+#: admin/configure.php:166
+msgid "Profile Groups"
+msgstr ""
+
+#: admin/configure.php:171
+msgid "No groups in Osclass Pay Plugin"
+msgstr ""
+
+#: admin/configure.php:180
+msgid ""
+"Select user groups from Osclass Pay Plugin that is required in order to keep "
+"business profile active. If user is not member of any of groups, business "
+"profile of this user will be disabled."
+msgstr ""
+
+#: admin/configure.php:181
+msgid ""
+"When enabled and you choose any group, profiles of users that are not in "
+"selected group will be deactivated!"
+msgstr ""
+
+#: admin/configure.php:186
+msgid "Auto validation"
+msgstr ""
+
+#: admin/configure.php:190
+msgid ""
+"When enabled and Osclass Pay groups are required for business profile, once "
+"user pay for membership in group, business profile will be activated/"
+"validated automatically."
+msgstr ""
+
+#: admin/configure.php:191
+msgid ""
+"If you have setup attr field on group in Osclass Pay and is 1,2 or 3, "
+"profile type will be updated as well (1-Basic, 2-Pro, 3-VIP)."
+msgstr ""
+
+#: admin/configure.php:196
+msgid "Mask Phone Number"
+msgstr ""
+
+#: admin/configure.php:200
+msgid ""
+"When enabled, phone number is masked and user must click on it to show it."
+msgstr ""
+
+#: admin/configure.php:205
+msgid "Mask Phone for Unlogged"
+msgstr ""
+
+#: admin/configure.php:209
+msgid ""
+"When enabled, phone number is masked for non-logged users and user must "
+"login in order to be able to see phone number."
+msgstr ""
+
+#: admin/configure.php:214
+msgid "Photos/Images Gallery"
+msgstr ""
+
+#: admin/configure.php:218
+msgid ""
+"When enabled, business users can upload photos/images into their profile. "
+"Maximum size of 1 picture is 4MB. Allowed extensions are: jpg, jpeg, gif, "
+"png, svg, webp, avif."
+msgstr ""
+
+#: admin/configure.php:223
+msgid "Maximum Photos in Gallery"
+msgstr ""
+
+#: admin/configure.php:225
+msgid "photos"
+msgstr ""
+
+#: admin/configure.php:227
+msgid ""
+"Enter how many photos/images can business user upload into it's gallery. "
+"Default value: 10"
+msgstr ""
+
+#: admin/configure.php:232
+msgid "Only Enable to Companies"
+msgstr ""
+
+#: admin/configure.php:236
+msgid ""
+"When enabled, only company users will be able to create business profile. "
+"Changing this option has no impact on existing profiles."
+msgstr ""
+
+#: admin/configure.php:241
+msgid "User can Remove Profile"
+msgstr ""
+
+#: admin/configure.php:245
+msgid "When enabled, user can remove its business profile."
+msgstr ""
+
+#: admin/configure.php:251
+msgid "Youtube Video"
+msgstr ""
+
+#: admin/configure.php:255
+msgid ""
+"When enabled, business users can add their Youtube video links to their "
+"profile."
+msgstr ""
+
+#: admin/configure.php:260
+msgid "Youtube Video Limit"
+msgstr ""
+
+#: admin/configure.php:262
+msgid "videos"
+msgstr ""
+
+#: admin/configure.php:264
+msgid ""
+"Enter how many Youtube video links can business user set for it's profile. "
+"It is not recommended to go above 10 videos."
+msgstr ""
+
+#: admin/configure.php:268
+msgid "Youtube Video URL"
+msgstr ""
+
+#: admin/configure.php:271
+msgid ""
+"Enter base video URL. This URL will be used as source URL in embedded "
+"videos. By default, standard Youtube URL will be used (https://youtube.com/)."
+msgstr ""
+
+#: admin/configure.php:275
+msgid "Video Gallery Layout"
+msgstr ""
+
+#: admin/configure.php:277
+msgid "List - One video per line"
+msgstr ""
+
+#: admin/configure.php:278
+msgid "Grid - Two videos per line"
+msgstr ""
+
+#: admin/configure.php:279
+msgid "Mixed - Based on number of videos"
+msgstr ""
+
+#: admin/configure.php:282
+msgid ""
+"Select layout for video gallery on seller profile page. Mixed will show list "
+"for 1-2 videos, grid for 3 and more videos."
+msgstr ""
+
+#: admin/configure.php:286
+msgid "Enable Legal Notice"
+msgstr ""
+
+#: admin/configure.php:290
+msgid ""
+"When enabled, users can define legal notice in their profile. These "
+"information will be shown under each listing created by user."
+msgstr ""
+
+#: admin/configure.php:295
+msgid "Enable Subdomain Filter"
+msgstr ""
+
+#: admin/configure.php:299
+msgid ""
+"When enabled, business profiles are filtered on background by subdomain "
+"filter (category, country, region, city)."
+msgstr ""
+
+#: admin/configure.php:300
+msgid ""
+"Recommended to use on Osclass 8.3 or higher, will not work on Osclass 8.2 or "
+"lower."
+msgstr ""
+
+#: admin/configure.php:309
+msgid "Sitemap"
+msgstr ""
+
+#: admin/configure.php:310
+msgid "Regenerate sitemap now"
+msgstr ""
+
+#: admin/configure.php:312
+msgid "Sitemap is regenerated automatically via cron daily."
+msgstr ""
+
+#: admin/configure.php:319 admin/configure.php:380 admin/configure.php:441
+#: admin/profile_edit.php:741 admin/profiles.php:175
+msgid "This is demo site"
+msgstr ""
+
+#: admin/configure.php:332 admin/profile_edit.php:650
+msgid "Features"
+msgstr ""
+
+#: admin/configure.php:338
+msgid ""
+"Add all features those business users can choose. Example: Free Wi-Fi, "
+"Parking, Coffe;Credit card, Near metro, Non-smoking, ..."
+msgstr ""
+
+#: admin/configure.php:353 admin/configure.php:362 admin/configure.php:368
+#: admin/configure.php:423
+msgid "Feature"
+msgstr ""
+
+#: admin/configure.php:374
+msgid "Add new feature"
+msgstr ""
+
+#: admin/configure.php:380 admin/configure.php:382 admin/configure.php:441
+#: admin/configure.php:443 admin/profile_edit.php:741
+#: admin/profile_edit.php:746 admin/profiles.php:175 admin/profiles.php:177
+msgid "Update"
+msgstr ""
+
+#: admin/configure.php:393 admin/profile_edit.php:666
+msgid "Payments"
+msgstr ""
+
+#: admin/configure.php:399
+msgid ""
+"Add all payments those business users can choose. Example: Cash, Mastercard, "
+"Visa, Paypal, Cash on Delivery, ..."
+msgstr ""
+
+#: admin/configure.php:414 admin/configure.php:429
+msgid "Payment"
+msgstr ""
+
+#: admin/configure.php:435
+msgid "Add new payment"
+msgstr ""
+
+#: admin/configure.php:455
+msgid "Plugin Setup"
+msgstr ""
+
+#: admin/configure.php:460
+msgid "Custom functions that can be used:"
+msgstr ""
+
+#: admin/configure.php:463
+msgid "Get links to companies board"
+msgstr ""
+
+#: admin/configure.php:467
+msgid "Get link to user's company profile"
+msgstr ""
+
+#: admin/configure.php:471
+msgid "Get user's company logo/icon"
+msgstr ""
+
+#: admin/configure.php:475
+msgid "Get company's listings on search page"
+msgstr ""
+
+#: admin/configure.php:479
+msgid "Get company's brand color"
+msgstr ""
+
+#: admin/configure.php:483
+msgid "Get companies block (on home, search or item page)"
+msgstr ""
+
+#: admin/configure.php:485
+msgid "enter number how many profiles should be shown at once"
+msgstr ""
+
+#: admin/configure.php:486
+msgid "there are multiple sorting types for companies"
+msgstr ""
+
+#: admin/configure.php:487
+msgid "from newest to oldest"
+msgstr ""
+
+#: admin/configure.php:488
+msgid "based on number of items specific user has published"
+msgstr ""
+
+#: admin/configure.php:489
+msgid "shown in completely random order each time page is refreshed"
+msgstr ""
+
+#: admin/configure.php:490
+msgid ""
+"consider city & category on search page and show only profiles matching "
+"these criteria"
+msgstr ""
+
+#: admin/profile_edit.php:5 admin/profile_edit.php:479 form/seller.php:418
+msgid "Edit profile"
+msgstr ""
+
+#: admin/profile_edit.php:5
+msgid "Create profile"
+msgstr ""
+
+#: admin/profile_edit.php:28
+msgid "Identifier was not unique and changed to profile ID."
+msgstr ""
+
+#: admin/profile_edit.php:36
+msgid ""
+"This osclass user already has business profile. You have been redirected to "
+"this profile. No updates has been performed."
+msgstr ""
+
+#: admin/profile_edit.php:49
+msgid ""
+"Osclass user ID is invalid, user was not found. Please select valid Osclass "
+"user from \"User\" field."
+msgstr ""
+
+#: admin/profile_edit.php:133
+#, php-format
+msgid "Wrong youtube video (%s). It must be share or embeded url, or video ID."
+msgstr ""
+
+#: admin/profile_edit.php:172 user/profile.php:278
+msgid "An error with square logo upload has occurred, please try again"
+msgstr ""
+
+#: admin/profile_edit.php:175 user/profile.php:281
+msgid "Square logo is too big and was not uploaded. Maximum file size is:"
+msgstr ""
+
+#: admin/profile_edit.php:178 user/profile.php:284
+msgid ""
+"Square logo extension is not allowed, file was not uploaded. Only files with "
+"following extensions are allowed"
+msgstr ""
+
+#: admin/profile_edit.php:181 user/profile.php:287
+msgid "An error with square logo upload has occurred, please try again."
+msgstr ""
+
+#: admin/profile_edit.php:208 user/profile.php:315
+msgid "An error with logo upload has occurred, please try again"
+msgstr ""
+
+#: admin/profile_edit.php:211 user/profile.php:318
+msgid "Logo is too big and was not uploaded. Maximum file size is:"
+msgstr ""
+
+#: admin/profile_edit.php:214 user/profile.php:321
+msgid ""
+"Logo extension is not allowed, file was not uploaded. Only files with "
+"following extensions are allowed"
+msgstr ""
+
+#: admin/profile_edit.php:217 user/profile.php:324
+msgid "An error with logo upload has occurred, please try again."
+msgstr ""
+
+#: admin/profile_edit.php:244 user/profile.php:386
+msgid "An error with cover upload has occurred, please try again"
+msgstr ""
+
+#: admin/profile_edit.php:247 user/profile.php:389
+msgid "Cover is too big and was not uploaded. Maximum file size is:"
+msgstr ""
+
+#: admin/profile_edit.php:250 user/profile.php:392
+msgid ""
+"Cover extension is not allowed, file was not uploaded. Only files with "
+"following extensions are allowed"
+msgstr ""
+
+#: admin/profile_edit.php:253 user/profile.php:395
+msgid "An error with cover upload has occurred, please try again."
+msgstr ""
+
+#: admin/profile_edit.php:294 user/profile.php:425
+#, php-format
+msgid ""
+"Limit reached, you can only upload %d images. Only first %d images were "
+"uploaded."
+msgstr ""
+
+#: admin/profile_edit.php:305 user/profile.php:436
+#, php-format
+msgid "An error with gallery image upload has occurred, please try again (%s)"
+msgstr ""
+
+#: admin/profile_edit.php:308 user/profile.php:439
+#, php-format
+msgid ""
+"Gallery image (%s) is too big and was not uploaded. Maximum file size is: %s"
+msgstr ""
+
+#: admin/profile_edit.php:311 user/profile.php:442
+#, php-format
+msgid ""
+"Gallery image extension is not allowed, file was not uploaded (%s). Only "
+"files with following extensions are allowed: %s"
+msgstr ""
+
+#: admin/profile_edit.php:314 user/profile.php:445
+#, php-format
+msgid "An error with gallery image upload has occurred, please try again (%s)."
+msgstr ""
+
+#: admin/profile_edit.php:321 user/profile.php:452
+#, php-format
+msgid "Gallery images successfully uploaded: %s"
+msgstr ""
+
+#: admin/profile_edit.php:327
+msgid "Business profile successfully created."
+msgstr ""
+
+#: admin/profile_edit.php:330
+msgid "Business profile successfully updated."
+msgstr ""
+
+#: admin/profile_edit.php:352
+msgid "Square logo successfully removed"
+msgstr ""
+
+#: admin/profile_edit.php:357
+msgid "Square logo could not be removed"
+msgstr ""
+
+#: admin/profile_edit.php:368
+msgid "Regular logo successfully removed"
+msgstr ""
+
+#: admin/profile_edit.php:373
+msgid "Regular logo could not be removed"
+msgstr ""
+
+#: admin/profile_edit.php:384
+msgid "Cover successfully removed"
+msgstr ""
+
+#: admin/profile_edit.php:389
+msgid "Cover could not be removed"
+msgstr ""
+
+#: admin/profile_edit.php:401
+msgid "Gallery image successfully removed"
+msgstr ""
+
+#: admin/profile_edit.php:403 user/profile.php:36
+msgid "Gallery image could not be removed (error)"
+msgstr ""
+
+#: admin/profile_edit.php:420 admin/profiles.php:27
+msgid "Business profile successfully removed"
+msgstr ""
+
+#: admin/profile_edit.php:482
+msgid "View profile in front"
+msgstr ""
+
+#: admin/profile_edit.php:497
+msgid "Profile ID"
+msgstr ""
+
+#: admin/profile_edit.php:500
+msgid "Unique ID of this profile. Field is not editable."
+msgstr ""
+
+#: admin/profile_edit.php:505 admin/profiles.php:90
+msgid "User"
+msgstr ""
+
+#: admin/profile_edit.php:509
+msgid "Enter user name or email to link this profile to user account."
+msgstr ""
+
+#: admin/profile_edit.php:513 admin/profiles.php:91
+msgid "Identifier"
+msgstr ""
+
+#: admin/profile_edit.php:516
+msgid "Unique identifier slug for this profile. Will be used in profile url."
+msgstr ""
+
+#: admin/profile_edit.php:520 admin/profiles.php:92
+msgid "Enabled"
+msgstr ""
+
+#: admin/profile_edit.php:523
+msgid "When enabled, profile will be visibile in front."
+msgstr ""
+
+#: admin/profile_edit.php:527 admin/profiles.php:93 user/profile.php:631
+msgid "Verified"
+msgstr ""
+
+#: admin/profile_edit.php:530
+msgid ""
+"Mark profile as verified. This information is visible in front and profile "
+"get verified badge."
+msgstr ""
+
+#: admin/profile_edit.php:534 admin/profiles.php:94 user/profile.php:622
+msgid "Type"
+msgstr ""
+
+#: admin/profile_edit.php:536 admin/profiles.php:140 functions.php:1280
+msgid "Basic"
+msgstr ""
+
+#: admin/profile_edit.php:537 admin/profiles.php:141 functions.php:1283
+msgid "Pro"
+msgstr ""
+
+#: admin/profile_edit.php:538 admin/profiles.php:142 functions.php:1286
+msgid "VIP"
+msgstr ""
+
+#: admin/profile_edit.php:541
+msgid "Select type/level for profile."
+msgstr ""
+
+#: admin/profile_edit.php:545
+msgid "Color"
+msgstr ""
+
+#: admin/profile_edit.php:551
+msgid ""
+"Enter company brand color. Enter color in HEX format or select color with "
+"picker. Example: #f29c12"
+msgstr ""
+
+#: admin/profile_edit.php:556
+msgid "Square logo"
+msgstr ""
+
+#: admin/profile_edit.php:562 admin/profile_edit.php:579
+#: admin/profile_edit.php:597 user/profile.php:658 user/profile.php:682
+#: user/profile.php:706 user/profile.php:872
+msgid "Remove"
+msgstr ""
+
+#: admin/profile_edit.php:568
+msgid ""
+"Recommended size is 100x100 px. Allowed extensions: jpg, jpeg, png, gif, "
+"webp."
+msgstr ""
+
+#: admin/profile_edit.php:573
+msgid "Regular logo"
+msgstr ""
+
+#: admin/profile_edit.php:585
+msgid ""
+"Recommended size is 300x100 px. Allowed extensions: jpg, jpeg, png, gif, "
+"webp."
+msgstr ""
+
+#: admin/profile_edit.php:590
+msgid "Cover image"
+msgstr ""
+
+#: admin/profile_edit.php:603
+msgid ""
+"Recommended size is 1600x600 px. Allowed extensions: jpg, jpeg, png, gif, "
+"webp."
+msgstr ""
+
+#: admin/profile_edit.php:608
+msgid "Gallery images"
+msgstr ""
+
+#: admin/profile_edit.php:625 user/profile.php:729
+msgid "No gallery images has been uploaded yet."
+msgstr ""
+
+#: admin/profile_edit.php:631
+msgid "Allowed extensions: jpg, jpeg, png, gif, webp..."
+msgstr ""
+
+#: admin/profile_edit.php:636
+msgid "Primary Categories"
+msgstr ""
+
+#: admin/profile_edit.php:644
+msgid ""
+"Select list of primary business categories of this company. You can select "
+"one or more categories (hold CTRL key)."
+msgstr ""
+
+#: admin/profile_edit.php:660
+msgid ""
+"Select list of features available for this company. You can select one or "
+"more features (hold CTRL key)."
+msgstr ""
+
+#: admin/profile_edit.php:676
+msgid ""
+"Select list of payments available for this company. You can select one or "
+"more payments (hold CTRL key)."
+msgstr ""
+
+#: admin/profile_edit.php:683 user/profile.php:748
+msgid "Youtube Videos"
+msgstr ""
+
+#: admin/profile_edit.php:688 user/profile.php:754
+#, php-format
+msgid "Video #%d"
+msgstr ""
+
+#: admin/profile_edit.php:696
+msgid "Add share URLs of your Youtube videos shown in profile."
+msgstr ""
+
+#: admin/profile_edit.php:701
+msgid "Opening Hours"
+msgstr ""
+
+#: admin/profile_edit.php:706 user/profile.php:809
+msgid "From - To"
+msgstr ""
+
+#: admin/profile_edit.php:711
+msgid "Enter opening hours for this company."
+msgstr ""
+
+#: admin/profile_edit.php:715
+msgid "Social Networks"
+msgstr ""
+
+#: admin/profile_edit.php:725
+msgid "Enter social network links for this company."
+msgstr ""
+
+#: admin/profile_edit.php:729
+msgid "Legal Notice"
+msgstr ""
+
+#: admin/profile_edit.php:733
+msgid "Enter company legal notice shown under each listing of company."
+msgstr ""
+
+#: admin/profile_edit.php:744
+msgid "Create"
+msgstr ""
+
+#: admin/profile_edit.php:756
+msgid "Error getting data, user not found"
+msgstr ""
+
+#: admin/profiles.php:3 admin/profiles.php:77
+msgid "Profiles List"
+msgstr ""
+
+#: admin/profiles.php:64
+msgid "Business profile successfully updated"
+msgstr ""
+
+#: admin/profiles.php:89
+msgid "Logo"
+msgstr ""
+
+#: admin/profiles.php:95
+msgid "Items"
+msgstr ""
+
+#: admin/profiles.php:96
+msgid "Registered"
+msgstr ""
+
+#: admin/profiles.php:102
+msgid "No business profiles has been found"
+msgstr ""
+
+#: admin/profiles.php:112
+#, php-format
+msgid "Company brand color: %s"
+msgstr ""
+
+#: admin/profiles.php:120
+#, php-format
+msgid "id: %s"
+msgstr ""
+
+#: admin/profiles.php:126
+#, php-format
+msgid "User is member of group %s"
+msgstr ""
+
+#: admin/profiles.php:126
+msgid "Paid"
+msgstr ""
+
+#: admin/profiles.php:130
+msgid "User is not member of any premium group"
+msgstr ""
+
+#: admin/profiles.php:130
+msgid "Unpaid"
+msgstr ""
+
+#: admin/profiles.php:145
+#, php-format
+msgid "%s items"
+msgstr ""
+
+#: admin/profiles.php:148
+msgid "Edit"
+msgstr ""
+
+#: admin/profiles.php:153
+msgid "Remove profile"
+msgstr ""
+
+#: admin/profiles.php:153
+msgid "Are you sure you want to remove this profile? Action cannot be undone."
+msgstr ""
+
+#: admin/profiles.php:168
+msgid "Create a new profile"
+msgstr ""
+
+#: form/block.php:26
+msgid "Recommended companies"
+msgstr ""
+
+#: form/block.php:63 form/home.php:89
+#, php-format
+msgid "%s listings"
+msgstr ""
+
+#: form/home.php:26
+msgid "Search company"
+msgstr ""
+
+#: form/home.php:32
+msgid "All cities"
+msgstr ""
+
+#: form/home.php:40
+msgid "All categories"
+msgstr ""
+
+#: form/home.php:53
+msgid "There are no companies registered yet"
+msgstr ""
+
+#: form/seller.php:8
+msgid "This profile does not exists"
+msgstr ""
+
+#: form/seller.php:27
+msgid "This profile has not been validated yet"
+msgstr ""
+
+#: form/seller.php:56
+#, php-format
+msgid "Message has been successfully sent to %s"
+msgstr ""
+
+#: form/seller.php:78
+msgid ""
+"Your business profile is pending validation by admin. Only owner and admin "
+"can see this profile now."
+msgstr ""
+
+#: form/seller.php:84 user/profile.php:561
+msgid ""
+"In order to enable your profile, you must purchase membership in one of the "
+"following groups:"
+msgstr ""
+
+#: form/seller.php:88 user/profile.php:565
+msgid "Click to add membership to cart"
+msgstr ""
+
+#: form/seller.php:92 user/profile.php:569
+#, php-format
+msgid "%s for %s days"
+msgstr ""
+
+#: form/seller.php:97 user/profile.php:574
+msgid "More options"
+msgstr ""
+
+#: form/seller.php:100 user/profile.php:577
+msgid "Profile must be validated by admin before it is public"
+msgstr ""
+
+#: form/seller.php:108
+msgid "This company does not exists"
+msgstr ""
+
+#: form/seller.php:132
+msgid "Close box"
+msgstr ""
+
+#: form/seller.php:133 form/seller.php:176 form/seller.php:179
+msgid "Contact seller"
+msgstr ""
+
+#: form/seller.php:134 user/profile.php:586
+msgid "Name"
+msgstr ""
+
+#: form/seller.php:135 user/profile.php:604
+msgid "Phone"
+msgstr ""
+
+#: form/seller.php:136
+msgid "Put your question there..."
+msgstr ""
+
+#: form/seller.php:140
+msgid "Send"
+msgstr ""
+
+#: form/seller.php:179
+msgid "Please login first"
+msgstr ""
+
+#: form/seller.php:202
+msgid "Verified seller"
+msgstr ""
+
+#: form/seller.php:231
+#, php-format
+msgid "Seller since %s"
+msgstr ""
+
+#: form/seller.php:271
+#, php-format
+msgid "%s's gallery"
+msgstr ""
+
+#: form/seller.php:300
+msgid "Youtube videos"
+msgstr ""
+
+#: form/seller.php:304
+msgid "YouTube video player"
+msgstr ""
+
+#: form/seller.php:328 form/seller.php:338
+msgid "Login to see phone number"
+msgstr ""
+
+#: form/seller.php:330 form/seller.php:340
+msgid "Click to call"
+msgstr ""
+
+#: form/seller.php:330 form/seller.php:340
+msgid "Click to show phone number"
+msgstr ""
+
+#: form/seller.php:412
+#, php-format
+msgid "%s's website"
+msgstr ""
+
+#: form/seller.php:415
+msgid "Show all companies"
+msgstr ""
+
+#: form/seller.php:425 functions.php:249 user/profile.php:856
+msgid "Legal notice"
+msgstr ""
+
+#: form/seller.php:437
+#, php-format
+msgid "%s's listings"
+msgstr ""
+
+#: form/seller.php:441
+msgid "Select city"
+msgstr ""
+
+#: form/seller.php:453
+msgid "Select category"
+msgstr ""
+
+#: form/seller.php:465
+msgid "Show all"
+msgstr ""
+
+#: form/seller.php:534
+msgid "No listing has been found"
+msgstr ""
+
+#: functions.php:44
+msgid "You can define your own banner code from theme settings"
+msgstr ""
+
+#: functions.php:81
+msgid "Banner space"
+msgstr ""
+
+#: functions.php:100
+msgid "Companies Top"
+msgstr ""
+
+#: functions.php:100
+msgid "List of companies top of page"
+msgstr ""
+
+#: functions.php:101
+msgid "Companies Search Bottom"
+msgstr ""
+
+#: functions.php:101
+msgid "List of companies below search"
+msgstr ""
+
+#: functions.php:102
+msgid "Companies Bottom"
+msgstr ""
+
+#: functions.php:102
+msgid "List of companies bottom of page"
+msgstr ""
+
+#: functions.php:103
+msgid "Company Top"
+msgstr ""
+
+#: functions.php:103
+msgid "Top of company (profile) page"
+msgstr ""
+
+#: functions.php:104
+msgid "Company Description Top"
+msgstr ""
+
+#: functions.php:104
+msgid "Company (profile) page above description"
+msgstr ""
+
+#: functions.php:105
+msgid "Company Description Bottom"
+msgstr ""
+
+#: functions.php:105
+msgid "Company (profile) page below description"
+msgstr ""
+
+#: functions.php:106
+msgid "Company Sidebar Top"
+msgstr ""
+
+#: functions.php:106
+msgid "Company (profile) page above sidebar"
+msgstr ""
+
+#: functions.php:107
+msgid "Company Sidebar Bottom"
+msgstr ""
+
+#: functions.php:107
+msgid "Company (profile) page below sidebar"
+msgstr ""
+
+#: functions.php:108
+msgid "Company Above Listings"
+msgstr ""
+
+#: functions.php:108
+msgid "Company (profile) page above user listings"
+msgstr ""
+
+#: functions.php:109
+msgid "Company Bottom"
+msgstr ""
+
+#: functions.php:109
+msgid "Bottom of company (profile) page"
+msgstr ""
+
+#: functions.php:118 functions.php:1104 index.php:38 index.php:39
+msgid "Companies"
+msgstr ""
+
+#: functions.php:703
+#, php-format
+msgid "Business profile of this user (%s) has been deactivated."
+msgstr ""
+
+#: functions.php:725
+#, php-format
+msgid "Business profile of this user (%s) has been removed."
+msgstr ""
+
+#: functions.php:1114
+#, php-format
+msgid "%s's business profile"
+msgstr ""
+
+#: functions.php:1116 functions.php:1119
+msgid "Business profile does not exists"
+msgstr ""
+
+#: functions.php:1136
+msgid "Companies and corporates selling on our classifieds."
+msgstr ""
+
+#: functions.php:1231
+msgid "Mo"
+msgstr ""
+
+#: functions.php:1231
+msgid "Monday"
+msgstr ""
+
+#: functions.php:1233
+msgid "Tu"
+msgstr ""
+
+#: functions.php:1233
+msgid "Tuesday"
+msgstr ""
+
+#: functions.php:1235
+msgid "We"
+msgstr ""
+
+#: functions.php:1235
+msgid "Wednesday"
+msgstr ""
+
+#: functions.php:1237
+msgid "Th"
+msgstr ""
+
+#: functions.php:1237
+msgid "Thursday"
+msgstr ""
+
+#: functions.php:1239
+msgid "Fr"
+msgstr ""
+
+#: functions.php:1239
+msgid "Friday"
+msgstr ""
+
+#: functions.php:1241
+msgid "Sa"
+msgstr ""
+
+#: functions.php:1241
+msgid "Saturday"
+msgstr ""
+
+#: functions.php:1243
+msgid "Su"
+msgstr ""
+
+#: functions.php:1243
+msgid "Sunday"
+msgstr ""
+
+#: functions.php:1251
+msgid "Facebook"
+msgstr ""
+
+#: functions.php:1253
+msgid "X (Twitter)"
+msgstr ""
+
+#: functions.php:1255
+msgid "Vimeo"
+msgstr ""
+
+#: functions.php:1257
+msgid "Youtube"
+msgstr ""
+
+#: functions.php:1259
+msgid "LinkedIn"
+msgstr ""
+
+#: functions.php:1261
+msgid "Instagram"
+msgstr ""
+
+#: functions.php:1263
+msgid "Pinterest"
+msgstr ""
+
+#: functions.php:1265
+msgid "Share"
+msgstr ""
+
+#: functions.php:1573
+msgid "Page:"
+msgstr ""
+
+#: index.php:41
+msgid "Company profile"
+msgstr ""
+
+#: index.php:42 index.php:43 index.php:44 index.php:45 index.php:46
+#: index.php:235 index.php:237 user/profile.php:545
+msgid "Business profile"
+msgstr ""
+
+#: index.php:67
+msgid "Profile"
+msgstr ""
+
+#: index.php:67 index.php:199 index.php:251
+msgid "Profiles"
+msgstr ""
+
+#: index.php:145
+#, php-format
+msgid ""
+"Force update of \"%s\" completed! Verify plugin functionality, in case of "
+"problems reinstall plugin."
+msgstr ""
+
+#: index.php:145 model/ModelBPR.php:130
+msgid "Business Profile Plugin"
+msgstr ""
+
+#: index.php:197
+msgid "Front"
+msgstr ""
+
+#: index.php:215
+msgid "Report Bug"
+msgstr ""
+
+#: index.php:216
+msgid "Support Forums"
+msgstr ""
+
+#: index.php:217
+msgid "Contact Us"
+msgstr ""
+
+#: model/ModelBPR.php:130
+#, php-format
+msgid ""
+"Update of plugin \"%s\" failed on DB version \"%s\". Please enable %s to see "
+"error details. Failed query is listed below."
+msgstr ""
+
+#: model/ModelBPR.php:130
+msgid "DB debug mode"
+msgstr ""
+
+#: model/ModelBPR.php:132
+msgid "Ignore error and force plugin update"
+msgstr ""
+
+#: model/ModelBPR.php:133
+msgid ""
+"Never force update plugin until you are sure that your database structure "
+"match to model/struct.sql file! It may lead to unexpected plugin "
+"functionality. Try to reinstall plugin."
+msgstr ""
+
+#: user/profile.php:9
+msgid "Business profile is enabled only for company users"
+msgstr ""
+
+#: user/profile.php:22
+msgid "Image has been successfully removed"
+msgstr ""
+
+#: user/profile.php:34
+msgid "Gallery image has been successfully removed"
+msgstr ""
+
+#: user/profile.php:47
+msgid "Your business profile has been successfully removed"
+msgstr ""
+
+#: user/profile.php:186
+#, php-format
+msgid ""
+"Wrong youtube video (%s). It must be share or embedded url, or video ID."
+msgstr ""
+
+#: user/profile.php:458
+msgid "Business profile updated"
+msgstr ""
+
+#: user/profile.php:535
+msgid ""
+"Create and submit your business profile to attract more customers. It just "
+"take 3 minutes!"
+msgstr ""
+
+#: user/profile.php:538
+msgid "When your business profile is submitted, it must be approved by admin"
+msgstr ""
+
+#: user/profile.php:540
+msgid "Your business profile is pending validation by admin"
+msgstr ""
+
+#: user/profile.php:548 user/profile.php:550
+msgid "Show profile"
+msgstr ""
+
+#: user/profile.php:550
+msgid "You have not submitted your profile yet"
+msgstr ""
+
+#: user/profile.php:550
+msgid "not available"
+msgstr ""
+
+#: user/profile.php:587 user/profile.php:596 user/profile.php:605
+#: user/profile.php:614
+msgid "This value can be changed in your basic profile"
+msgstr ""
+
+#: user/profile.php:595
+msgid "Location"
+msgstr ""
+
+#: user/profile.php:599 user/profile.php:608 user/profile.php:617
+msgid "Not filled"
+msgstr ""
+
+#: user/profile.php:613
+msgid "About"
+msgstr ""
+
+#: user/profile.php:623
+msgid "This value can be change only admin or by membership in group"
+msgstr ""
+
+#: user/profile.php:632
+msgid "This value can be change only admin"
+msgstr ""
+
+#: user/profile.php:635
+msgid "Yes"
+msgstr ""
+
+#: user/profile.php:635
+msgid "No"
+msgstr ""
+
+#: user/profile.php:641
+msgid "Square logo (100x100 px)"
+msgstr ""
+
+#: user/profile.php:651
+msgid "Upload your square logo"
+msgstr ""
+
+#: user/profile.php:665
+msgid "Regular logo (300x100 px)"
+msgstr ""
+
+#: user/profile.php:675
+msgid "Upload your regular logo"
+msgstr ""
+
+#: user/profile.php:689
+msgid "Company cover (1600x600 px)"
+msgstr ""
+
+#: user/profile.php:699
+msgid "Upload your cover"
+msgstr ""
+
+#: user/profile.php:717
+#, php-format
+msgid "Gallery images (max. %d)"
+msgstr ""
+
+#: user/profile.php:736
+msgid "Upload new gallery images"
+msgstr ""
+
+#: user/profile.php:749
+msgid "Add URLs (share/embedded) or IDs of your Youtube videos to your profile"
+msgstr ""
+
+#: user/profile.php:764
+msgid "Company color (hex)"
+msgstr ""
+
+#: user/profile.php:773
+msgid "Primary categories"
+msgstr ""
+
+#: user/profile.php:803
+msgid "Opening hours"
+msgstr ""
+
+#: user/profile.php:816
+msgid "Social network links"
+msgstr ""
+
+#: user/profile.php:829
+msgid "Features provided by you"
+msgstr ""
+
+#: user/profile.php:842
+msgid "Supported payments"
+msgstr ""
+
+#: user/profile.php:857
+msgid "Shown under each listing you publish"
+msgstr ""
+
+#: user/profile.php:867 user/profile.php:869
+msgid "Submit"
+msgstr ""
+
+#: user/profile.php:872
+msgid ""
+"Are you sure you want to remove your business profile? Action cannot be "
+"undone"
+msgstr ""
