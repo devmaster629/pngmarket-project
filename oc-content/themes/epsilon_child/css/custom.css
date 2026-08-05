@@ -1,0 +1,912 @@
+/* ==========================================================================
+   PNG Market - child theme styles
+   Loaded after Epsilon's style.css / responsive.css, so plain overrides win.
+   Sections map 1:1 to the HOME-xx design tickets.
+
+   Do not use CSS custom properties here: Osclass' CSS merger strips them.
+   Palette in use:
+     brand        #16883f   brand dark   #126f34   brand tint  rgba(22,136,63,.10)
+     ink          #16202a   body text    #4a5561   muted       #737f8b
+     hairline     #e3e8ed   hairline+    #cfd7df   canvas      #f4f6f8
+   ========================================================================== */
+
+
+/* ==========================================================================
+   HOME-01  Overall visual polishing
+   ========================================================================== */
+
+body {
+  color: #16202a;
+  background: #f4f6f8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -.01em;
+}
+
+body#home > .content {
+  background: #fff;
+}
+
+body#home > .content > section {
+  background: #f4f6f8;
+}
+
+body#home h2 {
+  margin: 0 0 14px 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #16202a;
+}
+
+/* Section heading rhythm: a calm divider instead of a heavy gap. */
+body#home > .content > section > .container > .block > h2 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e3e8ed;
+}
+
+body#home h2 .btn {
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* Softer premium band - the stock gradient fights the green brand. */
+body#home > .content > section.home-premium {
+  background: linear-gradient(135deg, #eef8f1, #e6f3f6);
+  box-shadow: none;
+}
+
+
+/* ==========================================================================
+   HOME-02  Main banner
+   ========================================================================== */
+
+body#home > .content > section.home-search {
+  box-shadow: none;
+  border: 0;
+  overflow: visible;
+}
+
+.home-search > .container {
+  overflow: visible;
+}
+
+.home-search > .container:after {
+  top: 10px;
+  right: 3%;
+  width: 190px;
+  height: 140px;
+  opacity: 1;
+  background-image: url('../images/home-hero.png');
+  background-position: center right;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+/* Keep search content from colliding with the smaller hero art. */
+.home-search h1.pngm-title,
+.home-search form,
+.home-search .latest-search {
+  max-width: calc(100% - 220px);
+}
+
+.home-search h1.pngm-title {
+  margin: 4px 0 18px 0;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #16202a;
+}
+
+/* Search field + button read as one control, like OLX. */
+.home-search form {
+  margin: 0 0 10px 0;
+}
+
+.home-search .input-box {
+  width: calc(100% - 150px);
+  margin: 0;
+}
+
+.home-search input[name="sPattern"] {
+  height: 50px;
+  border: 1px solid #cfd7df;
+  border-right: 0;
+  border-radius: 11px 0 0 11px;
+  font-size: 15px;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.home-search input[name="sPattern"]:focus {
+  border-color: #16883f;
+  box-shadow: 0 0 0 3px rgba(22, 136, 63, .13);
+}
+
+.home-search .btn {
+  width: 150px;
+  height: 50px;
+  border-radius: 0 11px 11px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.home-search .latest-search {
+  max-height: 30px;
+}
+
+.home-search .latest-search a {
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12.5px;
+}
+
+
+/* ==========================================================================
+   HOME-03  Desktop header
+   ========================================================================== */
+
+@media screen and (min-width: 1081px) {
+  body {
+    padding-top: 72px;
+  }
+
+  header {
+    height: 72px;
+    background: rgba(255, 255, 255, .92);
+    box-shadow: 0 1px 0 0 #e3e8ed, 0 2px 10px rgba(16, 32, 42, .06);
+  }
+
+  header .cmain {
+    gap: 22px;
+  }
+
+  header .cmain > .logo {
+    align-items: center;
+    height: 100%;
+    margin: 0;
+  }
+
+  header .cmain > .logo img,
+  header .cmain > .logo svg {
+    max-width: 205px;
+    max-height: 50px;
+  }
+
+  header .links {
+    height: 48px;
+    align-items: center;
+    gap: 6px;
+  }
+
+  header .links .btn-white {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 9px;
+    font-size: 15px;
+  }
+
+  header .links .btn-white svg {
+    height: 20px;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+
+  header .links .publish {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    margin-left: 16px;
+    padding: 0 20px;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  header .links .btn.account img {
+    width: 34px;
+    height: 34px;
+    margin: 0 8px 0 -4px;
+  }
+
+  /* Sticky offset that assumed the old 60px bar. */
+  #item-main .location {
+    top: 84px;
+  }
+}
+
+/* Companies / Location icons - always visible, even when the label is long. */
+header .links .btn.company,
+header .links .btn.location {
+  display: inline-flex;
+  align-items: center;
+  max-width: 190px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+header .links .btn.location svg,
+header .links .btn.company svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+header .links .btn.location .pngm-loc-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   HOME-04  Category icons + subcategories
+   ========================================================================== */
+
+#home-cat {
+  gap: 10px 2px;
+  align-items: flex-start;
+}
+
+/* The wrapper is now the flex item, so it carries the tile width and the
+   anchor has to be blockified for that width to apply. */
+#home-cat .pngm-cat-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100px;
+}
+
+#home-cat > .pngm-cat-item > a {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+#home-cat a > div {
+  border: 1px solid #e3e8ed;
+  box-shadow: 0 1px 2px rgba(16, 32, 42, .06);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+/* Full category names rather than a mid-word cut. */
+#home-cat a > h3 {
+  height: 46px;
+}
+
+#home-cat a > h3 span {
+  color: #16202a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 15px;
+}
+
+/* Hover / zoom - pointer devices on desktop only. */
+@media (hover: hover) and (min-width: 1081px) {
+  #home-cat > .pngm-cat-item > a:hover > div {
+    transform: translateY(-3px) scale(1.06);
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgba(16, 32, 42, .16);
+  }
+
+  #home-cat > .pngm-cat-item > a:hover > h3 span {
+    color: #16883f;
+  }
+}
+
+/* --- Subcategory flyout (desktop) --- */
+
+.pngm-sub-toggle {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 46px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #e3e8ed;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 32, 42, .06);
+  color: #4a5561;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pngm-subcat {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 50%;
+  z-index: 30;
+  min-width: 216px;
+  max-width: 280px;
+  padding: 7px;
+  transform: translate(-50%, 6px);
+  border: 1px solid #e3e8ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgba(16, 32, 42, .16);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .16s ease, transform .16s ease, visibility .16s;
+}
+
+/* Hover bridge so the pointer can travel into the panel. */
+.pngm-subcat:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+
+@media (hover: hover) and (min-width: 1081px) {
+  #home-cat .pngm-cat-item.has-sub:hover .pngm-subcat,
+  #home-cat .pngm-cat-item.has-sub:focus-within .pngm-subcat {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+  }
+}
+
+.pngm-subcat ul {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.pngm-subcat li {
+  display: block;
+  width: 100%;
+}
+
+/* Reset the tile styling that #home-cat a would otherwise apply in here. */
+#home-cat .pngm-subcat a {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 8px 11px;
+  border-radius: 8px;
+  color: #4a5561;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#home-cat .pngm-subcat a:hover {
+  background: rgba(22, 136, 63, .10);
+  color: #16883f;
+  text-decoration: none;
+}
+
+#home-cat .pngm-subcat .pngm-subcat-all {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #e3e8ed;
+}
+
+#home-cat .pngm-subcat .pngm-subcat-all a {
+  color: #16883f;
+  font-weight: 700;
+}
+
+/* --- Subcategory sheet (touch / mobile) --- */
+
+.pngm-sheet-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 998;
+  background: rgba(16, 32, 42, .45);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.pngm-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 8px 14px 22px 14px;
+  border-radius: 16px 16px 0 0;
+  background: #fff;
+  box-shadow: 0 16px 44px rgba(16, 32, 42, .16);
+  transform: translateY(100%);
+  transition: transform .24s ease;
+}
+
+.pngm-sheet-backdrop.is-open,
+.pngm-sheet.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+.pngm-sheet-grip {
+  width: 42px;
+  height: 4px;
+  margin: 6px auto 12px auto;
+  border-radius: 4px;
+  background: #cfd7df;
+}
+
+.pngm-sheet-title {
+  display: block;
+  margin: 0 0 8px 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #16202a;
+}
+
+.pngm-sheet ul {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.pngm-sheet li {
+  display: block;
+  border-bottom: 1px solid #e3e8ed;
+}
+
+.pngm-sheet li:last-child {
+  border-bottom: 0;
+}
+
+.pngm-sheet a {
+  display: block;
+  padding: 13px 4px;
+  color: #4a5561;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.pngm-sheet .pngm-subcat-all a {
+  color: #16883f;
+  font-weight: 700;
+}
+
+
+/* ==========================================================================
+   HOME-05  Homepage spacing
+   ========================================================================== */
+
+body#home > .content {
+  padding-top: 18px;
+}
+
+body#home > .content > section.home-search {
+  padding: 4px 0 16px 0;
+}
+
+/* The gap between the search block and the category row. */
+body#home .home-search h2 {
+  margin: 16px 0 10px 0;
+  font-size: 16px;
+}
+
+/* Pull the listing sections up towards the search / categories. */
+body#home > .content > section {
+  padding: 22px 0;
+}
+
+body#home > .content > section.home-latest {
+  padding-top: 16px;
+}
+
+
+/* ==========================================================================
+   HOME-06  Listing cards (OLX-style, same for every homepage section)
+   ========================================================================== */
+
+/* One card design everywhere: same width, same photo ratio, same body. */
+body#home .products.grid .simple-prod,
+body#home .products.grid .simple-prod.pngm-card,
+body#home .products.grid .simple-prod.medium,
+body#home .products.grid .simple-prod.tall,
+body#home .products.grid .simple-prod.verytall,
+body#home .products.grid .simple-prod.wide,
+body#home .products.grid .simple-prod.small,
+body#home #location-items .simple-prod,
+body#home #premium-items .simple-prod,
+body#home #premium-items .simple-prod.o1,
+body#home #premium-items .simple-prod:not(.o1),
+body#home #favorite-items .simple-prod,
+body#home #recent-items .simple-prod,
+body#home #latest-items .simple-prod {
+  display: flex;
+  width: calc(20% - 12px);
+  margin: 0 6px 14px 6px;
+}
+
+body#home .products.grid.nice-scroll .simple-prod,
+body#home #location-items .simple-prod,
+body#home #premium-items .simple-prod,
+body#home #premium-items .simple-prod.o1,
+body#home #premium-items .simple-prod:not(.o1),
+body#home #favorite-items .simple-prod,
+body#home #recent-items .simple-prod {
+  flex: 0 0 220px;
+  width: 220px;
+  max-width: 220px;
+  margin: 0 8px 10px 0;
+}
+
+.products.grid .simple-prod .simple-wrap,
+body#home #premium-items .simple-prod .simple-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0 0 12px 0;
+  overflow: hidden;
+  border: 1px solid #e3e8ed;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+
+.products.grid .simple-prod:hover .simple-wrap,
+body#home #premium-items .simple-prod:hover .simple-wrap {
+  transform: none;
+  border-color: #cfd7df;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(16, 32, 42, .08);
+}
+
+/* Square photo area for every card, including premium / location / recent. */
+.products.grid .simple-prod .img-wrap,
+.products.grid .simple-prod.tall .img-wrap,
+.products.grid .simple-prod.verytall .img-wrap,
+.products.grid .simple-prod.wide .img-wrap,
+.products.grid .simple-prod.normal .img-wrap,
+.products.grid .simple-prod.square .img-wrap,
+body#home #premium-items .simple-prod .img-wrap {
+  height: auto !important;
+  padding-top: 100% !important;
+}
+
+.products.grid .simple-prod .img-wrap > a img {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Price lives in the body; hide the old image overlay price/scrim. */
+.products.grid .simple-prod .img-wrap .bar {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.products.grid .simple-prod .img-wrap .bar .price {
+  display: none;
+}
+
+.products.grid .simple-prod .img-wrap .bar .image-counter {
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(16, 32, 42, .62);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* Favorite moves to the price row (OLX); hide the one on the photo. */
+.products.grid .simple-prod .img-wrap > .isGrid > .favorite,
+.products.grid .simple-prod .img-wrap > .favorite {
+  display: none !important;
+}
+
+.products.grid .simple-prod .data {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  padding: 12px 14px 0 14px;
+}
+
+/* Replaced by the OLX body fields below. */
+.products.grid .simple-prod .info,
+.products.grid .simple-prod .extra,
+body#home #latest-items .simple-prod .extra,
+body#home #location-items .simple-prod .extra,
+body#home #favorite-items .simple-prod .extra,
+body#home #premium-items .simple-prod .extra {
+  display: none !important;
+}
+
+.products.grid .simple-prod .pngm-price-row {
+  order: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px 0;
+  min-height: 24px;
+}
+
+.products.grid .simple-prod .pngm-price {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #16202a;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.products.grid .simple-prod .pngm-fav {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex: 0 0 auto;
+  z-index: 1;
+}
+
+.products.grid .simple-prod .pngm-fav .favorite {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+.products.grid .simple-prod .pngm-fav .favorite i {
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border-radius: 50%;
+  background: transparent;
+  color: #737f8b;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.products.grid .simple-prod .pngm-fav .favorite i:hover {
+  background: rgba(22, 136, 63, .08);
+  color: #16883f;
+}
+
+.products.grid .simple-prod .pngm-fav .favorite a.is_favorite i {
+  color: #e11d48;
+  background: transparent;
+  font-weight: 900;
+}
+
+.products.grid .simple-prod .title,
+body#home #latest-items .simple-prod .title,
+body#home #location-items .simple-prod .title,
+body#home #premium-items .simple-prod .title,
+body#home #favorite-items .simple-prod .title {
+  order: 2;
+  margin: 0 0 6px 0;
+  min-height: 0;
+  max-height: 40px;
+  overflow: hidden;
+  color: #16202a;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  white-space: normal;
+  text-overflow: unset;
+}
+
+.products.grid .simple-prod:hover .title {
+  color: #16202a;
+}
+
+.products.grid .simple-prod .pngm-teaser {
+  order: 3;
+  margin: 0 0 6px 0;
+  max-height: 34px;
+  overflow: hidden;
+  color: #737f8b;
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+.products.grid .simple-prod .pngm-location {
+  order: 4;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  color: #737f8b;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.products.grid .simple-prod .pngm-date {
+  order: 5;
+  margin-top: auto;
+  padding-top: 2px;
+  color: #9aa3ad;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Premium badge as a corner flag. */
+.products.grid .simple-prod .premium-mark.isGrid {
+  top: 8px;
+  left: 8px;
+  bottom: auto;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(16, 32, 42, .06);
+  font-size: 11px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.products.grid .simple-prod .day-offer-mark {
+  top: 8px;
+  bottom: auto;
+  left: 8px;
+}
+
+body#home #premium-items .simple-prod .labels {
+  display: block;
+}
+
+/* The new blocks are grid-only; list and detail keep Epsilon's layout. */
+.products.list .pngm-price-row,
+.products.list .pngm-price,
+.products.list .pngm-teaser,
+.products.list .pngm-location,
+.products.list .pngm-date,
+.products.list .pngm-fav,
+.products.detail .pngm-price-row,
+.products.detail .pngm-price,
+.products.detail .pngm-teaser,
+.products.detail .pngm-location,
+.products.detail .pngm-date,
+.products.detail .pngm-fav {
+  display: none;
+}
+
+
+/* ==========================================================================
+   Tablet
+   ========================================================================== */
+
+@media screen and (max-width: 1080px) {
+  .home-search > .container:after {
+    width: 150px;
+    height: 110px;
+    top: 14px;
+  }
+
+  .home-search h1.pngm-title,
+  .home-search form,
+  .home-search .latest-search {
+    max-width: calc(100% - 170px);
+  }
+
+  .home-search h1.pngm-title {
+    font-size: 24px;
+  }
+}
+
+
+/* ==========================================================================
+   Mobile
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+  .home-search h1.pngm-title {
+    max-width: 100%;
+    margin: 0 0 12px 0;
+    font-size: 21px;
+  }
+
+  .home-search .input-box {
+    width: calc(100% - 54px);
+  }
+
+  .home-search .btn {
+    width: 54px;
+    padding: 0;
+  }
+
+  .home-search .btn span {
+    display: none;
+  }
+
+  body#home .home-search h2 {
+    margin: 14px 0 8px 0;
+  }
+
+  /* Categories stay a swipeable row; the flyout is replaced by the sheet. */
+  #home-cat {
+    gap: 0;
+  }
+
+  #home-cat .pngm-cat-item {
+    width: 84px;
+  }
+
+  /* Room for three lines here too, so names are not cut mid-phrase. */
+  #home-cat a > h3 {
+    height: 42px;
+  }
+
+  #home-cat a > h3 span {
+    font-size: 12px;
+    line-height: 14px;
+  }
+
+  #home-cat .pngm-cat-item.has-sub .pngm-sub-toggle {
+    display: block;
+    top: 38px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+
+  #home-cat .pngm-subcat {
+    display: none;
+  }
+
+  body#home .products.grid .simple-prod,
+  body#home #latest-items .simple-prod {
+    width: calc(50% - 10px);
+    margin: 0 5px 12px 5px;
+  }
+
+  body#home .products.grid.nice-scroll .simple-prod,
+  body#home #location-items .simple-prod,
+  body#home #premium-items .simple-prod,
+  body#home #premium-items .simple-prod.o1,
+  body#home #premium-items .simple-prod:not(.o1),
+  body#home #favorite-items .simple-prod,
+  body#home #recent-items .simple-prod {
+    flex: 0 0 168px;
+    width: 168px;
+    max-width: 168px;
+  }
+
+  .products.grid .simple-prod .data {
+    padding: 10px 10px 0 10px;
+  }
+
+  .products.grid .simple-prod .pngm-price {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .products.grid .simple-prod .title {
+    max-height: 36px;
+    font-size: 13.5px;
+    line-height: 18px;
+  }
+
+  /* Descriptions crowd the card at this width. */
+  .products.grid .simple-prod .pngm-teaser {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .home-search h1.pngm-title {
+    font-size: 19px;
+  }
+}
