@@ -1050,28 +1050,45 @@ body#home #premium-items .simple-prod .labels {
   left: 0;
   right: 0;
   z-index: 7;
-  padding: 6px 0;
+  display: block;
+  padding: 10px 16px;
   background: #fff;
   border-bottom: 1px solid #e3e8ed;
   box-shadow: 0 1px 4px rgba(16, 32, 42, .05);
+  box-sizing: border-box;
+  text-align: center; /* centers the inline-block slot below */
 }
 
+/*
+  Parent .container is display:flex; max-width:1080px; flex-direction:inherit
+  which left-aligns a shorter form. Override completely: inline-block +
+  text-align:center on the bar (classic centering that flex cannot break).
+*/
 .pngm-global-search > .container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: inline-block !important;
+  float: none !important;
+  flex: none !important;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  width: 720px !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  text-align: left;
+  box-sizing: border-box;
+  vertical-align: top;
 }
 
 .pngm-global-search .global-search-form {
   position: relative;
-  display: flex;
+  display: flex !important;
   flex-flow: row nowrap;
   align-items: stretch;
-  justify-content: center;
-  width: 100%;
-  max-width: 720px;
-  margin-left: auto;
-  margin-right: auto;
+  justify-content: flex-start;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
   border-radius: 9px;
   transition: box-shadow .18s ease;
 }
@@ -1084,10 +1101,14 @@ body#home #premium-items .simple-prod .labels {
 }
 
 .pngm-global-search .input-box {
-  position: relative;
-  display: flex;
+  position: relative !important;
+  display: flex !important;
   align-items: center;
-  height: 38px;
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0;
+  height: 46px;
+  margin: 0 !important; /* kill parent .input-box { margin: 0 0 20px 0 } */
   background: #fff;
   border: 1px solid #c9d0d8;
   border-right: 0;
@@ -1108,15 +1129,15 @@ body#home #premium-items .simple-prod .labels {
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  height: 36px;
+  height: 44px;
   padding: 0 36px 0 10px;
   border: 0 !important;
   outline: none !important;
   box-shadow: none !important;
   background: transparent;
   color: #20242a;
-  font-size: 14px;
-  line-height: 36px;
+  font-size: 15px;
+  line-height: 44px;
   text-decoration: none !important;
 }
 
@@ -1154,14 +1175,14 @@ body#home #premium-items .simple-prod .labels {
 
 .global-search-submit {
   flex: 0 0 auto;
-  min-width: 104px;
-  height: 38px;
-  padding: 0 16px;
+  min-width: 110px;
+  height: 46px;
+  padding: 0 18px;
   border: 1px solid #16883f;
   border-radius: 0 9px 9px 0;
   background: #16883f;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -1181,7 +1202,7 @@ body#home #premium-items .simple-prod .labels {
   top: calc(100% + 6px);
   left: 0;
   right: auto;
-  width: calc(100% + 104px);
+  width: calc(100% + 110px);
   max-width: none;
   display: none;
   max-height: 420px;
@@ -1202,9 +1223,9 @@ body#home #premium-items .simple-prod .labels {
   display: block;
 }
 
-/* Non-home pages: header (72) + compact search (~50). */
+/* Non-home pages: header (72) + taller search (~66). */
 body:not(#home) {
-  padding-top: 122px;
+  padding-top: 138px;
 }
 
 /* Homepage: hero already has search — hide the bar until scroll. */
@@ -1226,11 +1247,12 @@ body#home.pngm-sticky-search .pngm-global-search.is-home {
   visibility: visible !important;
   height: auto !important;
   max-height: none !important;
-  padding: 6px 0 !important;
+  padding: 10px 16px !important;
   border-bottom: 1px solid #e3e8ed !important;
   box-shadow: 0 1px 4px rgba(16, 32, 42, .05) !important;
   overflow: visible !important;
   pointer-events: auto !important;
+  text-align: center !important;
 }
 
 /* Empty ad slots must not leave blank strips on the page. */
@@ -1339,7 +1361,7 @@ body#home #flashbox .flashmessage:last-child {
 }
 
 body#home.pngm-sticky-search {
-  padding-top: 122px;
+  padding-top: 138px;
 }
 
 /* Mid widths: header is shorter than desktop. */
@@ -1350,7 +1372,7 @@ body#home.pngm-sticky-search {
 
   body:not(#home),
   body#home.pngm-sticky-search {
-    padding-top: 110px;
+    padding-top: 126px;
   }
 }
 
@@ -1455,31 +1477,33 @@ body#home.pngm-sticky-search {
 
   .pngm-global-search {
     top: 64px;
-    padding: 5px 0;
+    padding: 8px 12px;
+    text-align: center;
   }
 
   .pngm-global-search .global-search-form {
-    max-width: 100%;
+    max-width: none;
+    width: 100%;
   }
 
   .pngm-global-search .input-box {
-    height: 38px;
+    height: 44px;
   }
 
   .pngm-global-search input.pattern {
-    height: 36px;
+    height: 42px;
     font-size: 16px;
-    line-height: 36px;
+    line-height: 42px;
   }
 
   .pngm-global-search .picker.pattern.global .results {
-    width: calc(100% + 44px);
+    width: calc(100% + 48px);
   }
 
   .global-search-submit {
-    min-width: 44px;
-    width: 44px;
-    height: 38px;
+    min-width: 48px;
+    width: 48px;
+    height: 44px;
     padding: 0;
   }
 
@@ -1492,7 +1516,7 @@ body#home.pngm-sticky-search {
   }
 
   body:not(#home) {
-    padding-top: 112px;
+    padding-top: 124px;
   }
 
   body#home:not(.pngm-sticky-search) {
@@ -1500,7 +1524,7 @@ body#home.pngm-sticky-search {
   }
 
   body#home.pngm-sticky-search {
-    padding-top: 112px;
+    padding-top: 124px;
   }
 }
 
@@ -1515,6 +1539,13 @@ body#home.pngm-sticky-search {
   color: #4a5561;
   font-size: 14px;
   line-height: 1.45;
+}
+
+.pngmarket-no-exact-msg {
+  padding: 10px 16px 8px;
+  color: #4a5561;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .pngm-empty-near {

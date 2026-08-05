@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.0.0');
+    define('PNGM_CHILD_VERSION', '1.0.3');
 }
 
 
@@ -28,7 +28,7 @@ function pngm_enqueue_assets()
 
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
 
-    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery'));
+    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global'));
     osc_enqueue_script('pngm-custom');
 }
 

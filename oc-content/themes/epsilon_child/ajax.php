@@ -61,8 +61,25 @@ if(@$_GET['ajaxCat'] == 1 && @$_GET['term'] <> '') {
 if(@$_GET['ajaxPatternSearch'] == 1) {
   $term = trim(osc_esc_js(Params::getParam('term')));
 
+  // Location from the active search form (loc-inp). Clearing the chip → nationwide.
+  $pngm_loc_city = trim((string) Params::getParam('sCity'));
+  $pngm_loc_region = trim((string) Params::getParam('sRegion'));
+  $pngm_loc_country = trim((string) Params::getParam('sCountry'));
+  $pngm_has_location = ($pngm_loc_city !== '' || $pngm_loc_region !== '' || $pngm_loc_country !== '');
+
+  $pngm_search_base = array('page' => 'search');
+  if ($pngm_loc_city !== '') {
+    $pngm_search_base['sCity'] = $pngm_loc_city;
+  } elseif ($pngm_loc_region !== '') {
+    $pngm_search_base['sRegion'] = $pngm_loc_region;
+  } elseif ($pngm_loc_country !== '') {
+    $pngm_search_base['sCountry'] = $pngm_loc_country;
+  }
+
   if(strlen($term) >= 1) {
-    eps_location_default_row();
+    if ($pngm_has_location) {
+      eps_location_default_row();
+    }
 
     // PNGMARKET: LISTING AUTOCOMPLETE
     // Searches by the beginning or any part of any word in listing title.
@@ -90,13 +107,37 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
 
       if($lookupPart != '') {
         $dao = Item::newInstance()->dao;
-        $dao->select('i.*, d.s_title, d.s_description, cd.s_name AS s_category_name');
+        $dao->select('i.*, d.s_title, d.s_description, cd.s_name AS s_category_name, loc.s_city, loc.s_region');
         $dao->from(DB_TABLE_PREFIX . 't_item i');
         $dao->join(DB_TABLE_PREFIX . 't_item_description d', 'd.fk_i_item_id = i.pk_i_id', 'INNER');
         $dao->join(DB_TABLE_PREFIX . 't_category_description cd', 'cd.fk_i_category_id = i.fk_i_category_id', 'LEFT');
+        $dao->join(DB_TABLE_PREFIX . 't_item_location loc', 'loc.fk_i_item_id = i.pk_i_id', $pngm_has_location ? 'INNER' : 'LEFT');
         $dao->where('i.b_active', 1);
         $dao->where('i.b_enabled', 1);
         $dao->where('i.b_spam', 0);
+
+        if ($pngm_loc_city !== '') {
+          if (ctype_digit($pngm_loc_city)) {
+            $dao->where('loc.fk_i_city_id', (int) $pngm_loc_city);
+          } else {
+            $dao->where(sprintf(
+              "(loc.s_city LIKE '%%%1\$s%%' OR loc.s_city_native LIKE '%%%1\$s%%')",
+              $dao->escapeStr($pngm_loc_city)
+            ));
+          }
+        } elseif ($pngm_loc_region !== '') {
+          if (ctype_digit($pngm_loc_region)) {
+            $dao->where('loc.fk_i_region_id', (int) $pngm_loc_region);
+          } else {
+            $dao->where(sprintf(
+              "(loc.s_region LIKE '%%%1\$s%%' OR loc.s_region_native LIKE '%%%1\$s%%')",
+              $dao->escapeStr($pngm_loc_region)
+            ));
+          }
+        } elseif ($pngm_loc_country !== '') {
+          $dao->where('loc.fk_c_country_code', $pngm_loc_country);
+        }
+
         // SEARCH-01: match title, description or category name (partial).
         $dao->where(sprintf(
           "(d.s_title LIKE '%%%1\$s%%' OR d.s_description LIKE '%%%1\$s%%' OR cd.s_name LIKE '%%%1\$s%%')",
@@ -291,7 +332,19 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
             echo '</a>';
           }
 
-          echo '<a class="option direct pngmarket-view-all" href="' . osc_search_url(array('page' => 'search', 'sPattern' => $term)) . '">';
+          $pngm_view_all = $pngm_search_base;
+          $pngm_view_all['sPattern'] = $term;
+          echo '<a class="option direct pngmarket-view-all" href="' . osc_search_url($pngm_view_all) . '">';
+          echo '<i class="fas fa-search"></i><span>' . sprintf(__('Show all results for “%s”', 'epsilon'), osc_esc_html($term)) . '</span><i class="fas fa-arrow-right"></i>';
+          echo '</a>';
+          echo '</div>';
+        } else {
+          echo '<div class="row pngmarket-listings pngmarket-no-exact">';
+          echo '<div class="lead">' . __('Listings', 'epsilon') . '</div>';
+          echo '<div class="pngmarket-no-exact-msg">' . __('No exact results found', 'epsilon') . '</div>';
+          $pngm_view_all = $pngm_search_base;
+          $pngm_view_all['sPattern'] = $term;
+          echo '<a class="option direct pngmarket-view-all" href="' . osc_search_url($pngm_view_all) . '">';
           echo '<i class="fas fa-search"></i><span>' . sprintf(__('Show all results for “%s”', 'epsilon'), osc_esc_html($term)) . '</span><i class="fas fa-arrow-right"></i>';
           echo '</a>';
           echo '</div>';
@@ -307,7 +360,9 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
       echo '<div class="lead">' . __('Your recent search', 'epsilon') . '</div>';
       
       foreach($patterns as $p) {
-        echo '<a class="option direct" href="' . osc_search_url(array('page' => 'search', 'sPattern' => $p)) . '" data-pattern="' . osc_esc_html($p) . '">' . eps_highlight_term($p, $term) . '</a>';
+        $pngm_pattern_url = $pngm_search_base;
+        $pngm_pattern_url['sPattern'] = $p;
+        echo '<a class="option direct" href="' . osc_search_url($pngm_pattern_url) . '" data-pattern="' . osc_esc_html($p) . '">' . eps_highlight_term($p, $term) . '</a>';
       }
       
       echo '</div>';
@@ -321,7 +376,9 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
       echo '<div class="lead">' . __('Other people searched', 'epsilon') . '</div>';
       
       foreach($searches as $s) {
-        echo '<a class="option direct" href="' . osc_search_url(array('page' => 'search', 'sPattern' => $s['s_search'])) . '" data-pattern="' . osc_esc_html($s['s_search']) . '">' . eps_highlight_term($s['s_search'], $term) . '</a>';
+        $pngm_pattern_url = $pngm_search_base;
+        $pngm_pattern_url['sPattern'] = $s['s_search'];
+        echo '<a class="option direct" href="' . osc_search_url($pngm_pattern_url) . '" data-pattern="' . osc_esc_html($s['s_search']) . '">' . eps_highlight_term($s['s_search'], $term) . '</a>';
       }
       
       echo '</div>';
@@ -335,7 +392,9 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
       echo '<div class="lead">' . __('Categories', 'epsilon') . '</div>';
       
       foreach($categories as $c) {
-        echo '<a class="option direct" href="' . osc_search_url(array('page' => 'search', 'sCategory' => $c['pk_i_id'])) . '" data-category="' . osc_esc_html($c['pk_i_id']) . '">' . eps_highlight_term(($c['s_name_parent'] <> '' ? $c['s_name_parent'] . ' > ' : '') . $c['s_name'], $term) . '</a>';
+        $pngm_cat_url = $pngm_search_base;
+        $pngm_cat_url['sCategory'] = $c['pk_i_id'];
+        echo '<a class="option direct" href="' . osc_search_url($pngm_cat_url) . '" data-category="' . osc_esc_html($c['pk_i_id']) . '">' . eps_highlight_term(($c['s_name_parent'] <> '' ? $c['s_name_parent'] . ' > ' : '') . $c['s_name'], $term) . '</a>';
       }
       
       echo '</div>';
