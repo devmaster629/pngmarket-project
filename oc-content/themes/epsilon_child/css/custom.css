@@ -27,7 +27,8 @@ h1, h2, h3, h4 {
 }
 
 body#home > .content {
-  background: #fff;
+  padding-top: 0;
+  background: #f4f6f8;
 }
 
 body#home > .content > section {
@@ -71,31 +72,60 @@ body#home > .content > section.home-search {
   overflow: visible;
 }
 
-.home-search > .container {
+/* Real flex layout: content left, <img> right — not a positioned background. */
+.home-search > .container.pngm-home-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 28px;
   overflow: visible;
 }
 
+/* Kill parent theme decorative :after background image. */
+.home-search > .container.pngm-home-banner:after,
 .home-search > .container:after {
-  top: 10px;
-  right: 3%;
-  width: 190px;
-  height: 140px;
-  opacity: 1;
-  background-image: url('../images/home-hero.png');
-  background-position: center right;
-  background-size: contain;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  border: 0 !important;
-  box-shadow: none !important;
-  outline: none;
+  display: none !important;
+  content: none !important;
+  background: none !important;
 }
 
-/* Keep search content from colliding with the smaller hero art. */
+.home-search .box {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
+/* Tall right column matching search + categories height. */
+.pngm-hero-art {
+  flex: 0 0 300px;
+  width: 300px;
+  max-width: 32%;
+  margin: 0;
+  padding: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+  background: transparent;
+}
+
+.pngm-hero-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center center;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
 .home-search h1.pngm-title,
 .home-search form,
 .home-search .latest-search {
-  max-width: calc(100% - 220px);
+  max-width: 100%;
 }
 
 .home-search h1.pngm-title {
@@ -103,36 +133,94 @@ body#home > .content > section.home-search {
   font-size: 27px;
   font-weight: 800;
   line-height: 1.25;
-  color: #16202a;
+  color: #1b2226;
+  /* Static — no blink / rotate animation */
+  animation: none !important;
+}
+
+/* Match logo tagline: Buy green, Sell red, Find Anything dark */
+.home-search h1.pngm-title .pngm-w-buy {
+  color: #1f6313;
+}
+
+.home-search h1.pngm-title .pngm-w-sell {
+  color: #e30000;
+}
+
+.home-search h1.pngm-title .pngm-w-find {
+  color: #1b2226;
+}
+
+.home-search h1.pngm-title .pngm-sep {
+  color: #1b2226;
+  font-weight: 700;
+}
+
+.home-search h1.pngm-title span {
+  animation: none !important;
+  -webkit-text-fill-color: unset;
+  background: none !important;
 }
 
 /* Search field + button read as one control, like OLX. */
 .home-search form {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
   margin: 0 0 10px 0;
+  border-radius: 11px;
+  transition: box-shadow .18s ease;
 }
 
 .home-search .input-box {
-  width: calc(100% - 150px);
+  position: relative;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
   margin: 0;
 }
 
 .home-search input[name="sPattern"] {
+  display: block;
+  width: 100%;
   height: 50px;
   border: 1px solid #cfd7df;
   border-right: 0;
   border-radius: 11px 0 0 11px;
   font-size: 15px;
-  transition: border-color .18s ease, box-shadow .18s ease;
+  outline: none;
+  box-shadow: none;
+  transition: border-color .18s ease;
 }
 
-.home-search input[name="sPattern"]:focus {
+/* Kill broken inner focus ring / underline from parent theme. */
+.home-search input[name="sPattern"]:focus,
+.home-search input[name="sPattern"]:focus-visible,
+.home-search input[name="sPattern"]:active {
+  outline: none !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
   border-color: #16883f;
+}
+
+.home-search form:focus-within {
   box-shadow: 0 0 0 3px rgba(22, 136, 63, .13);
 }
 
+.home-search form:focus-within input[name="sPattern"] {
+  border-color: #16883f;
+}
+
+.home-search form:focus-within .btn {
+  border-color: #16883f;
+}
+
 .home-search .btn {
+  flex: 0 0 150px;
+  float: none;
   width: 150px;
   height: 50px;
+  border: 1px solid #16883f;
   border-radius: 0 11px 11px 0;
   font-size: 15px;
   font-weight: 700;
@@ -154,7 +242,7 @@ body#home > .content > section.home-search {
    ========================================================================== */
 
 @media screen and (min-width: 1081px) {
-  body {
+  body#home:not(.pngm-sticky-search) {
     padding-top: 72px;
   }
 
@@ -162,6 +250,10 @@ body#home > .content > section.home-search {
     height: 72px;
     background: rgba(255, 255, 255, .92);
     box-shadow: 0 1px 0 0 #e3e8ed, 0 2px 10px rgba(16, 32, 42, .06);
+  }
+
+  .pngm-global-search {
+    top: 72px;
   }
 
   header .cmain {
@@ -224,30 +316,33 @@ body#home > .content > section.home-search {
   }
 }
 
-/* Companies / Location icons - always visible, even when the label is long. */
-header .links .btn.company,
-header .links .btn.location {
-  display: inline-flex;
-  align-items: center;
-  max-width: 190px;
-  overflow: hidden;
-  white-space: nowrap;
-}
+/* Companies / Location: keep icons when the label is long (desktop only —
+   do not force display on mobile or they shove Place an ad onto a second row). */
+@media screen and (min-width: 1081px) {
+  header .links .btn.company,
+  header .links .btn.location {
+    display: inline-flex;
+    align-items: center;
+    max-width: 190px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 
-header .links .btn.location svg,
-header .links .btn.company svg {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
+  header .links .btn.location svg,
+  header .links .btn.company svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
 
-header .links .btn.location .pngm-loc-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  header .links .btn.location .pngm-loc-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 
@@ -418,7 +513,9 @@ header .links .btn.location .pngm-loc-label {
   z-index: 998;
   background: rgba(16, 32, 42, .45);
   opacity: 0;
-  transition: opacity .2s ease;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .2s ease, visibility .2s ease;
 }
 
 .pngm-sheet {
@@ -434,13 +531,17 @@ header .links .btn.location .pngm-loc-label {
   background: #fff;
   box-shadow: 0 16px 44px rgba(16, 32, 42, .16);
   transform: translateY(100%);
-  transition: transform .24s ease;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform .24s ease, visibility .24s ease;
 }
 
 .pngm-sheet-backdrop.is-open,
 .pngm-sheet.is-open {
   opacity: 1;
   transform: none;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .pngm-sheet-grip {
@@ -492,12 +593,9 @@ header .links .btn.location .pngm-loc-label {
    HOME-05  Homepage spacing
    ========================================================================== */
 
-body#home > .content {
-  padding-top: 18px;
-}
-
 body#home > .content > section.home-search {
-  padding: 4px 0 16px 0;
+  padding: 10px 0 16px 0;
+  background: #f4f6f8;
 }
 
 /* The gap between the search block and the category row. */
@@ -623,7 +721,19 @@ body#home #premium-items .simple-prod .img-wrap {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  padding: 12px 14px 0 14px;
+  padding: 12px 14px 4px 14px;
+}
+
+/* Parent theme zeroes horizontal padding on recently viewed (#recent-ads). */
+#recent-ads .simple-prod .data,
+body#home #recent-items .simple-prod .data,
+body#home #recent-ads .simple-prod .data {
+  padding: 12px 12px 8px 12px;
+}
+
+#recent-ads .simple-prod,
+body#home #recent-items .simple-prod {
+  margin-right: 10px;
 }
 
 /* Replaced by the OLX body fields below. */
@@ -788,16 +898,14 @@ body#home #premium-items .simple-prod .labels {
    ========================================================================== */
 
 @media screen and (max-width: 1080px) {
-  .home-search > .container:after {
-    width: 150px;
-    height: 110px;
-    top: 14px;
+  .home-search > .container.pngm-home-banner {
+    gap: 18px;
   }
 
-  .home-search h1.pngm-title,
-  .home-search form,
-  .home-search .latest-search {
-    max-width: calc(100% - 170px);
+  .pngm-hero-art {
+    flex: 0 0 220px;
+    width: 220px;
+    max-width: 30%;
   }
 
   .home-search h1.pngm-title {
@@ -811,6 +919,20 @@ body#home #premium-items .simple-prod .labels {
    ========================================================================== */
 
 @media screen and (max-width: 767px) {
+  .home-search > .container.pngm-home-banner {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pngm-hero-art {
+    display: none;
+  }
+
+  .home-search .box {
+    max-width: 100%;
+    width: 100%;
+  }
+
   .home-search h1.pngm-title {
     max-width: 100%;
     margin: 0 0 12px 0;
@@ -818,10 +940,13 @@ body#home #premium-items .simple-prod .labels {
   }
 
   .home-search .input-box {
-    width: calc(100% - 54px);
+    width: auto;
+    flex: 1 1 auto;
   }
 
   .home-search .btn {
+    flex: 0 0 54px;
+    width: 54px;
     width: 54px;
     padding: 0;
   }
@@ -884,8 +1009,11 @@ body#home #premium-items .simple-prod .labels {
     max-width: 168px;
   }
 
-  .products.grid .simple-prod .data {
-    padding: 10px 10px 0 10px;
+  .products.grid .simple-prod .data,
+  #recent-ads .simple-prod .data,
+  body#home #recent-items .simple-prod .data,
+  body#home #recent-ads .simple-prod .data {
+    padding: 10px 12px 8px 12px;
   }
 
   .products.grid .simple-prod .pngm-price {
@@ -913,83 +1041,392 @@ body#home #premium-items .simple-prod .labels {
 
 
 /* ==========================================================================
-   SEARCH-02 / SEARCH-03  Global + sticky header search
+   SEARCH-02 / SEARCH-03  Global search OUTSIDE <header>
    ========================================================================== */
 
-/* Larger, easier-to-notice desktop search button. */
-@media screen and (min-width: 1081px) {
-  .header-global-search {
-    max-width: 640px;
-  }
-
-  .header-global-search .input-box {
-    height: 48px;
-  }
-
-  .header-global-search input.pattern {
-    height: 46px;
-    font-size: 15px;
-    line-height: 46px;
-  }
-
-  .global-search-submit {
-    min-width: 132px;
-    height: 48px;
-    padding: 0 26px;
-    font-size: 15px;
-    font-weight: 700;
-    border-radius: 0 11px 11px 0;
-  }
+.pngm-global-search {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  padding: 6px 0;
+  background: #fff;
+  border-bottom: 1px solid #e3e8ed;
+  box-shadow: 0 1px 4px rgba(16, 32, 42, .05);
 }
 
-/* Homepage: keep the sticky search compact until the user scrolls past the hero. */
-body#home .header-global-search.is-home {
-  max-width: 0;
+.pngm-global-search > .container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pngm-global-search .global-search-form {
+  position: relative;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 9px;
+  transition: box-shadow .18s ease;
+}
+
+.pngm-global-search .picker.pattern.global {
+  position: relative;
+  flex: 1 1 auto;
   min-width: 0;
-  margin: 0;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  transition: opacity .18s ease, max-width .18s ease;
-}
-
-body#home.pngm-sticky-search .header-global-search.is-home {
-  max-width: 640px;
-  min-width: 220px;
-  margin: 0 6px;
-  opacity: 1;
   overflow: visible;
-  pointer-events: auto;
 }
 
-/* Sticky header already fixed; make room for the wrapped search row on mobile. */
-@media screen and (max-width: 767px) {
-  body:not(#home) {
-    padding-top: 104px;
+.pngm-global-search .input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  background: #fff;
+  border: 1px solid #c9d0d8;
+  border-right: 0;
+  border-radius: 9px 0 0 9px;
+  transition: border-color .18s ease;
+}
+
+.pngm-global-search .global-search-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-left: 12px;
+  fill: #69727d;
+  pointer-events: none;
+}
+
+.pngm-global-search input.pattern {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 10px;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  color: #20242a;
+  font-size: 14px;
+  line-height: 36px;
+  text-decoration: none !important;
+}
+
+.pngm-global-search input.pattern:focus,
+.pngm-global-search input.pattern:focus-visible,
+.pngm-global-search input.pattern:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  text-decoration: none !important;
+}
+
+/* One shared focus ring around icon + field + button (no broken inner box). */
+.pngm-global-search .global-search-form:focus-within {
+  box-shadow: 0 0 0 3px rgba(22, 136, 63, .13);
+}
+
+.pngm-global-search .global-search-form:focus-within .input-box {
+  border-color: #16883f;
+}
+
+.pngm-global-search .global-search-form:focus-within .global-search-submit {
+  border-color: #16883f;
+}
+
+.pngm-global-search .clean {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9aa3ad;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.global-search-submit {
+  flex: 0 0 auto;
+  min-width: 104px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #16883f;
+  border-radius: 0 9px 9px 0;
+  background: #16883f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.global-search-submit i {
+  margin-right: 7px;
+}
+
+.global-search-submit span {
+  display: inline;
+}
+
+/* Dropdown width = input + Search button, aligned to the centered form. */
+.pngm-global-search .picker.pattern.global .results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: auto;
+  width: calc(100% + 104px);
+  max-width: none;
+  display: none;
+  max-height: 420px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 5px 0;
+  background: #fff;
+  border: 1px solid #d8dee5;
+  border-radius: 11px;
+  box-shadow: 0 14px 40px rgba(16, 24, 40, .16);
+  z-index: 200;
+  box-sizing: border-box;
+}
+
+.pngm-global-search .picker.pattern.open .results,
+.pngm-global-search .picker.pattern.active .results,
+.pngm-global-search .picker.pattern.global .results:has(.loaded:not(:empty)) {
+  display: block;
+}
+
+/* Non-home pages: header (72) + compact search (~50). */
+body:not(#home) {
+  padding-top: 122px;
+}
+
+/* Homepage: hero already has search — hide the bar until scroll. */
+body#home .pngm-global-search.is-home {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body#home.pngm-sticky-search .pngm-global-search.is-home {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 6px 0 !important;
+  border-bottom: 1px solid #e3e8ed !important;
+  box-shadow: 0 1px 4px rgba(16, 32, 42, .05) !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Empty ad slots must not leave blank strips on the page. */
+.container.banner-box > .inside:empty {
+  display: none;
+}
+
+.container.banner-box:not(:has(.banner-theme)):not(:has(img)):not(:has(iframe)):not(:has(ins)) {
+  display: none !important;
+}
+
+/* Hide empty flash area without relying only on :has(). */
+#flashbox {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+#flashbox .wrap,
+#flashbox .wrap2 {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+#flashbox .wrap2:empty {
+  display: none;
+}
+
+#flashbox:not(:has(.flashmessage)) {
+  display: none !important;
+}
+
+body#home.pngm-sticky-search {
+  padding-top: 122px;
+}
+
+/* Mid widths: header is shorter than desktop. */
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+  .pngm-global-search {
+    top: 60px;
   }
 
-  body:not(#home) header,
-  body#home.pngm-sticky-search header {
-    height: auto;
-    min-height: 48px;
+  body:not(#home),
+  body#home.pngm-sticky-search {
+    padding-top: 110px;
+  }
+}
+
+/* Mobile header: hamburger + logo + account + "Place an ad" on ONE taller row. */
+@media screen and (max-width: 767px) {
+  body {
+    padding-top: 64px;
+  }
+
+  header {
+    height: 64px;
+  }
+
+  header .cmain {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    padding-top: 8px;
     padding-bottom: 8px;
   }
 
-  body#home.pngm-sticky-search {
-    padding-top: 104px;
+  header .menu.btn,
+  header .cmain > .logo,
+  header .cmain > .links {
+    order: 1;
   }
 
-  body#home .header-global-search.is-home {
-    order: 20;
-    flex: 0 0 100%;
-    width: 100%;
+  header .menu.btn {
+    width: 32px;
+    height: 32px;
+    margin-right: 4px;
+    padding: 6px;
+  }
+
+  header .menu.btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  header .cmain > .logo {
+    min-width: 0;
+    max-width: calc(100% - 168px);
+    padding: 2px 0;
+  }
+
+  header .cmain > .logo img,
+  header .cmain > .logo svg,
+  header .logo img {
+    max-width: 100%;
+    max-height: 36px;
+    height: 36px;
+    width: auto;
+    margin: 0;
+    object-fit: contain;
+  }
+
+  header .cmain > .links {
+    margin-left: auto;
+    max-width: none;
+    height: 40px;
+    flex-wrap: nowrap;
+    overflow: visible;
+    align-items: center;
+  }
+
+  /* Keep the "Place an ad" label in the header (not icon-only). */
+  header .links .publish:not(.mini) {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    margin-left: 6px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  header .links .publish:not(.mini) svg {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  header .links .publish.mini {
+    display: none !important;
+  }
+
+  header .links .maccount {
+    margin-left: 2px;
+    height: 34px;
+  }
+
+  header .links .maccount img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .pngm-global-search {
+    top: 64px;
+    padding: 5px 0;
+  }
+
+  .pngm-global-search .global-search-form {
     max-width: 100%;
   }
 
+  .pngm-global-search .input-box {
+    height: 38px;
+  }
+
+  .pngm-global-search input.pattern {
+    height: 36px;
+    font-size: 16px;
+    line-height: 36px;
+  }
+
+  .pngm-global-search .picker.pattern.global .results {
+    width: calc(100% + 44px);
+  }
+
   .global-search-submit {
-    min-width: 50px;
-    width: 50px;
-    height: 46px;
+    min-width: 44px;
+    width: 44px;
+    height: 38px;
+    padding: 0;
+  }
+
+  .global-search-submit span {
+    display: none;
+  }
+
+  .global-search-submit i {
+    margin: 0;
+  }
+
+  body:not(#home) {
+    padding-top: 112px;
+  }
+
+  body#home:not(.pngm-sticky-search) {
+    padding-top: 64px;
+  }
+
+  body#home.pngm-sticky-search {
+    padding-top: 112px;
   }
 }
 

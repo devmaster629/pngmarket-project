@@ -22,53 +22,6 @@
     
    <a href="<?php echo osc_base_url(); ?>" class="logo"><?php echo eps_logo(); ?></a>
 
-  <!-- PNGMarket global search: sticky header search on every page (SEARCH-02 / SEARCH-03) -->
-  <div class="header-global-search<?php if(osc_is_home_page()) { ?> is-home<?php } ?>">
-    <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf global-search-form">
-      <input type="hidden" name="page" value="search" />
-
-      <?php if($location_cookie['success'] == true) { ?>
-        <?php if($location_cookie['fk_i_city_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sCity" value="<?php echo osc_esc_html($location_cookie['fk_i_city_id']); ?>"/>
-        <?php } else if($location_cookie['fk_i_region_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sRegion" value="<?php echo osc_esc_html($location_cookie['fk_i_region_id']); ?>"/>
-        <?php } else if($location_cookie['fk_c_country_code'] <> '') { ?>
-          <input type="hidden" class="loc-inp" name="sCountry" value="<?php echo osc_esc_html($location_cookie['fk_c_country_code']); ?>"/>
-        <?php } ?>
-      <?php } ?>
-
-        <div class="picker pattern global">
-          <div class="input-box">
-            <svg class="global-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18" aria-hidden="true">
-              <path d="M500.3 443.7l-119.7-119.7c27.22-40.41 40.65-90.9 33.46-144.7C401.8 87.79 326.8 13.32 235.2 1.723C99.01-15.51-15.51 99.01 1.724 235.2c11.6 91.64 86.08 166.7 177.6 178.9c53.8 7.189 104.3-6.236 144.7-33.46l119.7 119.7c15.62 15.62 40.95 15.62 56.57 0C515.9 484.7 515.9 459.3 500.3 443.7zM79.1 208c0-70.58 57.42-128 128-128s128 57.42 128 128c0 70.58-57.42 128-128 128S79.1 278.6 79.1 208z"/>
-            </svg>
-
-            <input
-              type="text"
-              name="sPattern"
-              class="pattern"
-              placeholder="<?php _e('Search cars, phones, furniture...', 'epsilon'); ?>"
-              value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>"
-              autocomplete="off"
-              aria-label="<?php echo osc_esc_html(__('Search listings', 'epsilon')); ?>"
-            />
-
-            <i class="clean fas fa-times-circle"></i>
-          </div>
-
-          <div class="results">
-            <div class="loaded"></div>
-            <div class="default"><?php eps_default_pattern_content(); ?></div>
-          </div>
-        </div>
-
-        <button class="btn global-search-submit" type="submit" aria-label="<?php echo osc_esc_html(__('Search', 'epsilon')); ?>">
-          <i class="fa fa-search"></i>
-          <span><?php _e('Search', 'epsilon'); ?></span>
-        </button>
-      </form>
-    </div>
-
     <div class="links">
       <a class="publish btn" href="<?php echo osc_item_post_url(); ?>">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="24" height="24"><path d="M352 240v32c0 6.6-5.4 12-12 12h-88v88c0 6.6-5.4 12-12 12h-32c-6.6 0-12-5.4-12-12v-88h-88c-6.6 0-12-5.4-12-12v-32c0-6.6 5.4-12 12-12h88v-88c0-6.6 5.4-12 12-12h32c6.6 0 12 5.4 12 12v88h88c6.6 0 12 5.4 12 12zm96-160v352c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48h352c26.5 0 48 21.5 48 48zm-48 346V86c0-3.3-2.7-6-6-6H54c-3.3 0-6 2.7-6 6v340c0 3.3 2.7 6 6 6h340c3.3 0 6-2.7 6-6z"/></svg>
@@ -249,6 +202,55 @@
   
   <?php osc_run_hook('header_bottom'); ?>
 </header>
+
+<!-- Global search lives OUTSIDE <header> (SEARCH-02 / SEARCH-03). -->
+<div class="pngm-global-search<?php if(osc_is_home_page()) { ?> is-home<?php } ?>">
+  <div class="container">
+    <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf global-search-form">
+      <input type="hidden" name="page" value="search" />
+
+      <?php if($location_cookie['success'] == true) { ?>
+        <?php if($location_cookie['fk_i_city_id'] > 0) { ?>
+          <input type="hidden" class="loc-inp" name="sCity" value="<?php echo osc_esc_html($location_cookie['fk_i_city_id']); ?>"/>
+        <?php } else if($location_cookie['fk_i_region_id'] > 0) { ?>
+          <input type="hidden" class="loc-inp" name="sRegion" value="<?php echo osc_esc_html($location_cookie['fk_i_region_id']); ?>"/>
+        <?php } else if($location_cookie['fk_c_country_code'] <> '') { ?>
+          <input type="hidden" class="loc-inp" name="sCountry" value="<?php echo osc_esc_html($location_cookie['fk_c_country_code']); ?>"/>
+        <?php } ?>
+      <?php } ?>
+
+      <div class="picker pattern global">
+        <div class="input-box">
+          <svg class="global-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18" aria-hidden="true">
+            <path d="M500.3 443.7l-119.7-119.7c27.22-40.41 40.65-90.9 33.46-144.7C401.8 87.79 326.8 13.32 235.2 1.723C99.01-15.51-15.51 99.01 1.724 235.2c11.6 91.64 86.08 166.7 177.6 178.9c53.8 7.189 104.3-6.236 144.7-33.46l119.7 119.7c15.62 15.62 40.95 15.62 56.57 0C515.9 484.7 515.9 459.3 500.3 443.7zM79.1 208c0-70.58 57.42-128 128-128s128 57.42 128 128c0 70.58-57.42 128-128 128S79.1 278.6 79.1 208z"/>
+          </svg>
+
+          <input
+            type="text"
+            name="sPattern"
+            class="pattern"
+            placeholder="<?php _e('Search cars, phones, furniture...', 'epsilon'); ?>"
+            value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>"
+            autocomplete="off"
+            aria-label="<?php echo osc_esc_html(__('Search listings', 'epsilon')); ?>"
+          />
+
+          <i class="clean fas fa-times-circle"></i>
+        </div>
+
+        <div class="results">
+          <div class="loaded"></div>
+          <div class="default"><?php eps_default_pattern_content(); ?></div>
+        </div>
+      </div>
+
+      <button class="btn global-search-submit" type="submit" aria-label="<?php echo osc_esc_html(__('Search', 'epsilon')); ?>">
+        <i class="fa fa-search"></i>
+        <span><?php _e('Search', 'epsilon'); ?></span>
+      </button>
+    </form>
+  </div>
+</div>
 
 <?php osc_run_hook('header_after'); ?>
 

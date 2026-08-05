@@ -9,8 +9,8 @@
   
   <?php osc_run_hook('home_top'); ?>
 
-  <?php if(eps_banner('home_top') !== false) { ?>
-    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo eps_banner('home_top'); ?></div></div>
+  <?php $pngm_banner_top = pngm_banner('home_top'); if($pngm_banner_top !== false) { ?>
+    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo $pngm_banner_top; ?></div></div>
   <?php } ?>
   
   <?php $location_cookie = eps_location_from_cookies(); ?>
@@ -18,9 +18,9 @@
   <?php osc_run_hook('home_search_pre'); ?>
   
   <section class="home-search">
-    <div class="container">
+    <div class="container pngm-home-banner">
       <div class="box">
-        <h1 class="pngm-title"><?php _e('Buy', 'epsilon'); ?> &ndash; <?php _e('Sell', 'epsilon'); ?> &ndash; <?php _e('Find Anything', 'epsilon'); ?></h1>
+        <h1 class="pngm-title"><span class="pngm-w-buy"><?php _e('Buy', 'epsilon'); ?></span> <span class="pngm-sep">&ndash;</span> <span class="pngm-w-sell"><?php _e('Sell', 'epsilon'); ?></span> <span class="pngm-sep">&ndash;</span> <span class="pngm-w-find"><?php _e('Find Anything', 'epsilon'); ?></span></h1>
 
         <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf">
           <input type="hidden" name="page" value="search" />
@@ -50,19 +50,6 @@
 
           <?php osc_run_hook('home_search_bottom'); ?>
         </form>
-
-
-        <?php eps_get_latest_searches(20) ?>
-        <?php $i = 0; ?>
-        <?php if(osc_count_latest_searches() > 0) { ?>
-          <div class="latest-search">
-            <?php while(osc_has_latest_searches()) { ?>
-              <a href="<?php echo osc_search_url(array('page' => 'search', 'sPattern' => osc_esc_html(osc_latest_search_text()))); ?>" data-text="<?php echo osc_esc_html(osc_latest_search_text()); ?>"><?php echo osc_highlight(osc_latest_search_text(), 18); ?></a>
-              <?php $i++; if($i > 20) { break; } ?>
-            <?php } ?>
-          </div>
-        <?php } ?>
-
 
         <h2><?php _e('Categories', 'epsilon'); ?></h2>
         
@@ -133,6 +120,10 @@
             </div>
           <?php } ?>
         </div>
+      </div>
+
+      <div class="pngm-hero-art" aria-hidden="true">
+        <img src="<?php echo osc_current_web_theme_url('images/home-hero.png'); ?>" alt="" width="540" height="810" decoding="async" />
       </div>
     </div>
   </section>
@@ -281,8 +272,8 @@
     <?php } ?>
   <?php } ?>
 
-  <?php if(eps_banner('home_middle') !== false) { ?>
-    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo eps_banner('home_middle'); ?></div></div>
+  <?php $pngm_banner_middle = pngm_banner('home_middle'); if($pngm_banner_middle !== false) { ?>
+    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo $pngm_banner_middle; ?></div></div>
   <?php } ?>
   
   <?php if(function_exists('fi_most_favorited_items') && eps_param('favorite_home') == 1) { ?>
@@ -476,8 +467,8 @@
 
 
 
-  <?php if(eps_banner('home_bottom') !== false) { ?>
-    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo eps_banner('home_bottom'); ?></div></div>
+  <?php $pngm_banner_bottom = pngm_banner('home_bottom'); if($pngm_banner_bottom !== false) { ?>
+    <div class="container banner-box<?php if(eps_is_demo()) { ?> is-demo<?php } ?>"><div class="inside"><?php echo $pngm_banner_bottom; ?></div></div>
   <?php } ?>
   
   <?php osc_run_hook('home_bottom'); ?>

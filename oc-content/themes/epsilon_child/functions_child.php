@@ -36,6 +36,44 @@ osc_add_hook('header', 'pngm_enqueue_assets', 8);
 
 
 /**
+ * Banner helper that skips empty slots.
+ *
+ * Parent eps_banner() returns '' (not false) when banners are enabled but the
+ * slot has no code, so `!== false` still renders an empty .banner-box and leaves
+ * a blank strip on the page.
+ *
+ * @param string $location Banner location key (e.g. home_top).
+ * @return string|false
+ */
+function pngm_banner($location)
+{
+    if (!function_exists('eps_banner')) {
+        return false;
+    }
+
+    $html = eps_banner($location);
+
+    if ($html === false || $html === null) {
+        return false;
+    }
+
+    $html = trim((string) $html);
+
+    if ($html === '') {
+        return false;
+    }
+
+    // Ignore wrapper-only markup with no real ad content.
+    $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8'));
+    if ($text === '' && !preg_match('/<(img|iframe|ins|script)\b/i', $html)) {
+        return false;
+    }
+
+    return $html;
+}
+
+
+/**
  * Subcategories of the category the category loop currently points at.
  *
  * Reads the tree array directly instead of osc_has_subcategories() so it can be
