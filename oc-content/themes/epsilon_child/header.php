@@ -22,9 +22,8 @@
     
    <a href="<?php echo osc_base_url(); ?>" class="logo"><?php echo eps_logo(); ?></a>
 
-<?php if(!osc_is_home_page()) { ?>
-  <!-- PNGMarket global search: hidden on homepage -->
-  <div class="header-global-search">
+  <!-- PNGMarket global search: sticky header search on every page (SEARCH-02 / SEARCH-03) -->
+  <div class="header-global-search<?php if(osc_is_home_page()) { ?> is-home<?php } ?>">
     <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf global-search-form">
       <input type="hidden" name="page" value="search" />
 
@@ -69,7 +68,6 @@
         </button>
       </form>
     </div>
-     <?php } ?>
 
     <div class="links">
       <a class="publish btn" href="<?php echo osc_item_post_url(); ?>">

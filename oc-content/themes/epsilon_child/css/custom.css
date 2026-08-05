@@ -910,3 +910,141 @@ body#home #premium-items .simple-prod .labels {
     font-size: 19px;
   }
 }
+
+
+/* ==========================================================================
+   SEARCH-02 / SEARCH-03  Global + sticky header search
+   ========================================================================== */
+
+/* Larger, easier-to-notice desktop search button. */
+@media screen and (min-width: 1081px) {
+  .header-global-search {
+    max-width: 640px;
+  }
+
+  .header-global-search .input-box {
+    height: 48px;
+  }
+
+  .header-global-search input.pattern {
+    height: 46px;
+    font-size: 15px;
+    line-height: 46px;
+  }
+
+  .global-search-submit {
+    min-width: 132px;
+    height: 48px;
+    padding: 0 26px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 0 11px 11px 0;
+  }
+}
+
+/* Homepage: keep the sticky search compact until the user scrolls past the hero. */
+body#home .header-global-search.is-home {
+  max-width: 0;
+  min-width: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity .18s ease, max-width .18s ease;
+}
+
+body#home.pngm-sticky-search .header-global-search.is-home {
+  max-width: 640px;
+  min-width: 220px;
+  margin: 0 6px;
+  opacity: 1;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/* Sticky header already fixed; make room for the wrapped search row on mobile. */
+@media screen and (max-width: 767px) {
+  body:not(#home) {
+    padding-top: 104px;
+  }
+
+  body:not(#home) header,
+  body#home.pngm-sticky-search header {
+    height: auto;
+    min-height: 48px;
+    padding-bottom: 8px;
+  }
+
+  body#home.pngm-sticky-search {
+    padding-top: 104px;
+  }
+
+  body#home .header-global-search.is-home {
+    order: 20;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .global-search-submit {
+    min-width: 50px;
+    width: 50px;
+    height: 46px;
+  }
+}
+
+
+/* ==========================================================================
+   SEARCH-04  Empty search results
+   ========================================================================== */
+
+.pngm-empty-search .pngm-empty-lead {
+  display: block;
+  margin: 8px 0 16px 0;
+  color: #4a5561;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pngm-empty-location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 16px 0;
+  padding: 12px 14px;
+  border: 1px solid #e3e8ed;
+  border-radius: 10px;
+  background: #f7faf8;
+}
+
+.pngm-empty-loc-label {
+  color: #16202a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pngm-empty-loc-label i {
+  margin-right: 6px;
+  color: #16883f;
+}
+
+.pngm-empty-loc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pngm-empty-suggestions {
+  margin: 28px 0 8px 0;
+}
+
+.pngm-empty-suggestions h2 {
+  margin: 0 0 14px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e3e8ed;
+  color: #16202a;
+  font-size: 18px;
+  font-weight: 700;
+}

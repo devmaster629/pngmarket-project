@@ -107,7 +107,7 @@
     openSheet(item);
   }
 
-  function init() {
+  function initCategories() {
     var grid = document.getElementById('home-cat');
 
     if (!grid) {
@@ -128,6 +128,41 @@
         closeSheet();
       }
     });
+  }
+
+  /**
+   * SEARCH-03 — On the homepage the hero already has a large search field.
+   * Reveal the compact sticky header search once the user scrolls past it.
+   */
+  function initStickyHomeSearch() {
+    var body = document.body;
+
+    if (!body || body.id !== 'home') {
+      return;
+    }
+
+    var hero = document.querySelector('section.home-search');
+    var threshold = hero ? Math.max(120, hero.offsetTop + Math.min(hero.offsetHeight * 0.55, 220)) : 160;
+
+    function update() {
+      if (window.pageYOffset > threshold || window.scrollY > threshold) {
+        body.classList.add('pngm-sticky-search');
+      } else {
+        body.classList.remove('pngm-sticky-search');
+      }
+    }
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', function () {
+      threshold = hero ? Math.max(120, hero.offsetTop + Math.min(hero.offsetHeight * 0.55, 220)) : 160;
+      update();
+    });
+  }
+
+  function init() {
+    initCategories();
+    initStickyHomeSearch();
   }
 
   if (document.readyState === 'loading') {
