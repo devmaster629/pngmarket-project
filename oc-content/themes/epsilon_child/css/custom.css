@@ -1517,6 +1517,39 @@ body#home.pngm-sticky-search {
   line-height: 1.45;
 }
 
+.pngm-empty-near {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 4px 0 8px 0;
+  padding: 14px 16px;
+  border: 1px solid #e3e8ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #4a5561;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pngm-empty-near strong {
+  display: block;
+  width: 100%;
+  color: #16202a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pngm-empty-near span {
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.pngm-empty-near .change-location {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .pngm-empty-location {
   display: flex;
   flex-wrap: wrap;

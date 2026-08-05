@@ -167,7 +167,11 @@
               <div class="nice-scroll-next"><i class="fas fa-caret-right"></i></div>
             </div>
           <?php } else { ?>
-            <div class="empty-alt"><?php _e('No listings found close to your location', 'epsilon'); ?></div>
+            <div class="empty-alt pngm-empty-near">
+              <strong><?php _e('No exact results found', 'epsilon'); ?></strong>
+              <span><?php _e('Try another area, or browse the newest listings below.', 'epsilon'); ?></span>
+              <a href="#" class="change-location btn btn-secondary mini"><?php _e('Change location', 'epsilon'); ?></a>
+            </div>
           <?php } ?>
         </div>
       </div>
