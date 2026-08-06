@@ -351,6 +351,68 @@
         ?>
       </h1>
     </div>
+
+    <?php
+      // CATEGORY-01 — Subcategories before listings (visible on mobile too).
+      $pngm_subcats = array();
+      $pngm_subcat_parent = null;
+
+      if ($search_cat_id > 0 && function_exists('pngm_subcategories_for')) {
+        $pngm_subcats = pngm_subcategories_for($search_cat_id);
+        $pngm_subcat_parent = is_array($category) ? $category : eps_get_category($search_cat_id);
+
+        // On a leaf category, show sibling subcategories under the parent.
+        if (count($pngm_subcats) === 0 && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['fk_i_parent_id'] > 0) {
+          $pngm_subcats = pngm_subcategories_for((int) $pngm_subcat_parent['fk_i_parent_id']);
+          $pngm_subcat_parent = eps_get_category((int) $pngm_subcat_parent['fk_i_parent_id']);
+        }
+      }
+    ?>
+
+    <?php if(is_array($pngm_subcats) && count($pngm_subcats) > 0) { ?>
+      <div id="pngm-search-subcats" class="pngm-search-subcats">
+        <div class="pngm-search-subcats-head">
+          <strong>
+            <?php
+              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
+                echo sprintf(__('Browse %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
+              } else {
+                _e('Choose a subcategory', 'epsilon');
+              }
+            ?>
+          </strong>
+          <span><?php _e('Select a subcategory to refine results', 'epsilon'); ?></span>
+        </div>
+        <div class="pngm-search-subcats-list">
+          <?php
+            $pngm_all_params = $params_spec;
+            if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) {
+              $pngm_all_params['sCategory'] = $pngm_subcat_parent['pk_i_id'];
+            }
+          ?>
+          <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
+            <?php
+              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
+                echo sprintf(__('All in %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
+              } else {
+                _e('All', 'epsilon');
+              }
+            ?>
+          </a>
+          <?php foreach($pngm_subcats as $pngm_sc) {
+            $pngm_sc_params = $params_spec;
+            $pngm_sc_params['sCategory'] = $pngm_sc['id'];
+          ?>
+            <a class="pngm-search-subcat<?php if($search_cat_id == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>">
+              <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_sc['name']); ?></span>
+              <?php if($pngm_sc['count'] > 0) { ?>
+                <em><?php echo (int) $pngm_sc['count']; ?></em>
+              <?php } ?>
+            </a>
+          <?php } ?>
+        </div>
+      </div>
+    <?php } ?>
     
     <?php osc_run_hook('search_items_filter'); ?>
     

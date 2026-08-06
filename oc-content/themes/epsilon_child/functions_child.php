@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.0.3');
+    define('PNGM_CHILD_VERSION', '1.0.4');
 }
 
 
@@ -115,6 +115,120 @@ function pngm_current_subcategories($limit = 8)
 
     return $subcategories;
 }
+
+
+/**
+ * Enabled subcategories for a given category id (search / browse).
+ *
+ * @param int $category_id
+ * @param int $limit 0 = no limit
+ *
+ * @return array
+ */
+function pngm_subcategories_for($category_id, $limit = 0)
+{
+    $category_id = (int) $category_id;
+
+    if ($category_id <= 0 || !class_exists('Category')) {
+        return array();
+    }
+
+    $rows = Category::newInstance()->findSubcategoriesEnabled($category_id);
+
+    if (!is_array($rows) || count($rows) === 0) {
+        return array();
+    }
+
+    $out = array();
+
+    foreach ($rows as $row) {
+        if (empty($row['pk_i_id']) || empty($row['s_name'])) {
+            continue;
+        }
+
+        $out[] = array(
+            'id'    => (int) $row['pk_i_id'],
+            'name'  => $row['s_name'],
+            'count' => isset($row['i_num_items']) ? (int) $row['i_num_items'] : 0,
+            'url'   => osc_search_url(array('page' => 'search', 'sCategory' => $row['pk_i_id'])),
+        );
+
+        if ($limit > 0 && count($out) >= $limit) {
+            break;
+        }
+    }
+
+    return $out;
+}
+
+
+/**
+ * CATEGORY-02 — Keep vehicle Attributes fields on Vehicles only.
+ *
+ * Seed data ships Car Make / Fuel / etc. with empty s_category_id, which the
+ * Attributes plugin treats as “all categories” and breaks Phones posting.
+ * Idempotent: only updates rows that are still unmapped.
+ */
+function pngm_fix_vehicle_attribute_categories()
+{
+    if (!defined('DB_TABLE_PREFIX') || !defined('DB_HOST')) {
+        return;
+    }
+
+    static $done = false;
+
+    if ($done) {
+        return;
+    }
+
+    $done = true;
+
+    try {
+        $m = @new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+        if (!$m || $m->connect_error) {
+            return;
+        }
+
+        $prefix = DB_TABLE_PREFIX;
+
+        // Cheap check: seed "Car Make" still unmapped → apply Vehicles (id 1).
+        $check = $m->query(
+            "SELECT pk_i_id FROM {$prefix}t_attribute
+             WHERE s_identifier = 'make'
+               AND (s_category_id IS NULL OR s_category_id = '' OR s_category_id = '0')
+             LIMIT 1"
+        );
+
+        if (!$check || $check->num_rows === 0) {
+            $m->close();
+            return;
+        }
+
+        $ids = array('make', 'accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
+        $escaped = array();
+
+        foreach ($ids as $id) {
+            $escaped[] = "'" . $m->real_escape_string($id) . "'";
+        }
+
+        $sql = sprintf(
+            "UPDATE %st_attribute
+             SET s_category_id = '1'
+             WHERE s_identifier IN (%s)
+               AND (s_category_id IS NULL OR s_category_id = '' OR s_category_id = '0')",
+            $prefix,
+            implode(',', $escaped)
+        );
+
+        $m->query($sql);
+        $m->close();
+    } catch (Exception $e) {
+        // Plugin may be disabled / table missing — ignore.
+    }
+}
+
+osc_add_hook('init', 'pngm_fix_vehicle_attribute_categories', 8);
 
 
 /**

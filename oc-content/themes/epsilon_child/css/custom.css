@@ -1623,3 +1623,113 @@ body#home.pngm-sticky-search {
   font-size: 18px;
   font-weight: 700;
 }
+
+
+/* ==========================================================================
+   CATEGORY-01  Subcategories before search listings
+   ========================================================================== */
+
+.pngm-search-subcats {
+  margin: 0 0 18px 0;
+  padding: 14px 16px 16px;
+  border: 1px solid #e3e8ed;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pngm-search-subcats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin: 0 0 12px 0;
+}
+
+.pngm-search-subcats-head strong {
+  color: #16202a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pngm-search-subcats-head span {
+  color: #69727d;
+  font-size: 13px;
+}
+
+.pngm-search-subcats-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+a.pngm-search-subcat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 9px 14px;
+  border: 1px solid #d5dde5;
+  border-radius: 999px;
+  background: #f7f9fb;
+  color: #16202a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+
+a.pngm-search-subcat:hover {
+  border-color: #16883f;
+  background: #eef8f0;
+  color: #145c2c;
+  text-decoration: none;
+}
+
+a.pngm-search-subcat.is-active,
+a.pngm-search-subcat.pngm-search-subcat-all.is-active {
+  border-color: #16883f;
+  background: #16883f;
+  color: #fff;
+}
+
+a.pngm-search-subcat em {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(22, 136, 63, .12);
+  color: #16883f;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+a.pngm-search-subcat.is-active em {
+  background: rgba(255, 255, 255, .22);
+  color: #fff;
+}
+
+a.pngm-search-subcat-all {
+  border-color: #c8e0d0;
+  background: #eef8f0;
+  color: #145c2c;
+}
+
+@media screen and (max-width: 767px) {
+  .pngm-search-subcats {
+    margin: 0 0 14px 0;
+    padding: 12px;
+  }
+
+  .pngm-search-subcats-list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  a.pngm-search-subcat {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
