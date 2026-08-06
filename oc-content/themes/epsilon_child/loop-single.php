@@ -68,22 +68,15 @@
       
         <?php echo eps_item_location(); ?>
       </div>
-      
-      <div class="pngm-price-row">
-        <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-          <div class="pngm-price"><?php echo osc_item_formated_price(); ?></div>
-        <?php } else { ?>
-          <div class="pngm-price pngm-price-empty"></div>
-        <?php } ?>
-        <div class="pngm-fav isGrid"><?php eps_make_favorite(); ?></div>
-      </div>
 
       <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
 
-      <?php $pngm_teaser = pngm_item_teaser(80); ?>
-      <?php if($pngm_teaser <> '') { ?>
-        <div class="pngm-teaser"><?php echo $pngm_teaser; ?></div>
-      <?php } ?>
+      <?php
+        // Always output the teaser slot so every grid card keeps the same shape.
+        // Text only when the description is useful (HOME-06); empty slot stays reserved.
+        $pngm_teaser = function_exists('pngm_item_teaser') ? pngm_item_teaser(80) : '';
+      ?>
+      <div class="pngm-teaser<?php echo ($pngm_teaser === '' ? ' is-empty' : ''); ?>"><?php echo $pngm_teaser; ?></div>
       
       <?php osc_run_hook('item_loop_title'); ?>
       
@@ -94,7 +87,11 @@
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
         <div class="price standalone isList"><span><?php echo osc_item_formated_price(); ?></span></div>
       <?php } ?>
-      
+
+      <?php // Fallback date for non-grid contexts; grid uses .extra detail line. ?>
+      <div class="pngm-date"><?php echo eps_smart_date(osc_item_pub_date()); ?></div>
+
+      <?php // Staging-style detail: date • category • condition • transaction • views ?>
       <div class="extra">
         <span><?php echo eps_smart_date(osc_item_pub_date()); ?></span>
         <span><?php echo osc_item_category(); ?></span>
@@ -111,13 +108,6 @@
         
         <span><?php echo (osc_item_views() == 1 ? __('1 person viewed', 'epsilon') : sprintf(__('%s people viewed', 'epsilon'), osc_item_views())); ?></span>
       </div>
-
-      <?php $pngm_location = trim(strip_tags(eps_item_location())); ?>
-      <?php if($pngm_location <> '') { ?>
-        <div class="pngm-location"><?php echo osc_esc_html($pngm_location); ?></div>
-      <?php } ?>
-
-      <div class="pngm-date"><?php echo eps_smart_date(osc_item_pub_date()); ?></div>
 
       <div class="action isDetail">
         <?php if(eps_check_category_price(osc_item_category_id())) { ?>

@@ -651,11 +651,35 @@ body#home #recent-items .simple-prod {
   margin: 0 8px 10px 0;
 }
 
+/*
+ * ONE grid card format for the whole project (home + search + related).
+ * Shape: square photo + price/gradient | location | title | teaser slot | date
+ * List / Detail views are left to Epsilon and are not affected.
+ */
+.products.grid {
+  align-items: stretch;
+}
+
+.products.grid .simple-prod,
+body#home #premium-items .simple-prod,
+body#home #location-items .simple-prod,
+body#home #latest-items .simple-prod,
+body#home #favorite-items .simple-prod,
+body#home #recent-items .simple-prod,
+#search-items .products.grid .simple-prod {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
 .products.grid .simple-prod .simple-wrap,
 body#home #premium-items .simple-prod .simple-wrap {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   width: 100%;
+  height: 100%;
+  min-height: 100%;
   padding: 0 0 12px 0;
   overflow: hidden;
   border: 1px solid #e3e8ed;
@@ -673,7 +697,7 @@ body#home #premium-items .simple-prod:hover .simple-wrap {
   box-shadow: 0 2px 10px rgba(16, 32, 42, .08);
 }
 
-/* Square photo area for every card, including premium / location / recent. */
+/* Square photo area for every card. */
 .products.grid .simple-prod .img-wrap,
 .products.grid .simple-prod.tall .img-wrap,
 .products.grid .simple-prod.verytall .img-wrap,
@@ -681,6 +705,7 @@ body#home #premium-items .simple-prod:hover .simple-wrap {
 .products.grid .simple-prod.normal .img-wrap,
 .products.grid .simple-prod.square .img-wrap,
 body#home #premium-items .simple-prod .img-wrap {
+  flex: 0 0 auto;
   height: auto !important;
   padding-top: 100% !important;
 }
@@ -690,41 +715,54 @@ body#home #premium-items .simple-prod .img-wrap {
   box-shadow: none;
 }
 
-/* Price lives in the body; hide the old image overlay price/scrim. */
+/* Price + gradient on the photo (staging style). */
 .products.grid .simple-prod .img-wrap .bar {
-  padding: 0;
   border-radius: 0;
-  background: none;
+  padding: 40px 36px 8px 10px;
+  background: linear-gradient(
+    transparent,
+    rgba(0, 0, 0, .05) 14%,
+    rgba(0, 0, 0, .12) 25%,
+    rgba(0, 0, 0, .28) 43%,
+    rgba(0, 0, 0, .46) 56%,
+    rgba(0, 0, 0, .63) 67%,
+    rgba(0, 0, 0, .75) 81%,
+    rgba(0, 0, 0, .8)
+  );
 }
 
 .products.grid .simple-prod .img-wrap .bar .price {
-  display: none;
+  display: block;
+  float: left;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
 }
 
 .products.grid .simple-prod .img-wrap .bar .image-counter {
   right: 8px;
   bottom: 8px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: rgba(16, 32, 42, .62);
-  font-size: 11px;
-  line-height: 16px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  line-height: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
 }
 
-/* Favorite moves to the price row (OLX); hide the one on the photo. */
-.products.grid .simple-prod .img-wrap > .isGrid > .favorite,
-.products.grid .simple-prod .img-wrap > .favorite {
-  display: none !important;
-}
-
+/* Fixed body block so every card matches. */
 .products.grid .simple-prod .data {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  padding: 12px 14px 4px 14px;
+  box-sizing: border-box;
+  min-height: 148px;
+  padding: 12px 14px 8px 14px;
 }
 
-/* Parent theme zeroes horizontal padding on recently viewed (#recent-ads). */
 #recent-ads .simple-prod .data,
 body#home #recent-items .simple-prod .data,
 body#home #recent-ads .simple-prod .data {
@@ -736,84 +774,39 @@ body#home #recent-items .simple-prod {
   margin-right: 10px;
 }
 
-/* Replaced by the OLX body fields below. */
-.products.grid .simple-prod .info,
-.products.grid .simple-prod .extra,
-body#home #latest-items .simple-prod .extra,
-body#home #location-items .simple-prod .extra,
-body#home #favorite-items .simple-prod .extra,
-body#home #premium-items .simple-prod .extra {
-  display: none !important;
-}
-
-.products.grid .simple-prod .pngm-price-row {
+/* 1) Location */
+.products.grid .simple-prod .info {
+  display: block;
   order: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0 0 6px 0;
-  min-height: 24px;
-}
-
-.products.grid .simple-prod .pngm-price {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: #16202a;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 24px;
-}
-
-.products.grid .simple-prod .pngm-fav {
-  position: relative;
-  top: auto;
-  right: auto;
   flex: 0 0 auto;
-  z-index: 1;
-}
-
-.products.grid .simple-prod .pngm-fav .favorite {
-  position: relative;
-  top: auto;
-  right: auto;
-}
-
-.products.grid .simple-prod .pngm-fav .favorite i {
-  width: 28px;
-  height: 28px;
-  padding: 5px;
-  border-radius: 50%;
-  background: transparent;
+  margin: 0 0 6px 0;
+  min-height: 16px;
+  max-height: 16px;
+  overflow: hidden;
   color: #737f8b;
-  font-size: 16px;
-  line-height: 18px;
+  font-size: 12.5px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.products.grid .simple-prod .pngm-fav .favorite i:hover {
-  background: rgba(22, 136, 63, .08);
-  color: #16883f;
-}
-
-.products.grid .simple-prod .pngm-fav .favorite a.is_favorite i {
-  color: #e11d48;
-  background: transparent;
-  font-weight: 900;
-}
-
+/* 2) Title — always 2 lines */
 .products.grid .simple-prod .title,
 body#home #latest-items .simple-prod .title,
 body#home #location-items .simple-prod .title,
 body#home #premium-items .simple-prod .title,
-body#home #favorite-items .simple-prod .title {
+body#home #favorite-items .simple-prod .title,
+body#home #recent-items .simple-prod .title,
+#search-items .products.grid .simple-prod .title {
   order: 2;
+  flex: 0 0 auto;
   margin: 0 0 6px 0;
-  min-height: 0;
+  min-height: 40px;
   max-height: 40px;
   overflow: hidden;
   color: #16202a;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 20px;
   white-space: normal;
   text-overflow: unset;
@@ -823,9 +816,20 @@ body#home #favorite-items .simple-prod .title {
   color: #16202a;
 }
 
-.products.grid .simple-prod .pngm-teaser {
+/* 3) Short description — fixed 2-line slot (empty = blank space, same shape) */
+.products.grid .simple-prod .pngm-teaser,
+body#home #latest-items .simple-prod .pngm-teaser,
+body#home #location-items .simple-prod .pngm-teaser,
+body#home #premium-items .simple-prod .pngm-teaser,
+body#home #favorite-items .simple-prod .pngm-teaser,
+body#home #recent-items .simple-prod .pngm-teaser {
   order: 3;
-  margin: 0 0 6px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  flex: 0 0 auto;
+  margin: 0 0 8px 0;
+  min-height: 34px;
   max-height: 34px;
   overflow: hidden;
   color: #737f8b;
@@ -833,31 +837,53 @@ body#home #favorite-items .simple-prod .title {
   line-height: 17px;
 }
 
-.products.grid .simple-prod .pngm-location {
-  order: 4;
-  margin: 0 0 4px 0;
-  overflow: hidden;
-  color: #737f8b;
-  font-size: 13px;
-  line-height: 18px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.products.grid .simple-prod .pngm-teaser.is-empty {
+  visibility: hidden;
 }
 
-.products.grid .simple-prod .pngm-date {
-  order: 5;
+/* Separate date helper is unused on grid — detail line below includes the date. */
+.products.grid .simple-prod .pngm-date,
+body#home #premium-items .simple-prod .pngm-date,
+body#home #latest-items .simple-prod .pngm-date,
+body#home #location-items .simple-prod .pngm-date,
+body#home #favorite-items .simple-prod .pngm-date,
+body#home #recent-items .simple-prod .pngm-date {
+  display: none;
+}
+
+/*
+ * 4) Staging detail line — always shown on grid:
+ *    "2 weeks ago • Cars • Used • Sell • 1 person viewed"
+ * Fixed height so every card keeps the same shape.
+ */
+.products.grid .simple-prod .extra,
+body#home #latest-items .simple-prod .extra,
+body#home #location-items .simple-prod .extra,
+body#home #favorite-items .simple-prod .extra,
+body#home #recent-items .simple-prod .extra,
+body#home #premium-items .simple-prod .extra,
+#search-items .products.grid .simple-prod .extra {
+  order: 4;
+  display: block !important;
+  flex: 0 0 auto;
   margin-top: auto;
   padding-top: 2px;
-  color: #9aa3ad;
-  font-size: 12px;
-  line-height: 16px;
+  min-height: 17px;
+  max-height: 34px;
+  overflow: hidden;
+  color: #737f8b;
+  font-size: 12.5px;
+  line-height: 17px;
 }
 
-/* Premium badge as a corner flag. */
-.products.grid .simple-prod .premium-mark.isGrid {
+/* Premium badge on the photo when applicable. */
+.products.grid .simple-prod .premium-mark.isGrid,
+body#home #premium-items .simple-prod .premium-mark.isGrid {
+  display: inline-block;
   top: 8px;
   left: 8px;
   bottom: auto;
+  z-index: 3;
   padding: 4px 8px;
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(16, 32, 42, .06);
@@ -876,19 +902,11 @@ body#home #premium-items .simple-prod .labels {
   display: block;
 }
 
-/* The new blocks are grid-only; list and detail keep Epsilon's layout. */
-.products.list .pngm-price-row,
-.products.list .pngm-price,
+/* Grid-only fields; list and detail keep Epsilon's layout. */
 .products.list .pngm-teaser,
-.products.list .pngm-location,
 .products.list .pngm-date,
-.products.list .pngm-fav,
-.products.detail .pngm-price-row,
-.products.detail .pngm-price,
 .products.detail .pngm-teaser,
-.products.detail .pngm-location,
-.products.detail .pngm-date,
-.products.detail .pngm-fav {
+.products.detail .pngm-date {
   display: none;
 }
 
@@ -1016,20 +1034,30 @@ body#home #premium-items .simple-prod .labels {
     padding: 10px 12px 8px 12px;
   }
 
-  .products.grid .simple-prod .pngm-price {
-    font-size: 16px;
-    line-height: 20px;
-  }
-
-  .products.grid .simple-prod .title {
+  .products.grid .simple-prod .title,
+  #search-items .products.grid .simple-prod .title {
+    min-height: 36px;
     max-height: 36px;
     font-size: 13.5px;
     line-height: 18px;
   }
 
-  /* Descriptions crowd the card at this width. */
-  .products.grid .simple-prod .pngm-teaser {
+  .products.grid .simple-prod .img-wrap .bar .price {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  /*
+   * Mobile: same card shape, just without the teaser slot for space.
+   * Applied to ALL grid cards so heights stay equal.
+   */
+  .products.grid .simple-prod .pngm-teaser,
+  body#home .products.grid .simple-prod .pngm-teaser {
     display: none;
+  }
+
+  .products.grid .simple-prod .data {
+    min-height: 110px;
   }
 }
 
