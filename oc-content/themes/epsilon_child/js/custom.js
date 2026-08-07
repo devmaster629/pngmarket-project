@@ -161,10 +161,8 @@
   }
 
   /**
-   * Autocomplete uses form loc-inp (same as Search submit).
-   *
-   * Clearing the “Searching only in…” chip → nationwide for that query.
-   * Changing the search string afterward → restore the default location again.
+   * Keyword search is always nationwide (no default-location filter).
+   * Strip any leftover loc-inp / “Searching only in…” chip from pattern UI.
    */
   function initPatternSearchLocation() {
     if (typeof window.jQuery === 'undefined') {
@@ -173,101 +171,29 @@
 
     var $ = window.jQuery;
 
-    function snapshotLoc(form) {
-      var inp = form.find('input.loc-inp').first();
+    // Remove location inputs from keyword search forms (header + home hero).
+    $('form').has('input.pattern, input[name="sPattern"]').each(function () {
+      var form = $(this);
 
-      if (inp.length) {
-        form.attr('data-pngm-loc-name', inp.attr('name'));
-        form.attr('data-pngm-loc-value', inp.val());
-      }
-    }
-
-    function pauseLoc(form) {
-      snapshotLoc(form);
-      form.attr('data-pngm-loc-paused', '1');
-      form.attr('data-pngm-term-when-paused', $.trim(form.find('input.pattern').val() || ''));
-      form.find('input.loc-inp').remove();
-    }
-
-    function resumeLoc(form) {
-      if (form.attr('data-pngm-loc-paused') !== '1') {
-        return false;
-      }
-
-      var name = form.attr('data-pngm-loc-name');
-      var value = form.attr('data-pngm-loc-value');
-
-      form.removeAttr('data-pngm-loc-paused');
-      form.removeAttr('data-pngm-term-when-paused');
-
-      if (!name || value === undefined || value === '') {
-        return false;
-      }
-
-      form.find('input.loc-inp').remove();
-      $('<input>', {
-        type: 'hidden',
-        'class': 'loc-inp',
-        name: name,
-        value: value
-      }).prependTo(form);
-
-      return true;
-    }
-
-    function maybeResumeLocOnTermChange(form, currentTerm) {
-      if (form.attr('data-pngm-loc-paused') !== '1') {
+      // Keep location filters only on the dedicated search-results sidebar form.
+      if (form.closest('#search-items, .filter-menu, #sidebar').length) {
         return;
       }
 
-      var pausedAt = form.attr('data-pngm-term-when-paused');
-
-      if (pausedAt === undefined) {
-        return;
-      }
-
-      if (currentTerm !== pausedAt) {
-        resumeLoc(form);
-      }
-    }
-
-    function locQuery(form) {
-      if (form.attr('data-pngm-loc-paused') === '1') {
-        return '';
-      }
-
-      var q = '';
-      var city = form.find('input.loc-inp[name="sCity"]').val();
-      var region = form.find('input.loc-inp[name="sRegion"]').val();
-      var country = form.find('input.loc-inp[name="sCountry"]').val();
-
-      if (city) {
-        q += '&sCity=' + encodeURIComponent(city);
-      } else if (region) {
-        q += '&sRegion=' + encodeURIComponent(region);
-      } else if (country) {
-        q += '&sCountry=' + encodeURIComponent(country);
-      }
-
-      return q;
-    }
+      form.find('input.loc-inp').remove();
+    });
 
     function hideEmptyResults(box) {
       if (!box || !box.length) {
         return;
       }
 
-      var hasVisible = box.find('a.option:visible, .pngmarket-no-exact-msg:visible, .row.defloc:visible').length > 0;
+      var hasVisible = box.find('a.option:visible, .pngmarket-no-exact-msg:visible').length > 0;
 
       if (!hasVisible) {
         box.hide(0);
       }
     }
-
-    // Remember default location on each search form before it can be cleared.
-    $('form').each(function () {
-      snapshotLoc($(this));
-    });
 
     if (typeof window.epsLoadPatternSimple === 'function') {
       window.epsLoadPatternSimple = function (elem) {
@@ -279,12 +205,11 @@
         var rawTerm = $.trim($(elem).val() || '');
         var term = encodeURIComponent(rawTerm);
 
-        maybeResumeLocOnTermChange(form, rawTerm);
-
         if (window.epsLoadPatternSimpleValue == term) {
           box.show(0);
           boxLoaded.show(0);
           boxDefault.hide(0);
+          boxLoaded.find('.row.defloc').remove();
           hideEmptyResults(box);
           return false;
         }
@@ -307,17 +232,15 @@
           if (term.length === 0 || term.length >= min) {
             $.ajax({
               type: 'GET',
-              url: window.baseAjaxUrl + '&ajaxPatternSearch=1&term=' + term + locQuery(form),
+              // Always global — do not append sCity / sRegion from default location.
+              url: window.baseAjaxUrl + '&ajaxPatternSearch=1&term=' + term,
               success: function (data) {
                 elem.closest('.picker').removeClass('loading');
                 box.show(0);
                 boxLoaded.html(data).show(0);
                 boxLoaded.find('fieldset').remove();
+                boxLoaded.find('.row.defloc').remove();
                 boxDefault.hide(0);
-
-                if (form.attr('data-pngm-loc-paused') === '1') {
-                  boxLoaded.find('.row.defloc').remove();
-                }
 
                 hideEmptyResults(box);
 
@@ -342,20 +265,44 @@
         }, 300);
       };
     }
+  }
 
-    // After parent removes loc-inp, mark nationwide pause and refresh suggestions.
-    $(document).on('click', '.picker.pattern .input-clean', function () {
-      var form = $(this).closest('form');
-      var patternInput = form.find('input.pattern');
+  /**
+   * Replace “Popular cities” in the default-location modal with main cities first.
+   */
+  function initPopularCitiesOrder() {
+    if (typeof window.jQuery === 'undefined' || !window.baseAjaxUrl) {
+      return;
+    }
 
-      pauseLoc(form);
-      window.epsLoadPatternSimpleValue = '';
+    var $ = window.jQuery;
+    var loaded = false;
 
-      setTimeout(function () {
-        if (patternInput.length && typeof window.epsLoadPatternSimple === 'function') {
-          window.epsLoadPatternSimple(patternInput);
+    function refreshPopular() {
+      var row = $('#def-location .row.popular');
+
+      if (!row.length) {
+        return;
+      }
+
+      $.ajax({
+        type: 'GET',
+        url: window.baseAjaxUrl + '&ajaxPngmPopularCities=1',
+        success: function (html) {
+          if (html && $.trim(html) !== '') {
+            row.html(html);
+            loaded = true;
+          }
         }
-      }, 50);
+      });
+    }
+
+    // Initial + whenever the location modal is opened.
+    refreshPopular();
+    $(document).on('click', 'a.location, #def-location', function () {
+      if (!loaded) {
+        refreshPopular();
+      }
     });
   }
 
@@ -442,6 +389,7 @@
     initCategories();
     initStickyHomeSearch();
     initPatternSearchLocation();
+    initPopularCitiesOrder();
     initVehicleMakeOther();
   }
 

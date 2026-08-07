@@ -7,10 +7,11 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.0.5');
+    define('PNGM_CHILD_VERSION', '1.0.6');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
+require_once dirname(__FILE__) . '/includes/locations.php';
 
 
 /**
@@ -303,9 +304,13 @@ function pngm_search_cond_pattern($cond, $pattern, $type = '')
             continue;
         }
 
+        // Match title + description (including HTML-stripped description text)
+        // and category / parent category names.
         $parts[] = sprintf(
             "("
-            . "lower(concat(ifnull(d.s_title,''), ' ', ifnull(d.s_description,''))) like '%%%1\$s%%'"
+            . "lower(ifnull(d.s_title,'')) like '%%%1\$s%%'"
+            . " OR lower(ifnull(d.s_description,'')) like '%%%1\$s%%'"
+            . " OR lower(replace(replace(replace(ifnull(d.s_description,''), '&nbsp;', ' '), '<br>', ' '), '<br/>', ' ')) like '%%%1\$s%%'"
             . " OR EXISTS ("
             . "   SELECT 1 FROM %2\$st_category_description pngm_cd"
             . "   INNER JOIN %2\$st_category pngm_c ON pngm_c.pk_i_id = pngm_cd.fk_i_category_id"
@@ -330,6 +335,29 @@ function pngm_search_cond_pattern($cond, $pattern, $type = '')
 }
 
 osc_add_filter('search_cond_pattern', 'pngm_search_cond_pattern');
+
+
+/**
+ * Prefer LIKE search so title + description substring matching works reliably.
+ */
+function pngm_force_like_search_pattern()
+{
+    if (function_exists('osc_set_preference') && function_exists('osc_get_preference')) {
+        $method = (string) osc_get_preference('search_pattern_method');
+
+        if ($method !== '' && $method !== 'like') {
+            // Do not override an intentional fulltext setup every request;
+            // only nudge empty / missing values.
+            return;
+        }
+
+        if ($method === '') {
+            osc_set_preference('search_pattern_method', 'like');
+        }
+    }
+}
+
+osc_add_hook('init', 'pngm_force_like_search_pattern', 2);
 
 
 /**

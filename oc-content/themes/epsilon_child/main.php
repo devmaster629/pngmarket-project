@@ -26,16 +26,8 @@
           <input type="hidden" name="page" value="search" />
           
           <?php osc_run_hook('home_search_top'); ?>
-          
-          <?php if($location_cookie['success'] == true) { ?>
-            <?php if($location_cookie['fk_i_city_id'] > 0) { ?>
-              <input type="hidden" class="loc-inp" name="sCity" value="<?php echo osc_esc_html($location_cookie['fk_i_city_id']); ?>"/>
-            <?php } else if($location_cookie['fk_i_region_id'] > 0) { ?>
-              <input type="hidden" class="loc-inp" name="sRegion" value="<?php echo osc_esc_html($location_cookie['fk_i_region_id']); ?>"/>
-            <?php } else if($location_cookie['fk_c_country_code'] <> '') { ?>
-              <input type="hidden" class="loc-inp" name="sCountry" value="<?php echo osc_esc_html($location_cookie['fk_c_country_code']); ?>"/>
-            <?php } ?>
-          <?php } ?>
+
+          <?php // Keyword search is always nationwide — default location only affects browse sections. ?>
           
           <div class="input-box picker pattern">
             <input type="text" name="sPattern" class="pattern" placeholder="<?php _e('Enter keyword...', 'epsilon'); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>

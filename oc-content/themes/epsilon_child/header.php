@@ -135,15 +135,7 @@
     <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf">
       <input type="hidden" name="page" value="search" />
 
-      <?php if($location_cookie['success'] == true) { ?>
-        <?php if($location_cookie['fk_i_city_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sCity" value="<?php echo osc_esc_html($location_cookie['fk_i_city_id']); ?>"/>
-        <?php } else if($location_cookie['fk_i_region_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sRegion" value="<?php echo osc_esc_html($location_cookie['fk_i_region_id']); ?>"/>
-        <?php } else if($location_cookie['fk_c_country_code'] <> '') { ?>
-          <input type="hidden" class="loc-inp" name="sCountry" value="<?php echo osc_esc_html($location_cookie['fk_c_country_code']); ?>"/>
-        <?php } ?>
-      <?php } ?>
+      <?php // Keyword search is always nationwide — default location is not applied here. ?>
 
       <div class="picker pattern mobile">
         <div class="input-box">
@@ -209,15 +201,7 @@
     <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf global-search-form">
       <input type="hidden" name="page" value="search" />
 
-      <?php if($location_cookie['success'] == true) { ?>
-        <?php if($location_cookie['fk_i_city_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sCity" value="<?php echo osc_esc_html($location_cookie['fk_i_city_id']); ?>"/>
-        <?php } else if($location_cookie['fk_i_region_id'] > 0) { ?>
-          <input type="hidden" class="loc-inp" name="sRegion" value="<?php echo osc_esc_html($location_cookie['fk_i_region_id']); ?>"/>
-        <?php } else if($location_cookie['fk_c_country_code'] <> '') { ?>
-          <input type="hidden" class="loc-inp" name="sCountry" value="<?php echo osc_esc_html($location_cookie['fk_c_country_code']); ?>"/>
-        <?php } ?>
-      <?php } ?>
+      <?php // Keyword search is always nationwide — default location is not applied here. ?>
 
       <div class="picker pattern global">
         <div class="input-box">

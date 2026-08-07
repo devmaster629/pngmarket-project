@@ -61,29 +61,12 @@ if(@$_GET['ajaxCat'] == 1 && @$_GET['term'] <> '') {
 if(@$_GET['ajaxPatternSearch'] == 1) {
   $term = trim(osc_esc_js(Params::getParam('term')));
 
-  // Location from the active search form (loc-inp). Clearing the chip → nationwide.
-  $pngm_loc_city = trim((string) Params::getParam('sCity'));
-  $pngm_loc_region = trim((string) Params::getParam('sRegion'));
-  $pngm_loc_country = trim((string) Params::getParam('sCountry'));
-  $pngm_has_location = ($pngm_loc_city !== '' || $pngm_loc_region !== '' || $pngm_loc_country !== '');
-
+  // Keyword autocomplete is always nationwide — ignore default-location loc-inp.
   $pngm_search_base = array('page' => 'search');
-  if ($pngm_loc_city !== '') {
-    $pngm_search_base['sCity'] = $pngm_loc_city;
-  } elseif ($pngm_loc_region !== '') {
-    $pngm_search_base['sRegion'] = $pngm_loc_region;
-  } elseif ($pngm_loc_country !== '') {
-    $pngm_search_base['sCountry'] = $pngm_loc_country;
-  }
 
   if(strlen($term) >= 1) {
-    if ($pngm_has_location) {
-      eps_location_default_row();
-    }
-
-    // PNGMARKET: LISTING AUTOCOMPLETE
-    // Searches by the beginning or any part of any word in listing title.
-    // Results are ranked in PHP so exact and prefix matches appear first.
+    // PNGMARKET: LISTING AUTOCOMPLETE (global)
+    // Match title + description + category. Rank exact/prefix title matches first.
     if(function_exists('mb_strlen') ? mb_strlen($term, 'UTF-8') >= 2 : strlen($term) >= 2) {
       $normalizedTerm = function_exists('mb_strtolower')
         ? mb_strtolower($term, 'UTF-8')
@@ -111,34 +94,12 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
         $dao->from(DB_TABLE_PREFIX . 't_item i');
         $dao->join(DB_TABLE_PREFIX . 't_item_description d', 'd.fk_i_item_id = i.pk_i_id', 'INNER');
         $dao->join(DB_TABLE_PREFIX . 't_category_description cd', 'cd.fk_i_category_id = i.fk_i_category_id', 'LEFT');
-        $dao->join(DB_TABLE_PREFIX . 't_item_location loc', 'loc.fk_i_item_id = i.pk_i_id', $pngm_has_location ? 'INNER' : 'LEFT');
+        $dao->join(DB_TABLE_PREFIX . 't_item_location loc', 'loc.fk_i_item_id = i.pk_i_id', 'LEFT');
         $dao->where('i.b_active', 1);
         $dao->where('i.b_enabled', 1);
         $dao->where('i.b_spam', 0);
 
-        if ($pngm_loc_city !== '') {
-          if (ctype_digit($pngm_loc_city)) {
-            $dao->where('loc.fk_i_city_id', (int) $pngm_loc_city);
-          } else {
-            $dao->where(sprintf(
-              "(loc.s_city LIKE '%%%1\$s%%' OR loc.s_city_native LIKE '%%%1\$s%%')",
-              $dao->escapeStr($pngm_loc_city)
-            ));
-          }
-        } elseif ($pngm_loc_region !== '') {
-          if (ctype_digit($pngm_loc_region)) {
-            $dao->where('loc.fk_i_region_id', (int) $pngm_loc_region);
-          } else {
-            $dao->where(sprintf(
-              "(loc.s_region LIKE '%%%1\$s%%' OR loc.s_region_native LIKE '%%%1\$s%%')",
-              $dao->escapeStr($pngm_loc_region)
-            ));
-          }
-        } elseif ($pngm_loc_country !== '') {
-          $dao->where('loc.fk_c_country_code', $pngm_loc_country);
-        }
-
-        // SEARCH-01: match title, description or category name (partial).
+        // SEARCH-01: match title, description or category name (partial), nationwide.
         $dao->where(sprintf(
           "(d.s_title LIKE '%%%1\$s%%' OR d.s_description LIKE '%%%1\$s%%' OR cd.s_name LIKE '%%%1\$s%%')",
           $dao->escapeStr($lookupPart)
@@ -428,8 +389,12 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
       echo '</div>';
     }
     
-    // CITIES
-    $cities = ModelEPS::newInstance()->findCities($term, 6);
+    // CITIES — fetch more, then put main cities / capitals first.
+    $cities = ModelEPS::newInstance()->findCities($term, 20);
+    if (function_exists('pngm_sort_cities_main_first') && is_array($cities)) {
+      $cities = pngm_sort_cities_main_first($cities, null, 's_name');
+      $cities = array_slice($cities, 0, 8);
+    }
     
     if(is_array($cities) && count($cities) > 0) {
       echo '<div class="row cities locations">';
@@ -538,6 +503,11 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
     $data = $result->result();
   }
 
+  // Main cities / provincial capitals first within city matches.
+  if (function_exists('pngm_sort_ajax_loc_results')) {
+    $data = pngm_sort_ajax_loc_results($data);
+  }
+
   $output = '';
   if(is_array($data) && count($data) > 0) {
     foreach($data as $d) {
@@ -565,6 +535,47 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
   }
   
   echo $output;
+  exit;
+}
+
+
+// POPULAR CITIES for default-location modal — main PNG cities first.
+if (@$_GET['ajaxPngmPopularCities'] == 1) {
+  $cities = function_exists('pngm_get_popular_cities')
+    ? pngm_get_popular_cities(12)
+    : ModelEPS::newInstance()->getPopularCities(12, 0);
+
+  $html = '';
+
+  if (is_array($cities) && count($cities) > 0) {
+    $html .= '<div class="lead">' . __('Popular cities', 'epsilon') . '</div>';
+
+    foreach ($cities as $c) {
+      $hash = rawurlencode(base64_encode(json_encode(array(
+        'fk_i_city_id' => $c['fk_i_city_id'],
+        'fk_i_region_id' => $c['fk_i_region_id'],
+        'fk_c_country_code' => $c['fk_c_country_code'],
+        's_name' => $c['s_name'],
+        's_name_native' => @$c['s_name_native'],
+        's_name_top' => @$c['s_name_top'],
+        's_name_top_native' => @$c['s_name_top_native'],
+        'd_coord_lat' => @$c['d_coord_lat'],
+        'd_coord_long' => @$c['d_coord_long'],
+      ))));
+
+      $label = osc_location_native_name_selector($c, 's_name')
+        . (osc_location_native_name_selector($c, 's_name_top') <> ''
+          ? ', ' . osc_location_native_name_selector($c, 's_name_top')
+          : '')
+        . ($c['i_num_items'] > 0
+          ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>'
+          : '');
+
+      $html .= '<a href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '" class="location-elem">' . $label . '</a>';
+    }
+  }
+
+  echo $html;
   exit;
 }
 
