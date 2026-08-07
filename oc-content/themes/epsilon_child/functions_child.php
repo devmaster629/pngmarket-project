@@ -7,8 +7,10 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.0.4');
+    define('PNGM_CHILD_VERSION', '1.0.5');
 }
+
+require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
 
 
 /**
@@ -205,7 +207,7 @@ function pngm_fix_vehicle_attribute_categories()
             return;
         }
 
-        $ids = array('make', 'accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
+        $ids = array('make', 'make_other', 'accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
         $escaped = array();
 
         foreach ($ids as $id) {

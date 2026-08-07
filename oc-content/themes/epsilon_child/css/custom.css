@@ -1761,3 +1761,26 @@ a.pngm-search-subcat-all {
     white-space: nowrap;
   }
 }
+
+
+/* ==========================================================================
+   VEHICLE-01 / VEHICLE-02 — Other make/model free text
+   Hidden until the seller picks "Other" in Make / Brand (or model).
+   ========================================================================== */
+
+#atr-make_other {
+  display: none;
+}
+
+#atr-make_other.pngm-other-visible {
+  display: block;
+}
+
+#atr-make_other input[type="text"] {
+  width: 100%;
+  max-width: 420px;
+}
+
+#atr-make .controls select {
+  margin-bottom: 6px;
+}

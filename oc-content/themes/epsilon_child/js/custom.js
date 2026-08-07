@@ -359,10 +359,90 @@
     });
   }
 
+  /**
+   * VEHICLE-01/02/03 — Make/Brand cascade helpers on publish form.
+   * - Show free-text "Specify make / model" only when Other is selected.
+   * - Never force incomplete 3rd-level selects as required.
+   */
+  function initVehicleMakeOther() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+
+    function otherSelected() {
+      var found = false;
+
+      $('#atr-make select, #atr-form #atr-make select, .atr-form #atr-make select').each(function () {
+        var text = $.trim($(this).find('option:selected').text());
+
+        if (text === 'Other') {
+          found = true;
+          return false;
+        }
+      });
+
+      return found;
+    }
+
+    function syncOtherField() {
+      var box = $('#atr-make_other');
+
+      if (!box.length) {
+        return;
+      }
+
+      if (otherSelected()) {
+        box.addClass('pngm-other-visible').show();
+      } else {
+        box.removeClass('pngm-other-visible').hide();
+      }
+    }
+
+    function softenThirdLevelRequired() {
+      if (!$('form[name="item"]').length || !$.fn || !$.fn.rules) {
+        return;
+      }
+
+      $('#atr-make select[data-level], .atr-form #atr-make select[data-level]').each(function () {
+        var level = parseInt($(this).attr('data-level'), 10) || 0;
+
+        // VEHICLE-03 — levels 3+ must not be mandatory.
+        if (level >= 3) {
+          try {
+            $(this).rules('remove', 'required');
+          } catch (e) {
+            // Validator may not be ready yet.
+          }
+
+          $(this).removeAttr('required').removeClass('error');
+        }
+      });
+    }
+
+    $(document).on('change', '#atr-make select, .atr-form #atr-make select', function () {
+      syncOtherField();
+      setTimeout(softenThirdLevelRequired, 50);
+    });
+
+    $(document).ajaxComplete(function (event, xhr, settings) {
+      if (settings && settings.url && String(settings.url).indexOf('atr_select_url') !== -1) {
+        syncOtherField();
+        setTimeout(softenThirdLevelRequired, 100);
+      }
+    });
+
+    syncOtherField();
+    setTimeout(softenThirdLevelRequired, 1800);
+    setTimeout(softenThirdLevelRequired, 3200);
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
     initPatternSearchLocation();
+    initVehicleMakeOther();
   }
 
   if (document.readyState === 'loading') {
