@@ -570,10 +570,13 @@ function pngm_location_js_config()
         'capitals'   => pngm_province_capitals(),
         'mainTowns'  => pngm_province_main_towns(),
         'labels'     => array(
-            'main'   => __('Main towns', 'epsilon'),
-            'other'  => __('Other locations', 'epsilon'),
-            'select' => __('Select a city...', 'epsilon'),
-            'popular'=> __('Main cities', 'epsilon'),
+            'main'          => __('Main towns', 'epsilon'),
+            'other'         => __('Other locations', 'epsilon'),
+            'select'        => __('Select a city...', 'epsilon'),
+            'popular'       => __('Main cities', 'epsilon'),
+            'searchRegion'  => __('Type to search province...', 'epsilon'),
+            'searchCity'    => __('Type to search city...', 'epsilon'),
+            'noMatch'       => __('No matching locations', 'epsilon'),
         ),
     );
 }

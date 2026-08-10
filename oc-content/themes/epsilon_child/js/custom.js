@@ -494,6 +494,10 @@
       if (selectedId) {
         $city.val(selectedId);
       }
+
+      if (typeof window.pngmRefreshSearchSelect === 'function') {
+        window.pngmRefreshSearchSelect($city);
+      }
     }
 
     function currentRegionName() {
@@ -540,6 +544,370 @@
         regroupCitySelect($city, currentRegionName(), null);
       }
     }, 100);
+  }
+
+  /**
+   * Searchable Province / City selects on publish (and profile) forms.
+   * Keeps the native <select> for validation + existing change handlers.
+   */
+  function initSearchableLocationSelects() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var cfg = window.pngmLocationConfig || {};
+    var labels = cfg.labels || {};
+    var activeWidget = null;
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function selectedLabel($select) {
+      var $opt = $select.find('option:selected');
+      var val = $select.val();
+
+      if (!val || !$opt.length) {
+        return '';
+      }
+
+      return $.trim($opt.text());
+    }
+
+    function placeholderFor($select) {
+      if ($select.attr('id') === 'regionId') {
+        return labels.searchRegion || 'Type to search province...';
+      }
+
+      return labels.searchCity || 'Type to search city...';
+    }
+
+    function closeWidget(widget) {
+      if (!widget) {
+        return;
+      }
+
+      widget.removeClass('is-open');
+      widget.find('.pngm-search-select-list').hide();
+      widget.find('.pngm-search-select-input').attr('aria-expanded', 'false');
+
+      if (activeWidget && activeWidget[0] === widget[0]) {
+        activeWidget = null;
+      }
+    }
+
+    function closeAll(except) {
+      $('.pngm-search-select.is-open').each(function () {
+        if (except && this === except[0]) {
+          return;
+        }
+
+        closeWidget($(this));
+      });
+    }
+
+    function syncFromSelect(widget) {
+      var $select = widget.data('pngmSelect');
+      var $input = widget.find('.pngm-search-select-input');
+      var disabled = !!$select.prop('disabled');
+      var label = selectedLabel($select);
+
+      $input.val(label);
+      $input.prop('disabled', disabled);
+      widget.toggleClass('is-disabled', disabled);
+      widget.find('.pngm-search-select-clear').toggle(!!label && !disabled);
+    }
+
+    function buildListHtml($select, query) {
+      var q = String(query || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+      var html = '';
+      var matches = 0;
+      var $children = $select.children();
+
+      function optionMatches($opt) {
+        var val = $opt.attr('value');
+        var text = $.trim($opt.text());
+
+        if (!val) {
+          return false;
+        }
+
+        if (!q) {
+          return true;
+        }
+
+        return text.toLowerCase().indexOf(q) !== -1;
+      }
+
+      $children.each(function () {
+        var $node = $(this);
+
+        if ($node.is('optgroup')) {
+          var groupItems = '';
+          var groupCount = 0;
+
+          $node.children('option').each(function () {
+            var $opt = $(this);
+
+            if (!optionMatches($opt)) {
+              return;
+            }
+
+            groupCount += 1;
+            matches += 1;
+            groupItems += '<button type="button" class="pngm-search-select-option" data-value="'
+              + escapeHtml($opt.attr('value')) + '" role="option">'
+              + escapeHtml($.trim($opt.text())) + '</button>';
+          });
+
+          if (groupCount > 0) {
+            html += '<div class="pngm-search-select-group">'
+              + '<div class="pngm-search-select-group-label">' + escapeHtml($node.attr('label') || '') + '</div>'
+              + groupItems
+              + '</div>';
+          }
+
+          return;
+        }
+
+        if ($node.is('option')) {
+          if (!optionMatches($node)) {
+            return;
+          }
+
+          matches += 1;
+          html += '<button type="button" class="pngm-search-select-option" data-value="'
+            + escapeHtml($node.attr('value')) + '" role="option">'
+            + escapeHtml($.trim($node.text())) + '</button>';
+        }
+      });
+
+      if (!matches) {
+        html = '<div class="pngm-search-select-empty">'
+          + escapeHtml(labels.noMatch || 'No matching locations')
+          + '</div>';
+      }
+
+      return html;
+    }
+
+    function showList(widget, filterText) {
+      var $select = widget.data('pngmSelect');
+      var $list = widget.find('.pngm-search-select-list');
+      var $input = widget.find('.pngm-search-select-input');
+
+      if ($select.prop('disabled')) {
+        return;
+      }
+
+      closeAll(widget);
+      $list.html(buildListHtml($select, filterText));
+      $list.show();
+      widget.addClass('is-open');
+      $input.attr('aria-expanded', 'true');
+      activeWidget = widget;
+
+      var val = $select.val();
+
+      if (val) {
+        $list.find('.pngm-search-select-option').each(function () {
+          if (String($(this).attr('data-value')) === String(val)) {
+            $(this).addClass('is-active is-selected');
+          }
+        });
+      }
+    }
+
+    function pickValue(widget, value, label) {
+      var $select = widget.data('pngmSelect');
+      var $input = widget.find('.pngm-search-select-input');
+
+      $select.val(value).trigger('change');
+      $input.val(label || selectedLabel($select));
+      widget.find('.pngm-search-select-clear').toggle(!!$select.val());
+      closeWidget(widget);
+    }
+
+    function wrapSelect($select) {
+      if (!$select.length || $select.data('pngmSearchWrapped')) {
+        return $select.closest('.pngm-search-select');
+      }
+
+      if (!$select.is('select')) {
+        return $();
+      }
+
+      var $widget = $('<div class="pngm-search-select" role="combobox" aria-haspopup="listbox"></div>');
+      var $input = $('<input type="text" class="pngm-search-select-input" autocomplete="off" aria-autocomplete="list" aria-expanded="false" />');
+      var $clear = $('<button type="button" class="pngm-search-select-clear" aria-label="Clear" title="Clear">&times;</button>');
+      var $list = $('<div class="pngm-search-select-list" role="listbox"></div>');
+
+      $input.attr('placeholder', placeholderFor($select));
+      $select.addClass('pngm-search-select-native').data('pngmSearchWrapped', true);
+      $select.after($widget);
+      $widget.append($select);
+      $widget.append($input);
+      $widget.append($clear);
+      $widget.append($list);
+      $widget.data('pngmSelect', $select);
+
+      syncFromSelect($widget);
+
+      $input.on('focus', function () {
+        if ($select.prop('disabled')) {
+          return;
+        }
+
+        // Show full list on focus; keep current label until user types.
+        showList($widget, '');
+        this.select();
+      });
+
+      $input.on('input', function () {
+        showList($widget, $input.val());
+        $widget.find('.pngm-search-select-clear').toggle($.trim($input.val()) !== '');
+      });
+
+      $input.on('blur', function () {
+        setTimeout(function () {
+          if (!$widget.hasClass('is-open')) {
+            syncFromSelect($widget);
+          }
+        }, 120);
+      });
+
+      $input.on('keydown', function (e) {
+        var $options;
+        var $active;
+        var idx;
+
+        if (e.key === 'Escape') {
+          syncFromSelect($widget);
+          closeWidget($widget);
+          return;
+        }
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+
+          if (!$widget.hasClass('is-open')) {
+            showList($widget, $input.val());
+          }
+
+          $options = $widget.find('.pngm-search-select-option');
+
+          if (!$options.length) {
+            return;
+          }
+
+          $active = $options.filter('.is-active');
+          idx = $options.index($active);
+
+          if (e.key === 'ArrowDown') {
+            idx = idx < $options.length - 1 ? idx + 1 : 0;
+          } else {
+            idx = idx > 0 ? idx - 1 : $options.length - 1;
+          }
+
+          $options.removeClass('is-active');
+          $active = $options.eq(idx).addClass('is-active');
+
+          if ($active[0] && $active[0].scrollIntoView) {
+            $active[0].scrollIntoView({ block: 'nearest' });
+          }
+
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          $active = $widget.find('.pngm-search-select-option.is-active').first();
+
+          if (!$active.length) {
+            $active = $widget.find('.pngm-search-select-option').first();
+          }
+
+          if ($active.length) {
+            e.preventDefault();
+            pickValue($widget, $active.attr('data-value'), $.trim($active.text()));
+          }
+        }
+      });
+
+      $clear.on('mousedown', function (e) {
+        e.preventDefault();
+        pickValue($widget, '', '');
+        $input.focus();
+      });
+
+      $list.on('mousedown', '.pngm-search-select-option', function (e) {
+        e.preventDefault();
+        pickValue($widget, $(this).attr('data-value'), $.trim($(this).text()));
+      });
+
+      $select.on('change.pngmSearchSelect', function () {
+        syncFromSelect($widget);
+      });
+
+      return $widget;
+    }
+
+    function refresh($select) {
+      var $el = $($select);
+
+      // Drop orphan wrappers left behind when core replaces #cityId.
+      $('.row.city .pngm-search-select, .row.region .pngm-search-select').each(function () {
+        var $w = $(this);
+
+        if (!$w.find('select#regionId, select#cityId').length) {
+          $w.remove();
+        }
+      });
+
+      $el = $($select);
+
+      if (!$el.length || !$el.is('select')) {
+        return;
+      }
+
+      if (!$el.data('pngmSearchWrapped') || !$el.parent().hasClass('pngm-search-select')) {
+        $el.removeData('pngmSearchWrapped');
+        wrapSelect($el);
+        return;
+      }
+
+      syncFromSelect($el.closest('.pngm-search-select'));
+    }
+
+    window.pngmRefreshSearchSelect = refresh;
+
+    // Only enhance classic region/city selects (not autocomplete location mode).
+    if ($('#regionId').is('select') || $('#cityId').is('select')) {
+      wrapSelect($('#regionId'));
+      wrapSelect($('#cityId'));
+    }
+
+    $(document).on('mousedown.pngmSearchSelect', function (e) {
+      if ($(e.target).closest('.pngm-search-select').length) {
+        return;
+      }
+
+      closeAll();
+      $('.pngm-search-select').each(function () {
+        syncFromSelect($(this));
+      });
+    });
+
+    // Keep city widget in sync when province changes / city list reloads.
+    $(document).on('change', '#regionId', function () {
+      setTimeout(function () {
+        refresh($('#cityId'));
+      }, 100);
+    });
   }
 
   /**
@@ -627,6 +995,7 @@
     initPatternSearchLocation();
     initPopularCitiesOrder();
     initPostingCityGrouping();
+    initSearchableLocationSelects();
     initVehicleMakeOther();
   }
 
