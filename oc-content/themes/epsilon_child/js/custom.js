@@ -1144,6 +1144,41 @@
     });
   }
 
+  /**
+   * DASHBOARD-01 — Light UX helpers for account pages.
+   */
+  function initUserAccountUx() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var body = $('body.body-ua');
+
+    if (!body.length) {
+      return;
+    }
+
+    body.addClass('pngm-ua');
+
+    // Ensure side menu has class for CSS targeting when parent templates are used.
+    $('#user-menu').addClass('pngm-user-menu');
+
+    // Make plugin-injected menu links (messages/favourites) easier to spot.
+    $('#user-menu a').each(function () {
+      var text = $.trim($(this).text()).toLowerCase();
+      var href = String($(this).attr('href') || '').toLowerCase();
+
+      if (text.indexOf('message') !== -1 || href.indexOf('im-threads') !== -1) {
+        $(this).addClass('pngm-nav-messages');
+      }
+
+      if (text.indexOf('favorite') !== -1 || text.indexOf('favourite') !== -1 || href.indexOf('favorite') !== -1) {
+        $(this).addClass('pngm-nav-favorite');
+      }
+    });
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1153,6 +1188,7 @@
     initSearchableLocationSelects();
     initVehicleMakeOther();
     initItemGallery();
+    initUserAccountUx();
   }
 
   if (document.readyState === 'loading') {
