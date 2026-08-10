@@ -989,6 +989,161 @@
     setTimeout(softenThirdLevelRequired, 3200);
   }
 
+  /**
+   * ITEM-01 / ITEM-02 — Listing photo gallery:
+   * swipe, pinch-zoom, fullscreen lightbox, correct alignment.
+   */
+  function initItemGallery() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var root = $('#item-image');
+
+    if (!root.length || !root.find('.swiper-container').length) {
+      return;
+    }
+
+    var container = root.find('.swiper-container').first();
+
+    // Scope thumbs strictly to this listing gallery.
+    root.find('.swiper-thumbs').attr('data-pngm-gallery', '1');
+
+    function syncThumbs(index) {
+      root.find('.swiper-thumbs li').removeClass('active');
+      root.find('.swiper-thumbs li[data-id="' + index + '"]').addClass('active');
+    }
+
+    function initSwiper() {
+      if (typeof window.Swiper === 'undefined') {
+        return null;
+      }
+
+      var el = container[0];
+
+      if (el && el.swiper) {
+        try {
+          el.swiper.destroy(true, true);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      return new window.Swiper(el, {
+        slideClass: 'swiper-slide',
+        zoom: {
+          maxRatio: 3,
+          minRatio: 1,
+          toggle: true
+        },
+        navigation: {
+          nextEl: root.find('.swiper-next')[0],
+          prevEl: root.find('.swiper-prev')[0]
+        },
+        pagination: {
+          el: root.find('.swiper-pg')[0],
+          type: 'fraction'
+        },
+        on: {
+          activeIndexChange: function (swp) {
+            if (typeof window.epsLazyLoadImages === 'function') {
+              window.epsLazyLoadImages('item-gallery');
+            }
+
+            syncThumbs(swp.activeIndex);
+          }
+        }
+      });
+    }
+
+    function initLightbox() {
+      if (typeof $.fn.lightGallery === 'undefined') {
+        return;
+      }
+
+      try {
+        if (container.data('lightGallery')) {
+          container.data('lightGallery').destroy(true);
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      container.lightGallery({
+        mode: 'lg-slide',
+        thumbnail: true,
+        cssEasing: 'cubic-bezier(0.25, 0, 0.25, 1)',
+        selector: 'li.swiper-slide > a',
+        getCaptionFromTitleOrAlt: true,
+        download: false,
+        share: false,
+        zoom: true,
+        scale: 1,
+        enableZoomAfter: 200,
+        actualSize: true,
+        fullScreen: true,
+        counter: true,
+        closable: true,
+        escKey: true,
+        keyPress: true,
+        controls: true,
+        mousewheel: true,
+        hideBarsDelay: 4000,
+        thumbWidth: 90,
+        thumbContHeight: 80
+      });
+    }
+
+    // Wait briefly so parent global.js can finish first, then upgrade.
+    setTimeout(function () {
+      window.pngmItemSwiper = initSwiper();
+      initLightbox();
+
+      root.find('.pngm-gallery-fullscreen').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var idx = window.pngmItemSwiper ? window.pngmItemSwiper.activeIndex : 0;
+        var link = root.find('.swiper-slide').eq(idx).find('> a').get(0);
+
+        if (link) {
+          link.click();
+        }
+      });
+
+      // Thumbnails: only this listing's thumbs.
+      root.off('click.pngmThumbs').on('click.pngmThumbs', '.swiper-thumbs li', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var elemId = parseInt($(this).attr('data-id'), 10) || 0;
+        syncThumbs(elemId);
+
+        if (window.pngmItemSwiper) {
+          if (typeof window.epsFixImgSourcesThumb === 'function') {
+            window.epsFixImgSourcesThumb();
+          }
+
+          window.pngmItemSwiper.slideTo(elemId);
+        }
+      });
+    }, 120);
+
+    // Make lightbox close / back obvious on mobile after open.
+    $(document).on('onAfterOpen.lg', function () {
+      $('body').addClass('pngm-lg-open');
+
+      if (typeof window.epsFixImgSources === 'function') {
+        window.epsFixImgSources();
+      }
+    });
+
+    $(document).on('onCloseAfter.lg', function () {
+      $('body').removeClass('pngm-lg-open');
+    });
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -997,6 +1152,7 @@
     initPostingCityGrouping();
     initSearchableLocationSelects();
     initVehicleMakeOther();
+    initItemGallery();
   }
 
   if (document.readyState === 'loading') {
