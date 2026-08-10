@@ -1,6 +1,7 @@
 <?php
 /**
- * PNG location helpers — main cities first, provincial capitals first.
+ * PNG location helpers — main cities first, provincial capitals / towns first.
+ * LOCATION-01 / LOCATION-02 (sorting & presentation only; no DB deletes).
  */
 
 if (isset($_SERVER['SCRIPT_FILENAME'])
@@ -10,7 +11,8 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 /**
- * Priority list of PNG main cities / provincial capitals (lower = higher priority).
+ * Priority list of PNG main cities (lower = higher priority).
+ * LOCATION-01 order: Port Moresby, Lae, Mount Hagen, Madang, Kokopo, Goroka, Wewak, …
  *
  * @return array name(lowercase) => priority
  */
@@ -22,16 +24,17 @@ function pngm_main_city_priorities()
         return $map;
     }
 
-    // National capital first, then major centres / provincial capitals.
     $ordered = array(
+        // LOCATION-01 featured list (exact order).
         'Port Moresby',
         'Lae',
         'Mount Hagen',
         'Madang',
-        'Goroka',
         'Kokopo',
-        'Kimbe',
+        'Goroka',
         'Wewak',
+        // Other provincial capitals / major towns.
+        'Kimbe',
         'Vanimo',
         'Alotau',
         'Kavieng',
@@ -42,15 +45,15 @@ function pngm_main_city_priorities()
         'Kerema',
         'Buka',
         'Arawa',
-        'Bulolo',
-        'Kiunga',
-        'Tabubil',
-        'Wau',
-        'Rabaul',
         'Lorengau',
         'Tari',
         'Wabag',
         'Minj',
+        'Bulolo',
+        'Wau',
+        'Kiunga',
+        'Tabubil',
+        'Rabaul',
         'Maprik',
     );
 
@@ -118,6 +121,68 @@ function pngm_province_capitals()
         'hela'                      => 'Tari',
         'jiwaka province'           => 'Minj',
         'jiwaka'                    => 'Minj',
+        'central province'          => 'Port Moresby',
+        'central'                   => 'Port Moresby',
+    );
+}
+
+/**
+ * Extra main towns per province (beyond the capital).
+ * Villages not listed here appear under “Other locations”.
+ *
+ * @return array region_key => list of town names
+ */
+function pngm_province_main_towns()
+{
+    return array(
+        'national capital district' => array('Port Moresby'),
+        'morobe province'           => array('Lae', 'Bulolo', 'Wau'),
+        'morobe'                    => array('Lae', 'Bulolo', 'Wau'),
+        'western highlands province'=> array('Mount Hagen'),
+        'western highlands'         => array('Mount Hagen'),
+        'madang province'           => array('Madang'),
+        'madang'                    => array('Madang'),
+        'eastern highlands province'=> array('Goroka'),
+        'eastern highlands'         => array('Goroka'),
+        'east new britain province' => array('Kokopo', 'Rabaul'),
+        'east new britain'          => array('Kokopo', 'Rabaul'),
+        'west new britain province' => array('Kimbe'),
+        'west new britain'          => array('Kimbe'),
+        'east sepik province'       => array('Wewak', 'Maprik'),
+        'east sepik'                => array('Wewak', 'Maprik'),
+        'west sepik province'       => array('Vanimo'),
+        'west sepik'                => array('Vanimo'),
+        'sandaun province'          => array('Vanimo'),
+        'sandaun'                   => array('Vanimo'),
+        'milne bay province'        => array('Alotau'),
+        'milne bay'                 => array('Alotau'),
+        'new ireland province'      => array('Kavieng'),
+        'new ireland'               => array('Kavieng'),
+        'southern highlands province'=> array('Mendi'),
+        'southern highlands'        => array('Mendi'),
+        'chimbu province'           => array('Kundiawa'),
+        'chimbu'                    => array('Kundiawa'),
+        'simbu province'            => array('Kundiawa'),
+        'simbu'                     => array('Kundiawa'),
+        'northern province'         => array('Popondetta'),
+        'oro province'              => array('Popondetta'),
+        'oro'                       => array('Popondetta'),
+        'western province'          => array('Daru', 'Kiunga', 'Tabubil'),
+        'western'                   => array('Daru', 'Kiunga', 'Tabubil'),
+        'gulf province'             => array('Kerema'),
+        'gulf'                      => array('Kerema'),
+        'bougainville'              => array('Buka', 'Arawa'),
+        'autonomous region of bougainville' => array('Buka', 'Arawa'),
+        'manus province'            => array('Lorengau'),
+        'manus'                     => array('Lorengau'),
+        'enga province'             => array('Wabag'),
+        'enga'                      => array('Wabag'),
+        'hela province'             => array('Tari'),
+        'hela'                      => array('Tari'),
+        'jiwaka province'           => array('Minj'),
+        'jiwaka'                    => array('Minj'),
+        'central province'          => array('Port Moresby'),
+        'central'                   => array('Port Moresby'),
     );
 }
 
@@ -131,6 +196,70 @@ function pngm_location_key($name)
     $name = preg_replace('/\s+/u', ' ', $name);
 
     return $name;
+}
+
+/**
+ * Main-town name keys for a province (capital + listed towns).
+ * When no region is given, returns the national main-city set (LOCATION-01).
+ *
+ * @param string|null $region_name
+ * @return array name_key => true
+ */
+function pngm_main_town_keys_for_region($region_name = null)
+{
+    $keys = array();
+
+    if ($region_name === null || $region_name === '') {
+        foreach (array_keys(pngm_main_city_priorities()) as $key) {
+            $keys[$key] = true;
+        }
+
+        return $keys;
+    }
+
+    $rk = pngm_location_key($region_name);
+    $caps = pngm_province_capitals();
+    $towns = pngm_province_main_towns();
+
+    if (isset($caps[$rk])) {
+        $keys[pngm_location_key($caps[$rk])] = true;
+    }
+
+    if (isset($towns[$rk]) && is_array($towns[$rk])) {
+        foreach ($towns[$rk] as $town) {
+            $keys[pngm_location_key($town)] = true;
+        }
+    }
+
+    // Unmapped province: fall back to national main-city names so villages
+    // still do not dominate when those names appear in the list.
+    if (count($keys) === 0) {
+        foreach (array_keys(pngm_main_city_priorities()) as $key) {
+            $keys[$key] = true;
+        }
+    }
+
+    return $keys;
+}
+
+/**
+ * Whether a city name is a main town for the given province.
+ *
+ * @param string      $city_name
+ * @param string|null $region_name
+ * @return bool
+ */
+function pngm_is_main_town($city_name, $region_name = null)
+{
+    $key = pngm_location_key($city_name);
+
+    if ($key === '') {
+        return false;
+    }
+
+    $keys = pngm_main_town_keys_for_region($region_name);
+
+    return isset($keys[$key]);
 }
 
 /**
@@ -150,6 +279,7 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
 
     $priorities = pngm_main_city_priorities();
     $capital_key = '';
+    $main_keys = pngm_main_town_keys_for_region($region_name);
 
     if ($region_name !== null && $region_name !== '') {
         $caps = pngm_province_capitals();
@@ -160,9 +290,20 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
         }
     }
 
-    usort($cities, function ($a, $b) use ($priorities, $capital_key, $name_key) {
+    usort($cities, function ($a, $b) use ($priorities, $capital_key, $name_key, $main_keys) {
         $an = pngm_location_key(isset($a[$name_key]) ? $a[$name_key] : (isset($a['s_name']) ? $a['s_name'] : ''));
         $bn = pngm_location_key(isset($b[$name_key]) ? $b[$name_key] : (isset($b['s_name']) ? $b['s_name'] : ''));
+
+        $a_main = isset($main_keys[$an]);
+        $b_main = isset($main_keys[$bn]);
+
+        if ($a_main && !$b_main) {
+            return -1;
+        }
+
+        if ($b_main && !$a_main) {
+            return 1;
+        }
 
         $ap = isset($priorities[$an]) ? $priorities[$an] : 1000;
         $bp = isset($priorities[$bn]) ? $priorities[$bn] : 1000;
@@ -188,7 +329,33 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
 }
 
 /**
- * Popular cities for location picker: main PNG cities first, then by listings.
+ * Tag cities with pngm_tier = main|other and sort main first.
+ *
+ * @param array       $cities
+ * @param string|null $region_name
+ * @param string      $name_key
+ * @return array
+ */
+function pngm_prepare_cities_for_posting($cities, $region_name = null, $name_key = 's_name')
+{
+    if (!is_array($cities)) {
+        return array();
+    }
+
+    $cities = pngm_sort_cities_main_first($cities, $region_name, $name_key);
+    $main_keys = pngm_main_town_keys_for_region($region_name);
+
+    foreach ($cities as $i => $city) {
+        $name = isset($city[$name_key]) ? $city[$name_key] : (isset($city['s_name']) ? $city['s_name'] : '');
+        $key = pngm_location_key($name);
+        $cities[$i]['pngm_tier'] = isset($main_keys[$key]) ? 'main' : 'other';
+    }
+
+    return array_values($cities);
+}
+
+/**
+ * Popular / main cities for location picker (LOCATION-01).
  *
  * @param int $limit
  *
@@ -200,7 +367,13 @@ function pngm_get_popular_cities($limit = 12)
     $out = array();
     $seen = array();
 
-    // Pull known main cities from DB (may have 0 listings).
+    // LOCATION-01 featured names first (exact order).
+    $featured = array(
+        'Port Moresby', 'Lae', 'Mount Hagen', 'Madang', 'Kokopo', 'Goroka', 'Wewak',
+        'Kimbe', 'Vanimo', 'Alotau', 'Kavieng', 'Mendi', 'Kundiawa',
+        'Popondetta', 'Daru', 'Kerema', 'Buka',
+    );
+
     if (defined('DB_HOST') && defined('DB_NAME') && defined('DB_TABLE_PREFIX')) {
         try {
             $m = @new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
@@ -209,15 +382,9 @@ function pngm_get_popular_cities($limit = 12)
                 $m->set_charset('utf8mb4');
                 $prefix = DB_TABLE_PREFIX;
 
-                // Query by exact main city names.
-                $names = array(
-                    'Port Moresby', 'Lae', 'Mount Hagen', 'Madang', 'Goroka', 'Kokopo',
-                    'Kimbe', 'Wewak', 'Vanimo', 'Alotau', 'Kavieng', 'Mendi', 'Kundiawa',
-                    'Popondetta', 'Daru', 'Kerema', 'Buka',
-                );
                 $in = array();
 
-                foreach ($names as $n) {
+                foreach ($featured as $n) {
                     $in[] = "'" . $m->real_escape_string($n) . "'";
                 }
 
@@ -232,40 +399,46 @@ function pngm_get_popular_cities($limit = 12)
                         WHERE c.s_name IN (" . implode(',', $in) . ")
                           AND c.b_active = 1";
                 $r = $m->query($sql);
-                $rows = array();
+                $by_name = array();
 
                 if ($r) {
                     while ($row = $r->fetch_assoc()) {
-                        $rows[] = $row;
+                        $key = pngm_location_key($row['s_name']);
+
+                        // Prefer canonical province for known ambiguous names.
+                        if ($key === 'kokopo' && stripos($row['s_name_top'], 'East New Britain') === false) {
+                            continue;
+                        }
+
+                        if ($key === 'buka' && stripos($row['s_name_top'], 'Bougainville') === false) {
+                            continue;
+                        }
+
+                        if ($key === 'mendi' && stripos($row['s_name_top'], 'Southern Highlands') === false) {
+                            continue;
+                        }
+
+                        if ($key === 'port moresby' && stripos($row['s_name_top'], 'National Capital') === false
+                            && stripos($row['s_name_top'], 'Central') === false) {
+                            continue;
+                        }
+
+                        if (!isset($by_name[$key])) {
+                            $by_name[$key] = $row;
+                        }
                     }
                 }
 
-                $rows = pngm_sort_cities_main_first($rows, null, 's_name');
+                // Emit in LOCATION-01 order.
+                foreach ($featured as $name) {
+                    $key = pngm_location_key($name);
 
-                foreach ($rows as $row) {
-                    // Prefer the canonical region match for duplicate city names
-                    // (e.g. Kokopo in East New Britain over wrong duplicates).
-                    $key = pngm_location_key($row['s_name']);
-
-                    if (isset($seen[$key])) {
-                        continue;
-                    }
-
-                    // Skip known wrong-province duplicates for shared names.
-                    if ($key === 'kokopo' && stripos($row['s_name_top'], 'East New Britain') === false) {
-                        continue;
-                    }
-
-                    if ($key === 'buka' && stripos($row['s_name_top'], 'Bougainville') === false) {
-                        continue;
-                    }
-
-                    if ($key === 'mendi' && stripos($row['s_name_top'], 'Southern Highlands') === false) {
+                    if (!isset($by_name[$key]) || isset($seen[$key])) {
                         continue;
                     }
 
                     $seen[$key] = true;
-                    $out[] = $row;
+                    $out[] = $by_name[$key];
 
                     if (count($out) >= $limit) {
                         break;
@@ -344,7 +517,6 @@ function pngm_sort_ajax_loc_results($data)
 
     $cities = pngm_sort_cities_main_first($cities, null, 'name');
 
-    // If a region is in the results, also try to surface its capital city first.
     if (count($regions) > 0 && count($cities) > 0) {
         $caps = pngm_province_capitals();
         $boost = array();
@@ -381,7 +553,41 @@ function pngm_sort_ajax_loc_results($data)
 }
 
 /**
- * Intercept core ajax cities list — capital / main city first for the province.
+ * Config exposed to front-end for city select regrouping.
+ *
+ * @return array
+ */
+function pngm_location_js_config()
+{
+    $main = array();
+
+    foreach (array_keys(pngm_main_city_priorities()) as $key) {
+        $main[] = $key;
+    }
+
+    return array(
+        'mainCities' => $main,
+        'capitals'   => pngm_province_capitals(),
+        'mainTowns'  => pngm_province_main_towns(),
+        'labels'     => array(
+            'main'   => __('Main towns', 'epsilon'),
+            'other'  => __('Other locations', 'epsilon'),
+            'select' => __('Select a city...', 'epsilon'),
+            'popular'=> __('Main cities', 'epsilon'),
+        ),
+    );
+}
+
+/**
+ * Print JS config for LOCATION-01/02 (header).
+ */
+function pngm_print_location_js_config()
+{
+    echo '<script>window.pngmLocationConfig=' . json_encode(pngm_location_js_config()) . ';</script>' . "\n";
+}
+
+/**
+ * Intercept core ajax cities list — main towns first + tier tags (LOCATION-02).
  */
 function pngm_ajax_cities_capital_first()
 {
@@ -398,13 +604,14 @@ function pngm_ajax_cities_capital_first()
     $cities = City::newInstance()->findByRegion($region_id);
     $region = Region::newInstance()->findByPrimaryKey($region_id);
     $region_name = is_array($region) && isset($region['s_name']) ? $region['s_name'] : '';
-    $cities = pngm_sort_cities_main_first($cities, $region_name, 's_name');
+    $cities = pngm_prepare_cities_for_posting($cities, $region_name, 's_name');
 
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(array_values($cities));
+    echo json_encode($cities);
     exit;
 }
 
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init_ajax', 'pngm_ajax_cities_capital_first', 1);
+    osc_add_hook('header', 'pngm_print_location_js_config', 9);
 }

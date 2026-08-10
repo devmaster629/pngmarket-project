@@ -268,7 +268,8 @@
   }
 
   /**
-   * Replace “Popular cities” in the default-location modal with main cities first.
+   * LOCATION-01 — Replace popular cities in the default-location modal
+   * with the ordered main-cities list.
    */
   function initPopularCitiesOrder() {
     if (typeof window.jQuery === 'undefined' || !window.baseAjaxUrl) {
@@ -304,6 +305,241 @@
         refreshPopular();
       }
     });
+  }
+
+  /**
+   * LOCATION-02 — City select: Main towns first, villages under Other locations.
+   * Works for ajax-loaded lists and the initial publish/edit form select.
+   */
+  function initPostingCityGrouping() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var cfg = window.pngmLocationConfig || {};
+    var labels = cfg.labels || {};
+    var labelMain = labels.main || 'Main towns';
+    var labelOther = labels.other || 'Other locations';
+    var labelSelect = labels.select || 'Select a city...';
+
+    function locKey(name) {
+      return String(name || '')
+        .replace(/^\s+|\s+$/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+    }
+
+    function mainKeysForRegion(regionName) {
+      var keys = {};
+      var rk = locKey(regionName);
+      var capitals = cfg.capitals || {};
+      var towns = cfg.mainTowns || {};
+      var i;
+
+      if (capitals[rk]) {
+        keys[locKey(capitals[rk])] = true;
+      }
+
+      if (towns[rk] && towns[rk].length) {
+        for (i = 0; i < towns[rk].length; i++) {
+          keys[locKey(towns[rk][i])] = true;
+        }
+      }
+
+      // Fallback: national main cities when province is unmapped.
+      if (!Object.keys(keys).length && cfg.mainCities && cfg.mainCities.length) {
+        for (i = 0; i < cfg.mainCities.length; i++) {
+          keys[locKey(cfg.mainCities[i])] = true;
+        }
+      }
+
+      return keys;
+    }
+
+    function isMainCity(name, regionName, tier) {
+      if (tier === 'main') {
+        return true;
+      }
+
+      if (tier === 'other') {
+        return false;
+      }
+
+      var keys = mainKeysForRegion(regionName);
+      return !!keys[locKey(name)];
+    }
+
+    function optionHtml(id, name, selectedId) {
+      var sel = String(id) === String(selectedId) ? ' selected' : '';
+      return '<option value="' + id + '"' + sel + '>' + name + '</option>';
+    }
+
+    function mainPriority(name) {
+      var list = cfg.mainCities || [];
+      var key = locKey(name);
+      var i;
+
+      for (i = 0; i < list.length; i++) {
+        if (locKey(list[i]) === key) {
+          return i;
+        }
+      }
+
+      return 1000;
+    }
+
+    function buildGroupedHtml(items, selectedId) {
+      var main = [];
+      var other = [];
+      var i;
+      var html = '<option value="">' + labelSelect + '</option>';
+
+      for (i = 0; i < items.length; i++) {
+        if (items[i].main) {
+          main.push(items[i]);
+        } else {
+          other.push(items[i]);
+        }
+      }
+
+      main.sort(function (a, b) {
+        var pa = mainPriority(a.name);
+        var pb = mainPriority(b.name);
+
+        if (pa !== pb) {
+          return pa - pb;
+        }
+
+        return String(a.name).localeCompare(String(b.name));
+      });
+
+      other.sort(function (a, b) {
+        return String(a.name).localeCompare(String(b.name));
+      });
+
+      if (main.length) {
+        html += '<optgroup label="' + labelMain + '">';
+        for (i = 0; i < main.length; i++) {
+          html += optionHtml(main[i].id, main[i].name, selectedId);
+        }
+        html += '</optgroup>';
+      }
+
+      if (other.length) {
+        html += '<optgroup label="' + labelOther + '">';
+        for (i = 0; i < other.length; i++) {
+          html += optionHtml(other[i].id, other[i].name, selectedId);
+        }
+        html += '</optgroup>';
+      }
+
+      return html;
+    }
+
+    function regroupCitySelect($city, regionName, data) {
+      if (!$city || !$city.length) {
+        return;
+      }
+
+      var selectedId = $city.val();
+      var items = [];
+      var i;
+      var name;
+      var id;
+      var tier;
+
+      if ($.isArray(data) && data.length) {
+        for (i = 0; i < data.length; i++) {
+          if (!data[i] || data[i].pk_i_id === undefined) {
+            continue;
+          }
+
+          name = data[i].s_name_native && data[i].s_name_native !== 'null'
+            ? data[i].s_name_native
+            : data[i].s_name;
+          id = data[i].pk_i_id;
+          tier = data[i].pngm_tier || '';
+          items.push({
+            id: id,
+            name: name,
+            main: isMainCity(name, regionName, tier)
+          });
+        }
+      } else {
+        $city.find('option').each(function () {
+          var $opt = $(this);
+          id = $opt.attr('value');
+          name = $.trim($opt.text());
+
+          if (!id) {
+            return;
+          }
+
+          items.push({
+            id: id,
+            name: name,
+            main: isMainCity(name, regionName, '')
+          });
+        });
+      }
+
+      if (!items.length) {
+        return;
+      }
+
+      // Keep relative order (already main-first from server when data provided).
+      $city.html(buildGroupedHtml(items, selectedId));
+
+      if (selectedId) {
+        $city.val(selectedId);
+      }
+    }
+
+    function currentRegionName() {
+      var $region = $('#regionId');
+
+      if (!$region.length) {
+        return '';
+      }
+
+      return $.trim($region.find('option:selected').text());
+    }
+
+    // After core builds the flat city list, regroup with optgroups.
+    $(document).ajaxSuccess(function (event, xhr, settings) {
+      var url = settings && settings.url ? String(settings.url) : '';
+
+      if (url.indexOf('action=cities') === -1) {
+        return;
+      }
+
+      var data;
+
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {
+        return;
+      }
+
+      if (!$.isArray(data)) {
+        return;
+      }
+
+      // Defer so parent success handler finishes writing options first.
+      setTimeout(function () {
+        regroupCitySelect($('#cityId'), currentRegionName(), data);
+      }, 0);
+    });
+
+    // Initial publish/edit form: regroup the PHP-rendered city list.
+    setTimeout(function () {
+      var $city = $('#cityId');
+
+      if ($city.length && $city.find('option[value!=""]').length > 0) {
+        regroupCitySelect($city, currentRegionName(), null);
+      }
+    }, 100);
   }
 
   /**
@@ -390,6 +626,7 @@
     initStickyHomeSearch();
     initPatternSearchLocation();
     initPopularCitiesOrder();
+    initPostingCityGrouping();
     initVehicleMakeOther();
   }
 

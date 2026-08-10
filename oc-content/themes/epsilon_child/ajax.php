@@ -548,7 +548,7 @@ if (@$_GET['ajaxPngmPopularCities'] == 1) {
   $html = '';
 
   if (is_array($cities) && count($cities) > 0) {
-    $html .= '<div class="lead">' . __('Popular cities', 'epsilon') . '</div>';
+    $html .= '<div class="lead">' . __('Main cities', 'epsilon') . '</div>';
 
     foreach ($cities as $c) {
       $hash = rawurlencode(base64_encode(json_encode(array(
