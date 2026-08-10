@@ -2550,3 +2550,47 @@ body.body-ua .profile-box .right-block {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* ==========================================================================
+   FOOTER-01 — PNGMarket footer contact & information links
+   ========================================================================== */
+
+footer.pngm-footer .pngm-footer-tagline {
+  margin: 0 0 10px;
+  opacity: 0.9;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Phone / Email: label + value on one line */
+footer.pngm-footer .col.contact p.pngm-footer-line {
+  margin: 0 0 6px;
+}
+
+footer.pngm-footer .col.contact p.pngm-footer-line a {
+  display: inline;
+  margin: 0;
+  text-decoration: underline;
+}
+
+footer.pngm-footer .col.contact a[href^="mailto:"],
+footer.pngm-footer .col.contact a[href^="tel:"] {
+  text-decoration: underline;
+}
+
+/* Information: one link per line (like Follow us) */
+footer.pngm-footer .col.pages a {
+  display: block;
+  margin: 0 0 8px;
+  width: 100%;
+}
+
+footer.pngm-footer section.two a {
+  display: inline-flex;
+  margin-right: 15px;
+}
+
+footer.pngm-footer .col.socialx:empty {
+  display: none;
+}
