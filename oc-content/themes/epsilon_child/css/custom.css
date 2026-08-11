@@ -2594,3 +2594,129 @@ footer.pngm-footer section.two a {
 footer.pngm-footer .col.socialx:empty {
   display: none;
 }
+
+
+/* ==========================================================================
+   REQ-09 — Social login + WhatsApp Chat plugin visual integration
+   ========================================================================== */
+
+.pre-account.pngm-auth .pngm-social-login {
+  margin: 0 0 14px;
+  width: 100%;
+}
+
+.pre-account.pngm-auth .pngm-social-login-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+}
+
+.pre-account.pngm-auth .pngm-social-login a,
+.pre-account.pngm-auth .pngm-social-login .pngm-btn-google-wrap a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pre-account.pngm-auth .pngm-social-login a i {
+  margin: 0;
+  font-size: 18px;
+}
+
+.pre-account.pngm-auth .pngm-social-login a.google,
+.pre-account.pngm-auth .pngm-social-login a.pngm-btn-google {
+  color: #1f1f1f;
+  background: #fff;
+  border-color: #dadce0;
+}
+
+.pre-account.pngm-auth .pngm-social-login a.google:hover,
+.pre-account.pngm-auth .pngm-social-login a.pngm-btn-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  text-decoration: none;
+}
+
+.pre-account.pngm-auth .pngm-social-login a.facebook,
+.pre-account.pngm-auth .pngm-social-login a.pngm-btn-facebook,
+.pre-account.pngm-auth .pngm-social-login a.fjl-button {
+  color: #fff;
+  background: #1877f2;
+  border-color: #1877f2;
+}
+
+.pre-account.pngm-auth .pngm-social-login a.facebook:hover,
+.pre-account.pngm-auth .pngm-social-login a.pngm-btn-facebook:hover,
+.pre-account.pngm-auth .pngm-social-login a.fjl-button:hover {
+  background: #166fe5;
+  box-shadow: 0 1px 3px rgba(24, 119, 242, 0.35);
+  text-decoration: none;
+}
+
+.pre-account.pngm-auth .pngm-social-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 18px;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pre-account.pngm-auth .pngm-social-divider::before,
+.pre-account.pngm-auth .pngm-social-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e3e3e3;
+}
+
+.pre-account.pngm-auth .pngm-social-divider span {
+  white-space: nowrap;
+}
+
+/* WhatsApp Chat plugin float / item button polish (when wa_chat is active) */
+.pngm-wa-chat-plugin,
+.pngm-seller-contacts .pngm-wa-chat-plugin {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+.pngm-wa-chat-plugin a,
+body .wach-button,
+body .wa-chat-button,
+body a[class*="wach"],
+body div[class*="wach"] a {
+  max-width: 100%;
+}
+
+/* Keep site float chat clear of mobile sticky bars */
+body .wach-web,
+body .wa-chat-web,
+body [id*="wach-web"],
+body [class*="wach-web"] {
+  z-index: 9990;
+}
+
+@media (max-width: 767px) {
+  body.has-sticky-button .wach-web,
+  body.has-sticky-button .wa-chat-web,
+  body.has-sticky-button [class*="wach-web"] {
+    bottom: 72px !important;
+  }
+}

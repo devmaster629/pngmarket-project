@@ -7,13 +7,14 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.1.2');
+    define('PNGM_CHILD_VERSION', '1.1.3');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
 require_once dirname(__FILE__) . '/includes/locations.php';
 require_once dirname(__FILE__) . '/includes/item_page.php';
 require_once dirname(__FILE__) . '/includes/footer_helpers.php';
+require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 
 
 /**
