@@ -542,8 +542,8 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
 // POPULAR CITIES for default-location modal — main PNG cities first.
 if (@$_GET['ajaxPngmPopularCities'] == 1) {
   $cities = function_exists('pngm_get_popular_cities')
-    ? pngm_get_popular_cities(12)
-    : ModelEPS::newInstance()->getPopularCities(12, 0);
+    ? pngm_get_popular_cities(7)
+    : ModelEPS::newInstance()->getPopularCities(7, 0);
 
   $html = '';
 

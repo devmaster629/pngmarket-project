@@ -261,20 +261,10 @@
               <?php $color = eps_get_cat_color($parent['pk_i_id'], $parent); ?>
               
               <div class="icon">
-                <?php if(eps_param('cat_icons') == 1) { ?>
-                  <?php 
-                    $icon = eps_get_cat_icon($parent['pk_i_id'], $parent, true);
-                    $icon_ = explode(' ', $icon);
-                    
-                    $has_type = false;
-                    if(in_array($icon_, array('fas', 'far', 'fab'))) {
-                      $has_type = true;
-                    }
-                  ?>
-                  <i class="<?php echo ($has_type ? '' : 'fas'); ?> <?php echo $icon; ?>" <?php if($color <> '') { ?>style="color:<?php echo $color; ?>;"<?php } ?>></i>
-                <?php } else { ?>
-                  <img src="<?php echo eps_get_cat_image($parent['pk_i_id']); ?>" alt="<?php echo osc_esc_html($parent['s_name']); ?>" />
-                <?php } ?>
+                <?php
+                  $pngm_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image($parent['pk_i_id']) : eps_get_cat_image($parent['pk_i_id']);
+                ?>
+                <img src="<?php echo $pngm_img; ?>" alt="<?php echo osc_esc_html($parent['s_name']); ?>" class="<?php echo (stripos($pngm_img, '.svg') !== false ? 'pngm-cat-svg' : ''); ?>" />
               </div>
 
               <div>
@@ -292,20 +282,10 @@
                 <?php $color = eps_get_cat_color($c['pk_i_id'], $c); ?>
               
                 <div class="icon">
-                  <?php if(eps_param('cat_icons') == 1) { ?>
-                    <?php 
-                      $icon = eps_get_cat_icon($c['pk_i_id'], $c, true);
-                      $icon_ = explode(' ', $icon);
-                      
-                      $has_type = false;
-                      if(in_array($icon_, array('fas', 'far', 'fab'))) {
-                        $has_type = true;
-                      }
-                    ?>
-                    <i class="<?php echo ($has_type ? '' : 'fas'); ?> <?php echo $icon; ?>" <?php if($color <> '') { ?>style="color:<?php echo $color; ?>;"<?php } ?>></i>
-                  <?php } else { ?>
-                    <img src="<?php echo eps_get_cat_image($c['pk_i_id']); ?>" alt="<?php echo osc_esc_html($c['s_name']); ?>" />
-                  <?php } ?>
+                  <?php
+                    $pngm_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image($c['pk_i_id']) : eps_get_cat_image($c['pk_i_id']);
+                  ?>
+                  <img src="<?php echo $pngm_img; ?>" alt="<?php echo osc_esc_html($c['s_name']); ?>" class="<?php echo (stripos($pngm_img, '.svg') !== false ? 'pngm-cat-svg' : ''); ?>" />
                 </div>
               <?php } ?>
               

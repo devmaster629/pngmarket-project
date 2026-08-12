@@ -1942,6 +1942,7 @@ a.pngm-search-subcat-all {
 #item-image .swiper-container.pngm-item-gallery {
   background: #111;
   border-radius: 8px;
+  touch-action: pan-y;
 }
 
 #item-image .swiper-wrapper li a img,
@@ -1964,6 +1965,17 @@ a.pngm-search-subcat-all {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#item-image .swiper-container.pngm-item-gallery {
+  touch-action: pan-y;
+}
+
+#item-image .swiper-slide {
+  touch-action: pan-y pinch-zoom;
 }
 
 #item-image .pngm-gallery-fullscreen {
@@ -1978,7 +1990,7 @@ a.pngm-search-subcat-all {
   background: rgba(0, 0, 0, 0.72);
   color: #fff;
   cursor: pointer;
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
@@ -1988,20 +2000,26 @@ a.pngm-search-subcat-all {
   background: #2e7d32;
 }
 
-@media (min-width: 768px) {
-  #item-image .pngm-gallery-fullscreen.isDesktop {
-    display: inline-flex;
-  }
-}
-
 #item-image .swiper-thumbs li img {
   object-fit: cover;
   object-position: center;
 }
 
-/* lightGallery fullscreen UX */
+/* lightGallery fullscreen UX + pinch zoom */
 body.pngm-lg-open {
   overflow: hidden;
+}
+
+body.pngm-lg-open .lg-outer,
+body.pngm-lg-open .lg-item,
+body.pngm-lg-open .lg-img-wrap,
+body.pngm-lg-open .lg-image {
+  touch-action: none;
+}
+
+body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-in,
+body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-out {
+  display: inline-block !important;
 }
 
 .lg-outer .lg-img-wrap img,
@@ -2022,6 +2040,22 @@ body.pngm-lg-open {
 .lg-actions .lg-prev {
   background: rgba(0, 0, 0, 0.45);
   border-radius: 8px;
+}
+
+/* Category icons — semantic SVGs (not mismatched demo PNGs) */
+body#home .cats .pngm-cat-item img.pngm-cat-svg,
+body#home .categories img.pngm-cat-svg {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+body#home .cats .pngm-cat-item i.fas,
+body#home .categories .pngm-cat-item i.fas {
+  font-size: 34px;
+  line-height: 1;
 }
 
 @media (max-width: 767px) {

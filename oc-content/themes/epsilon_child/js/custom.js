@@ -268,8 +268,8 @@
   }
 
   /**
-   * LOCATION-01 — Replace popular cities in the default-location modal
-   * with the ordered main-cities list.
+   * LOCATION-01 — Main cities list in side-menu + location modal.
+   * Mobile opens #side-menu (not #def-location), so both must be updated.
    */
   function initPopularCitiesOrder() {
     if (typeof window.jQuery === 'undefined' || !window.baseAjaxUrl) {
@@ -277,33 +277,46 @@
     }
 
     var $ = window.jQuery;
-    var loaded = false;
 
-    function refreshPopular() {
-      var row = $('#def-location .row.popular');
+    function refreshPopular(root) {
+      var $root = root ? $(root) : $(document);
+      var rows = $root.find('.box.location .row.popular, #def-location .row.popular, #side-menu .row.popular');
 
-      if (!row.length) {
+      if (!rows.length) {
+        rows = $('.box.location .row.popular, #def-location .row.popular, #side-menu .row.popular');
+      }
+
+      if (!rows.length) {
         return;
       }
 
       $.ajax({
         type: 'GET',
         url: window.baseAjaxUrl + '&ajaxPngmPopularCities=1',
+        cache: false,
         success: function (html) {
-          if (html && $.trim(html) !== '') {
-            row.html(html);
-            loaded = true;
+          if (!html || $.trim(html) === '') {
+            return;
           }
+
+          rows.each(function () {
+            $(this).html(html);
+          });
         }
       });
     }
 
-    // Initial + whenever the location modal is opened.
     refreshPopular();
-    $(document).on('click', 'a.location, #def-location', function () {
-      if (!loaded) {
+
+    // Bottom nav / header location open — refresh every time.
+    $(document).on('click', '#navi-bar a.location, header .links .btn.location, .change-location, .change-search-location, a.location', function () {
+      setTimeout(function () {
         refreshPopular();
-      }
+      }, 50);
+      setTimeout(function () {
+        refreshPopular('#def-location');
+        refreshPopular('#side-menu');
+      }, 280);
     });
   }
 
@@ -991,7 +1004,7 @@
 
   /**
    * ITEM-01 / ITEM-02 — Listing photo gallery:
-   * swipe, pinch-zoom, fullscreen lightbox, correct alignment.
+   * swipe, pinch-zoom (mobile), fullscreen lightbox.
    */
   function initItemGallery() {
     if (typeof window.jQuery === 'undefined') {
@@ -1006,9 +1019,10 @@
     }
 
     var container = root.find('.swiper-container').first();
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    // Scope thumbs strictly to this listing gallery.
     root.find('.swiper-thumbs').attr('data-pngm-gallery', '1');
+    root.addClass('pngm-gallery-ready');
 
     function syncThumbs(index) {
       root.find('.swiper-thumbs li').removeClass('active');
@@ -1032,8 +1046,10 @@
 
       return new window.Swiper(el, {
         slideClass: 'swiper-slide',
+        resistanceRatio: 0.65,
+        touchStartPreventDefault: false,
         zoom: {
-          maxRatio: 3,
+          maxRatio: 4,
           minRatio: 1,
           toggle: true
         },
@@ -1052,6 +1068,12 @@
             }
 
             syncThumbs(swp.activeIndex);
+          },
+          zoomChange: function (swp, scale) {
+            // While pinched in, disable slide swipe so fingers stay on the photo.
+            if (swp && swp.allowTouchMove !== undefined) {
+              swp.allowTouchMove = scale <= 1.05;
+            }
           }
         }
       });
@@ -1070,6 +1092,9 @@
         // ignore
       }
 
+      // Detach parent click→lg path so we fully control open behaviour.
+      container.off('onBeforeOpen.lg onAfterOpen.lg');
+
       container.lightGallery({
         mode: 'lg-slide',
         thumbnail: true,
@@ -1080,8 +1105,9 @@
         share: false,
         zoom: true,
         scale: 1,
-        enableZoomAfter: 200,
+        enableZoomAfter: 100,
         actualSize: true,
+        showZoomInOutIcons: true,
         fullScreen: true,
         counter: true,
         closable: true,
@@ -1091,28 +1117,101 @@
         mousewheel: true,
         hideBarsDelay: 4000,
         thumbWidth: 90,
-        thumbContHeight: 80
+        thumbContHeight: 80,
+        // Mobile: keep pinch-zoom usable inside lightbox.
+        swipeThreshold: 50,
+        enableDrag: true,
+        enableSwipe: true
       });
     }
 
-    // Wait briefly so parent global.js can finish first, then upgrade.
+    function openLightboxAt(index) {
+      var link = root.find('.swiper-slide').eq(index).find('> a').get(0);
+
+      if (link) {
+        // Ensure real image src is loaded before lightbox opens.
+        var img = $(link).find('img');
+        if (img.length && img.attr('data-src') && img.attr('src') !== img.attr('data-src')) {
+          img.attr('src', img.attr('data-src'));
+        }
+
+        link.click();
+      }
+    }
+
+    // Wait for parent global.js Swiper/lightGallery, then replace.
     setTimeout(function () {
       window.pngmItemSwiper = initSwiper();
       initLightbox();
+
+      // Mobile: pinch-zoom on the gallery itself; open fullscreen via button
+      // (or double-tap). Prevent accidental lightbox open while pinching.
+      if (isTouch) {
+        var touchMoved = false;
+        var lastTap = 0;
+
+        container.on('touchstart.pngmZoom', 'li.swiper-slide > a', function () {
+          touchMoved = false;
+        });
+
+        container.on('touchmove.pngmZoom', 'li.swiper-slide > a', function () {
+          touchMoved = true;
+        });
+
+        container.on('click.pngmZoom', 'li.swiper-slide > a', function (e) {
+          var now = Date.now();
+          var swp = window.pngmItemSwiper;
+          var zoomed = swp && swp.zoom && swp.zoom.scale && swp.zoom.scale > 1.05;
+
+          // Double-tap toggles Swiper zoom instead of opening lightbox.
+          if (now - lastTap < 320) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            lastTap = 0;
+
+            if (swp && swp.zoom) {
+              if (zoomed) {
+                swp.zoom.out();
+              } else {
+                swp.zoom.in();
+              }
+            }
+
+            return false;
+          }
+
+          lastTap = now;
+
+          // Single tap: if already zoomed or finger moved (pinch), do not open lightbox.
+          if (touchMoved || zoomed) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+          }
+
+          // Short delay single-tap → open lightbox (pinch zoom works there too).
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          var idx = swp ? swp.activeIndex : 0;
+          setTimeout(function () {
+            if (Date.now() - lastTap >= 280) {
+              openLightboxAt(idx);
+            }
+          }, 300);
+
+          return false;
+        });
+      }
 
       root.find('.pngm-gallery-fullscreen').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
         var idx = window.pngmItemSwiper ? window.pngmItemSwiper.activeIndex : 0;
-        var link = root.find('.swiper-slide').eq(idx).find('> a').get(0);
-
-        if (link) {
-          link.click();
-        }
+        openLightboxAt(idx);
       });
 
-      // Thumbnails: only this listing's thumbs.
       root.off('click.pngmThumbs').on('click.pngmThumbs', '.swiper-thumbs li', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1128,9 +1227,8 @@
           window.pngmItemSwiper.slideTo(elemId);
         }
       });
-    }, 120);
+    }, 350);
 
-    // Make lightbox close / back obvious on mobile after open.
     $(document).on('onAfterOpen.lg', function () {
       $('body').addClass('pngm-lg-open');
 

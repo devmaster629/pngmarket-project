@@ -172,7 +172,7 @@
 
                 <div class="swiper-button swiper-next" aria-label="<?php echo osc_esc_html(__('Next photo', 'epsilon')); ?>"><i class="fas fa-caret-right"></i></div>
                 <div class="swiper-button swiper-prev" aria-label="<?php echo osc_esc_html(__('Previous photo', 'epsilon')); ?>"><i class="fas fa-caret-left"></i></div>
-                <button type="button" class="pngm-gallery-fullscreen isDesktop" title="<?php echo osc_esc_html(__('Full screen', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Full screen', 'epsilon')); ?>"><i class="fas fa-expand"></i></button>
+                <button type="button" class="pngm-gallery-fullscreen" title="<?php echo osc_esc_html(__('Full screen', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Full screen', 'epsilon')); ?>"><i class="fas fa-expand"></i></button>
               </div>
             <?php } ?>
             

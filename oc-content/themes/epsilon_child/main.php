@@ -78,13 +78,21 @@
                     <span class="lab hot"><?php _e('Hot', 'epsilon'); ?></span>
                   <?php } ?>
                   
-                  <?php if(eps_param('cat_icons') == 1) { ?>
-                    <?php 
+                  <?php
+                    // Prefer semantic SVG / FA icons — demo sample PNGs do not match PNG Market categories.
+                    $pngm_cat_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image(osc_category_id()) : '';
+                    $pngm_is_svg = ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false);
+                  ?>
+                  <?php if ($pngm_is_svg) { ?>
+                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
+                  <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
+                    <?php echo pngm_render_category_icon(osc_category_id(), osc_category()); ?>
+                  <?php } elseif (eps_param('cat_icons') == 1) { ?>
+                    <?php
                       $icon = eps_get_cat_icon(osc_category_id(), osc_category(), true);
                       $icon_ = explode(' ', $icon);
-                      
                       $has_type = false;
-                      if(in_array($icon_, array('fas', 'far', 'fab'))) {
+                      if (in_array($icon_, array('fas', 'far', 'fab'))) {
                         $has_type = true;
                       }
                     ?>

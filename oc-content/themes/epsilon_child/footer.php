@@ -521,11 +521,15 @@
           </div>
         <?php } ?>
         
-        <?php $cities = ModelEPS::newInstance()->getPopularCities(6, 0); ?>
+        <?php
+          $cities = function_exists('pngm_get_popular_cities')
+            ? pngm_get_popular_cities(7)
+            : ModelEPS::newInstance()->getPopularCities(7, 0);
+        ?>
 
         <?php if(is_array($cities) && count($cities) > 0) { ?>
           <div class="row popular">
-            <div class="lead"><?php _e('Popular cities', 'epsilon'); ?></div>
+            <div class="lead"><?php _e('Main cities', 'epsilon'); ?></div>
 
             <?php foreach($cities as $c) { ?>
               <?php $hash = rawurlencode(base64_encode(json_encode(array('fk_i_city_id' => $c['fk_i_city_id'], 'fk_i_region_id' => $c['fk_i_region_id'], 'fk_c_country_code' => $c['fk_c_country_code'], 's_name' => $c['s_name'], 's_name_native' => @$c['s_name_native'], 's_name_top' => @$c['s_name_top'], 's_name_top_native' => @$c['s_name_top_native'], 'd_coord_lat' => @$c['d_coord_lat'], 'd_coord_long' => @$c['d_coord_long'])))); ?>

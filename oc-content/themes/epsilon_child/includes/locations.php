@@ -194,6 +194,8 @@ function pngm_location_key($name)
 {
     $name = function_exists('mb_strtolower') ? mb_strtolower(trim((string) $name), 'UTF-8') : strtolower(trim((string) $name));
     $name = preg_replace('/\s+/u', ' ', $name);
+    $name = str_replace(array('mt.', 'mt '), 'mount ', $name);
+    $name = preg_replace('/\s+/u', ' ', $name);
 
     return $name;
 }
