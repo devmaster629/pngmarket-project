@@ -43,7 +43,7 @@
           <?php osc_run_hook('home_search_bottom'); ?>
         </form>
 
-        <h2><?php _e('Categories', 'epsilon'); ?></h2>
+        <h2 class="pngm-cats-heading"><?php _e('Categories', 'epsilon'); ?></h2>
         
         <div id="home-cat">
           <?php 
