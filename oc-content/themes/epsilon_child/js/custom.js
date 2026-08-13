@@ -1333,6 +1333,98 @@
     });
   }
 
+  function initGeoLocate() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+
+    window.epsGeoLocate = function (elem) {
+      if (!elem || !elem.length) {
+        return;
+      }
+
+      function show(name) {
+        elem.find('span').hide(0);
+        elem.find('span.' + name).show(0);
+      }
+
+      function lookup(lat, lng) {
+        if (!window.baseAjaxUrl) {
+          show('failed-unfound');
+          return;
+        }
+
+        $.ajax({
+          type: 'GET',
+          dataType: 'json',
+          url: window.baseAjaxUrl + '&ajaxFindCity=1&latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lng),
+          success: function (data) {
+            if (data && (data.success === true || data.success === 'true' || data.success === 1)) {
+              elem.find('span').hide(0);
+              elem.find('span.success').text(data.s_location || '').show(0);
+
+              if (!elem.closest('.navigator-fill-selects').length) {
+                elem.find('span.refresh').show(0);
+                var link = elem.closest('a');
+                link.attr('href', String(window.location.href).replace('#', '')).addClass('completed');
+                var alt = link.find('strong').attr('data-alt-text');
+                if (alt) {
+                  link.find('strong').text(alt);
+                }
+              } else if (typeof window.epsGeoToSelects === 'function') {
+                window.epsGeoToSelects(elem, data);
+              }
+
+              return;
+            }
+
+            show('failed-unfound');
+          },
+          error: function () {
+            show('failed-unfound');
+          }
+        });
+      }
+
+      function onPos(pos) {
+        lookup(pos.coords.latitude, pos.coords.longitude);
+      }
+
+      function fail() {
+        show('failed');
+      }
+
+      function onErr(err) {
+        var code = err && err.code;
+        if (!elem.data('pngm-geo-retry') && code !== 1) {
+          elem.data('pngm-geo-retry', 1);
+          navigator.geolocation.getCurrentPosition(onPos, fail, {
+            enableHighAccuracy: false,
+            timeout: 20000,
+            maximumAge: 600000
+          });
+          return;
+        }
+
+        fail();
+      }
+
+      if (!navigator.geolocation) {
+        show('not-supported');
+        return;
+      }
+
+      show('loading');
+      navigator.geolocation.getCurrentPosition(onPos, onErr, {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 120000
+      });
+    };
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1344,6 +1436,7 @@
     initItemGallery();
     initUserAccountUx();
     initPostingPlaceholders();
+    initGeoLocate();
   }
 
   if (document.readyState === 'loading') {

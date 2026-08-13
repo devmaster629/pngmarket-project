@@ -357,6 +357,91 @@ function pngm_prepare_cities_for_posting($cities, $region_name = null, $name_key
 }
 
 /**
+ * Approximate GPS for PNG main cities (used when DB city coords are empty).
+ *
+ * @return array name-key => array(lat, lon)
+ */
+function pngm_main_city_coords()
+{
+    return array(
+        'port moresby'  => array(-9.4438, 147.1803),
+        'lae'           => array(-6.7333, 146.9833),
+        'mount hagen'   => array(-5.8581, 144.2325),
+        'madang'        => array(-5.2219, 145.7869),
+        'kokopo'        => array(-4.3520, 152.2633),
+        'goroka'        => array(-6.0817, 145.3878),
+        'wewak'         => array(-3.5500, 143.6333),
+        'kimbe'         => array(-5.5500, 150.1430),
+        'vanimo'        => array(-2.6741, 141.3028),
+        'alotau'        => array(-10.3167, 150.4667),
+        'kavieng'       => array(-2.5667, 150.8000),
+        'mendi'         => array(-6.1478, 143.6560),
+        'kundiawa'      => array(-6.0167, 144.9667),
+        'popondetta'    => array(-8.7667, 148.2333),
+        'daru'          => array(-9.0833, 143.2000),
+        'kerema'        => array(-7.9631, 145.7785),
+        'buka'          => array(-5.4300, 154.6700),
+    );
+}
+
+/**
+ * Nearest known PNG city to a GPS point.
+ *
+ * @param float $lat
+ * @param float $lon
+ * @return array|null
+ */
+function pngm_nearest_city_from_coords($lat, $lon)
+{
+    $lat = (float) $lat;
+    $lon = (float) $lon;
+    $best = null;
+    $best_d = null;
+
+    $cities = pngm_get_popular_cities(20);
+    $coords = pngm_main_city_coords();
+
+    if (!is_array($cities)) {
+        $cities = array();
+    }
+
+    foreach ($cities as $c) {
+        $key = function_exists('pngm_location_key') ? pngm_location_key($c['s_name']) : strtolower($c['s_name']);
+        $clat = isset($c['d_coord_lat']) ? (float) $c['d_coord_lat'] : 0;
+        $clon = isset($c['d_coord_long']) ? (float) $c['d_coord_long'] : 0;
+
+        if (($clat == 0.0 && $clon == 0.0) && isset($coords[$key])) {
+            $clat = $coords[$key][0];
+            $clon = $coords[$key][1];
+            $c['d_coord_lat'] = $clat;
+            $c['d_coord_long'] = $clon;
+        }
+
+        if ($clat == 0.0 && $clon == 0.0) {
+            continue;
+        }
+
+        $dlat = deg2rad($clat - $lat);
+        $dlon = deg2rad($clon - $lon);
+        $a = sin($dlat / 2) * sin($dlat / 2) + cos(deg2rad($lat)) * cos(deg2rad($clat)) * sin($dlon / 2) * sin($dlon / 2);
+        $km = 6371 * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        if ($best_d === null || $km < $best_d) {
+            $best_d = $km;
+            $best = $c;
+            $best['d_distance'] = $km;
+            $best['d_distance_precise'] = $km;
+            $best['s_city'] = $c['s_name'];
+            $best['s_region'] = isset($c['s_name_top']) ? $c['s_name_top'] : '';
+            $best['s_city_native'] = isset($c['s_name_native']) ? $c['s_name_native'] : '';
+            $best['s_region_native'] = isset($c['s_name_top_native']) ? $c['s_name_top_native'] : '';
+        }
+    }
+
+    return $best;
+}
+
+/**
  * Popular / main cities for location picker (LOCATION-01).
  *
  * @param int $limit

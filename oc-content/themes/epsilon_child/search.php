@@ -318,7 +318,8 @@
         <?php 
           $loc = @array_values(array_filter(array(osc_search_city(), osc_search_region(), osc_search_country())))[0];
           $cat = (isset($category['s_name']) ? $category['s_name'] : '');
-          $tit = implode(', ', array_filter(array($cat, $loc)));
+          $pattern = trim(Params::getParam('sPattern'));
+          $tit = implode(', ', array_filter(array($cat, $loc, $pattern)));
 
           if(osc_search_total_items() <= 0) { 
             echo __('No exact results found', 'epsilon');

@@ -944,23 +944,27 @@ body#home #premium-items .simple-prod .labels {
     display: none !important;
   }
 
+  header .logo,
   header .cmain > .logo {
-    max-width: calc(100% - 88px);
-    height: 44px;
-    overflow: hidden;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none !important;
+    height: auto;
+    overflow: visible;
     display: flex;
     align-items: center;
   }
 
-  header .cmain > .logo img {
-    height: 52px;
-    max-height: 52px;
+  header .cmain > .logo img,
+  header .logo img {
+    height: 40px;
+    max-height: 40px;
     width: auto;
-    object-fit: cover;
-    object-position: left 42%;
-    clip-path: inset(0 0 24% 0);
-    transform: scale(1.18);
-    transform-origin: left center;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: left center;
+    clip-path: none;
+    transform: none;
   }
 
   .home-search > .container.pngm-home-banner {
@@ -1557,7 +1561,7 @@ body#home.pngm-sticky-search {
   }
 
   header .cmain {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
     height: 100%;
@@ -1583,21 +1587,27 @@ body#home.pngm-sticky-search {
     height: 16px;
   }
 
+  header .logo,
   header .cmain > .logo {
+    flex: 1 1 auto;
     min-width: 0;
-    max-width: calc(100% - 88px);
+    max-width: none !important;
     padding: 2px 0;
+    overflow: visible;
   }
 
   header .cmain > .logo img,
   header .cmain > .logo svg,
   header .logo img {
     max-width: 100%;
-    max-height: 36px;
-    height: 36px;
+    max-height: 40px;
+    height: 40px;
     width: auto;
     margin: 0;
     object-fit: contain;
+    object-position: left center;
+    clip-path: none;
+    transform: none;
   }
 
   header .cmain > .links {
@@ -2761,6 +2771,69 @@ footer.pngm-footer .col.socialx:empty {
   display: none;
 }
 
+@media screen and (max-width: 767px) {
+  footer.pngm-footer section.one {
+    flex-direction: column;
+  }
+
+  footer.pngm-footer .col,
+  footer.pngm-footer .col.contact,
+  footer.pngm-footer .col.socialx,
+  footer.pngm-footer .col.pages {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    padding-right: 0;
+    margin: 0 0 18px;
+  }
+
+  footer.pngm-footer .quick-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  footer.pngm-footer .quick-links a,
+  footer.pngm-footer .quick-links a.btn-mini {
+    float: none;
+    display: block;
+    width: auto;
+    max-width: 100%;
+    margin: 0 0 8px 0;
+    padding: 0;
+    background: transparent;
+    color: #404040;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    text-align: left;
+    border-radius: 0;
+  }
+
+  footer.pngm-footer .col.socialx a,
+  footer.pngm-footer .col.pages a {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+  }
+
+  footer.pngm-footer section.two {
+    display: block;
+    margin: 8px 0 0;
+    padding-top: 16px;
+  }
+
+  footer.pngm-footer section.two a {
+    display: none;
+  }
+
+  footer.pngm-footer section.two span {
+    display: block;
+    width: 100%;
+    margin: 0;
+  }
+}
+
 
 /* ==========================================================================
    REQ-09 — Social login + WhatsApp Chat plugin visual integration
@@ -3082,8 +3155,11 @@ body#item #shortcuts .item-share,
   #search-main .top-bar h1 {
     font-size: 16px !important;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
     margin: 0 0 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .pngm-search-subcats {
@@ -3120,27 +3196,46 @@ body#item #shortcuts .item-share,
   #search-quick-bar.pngm-search-toolbar,
   #search-quick-bar {
     display: flex !important;
-    align-items: center;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     gap: 8px;
     margin: 0 0 8px 0;
     padding: 0;
   }
 
+  #search-quick-bar > div,
   #search-quick-bar .sort-type {
-    flex: 1 1 auto;
-    margin: 0;
+    width: auto !important;
+    flex: 1 1 auto !important;
+    margin: 0 !important;
     min-width: 0;
   }
 
+  #search-quick-bar .sort-type select {
+    width: 100% !important;
+  }
+
+  #search-main #open-search-filters,
+  #search-quick-bar #open-search-filters,
   #search-quick-bar .pngm-filter-btn,
+  #open-search-filters.isMobile,
   #open-search-filters {
     position: static !important;
-    flex: 0 0 auto;
-    height: 36px;
-    padding: 0 12px;
-    margin: 0;
+    bottom: auto !important;
+    right: auto !important;
+    left: auto !important;
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    height: 42px;
+    padding: 0 14px;
+    margin: 0 !important;
     font-size: 13px;
     box-shadow: none;
+    white-space: nowrap;
   }
 
   #latest-search,
@@ -3248,4 +3343,25 @@ body#item #shortcuts .item-share,
 
 body.pngm-lg-open .lg-outer .lg-img-wrap {
   touch-action: none;
+}
+
+.navigator a.locate-me,
+.navigator a.locate-me:hover,
+.navigator a.locate-me .status,
+.navigator a.locate-me .status span {
+  text-decoration: none;
+}
+
+.navigator a.locate-me .status span.failed,
+.navigator a.locate-me .status span.failed-unfound {
+  color: #8a1f1f;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+@media screen and (max-width: 490px) {
+  header .logo,
+  header .cmain > .logo {
+    max-width: none !important;
+  }
 }

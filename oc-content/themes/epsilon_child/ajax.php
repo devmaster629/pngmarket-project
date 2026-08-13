@@ -419,7 +419,19 @@ if(@$_GET['ajaxFindCity'] == 1) {
   
   if($latitude != NULL && $latitude != '' && $longitude != NULL && $longitude != '') {
     $city = ModelEPS::newInstance()->findClosestCity($latitude, $longitude);
-    
+    $city_lat = isset($city['d_coord_lat']) ? (float) $city['d_coord_lat'] : 0;
+    $city_lon = isset($city['d_coord_long']) ? (float) $city['d_coord_long'] : 0;
+    $too_far = isset($city['d_distance']) && (float) $city['d_distance'] > 800;
+
+    if ((!isset($city['fk_i_city_id']) || !$city['fk_i_city_id'] || ($city_lat == 0 && $city_lon == 0) || $too_far)
+        && function_exists('pngm_nearest_city_from_coords')
+    ) {
+      $fallback = pngm_nearest_city_from_coords($latitude, $longitude);
+      if (is_array($fallback) && !empty($fallback['fk_i_city_id'])) {
+        $city = $fallback;
+      }
+    }
+
     if(isset($city['fk_i_city_id']) && $city['fk_i_city_id']) {
       $location = json_encode(array(
         'success' => true,

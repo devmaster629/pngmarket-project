@@ -138,14 +138,6 @@
     </section>
     
     <section class="two">
-      <?php if (getBoolPreference('web_contact_form_disabled') != 1) { ?>
-        <a href="<?php echo osc_contact_url(); ?>"><?php _e('Contact Us', 'epsilon'); ?></a>
-      <?php } ?>
-
-      <?php foreach ($pngm_pages as $page) { ?>
-        <a href="<?php echo osc_esc_html($page['url']); ?>"><?php echo osc_esc_html($page['title']); ?></a>
-      <?php } ?>
-      
       <span><?php _e('Copyright', 'epsilon'); ?> &copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_contact['name']); ?>. <?php _e('All rights reserved', 'epsilon'); ?>.</span>
     </section>
   </div>
@@ -491,7 +483,7 @@
             <span class="status">
               <span class="init"><?php _e('Click to find closest city to your location', 'epsilon'); ?></span>
               <span class="not-supported" style="display:none;"><?php _e('Geolocation is not supported by your browser', 'epsilon'); ?></span>
-              <span class="failed" style="display:none;"><?php _e('Unable to retrieve your location, it may be blocked', 'epsilon'); ?></span>
+              <span class="failed" style="display:none;"><?php _e('Could not read GPS. Allow location for this site, or pick a city below.', 'epsilon'); ?></span>
               <span class="failed-unfound" style="display:none;"><?php _e('Unable to retrieve your location, no close city found', 'epsilon'); ?></span>
               <span class="loading" style="display:none;"><?php _e('Locating...', 'epsilon'); ?></span>
               <span class="success" style="display:none;"></span>
