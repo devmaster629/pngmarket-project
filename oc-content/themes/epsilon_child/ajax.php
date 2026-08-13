@@ -563,13 +563,12 @@ if (@$_GET['ajaxPngmPopularCities'] == 1) {
         'd_coord_long' => @$c['d_coord_long'],
       ))));
 
-      $label = osc_location_native_name_selector($c, 's_name')
-        . (osc_location_native_name_selector($c, 's_name_top') <> ''
-          ? ', ' . osc_location_native_name_selector($c, 's_name_top')
-          : '')
-        . ($c['i_num_items'] > 0
-          ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>'
-          : '');
+      $label = function_exists('pngm_main_city_label')
+        ? pngm_main_city_label($c)
+        : osc_esc_html(osc_location_native_name_selector($c, 's_name'))
+          . ($c['i_num_items'] > 0
+            ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>'
+            : '');
 
       $html .= '<a href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '" class="location-elem">' . $label . '</a>';
     }

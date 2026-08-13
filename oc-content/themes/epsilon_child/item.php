@@ -208,25 +208,8 @@
             <?php if($item_extra['i_sold'] == 2) { ?><span class="reserved"><?php _e('Reserved', 'epsilon'); ?></span><?php } ?>
           </div>
             
-          <div class="row details">
-            <span><?php echo osc_item_category(); ?></span>
-            <span><?php echo sprintf(__('%d views', 'epsilon'), osc_item_views()); ?></span>
-
-            <?php if(!in_array(osc_item_category_id(), eps_extra_fields_hide())) { ?>
-              <?php if(eps_get_simple_name($item_extra['i_condition'], 'condition', false) <> '') { ?>
-                <span><?php echo eps_get_simple_name($item_extra['i_condition'], 'condition', false); ?></span>
-              <?php } ?>
-
-              <?php if(eps_get_simple_name($item_extra['i_transaction'], 'transaction', false) <> '') { ?>
-                <span><?php echo eps_get_simple_name($item_extra['i_transaction'], 'transaction', false); ?></span>
-              <?php } ?>          
-            <?php } ?>
-            
-            <span><?php echo sprintf(__('ID: %d', 'epsilon'), osc_item_id()); ?></span>
-          </div>
-          
           <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-            <div class="row price under-header p-<?php echo osc_esc_html(osc_item_price()); ?>x<?php if(osc_item_price() <= 0) { ?> isstring<?php } ?>"><?php echo osc_item_formated_price(); ?></div>
+            <div class="row price under-header p-<?php echo osc_esc_html(osc_item_price()); ?>x<?php if(osc_item_price() <= 0) { ?> isstring<?php } ?>"><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></div>
           <?php } ?>
           
           <?php if(function_exists('mo_show_offer_link_raw') && mo_show_offer_link_raw() !== false) { ?>
@@ -251,33 +234,7 @@
         </div>
         
 
-        <!-- CUSTOM FIELDS -->
-        <div class="props<?php if($has_cf) { ?> style<?php } ?>">
-          <?php if($has_cf) { ?>
-            <h2><?php _e('Attributes', 'epsilon'); ?></h2>
-
-            <div class="custom-fields">
-              <?php while(osc_has_item_meta()) { ?>
-                <?php
-                  $meta = osc_item_meta();
-                  $meta_type = $meta['e_type'] ?? '';
-                  $meta_value = $meta['s_value'] ?? '';
-
-                  if($meta_type != 'CHECKBOX') {
-                    $meta_value = osc_item_meta_value();
-                  }
-                ?>
-              
-                <?php if($meta_value != '') { ?>
-                  <div class="field type-<?php echo osc_esc_html($meta_type); ?> name-<?php echo osc_esc_html(strtoupper(str_replace(' ', '-', osc_item_meta_name()))); ?> value-<?php echo osc_esc_html($meta_value); ?>">
-                    <span class="name"><?php echo osc_item_meta_name(); ?></span> 
-                    <span class="value"><?php echo osc_item_meta_value(); ?></span>
-                  </div>
-                <?php } ?>
-              <?php } ?>
-            </div>
-          <?php } ?>      
-
+        <div class="props pngm-item-compact">
           <div id="item-hook"><?php osc_run_hook('item_detail', osc_item()); ?></div>
         </div>
         
@@ -345,8 +302,13 @@
                   <div class="row cords"><?php echo osc_item_latitude(); ?>, <?php echo osc_item_longitude(); ?></div>
                 <?php } ?>
                 
-                <a target="_blank" class="directions" href="https://maps.google.com/maps?daddr=<?php echo urlencode($location); ?>">
-                  <?php _e('Get directions', 'epsilon'); ?> &#8594;
+                <?php
+                  $pngm_map_q = (osc_item_latitude() <> 0 && osc_item_longitude() <> 0)
+                    ? osc_item_latitude() . ',' . osc_item_longitude()
+                    : $location;
+                ?>
+                <a target="_blank" rel="noopener noreferrer" class="directions" href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($pngm_map_q); ?>">
+                  <?php _e('View on map', 'epsilon'); ?> &#8594;
                 </a>
               <?php } else { ?>
                 <?php _e('Unknown location', 'epsilon'); ?>
@@ -531,17 +493,7 @@
           </a>
         <?php } ?>
         
-        <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
-          <a href="<?php echo im_contact_button(osc_item(), true); ?>" class="contact master-button pngm-contact-message">
-            <i class="fas fa-envelope-open"></i>
-            <span><?php _e('Message on PNGMarket', 'epsilon'); ?></span>
-          </a>
-        <?php } else if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
-          <a href="<?php echo eps_item_fancy_url('contact'); ?>" class="open-form contact master-button pngm-contact-message" data-type="contact">
-            <i class="fas fa-envelope-open"></i>
-            <span><?php _e('Message on PNGMarket', 'epsilon'); ?></span>
-          </a>
-        <?php } ?>
+        <?php /* Instant Messenger (Chat with seller) is the only message action. */ ?>
         
         <?php osc_run_hook('item_contact'); ?>
 
@@ -698,16 +650,6 @@
     </div>
   
     <?php 
-      // ITEM-04 — Similar listings (category / location / keywords).
-      if(eps_param('related') == 1) {
-        if (function_exists('pngm_similar_ads')) {
-          pngm_similar_ads(eps_param('related_design'), eps_param('related_count'));
-        } else {
-          eps_related_ads('category', eps_param('related_design'), eps_param('related_count'));
-        }
-      }
-
-      // ITEM-03 — Other listings from the same seller.
       if (function_exists('pngm_seller_other_ads') && osc_item_user_id() > 0) {
         pngm_seller_other_ads(eps_param('related_design'), 8);
       }
@@ -717,33 +659,16 @@
       if(eps_param('recent_item') == 1) {
         eps_recent_ads(eps_param('recent_design'), eps_param('recent_count'), 'onitem');
       }
+
+      if (function_exists('pngm_similar_ads')) {
+        pngm_similar_ads(eps_param('related_design'), eps_param('related_count'));
+      } elseif (eps_param('related') == 1) {
+        eps_related_ads('category', eps_param('related_design'), eps_param('related_count'));
+      }
     ?>
   </div>
 
-  <?php if($phone_data['found']) { ?>
-    <a class="sticky-button btn phone <?php echo $phone_data['class']; ?> isMobile" title="<?php echo osc_esc_html($phone_data['title']); ?>" data-prefix="tel" href="<?php echo $phone_data['url']; ?>" data-part1="<?php echo osc_esc_html($phone_data['part1']); ?>" data-part2="<?php echo osc_esc_html($phone_data['part2']); ?>">
-      <i class="fas fa-phone-alt"></i>
-      <span><?php echo $phone_data['masked']; ?></span>
-    </a>
-  <?php } else { ?>
-    <a class="sticky-button btn disabled isMobile" title="<?php echo osc_esc_html($phone_data['title']); ?>" href="#" onclick="return false;">
-      <i class="fas fa-phone-alt"></i>
-      <span><?php echo $phone_data['title']; ?></span>
-    </a>
-  <?php } ?>
-
-  <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
-    <a href="<?php echo im_contact_button(osc_item(), true); ?>" class="contact btn btn-secondary sticky-button isMobile pngm-contact-message">
-      <i class="fas fa-envelope-open"></i>
-      <span><?php _e('Message', 'epsilon'); ?></span>
-    </a>
-
-  <?php } else if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
-    <a href="<?php echo eps_item_fancy_url('contact'); ?>" class="open-form contact btn btn-secondary sticky-button isMobile pngm-contact-message" data-type="contact">
-      <i class="fas fa-envelope-open"></i>
-      <span><?php _e('Message', 'epsilon'); ?></span>
-    </a>
-  <?php } ?>
+  <?php /* Floating phone / message buttons removed — contact stays in the seller block. */ ?>
   
   <div class="share-item-data" style="display:none">
     <a class="whatsapp" href="whatsapp://send?text=<?php echo urlencode(osc_item_url()); ?>" data-action="share/whatsapp/share"><i class="fab fa-whatsapp"></i> <?php _e('Share on Whatsapp', 'epsilon'); ?></a></span>

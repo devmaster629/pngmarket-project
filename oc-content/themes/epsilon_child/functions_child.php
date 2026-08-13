@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.1.5');
+    define('PNGM_CHILD_VERSION', '1.2.0');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -16,6 +16,7 @@ require_once dirname(__FILE__) . '/includes/item_page.php';
 require_once dirname(__FILE__) . '/includes/footer_helpers.php';
 require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
+require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 
 
 /**
@@ -199,39 +200,120 @@ function pngm_fix_vehicle_attribute_categories()
 
         $prefix = DB_TABLE_PREFIX;
 
-        // Cheap check: seed "Car Make" still unmapped → apply Vehicles (id 1).
-        $check = $m->query(
-            "SELECT pk_i_id FROM {$prefix}t_attribute
-             WHERE s_identifier = 'make'
-               AND (s_category_id IS NULL OR s_category_id = '' OR s_category_id = '0')
+        // Cars subcategory id (not parent Vehicles) so Motorcycles/Boats/Parts stay clean.
+        $cars_id = 18;
+        $cars = $m->query(
+            "SELECT c.pk_i_id FROM {$prefix}t_category c
+             INNER JOIN {$prefix}t_category_description d ON d.fk_i_category_id = c.pk_i_id
+             WHERE c.fk_i_parent_id = 1 AND d.s_name = 'Cars'
              LIMIT 1"
         );
-
-        if (!$check || $check->num_rows === 0) {
-            $m->close();
-            return;
+        if ($cars && $row = $cars->fetch_assoc()) {
+            $cars_id = (int) $row['pk_i_id'];
         }
 
         $ids = array('make', 'make_other', 'accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
         $escaped = array();
-
         foreach ($ids as $id) {
             $escaped[] = "'" . $m->real_escape_string($id) . "'";
         }
 
-        $sql = sprintf(
+        $m->query(sprintf(
             "UPDATE %st_attribute
-             SET s_category_id = '1'
-             WHERE s_identifier IN (%s)
-               AND (s_category_id IS NULL OR s_category_id = '' OR s_category_id = '0')",
+             SET s_category_id = '%d'
+             WHERE s_identifier IN (%s)",
             $prefix,
+            $cars_id,
             implode(',', $escaped)
-        );
+        ));
 
-        $m->query($sql);
+        // Seats is a number, not free text ("abc").
+        $m->query("UPDATE {$prefix}t_attribute SET s_type = 'NUMBER' WHERE s_identifier = 'seats'");
+
+        pngm_seed_car_body_values($m, $prefix);
         $m->close();
     } catch (Exception $e) {
         // Plugin may be disabled / table missing — ignore.
+    }
+}
+
+/**
+ * Cars Body field: Sedan / Hatchback / Wagon / SUV / 4WD / Pickup / Van & Minibus / Other.
+ *
+ * @param mysqli $m
+ * @param string $prefix
+ */
+function pngm_seed_car_body_values($m, $prefix)
+{
+    $res = $m->query("SELECT pk_i_id FROM {$prefix}t_attribute WHERE s_identifier = 'body' LIMIT 1");
+    if (!$res || !($row = $res->fetch_assoc())) {
+        return;
+    }
+
+    $attr_id = (int) $row['pk_i_id'];
+    $wanted = array('Sedan', 'Hatchback', 'Wagon', 'SUV', '4WD', 'Pickup', 'Van & Minibus', 'Other');
+    $rename = array(
+        'Combi' => 'Wagon',
+        'Coupe' => 'SUV',
+        'Estate' => 'Wagon',
+        'Station Wagon' => 'Wagon',
+    );
+
+    $existing = $m->query(
+        "SELECT v.pk_i_id, l.pk_i_id AS loc_id, l.s_name, l.fk_c_locale_code
+         FROM {$prefix}t_attribute_value v
+         LEFT JOIN {$prefix}t_attribute_value_locale l ON l.fk_i_attribute_value_id = v.pk_i_id
+         WHERE v.fk_i_attribute_id = {$attr_id}"
+    );
+
+    $have = array();
+    $locale = 'en_US';
+
+    if ($existing) {
+        while ($r = $existing->fetch_assoc()) {
+            if (!empty($r['fk_c_locale_code'])) {
+                $locale = $r['fk_c_locale_code'];
+            }
+            $name = trim((string) $r['s_name']);
+            if ($name === '') {
+                continue;
+            }
+            if (isset($rename[$name]) && !empty($r['loc_id'])) {
+                $new = $rename[$name];
+                $m->query(sprintf(
+                    "UPDATE %st_attribute_value_locale SET s_name = '%s' WHERE pk_i_id = %d",
+                    $prefix,
+                    $m->real_escape_string($new),
+                    (int) $r['loc_id']
+                ));
+                $name = $new;
+            }
+            $have[strtolower($name)] = (int) $r['pk_i_id'];
+        }
+    }
+
+    $order = 1;
+    foreach ($wanted as $label) {
+        $key = strtolower($label);
+        if (isset($have[$key])) {
+            $m->query("UPDATE {$prefix}t_attribute_value SET i_order = {$order} WHERE pk_i_id = " . (int) $have[$key]);
+            $order++;
+            continue;
+        }
+
+        $m->query("INSERT INTO {$prefix}t_attribute_value (fk_i_attribute_id, fk_i_parent_id, s_image, i_order) VALUES ({$attr_id}, NULL, '', {$order})");
+        $vid = (int) $m->insert_id;
+        if ($vid > 0) {
+            $m->query(sprintf(
+                "INSERT INTO %st_attribute_value_locale (fk_i_attribute_value_id, fk_c_locale_code, s_name) VALUES (%d, '%s', '%s')",
+                $prefix,
+                $vid,
+                $m->real_escape_string($locale),
+                $m->real_escape_string($label)
+            ));
+            $have[$key] = $vid;
+        }
+        $order++;
     }
 }
 

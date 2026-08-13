@@ -55,7 +55,7 @@
           <div class="pngm-cat-item">
           <a href="<?php echo osc_search_url(array('page' => 'search')); ?>" class="all">
             <div>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="64px" height="64px"><path d="M116.65 219.35a15.68 15.68 0 0 0 22.65 0l96.75-99.83c28.15-29 26.5-77.1-4.91-103.88C203.75-7.7 163-3.5 137.86 22.44L128 32.58l-9.85-10.14C93.05-3.5 52.25-7.7 24.86 15.64c-31.41 26.78-33 74.85-5 103.88zm143.92 100.49h-48l-7.08-14.24a27.39 27.39 0 0 0-25.66-17.78h-71.71a27.39 27.39 0 0 0-25.66 17.78l-7 14.24h-48A27.45 27.45 0 0 0 0 347.3v137.25A27.44 27.44 0 0 0 27.43 512h233.14A27.45 27.45 0 0 0 288 484.55V347.3a27.45 27.45 0 0 0-27.43-27.46zM144 468a52 52 0 1 1 52-52 52 52 0 0 1-52 52zm355.4-115.9h-60.58l22.36-50.75c2.1-6.65-3.93-13.21-12.18-13.21h-75.59c-6.3 0-11.66 3.9-12.5 9.1l-16.8 106.93c-1 6.3 4.88 11.89 12.5 11.89h62.31l-24.2 83c-1.89 6.65 4.2 12.9 12.23 12.9a13.26 13.26 0 0 0 10.92-5.25l92.4-138.91c4.88-6.91-1.16-15.7-10.87-15.7zM478.08.33L329.51 23.17C314.87 25.42 304 38.92 304 54.83V161.6a83.25 83.25 0 0 0-16-1.7c-35.35 0-64 21.48-64 48s28.65 48 64 48c35.2 0 63.73-21.32 64-47.66V99.66l112-17.22v47.18a83.25 83.25 0 0 0-16-1.7c-35.35 0-64 21.48-64 48s28.65 48 64 48c35.2 0 63.73-21.32 64-47.66V32c0-19.48-16-34.42-33.92-31.67z"/></svg>
+              <svg class="pngm-cat-svg pngm-cat-all" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="32" height="32" aria-hidden="true"><rect x="5" y="5" width="16" height="16" rx="4" fill="currentColor"/><rect x="27" y="5" width="16" height="16" rx="4" fill="currentColor"/><rect x="5" y="27" width="16" height="16" rx="4" fill="currentColor"/><rect x="27" y="27" width="16" height="16" rx="4" fill="currentColor"/></svg>
             </div>
 
             <h3><span><?php _e('All', 'epsilon'); ?></span></h3>
@@ -74,8 +74,6 @@
                 <div <?php if($color <> '' && eps_param('cat_icons') != 1) { ?>style="background-color:<?php echo eps_hex_to_rgb($color, 0.15); ?>;"<?php } ?>>
                   <?php if(in_array(osc_category_id(), $new_categories)) { ?>
                     <span class="lab new"><?php _e('New', 'epsilon'); ?></span>
-                  <?php } else if(in_array(osc_category_id(), $hot_categories)) { ?>
-                    <span class="lab hot"><?php _e('Hot', 'epsilon'); ?></span>
                   <?php } ?>
                   
                   <?php
@@ -110,10 +108,10 @@
 
                 <div class="pngm-subcat">
                   <ul>
+                    <li class="pngm-subcat-all"><a href="<?php echo $category_url; ?>"><?php _e('View all', 'epsilon'); ?></a></li>
                     <?php foreach($subcategories as $subcategory) { ?>
                       <li><a href="<?php echo $subcategory['url']; ?>"><?php echo osc_esc_html($subcategory['name']); ?></a></li>
                     <?php } ?>
-                    <li class="pngm-subcat-all"><a href="<?php echo $category_url; ?>"><?php _e('View all', 'epsilon'); ?></a></li>
                   </ul>
                 </div>
               <?php } ?>
@@ -139,13 +137,16 @@
     <section class="home-location">
       <div class="container">
         <div class="block">
-          <h2>
-            <span><?php echo sprintf(__('Latest listings near %s', 'epsilon'), osc_location_native_name_selector($location_cookie, 's_name')); ?></span>
-
-            <a href="#" class="change-location btn btn-secondary mini">
-              <?php _e('Change location', 'epsilon'); ?>
-            </a>  
+          <?php $pngm_near_city = function_exists('pngm_city_only') ? pngm_city_only($location_cookie) : osc_location_native_name_selector($location_cookie, 's_name'); ?>
+          <h2 class="pngm-near-heading">
+            <span><?php _e('Latest listing near you', 'epsilon'); ?></span>
           </h2>
+          <p class="pngm-near-meta">
+            <i class="fas fa-map-marker-alt"></i>
+            <span><?php echo osc_esc_html($pngm_near_city); ?></span>
+            <span class="pngm-near-sep">~</span>
+            <a href="#" class="change-location pngm-change-link"><?php _e('Change', 'epsilon'); ?></a>
+          </p>
 
           <?php if(osc_count_items() > 0) { ?>
             <div class="nice-scroll-wrap">
@@ -405,7 +406,7 @@
 
   <?php View::newInstance()->_exportVariableToView('latestItems', eps_random_items()); ?>
   
-  <?php if(osc_count_latest_items() > 0) { ?>
+  <?php if(osc_count_latest_items() > 0 && !($location_cookie['success'] === true && eps_param('location_home') == 1)) { ?>
     <section class="home-latest">
       <div class="container">
         <div class="block">

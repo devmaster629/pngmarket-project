@@ -1049,7 +1049,7 @@
         resistanceRatio: 0.65,
         touchStartPreventDefault: false,
         zoom: {
-          maxRatio: 4,
+          maxRatio: 5,
           minRatio: 1,
           toggle: true
         },
@@ -1182,24 +1182,15 @@
 
           lastTap = now;
 
-          // Single tap: if already zoomed or finger moved (pinch), do not open lightbox.
+          // Pinch / pan stay on the photo. Fullscreen is the expand button.
           if (touchMoved || zoomed) {
             e.preventDefault();
             e.stopImmediatePropagation();
             return false;
           }
 
-          // Short delay single-tap → open lightbox (pinch zoom works there too).
           e.preventDefault();
           e.stopImmediatePropagation();
-
-          var idx = swp ? swp.activeIndex : 0;
-          setTimeout(function () {
-            if (Date.now() - lastTap >= 280) {
-              openLightboxAt(idx);
-            }
-          }, 300);
-
           return false;
         });
       }
@@ -1235,10 +1226,44 @@
       if (typeof window.epsFixImgSources === 'function') {
         window.epsFixImgSources();
       }
+
+      var startX = 0;
+      var startY = 0;
+
+      $(document).off('touchstart.pngmLgClose touchend.pngmLgClose');
+      $(document).on('touchstart.pngmLgClose', '.lg-item', function (e) {
+        var t = e.originalEvent && e.originalEvent.touches ? e.originalEvent.touches[0] : null;
+        if (!t) {
+          return;
+        }
+        startX = t.clientX;
+        startY = t.clientY;
+      });
+
+      $(document).on('touchend.pngmLgClose', '.lg-item', function (e) {
+        var t = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : null;
+        if (!t) {
+          return;
+        }
+
+        var zoomed = $('.lg-item.lg-current').hasClass('lg-zoomable') && $('.lg-item.lg-current img').attr('style') && $('.lg-item.lg-current img').attr('style').indexOf('scale') !== -1;
+        var scale = parseFloat($('.lg-item.lg-current .lg-image').css('transform').replace(/[^0-9.,-]/g, '').split(',')[0]) || 1;
+        if (zoomed || scale > 1.08) {
+          return;
+        }
+
+        var dx = t.clientX - startX;
+        var dy = t.clientY - startY;
+
+        if ((dy > 90 && Math.abs(dx) < 70) || (dx > 90 && Math.abs(dy) < 70)) {
+          $('.lg-close').trigger('click');
+        }
+      });
     });
 
     $(document).on('onCloseAfter.lg', function () {
       $('body').removeClass('pngm-lg-open');
+      $(document).off('touchstart.pngmLgClose touchend.pngmLgClose');
     });
   }
 
@@ -1277,6 +1302,37 @@
     });
   }
 
+  function initPostingPlaceholders() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+
+    function apply() {
+      $('input[placeholder="+"]').attr('placeholder', '');
+      $('input[name="sPhone"], input[name="contactPhone"], input[id^="atr_"]').filter(function () {
+        var val = String($(this).val() || '');
+        return /^\+\d*$/.test(val.trim());
+      }).val('');
+
+      $('label').each(function () {
+        var text = $.trim($(this).text()).toLowerCase();
+        if (text.indexOf('seat') !== -1) {
+          $(this).closest('.row, .atr-row, li, div').find('input[type="text"], input[type="number"]').attr('placeholder', '123');
+        }
+        if (text.indexOf('phone') !== -1) {
+          $(this).closest('.row, .atr-row, li, div').find('input').attr('placeholder', '');
+        }
+      });
+    }
+
+    apply();
+    $(document).ajaxComplete(function () {
+      apply();
+    });
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1287,6 +1343,7 @@
     initVehicleMakeOther();
     initItemGallery();
     initUserAccountUx();
+    initPostingPlaceholders();
   }
 
   if (document.readyState === 'loading') {

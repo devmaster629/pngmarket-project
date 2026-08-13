@@ -70,32 +70,7 @@ function pngm_seller_contact_channels()
     $user_id = (int) osc_item_user_id();
     $item_count = 0;
 
-    // PNGMarket / Instant Messenger message button.
-    if (function_exists('eps_param')
-        && eps_param('messenger_replace_button') == 1
-        && function_exists('im_contact_button')
-    ) {
-        $url = im_contact_button(osc_item(), true);
-        if ($url !== false && $url !== '') {
-            $channels['message'] = array(
-                'url'   => $url,
-                'label' => __('Message on PNGMarket', 'epsilon'),
-                'class' => 'pngm-contact-message',
-            );
-        }
-    }
-
-    if ($channels['message'] === null && function_exists('getBoolPreference')
-        && getBoolPreference('item_contact_form_disabled') != 1
-        && function_exists('eps_item_fancy_url')
-    ) {
-        $channels['message'] = array(
-            'url'   => eps_item_fancy_url('contact'),
-            'label' => __('Message on PNGMarket', 'epsilon'),
-            'class' => 'pngm-contact-message open-form',
-            'attrs' => 'data-type="contact"',
-        );
-    }
+    // Instant Messenger owns chat. Do not duplicate the standard Message button.
 
     // Prefer WhatsApp Chat plugin when installed; otherwise build wa.me from phones.
     $wa_plugin = function_exists('pngm_any_function_exists') && pngm_any_function_exists(array(

@@ -218,15 +218,7 @@
       <?php if(@$location_cookie['success'] === true) { ?><i class="mark fas fa-map-marker-alt"></i><?php } ?>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" width="18" height="18"><path d="M347.94 129.86L203.6 195.83a31.938 31.938 0 0 0-15.77 15.77l-65.97 144.34c-7.61 16.65 9.54 33.81 26.2 26.2l144.34-65.97a31.938 31.938 0 0 0 15.77-15.77l65.97-144.34c7.61-16.66-9.54-33.81-26.2-26.2zm-77.36 148.72c-12.47 12.47-32.69 12.47-45.16 0-12.47-12.47-12.47-32.69 0-45.16 12.47-12.47 32.69-12.47 45.16 0 12.47 12.47 12.47 32.69 0 45.16zM248 8C111.03 8 0 119.03 0 256s111.03 248 248 248 248-111.03 248-248S384.97 8 248 8zm0 448c-110.28 0-200-89.72-200-200S137.72 56 248 56s200 89.72 200 200-89.72 200-200 200z"/></svg>
 
-      <span>
-        <?php 
-          if(@$location_cookie['success'] !== true) {
-            _e('Location', 'epsilon');
-          } else {
-            echo @$location_cookie['s_location'] <> '' ? osc_location_native_name_selector($location_cookie, 's_name') : __('Location', 'epsilon');
-          }
-        ?>
-      </span>
+      <span><?php _e('Location', 'epsilon'); ?></span>
     </a>
   <?php } else { ?>
     <?php if(getBoolPreference('web_contact_form_disabled') != 1) { ?>
@@ -533,7 +525,7 @@
 
             <?php foreach($cities as $c) { ?>
               <?php $hash = rawurlencode(base64_encode(json_encode(array('fk_i_city_id' => $c['fk_i_city_id'], 'fk_i_region_id' => $c['fk_i_region_id'], 'fk_c_country_code' => $c['fk_c_country_code'], 's_name' => $c['s_name'], 's_name_native' => @$c['s_name_native'], 's_name_top' => @$c['s_name_top'], 's_name_top_native' => @$c['s_name_top_native'], 'd_coord_lat' => @$c['d_coord_lat'], 'd_coord_long' => @$c['d_coord_long'])))); ?>
-              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem"><?php echo osc_location_native_name_selector($c, 's_name') . (osc_location_native_name_selector($c, 's_name_top') <> '' ? ', ' . osc_location_native_name_selector($c, 's_name_top') : '') . ($c['i_num_items'] > 0 ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>' : ''); ?></a>
+              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem"><?php echo function_exists('pngm_main_city_label') ? pngm_main_city_label($c) : osc_esc_html(osc_location_native_name_selector($c, 's_name')) . ($c['i_num_items'] > 0 ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>' : ''); ?></a>
             <?php } ?>
           </div>
         <?php } ?>

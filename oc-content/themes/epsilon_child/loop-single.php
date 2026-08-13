@@ -21,7 +21,7 @@
 
       <a class="bar" href="<?php echo osc_item_url(); ?>">
         <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-          <div class="price isGrid isDetail"><span><?php echo osc_item_formated_price(); ?></span></div>
+          <div class="price isGrid isDetail"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
         <?php } ?>
         
         <?php if(osc_count_item_resources() > 0) { ?>
@@ -55,6 +55,8 @@
     </div>
 
     <div class="data">
+      <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
+
       <div class="info">
         <?php if(osc_item_is_premium()) { ?>
           <span class="premium-mark isList"><?php _e('Premium', 'epsilon'); ?></span>
@@ -66,10 +68,8 @@
           <span class="label reserved isList"><?php _e('Reserved', 'epsilon'); ?></span>
         <?php } ?>
       
-        <?php echo eps_item_location(); ?>
+        <?php echo function_exists('pngm_city_only') ? osc_esc_html(pngm_city_only()) : eps_item_location(); ?>
       </div>
-
-      <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
 
       <?php
         // Always output the teaser slot so every grid card keeps the same shape.
@@ -84,12 +84,11 @@
       
       <?php osc_run_hook('item_loop_description'); ?>
       
-      <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-        <div class="price standalone isList"><span><?php echo osc_item_formated_price(); ?></span></div>
-      <?php } ?>
-
-      <?php // Fallback date for non-grid contexts; grid uses .extra detail line. ?>
       <div class="pngm-date"><?php echo eps_smart_date(osc_item_pub_date()); ?></div>
+
+      <?php if(eps_check_category_price(osc_item_category_id())) { ?>
+        <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
+      <?php } ?>
 
       <?php // Staging-style detail: date • category • condition • transaction • views ?>
       <div class="extra">
@@ -111,7 +110,7 @@
 
       <div class="action isDetail">
         <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-          <div class="price<?php if(osc_item_price() <= 0) { ?> isstring<?php } ?>"><span><?php echo osc_item_formated_price(); ?></span></div>
+          <div class="price<?php if(osc_item_price() <= 0) { ?> isstring<?php } ?>"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
         <?php } ?>
       </div>
       
@@ -148,7 +147,7 @@
 
     <div class="right isList">
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-        <div class="price"><span><?php echo osc_item_formated_price(); ?></span></div>
+        <div class="price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
       <?php } ?>
       
       <?php eps_make_favorite(); ?>

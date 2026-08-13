@@ -355,13 +355,12 @@
           <strong>
             <?php
               if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
-                echo sprintf(__('Browse %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
+                echo osc_esc_html($pngm_subcat_parent['s_name']);
               } else {
-                _e('Choose a subcategory', 'epsilon');
+                _e('Category', 'epsilon');
               }
             ?>
           </strong>
-          <span><?php _e('Select a subcategory to refine results', 'epsilon'); ?></span>
         </div>
         <div class="pngm-search-subcats-list">
           <?php
@@ -434,42 +433,20 @@
       </div>
     <?php } ?>
 
-    <a href="#" id="open-search-filters" class="btn isMobile">
-      <div class="svg-wrap"><svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M496 384H160v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h80v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h336c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160h-80v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h336v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h80c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160H288V48c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16C7.2 64 0 71.2 0 80v32c0 8.8 7.2 16 16 16h208v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h208c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"/></svg></div>
-      <span><?php _e('Filter results', 'epsilon'); ?></span>
-    </a>
-
     <div class="ajax-load-failed flashmessage flashmessage-error" style="display:none;">
       <p><?php _e('There was problem loading your listings, please try to refresh this page', 'epsilon'); ?></p>
       <a class="btn mini" onClick="window.location.reload();"><i class="fas fa-redo"></i> <?php _e('Refresh', 'epsilon'); ?></a>
     </div>
     
-    <div id="search-quick-bar">
-      <?php eps_save_search_section('top'); ?>
-
-      <?php if(osc_count_items() > 0) { ?>
-        <div class="view-type">
-          <a href="<?php echo osc_update_search_url(array('sShowAs' => 'grid')); ?>" title="<?php echo osc_esc_html(__('Grid view', 'epsilon')); ?>" class="<?php echo ($view == 'grid' ? 'active' : ''); ?> grid" data-view="grid">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width="18" height="18"><path d="M120 0H24C10.75 0 0 10.74 0 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24V24c0-13.26-10.74-24-24-24zM96 96H48V48h48v48zM296 0h-96c-13.25 0-24 10.74-24 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24V24c0-13.26-10.74-24-24-24zm-24 96h-48V48h48v48zM120 368H24c-13.25 0-24 10.74-24 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24v-96c0-13.26-10.74-24-24-24zm-24 96H48v-48h48v48zm200-96h-96c-13.25 0-24 10.74-24 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24v-96c0-13.26-10.74-24-24-24zm-24 96h-48v-48h48v48zM120 184H24c-13.25 0-24 10.74-24 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24v-96c0-13.26-10.74-24-24-24zm-24 96H48v-48h48v48zm200-96h-96c-13.25 0-24 10.74-24 24v96c0 13.25 10.75 24 24 24h96c13.26 0 24-10.75 24-24v-96c0-13.26-10.74-24-24-24zm-24 96h-48v-48h48v48z"/></svg>
-            <span><?php _e('Grid', 'epsilon'); ?></span>
-          </a>
-          
-          <a href="<?php echo osc_update_search_url(array('sShowAs' => 'list')); ?>" title="<?php echo osc_esc_html(__('List view', 'epsilon')); ?>" class="<?php echo ($view == 'list' ? 'active' : ''); ?> list" data-view="list">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18"><path d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"/></svg>
-            <span><?php _e('List', 'epsilon'); ?></span>
-          </a>
-          
-          <a href="<?php echo osc_update_search_url(array('sShowAs' => 'detail')); ?>" title="<?php echo osc_esc_html(__('Detail view', 'epsilon')); ?>" class="<?php echo ($view == 'detail' ? 'active' : ''); ?> detail" data-view="detail">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18"><path d="M288 48v32c0 6.627-5.373 12-12 12H12C5.373 92 0 86.627 0 80V48c0-6.627 5.373-12 12-12h264c6.627 0 12 5.373 12 12zM12 220h424c6.627 0 12-5.373 12-12v-32c0-6.627-5.373-12-12-12H12c-6.627 0-12 5.373-12 12v32c0 6.627 5.373 12 12 12zm0 256h424c6.627 0 12-5.373 12-12v-32c0-6.627-5.373-12-12-12H12c-6.627 0-12 5.373-12 12v32c0 6.627 5.373 12 12 12zm264-184H12c-6.627 0-12 5.373-12 12v32c0 6.627 5.373 12 12 12h264c6.627 0 12-5.373 12-12v-32c0-6.627-5.373-12-12-12z"/></svg>
-            <span><?php _e('Detail', 'epsilon'); ?></span>
-          </a>
-        </div>
-        
-        <div class="sort-type">
-          <label for="orderSelect"><?php _e('Sort', 'epsilon'); ?></label>
-          <?php echo eps_simple_sort(); ?>
-        </div>
-      <?php } ?>
+    <div id="search-quick-bar" class="pngm-search-toolbar">
+      <div class="sort-type">
+        <label for="orderSelect"><?php _e('Sort', 'epsilon'); ?></label>
+        <?php echo eps_simple_sort(); ?>
+      </div>
+      <a href="#" id="open-search-filters" class="btn pngm-filter-btn isMobile">
+        <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M496 384H160v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h80v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h336c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160h-80v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h336v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h80c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160H288V48c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16C7.2 64 0 71.2 0 80v32c0 8.8 7.2 16 16 16h208v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h208c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"/></svg>
+        <span><?php _e('Filter', 'epsilon'); ?></span>
+      </a>
     </div>
 
     <?php
@@ -480,7 +457,7 @@
       $us_type = Params::getParam('sCompany');
     ?>
     
-    <div id="filter-user-type">
+    <div id="filter-user-type" class="pngm-phase-hidden">
       <a class="all<?php if(Params::getParam('sCompany') === '' || Params::getParam('sCompany') === null) { ?> active<?php } ?>" href="<?php echo osc_search_url($p1); ?>"><?php _e('All listings', 'epsilon'); ?></a>
       <a class="personal<?php if(Params::getParam('sCompany') === '0') { ?> active<?php } ?>" href="<?php echo osc_search_url($p2); ?>"><?php _e('Personal', 'epsilon'); ?></a>
       <a class="company<?php if(Params::getParam('sCompany') === '1') { ?> active<?php } ?>" href="<?php echo osc_search_url($p3); ?>"><?php _e('Company', 'epsilon'); ?></a>
@@ -611,25 +588,7 @@
       
       <?php echo eps_banner('search_bottom'); ?>
       
-      <?php if(osc_count_items() > 0) { ?>
-        <?php eps_get_latest_searches(32) ?>
-        <?php if(osc_count_latest_searches() > 0) { ?>
-          <div id="latest-search">
-            <h3><?php _e('Other people searched', 'epsilon'); ?></h3>
-            <div class="wrap">
-              <?php $i = 0; ?>
-              <?php while(osc_has_latest_searches()) { ?>
-                <?php 
-                  if($i > 16) { break; } 
-                  $i++;
-                ?>
-               
-                <a href="<?php echo osc_search_url(array('page' => 'search', 'sPattern' => osc_latest_search_text())); ?>"><?php echo osc_highlight(osc_latest_search_text(), 20); ?></a>
-              <?php } ?>
-            </div>
-          </div>
-        <?php } ?>
-      <?php } ?>
+      <?php /* "Other people searched" removed — listings stay higher. */ ?>
 
       <?php 
         if(eps_param('recent_search') == 1) {
