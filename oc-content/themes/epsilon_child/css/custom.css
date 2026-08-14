@@ -2214,6 +2214,8 @@ a.pngm-search-subcat-all {
   max-height: 100%;
   pointer-events: auto;
   -webkit-user-drag: none;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 #item-image .swiper-zoom-container {
@@ -2225,7 +2227,7 @@ a.pngm-search-subcat-all {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
@@ -2233,6 +2235,7 @@ a.pngm-search-subcat-all {
 
 #item-image .swiper-slide {
   touch-action: none;
+  overflow: hidden;
 }
 
 #item-image .swiper-slide-zoomed {

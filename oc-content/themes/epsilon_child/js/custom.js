@@ -1029,6 +1029,97 @@
       root.find('.swiper-thumbs li[data-id="' + index + '"]').addClass('active');
     }
 
+    function distance(a, b) {
+      var dx = a.clientX - b.clientX;
+      var dy = a.clientY - b.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function bindPinchZoom(stage, getImg) {
+      var scale = 1;
+      var tx = 0;
+      var ty = 0;
+      var startScale = 1;
+      var startDist = 0;
+      var panX = 0;
+      var panY = 0;
+      var lastX = 0;
+      var lastY = 0;
+      var panning = false;
+
+      function imgEl() {
+        return typeof getImg === 'function' ? getImg() : getImg;
+      }
+
+      function apply() {
+        var img = imgEl();
+        if (!img) {
+          return;
+        }
+        img.style.transformOrigin = 'center center';
+        img.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+      }
+
+      function reset() {
+        scale = 1;
+        tx = 0;
+        ty = 0;
+        apply();
+        if (window.pngmItemSwiper && window.pngmItemSwiper.allowTouchMove !== undefined) {
+          window.pngmItemSwiper.allowTouchMove = true;
+        }
+      }
+
+      function setAllowSwipe() {
+        if (window.pngmItemSwiper && window.pngmItemSwiper.allowTouchMove !== undefined) {
+          window.pngmItemSwiper.allowTouchMove = scale <= 1.05;
+        }
+      }
+
+      stage.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 2) {
+          startDist = distance(e.touches[0], e.touches[1]);
+          startScale = scale;
+          panning = false;
+        } else if (e.touches.length === 1 && scale > 1.05) {
+          panning = true;
+          lastX = e.touches[0].clientX;
+          lastY = e.touches[0].clientY;
+          panX = tx;
+          panY = ty;
+        } else {
+          panning = false;
+        }
+      }, { passive: true });
+
+      stage.addEventListener('touchmove', function (e) {
+        if (e.touches.length >= 2 && startDist > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          scale = Math.min(5, Math.max(1, startScale * (distance(e.touches[0], e.touches[1]) / startDist)));
+          if (scale <= 1.02) {
+            scale = 1;
+            tx = 0;
+            ty = 0;
+          }
+          apply();
+          setAllowSwipe();
+        } else if (e.touches.length === 1 && panning) {
+          e.preventDefault();
+          tx = panX + (e.touches[0].clientX - lastX);
+          ty = panY + (e.touches[0].clientY - lastY);
+          apply();
+        }
+      }, { passive: false });
+
+      return {
+        reset: reset,
+        isZoomed: function () {
+          return scale > 1.05;
+        }
+      };
+    }
+
     function initSwiper() {
       if (typeof window.Swiper === 'undefined') {
         return null;
@@ -1047,12 +1138,7 @@
       return new window.Swiper(el, {
         slideClass: 'swiper-slide',
         resistanceRatio: 0.65,
-        zoom: {
-          enabled: true,
-          maxRatio: 4,
-          minRatio: 1,
-          toggle: true
-        },
+        zoom: false,
         navigation: {
           nextEl: root.find('.swiper-next')[0],
           prevEl: root.find('.swiper-prev')[0]
@@ -1076,6 +1162,10 @@
             }
 
             syncThumbs(swp.activeIndex);
+
+            if (window.pngmGalleryPinch) {
+              window.pngmGalleryPinch.reset();
+            }
           },
           init: function () {
             container.find('img[data-src]').each(function () {
@@ -1085,12 +1175,6 @@
                 img.attr('src', real);
               }
             });
-          },
-          zoomChange: function (swp, scale) {
-            // While pinched in, disable slide swipe so fingers stay on the photo.
-            if (swp && swp.allowTouchMove !== undefined) {
-              swp.allowTouchMove = scale <= 1.05;
-            }
           }
         }
       });
@@ -1161,8 +1245,15 @@
       window.pngmItemSwiper = initSwiper();
       initLightbox();
 
-      // Pinch / pan must not open the lightbox. A clean tap still does, so
-      // pinch-zoom can happen on the full-size photo.
+      window.pngmGalleryPinch = bindPinchZoom(container[0], function () {
+        var slide = container.find('.swiper-slide-active .swiper-zoom-container img');
+        if (!slide.length) {
+          slide = container.find('.swiper-slide .swiper-zoom-container img').first();
+        }
+        return slide[0] || null;
+      });
+
+      // Pinch / pan must not open the lightbox. A clean tap still does.
       var touchMoved = false;
       var touchCount = 1;
 
@@ -1186,8 +1277,7 @@
           return;
         }
 
-        var swp = window.pngmItemSwiper;
-        var zoomed = swp && swp.zoom && parseFloat(swp.zoom.scale) > 1.05;
+        var zoomed = window.pngmGalleryPinch && window.pngmGalleryPinch.isZoomed();
 
         if (touchCount > 1 || touchMoved || zoomed) {
           e.preventDefault();
@@ -1228,6 +1318,16 @@
 
       if (typeof window.epsFixImgSources === 'function') {
         window.epsFixImgSources();
+      }
+
+      var lgStage = document.querySelector('.lg-outer');
+      if (lgStage && !lgStage.getAttribute('data-pngm-pinch')) {
+        lgStage.setAttribute('data-pngm-pinch', '1');
+        lgStage.addEventListener('touchmove', function (e) {
+          if (e.touches && e.touches.length > 1) {
+            e.preventDefault();
+          }
+        }, { passive: false });
       }
 
       var startX = 0;
