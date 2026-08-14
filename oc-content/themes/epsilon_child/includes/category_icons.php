@@ -49,12 +49,90 @@ function pngm_category_fa_icon($category_id, $category_name = null)
         return 'fa-th-large';
     }
 
+    // Jobs
+    if (strpos($name, 'administ') !== false || strpos($name, 'office') !== false) {
+        return 'fa-clipboard';
+    }
+    if (strpos($name, 'account') !== false || strpos($name, 'finance') !== false) {
+        return 'fa-calculator';
+    }
+    if (strpos($name, 'construct') !== false || strpos($name, 'trade') !== false) {
+        return 'fa-hard-hat';
+    }
+    if (strpos($name, 'engineer') !== false) {
+        return 'fa-cogs';
+    }
+    if (strpos($name, 'hospitalit') !== false || strpos($name, 'tourism') !== false) {
+        return 'fa-utensils';
+    }
+    if (strpos($name, 'telecommunication') !== false || preg_match('/\bit\b/', $name)) {
+        return 'fa-laptop';
+    }
+    if (strpos($name, 'mining') !== false || strpos($name, 'resource') !== false) {
+        return 'fa-mountain';
+    }
+    if (strpos($name, 'logistic') !== false || strpos($name, 'transport') !== false || strpos($name, 'delivery') !== false) {
+        return 'fa-truck';
+    }
+    if (strpos($name, 'retail') !== false || strpos($name, 'sales') !== false) {
+        return 'fa-store';
+    }
+    if (strpos($name, 'customer') !== false) {
+        return 'fa-headset';
+    }
+    if (strpos($name, 'education') !== false || strpos($name, 'training') !== false || strpos($name, 'tutor') !== false) {
+        return 'fa-graduation-cap';
+    }
+    if (strpos($name, 'health') !== false || strpos($name, 'fitness') !== false) {
+        return 'fa-heartbeat';
+    }
+    if (strpos($name, 'security') !== false) {
+        return 'fa-shield-alt';
+    }
+    if (strpos($name, 'job') !== false || strpos($name, 'career') !== false) {
+        return 'fa-briefcase';
+    }
+
+    // Vehicles
+    if (strpos($name, 'motorcycl') !== false) {
+        return 'fa-motorcycle';
+    }
+    if (strpos($name, 'boat') !== false || strpos($name, 'marine') !== false) {
+        return 'fa-ship';
+    }
     if (strpos($name, 'vehicle') !== false || strpos($name, 'car') !== false) {
         return 'fa-car';
+    }
+
+    // Electronics
+    if (strpos($name, 'gaming') !== false || strpos($name, 'console') !== false) {
+        return 'fa-gamepad';
+    }
+    if (strpos($name, 'computer') !== false) {
+        return 'fa-desktop';
+    }
+    if (strpos($name, 'appliance') !== false) {
+        return 'fa-blender';
     }
     if (strpos($name, 'phone') !== false || strpos($name, 'electronic') !== false) {
         return 'fa-mobile-alt';
     }
+
+    // Property
+    if (strpos($name, 'apartment') !== false) {
+        return 'fa-building';
+    }
+    if (strpos($name, 'house') !== false || strpos($name, 'room') !== false) {
+        return 'fa-home';
+    }
+    if (strpos($name, 'land') !== false) {
+        return 'fa-map';
+    }
+    if (strpos($name, 'propert') !== false || strpos($name, 'real estate') !== false) {
+        return 'fa-building';
+    }
+
+    // Home / fashion / family
     if (strpos($name, 'home') !== false || strpos($name, 'furniture') !== false || strpos($name, 'garden') !== false) {
         return 'fa-couch';
     }
@@ -70,19 +148,24 @@ function pngm_category_fa_icon($category_id, $category_name = null)
     if (strpos($name, 'pet') !== false || strpos($name, 'animal') !== false) {
         return 'fa-paw';
     }
-    if (strpos($name, 'propert') !== false || strpos($name, 'real estate') !== false) {
-        return 'fa-building';
+
+    // Services / farming / business
+    if (strpos($name, 'cleaning') !== false) {
+        return 'fa-broom';
     }
-    if (strpos($name, 'job') !== false || strpos($name, 'career') !== false) {
-        return 'fa-briefcase';
+    if (strpos($name, 'repair') !== false || strpos($name, 'maintenance') !== false) {
+        return 'fa-wrench';
+    }
+    if (strpos($name, 'event') !== false || strpos($name, 'entertain') !== false) {
+        return 'fa-music';
     }
     if (strpos($name, 'service') !== false) {
         return 'fa-tools';
     }
-    if (strpos($name, 'agricultur') !== false || strpos($name, 'farm') !== false) {
+    if (strpos($name, 'agricultur') !== false || strpos($name, 'farm') !== false || strpos($name, 'seed') !== false || strpos($name, 'produce') !== false) {
         return 'fa-seedling';
     }
-    if (strpos($name, 'business') !== false || strpos($name, 'industrial') !== false) {
+    if (strpos($name, 'business') !== false || strpos($name, 'industrial') !== false || strpos($name, 'wholesale') !== false) {
         return 'fa-industry';
     }
 
@@ -94,9 +177,10 @@ function pngm_category_fa_icon($category_id, $category_name = null)
  *
  * @param int   $category_id
  * @param array $category
+ * @param bool  $with_color Apply the category colour inline (home tiles). Off for chips.
  * @return string
  */
-function pngm_render_category_icon($category_id, $category = array())
+function pngm_render_category_icon($category_id, $category = array(), $with_color = true)
 {
     $name = '';
     if (is_array($category) && !empty($category['s_name'])) {
@@ -106,8 +190,11 @@ function pngm_render_category_icon($category_id, $category = array())
     }
 
     $icon = pngm_category_fa_icon($category_id, $name);
-    $color = function_exists('eps_get_cat_color') ? eps_get_cat_color($category_id, $category) : '';
-    $style = ($color !== '' && $color !== false) ? ' style="color:' . osc_esc_html($color) . ';"' : '';
+    $style = '';
+    if ($with_color) {
+        $color = function_exists('eps_get_cat_color') ? eps_get_cat_color($category_id, $category) : '';
+        $style = ($color !== '' && $color !== false) ? ' style="color:' . osc_esc_html($color) . ';"' : '';
+    }
 
     return '<i class="fas ' . osc_esc_html($icon) . '" aria-hidden="true"' . $style . '></i>';
 }

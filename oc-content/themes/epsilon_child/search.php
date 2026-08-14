@@ -353,43 +353,61 @@
     <?php if(is_array($pngm_subcats) && count($pngm_subcats) > 0) { ?>
       <div id="pngm-search-subcats" class="pngm-search-subcats">
         <div class="pngm-search-subcats-head">
-          <strong>
-            <?php
-              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
-                echo osc_esc_html($pngm_subcat_parent['s_name']);
-              } else {
-                _e('Category', 'epsilon');
-              }
-            ?>
-          </strong>
-        </div>
-        <div class="pngm-search-subcats-list">
-          <?php
-            $pngm_all_params = $params_spec;
-            if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) {
-              $pngm_all_params['sCategory'] = $pngm_subcat_parent['pk_i_id'];
-            }
-          ?>
-          <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
-            <?php
-              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
-                echo sprintf(__('All in %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
-              } else {
-                _e('All', 'epsilon');
-              }
-            ?>
-          </a>
-          <?php foreach($pngm_subcats as $pngm_sc) {
-            $pngm_sc_params = $params_spec;
-            $pngm_sc_params['sCategory'] = $pngm_sc['id'];
-          ?>
-            <a class="pngm-search-subcat<?php if($search_cat_id == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>">
-              <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_sc['name']); ?></span>
-              <?php if($pngm_sc['count'] > 0) { ?>
-                <em><?php echo (int) $pngm_sc['count']; ?></em>
-              <?php } ?>
-            </a>
+          <?php if (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
+            <span class="pngm-search-subcats-badge" aria-hidden="true">
+              <?php echo pngm_render_category_icon($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, false); ?>
+            </span>
           <?php } ?>
+          <div class="pngm-search-subcats-copy">
+            <strong>
+              <?php
+                if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
+                  echo osc_esc_html($pngm_subcat_parent['s_name']);
+                } else {
+                  _e('Category', 'epsilon');
+                }
+              ?>
+            </strong>
+            <span><?php echo sprintf(__('%d types', 'epsilon'), count($pngm_subcats)); ?></span>
+          </div>
+        </div>
+        <div class="pngm-search-subcats-scroll">
+          <div class="pngm-search-subcats-list">
+            <?php
+              $pngm_all_params = $params_spec;
+              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) {
+                $pngm_all_params['sCategory'] = $pngm_subcat_parent['pk_i_id'];
+              }
+            ?>
+            <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
+              <?php if (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
+                <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, false); ?></span>
+              <?php } ?>
+              <span class="pngm-search-subcat-name">
+                <?php
+                  if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
+                    echo sprintf(__('All in %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
+                  } else {
+                    _e('All', 'epsilon');
+                  }
+                ?>
+              </span>
+            </a>
+            <?php foreach($pngm_subcats as $pngm_sc) {
+              $pngm_sc_params = $params_spec;
+              $pngm_sc_params['sCategory'] = $pngm_sc['id'];
+            ?>
+              <a class="pngm-search-subcat<?php if($search_cat_id == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>">
+                <?php if (function_exists('pngm_render_category_icon')) { ?>
+                  <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_sc['id'], array('s_name' => $pngm_sc['name']), false); ?></span>
+                <?php } ?>
+                <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_sc['name']); ?></span>
+                <?php if($pngm_sc['count'] > 0) { ?>
+                  <em><?php echo (int) $pngm_sc['count']; ?></em>
+                <?php } ?>
+              </a>
+            <?php } ?>
+          </div>
         </div>
       </div>
     <?php } ?>

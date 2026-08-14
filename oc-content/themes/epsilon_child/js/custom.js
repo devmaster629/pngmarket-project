@@ -1425,6 +1425,18 @@
     };
   }
 
+  function initSearchSubcats() {
+    var list = document.querySelector('.pngm-search-subcats-list');
+    if (!list) {
+      return;
+    }
+
+    var active = list.querySelector('.is-active');
+    if (active && typeof active.scrollIntoView === 'function') {
+      active.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1437,6 +1449,7 @@
     initUserAccountUx();
     initPostingPlaceholders();
     initGeoLocate();
+    initSearchSubcats();
   }
 
   if (document.readyState === 'loading') {
