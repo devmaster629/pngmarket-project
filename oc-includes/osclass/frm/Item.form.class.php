@@ -1946,19 +1946,31 @@ class ItemForm extends Form {
         
         }).on('upload-success', (file, response) => {
 
+          var body = response.body || {};
+          var uploadName = body.uploadName || '';
+          var previewUrl = response.uploadURL || body.uploadUrl || body.uploadURL || '';
+          if (!previewUrl || previewUrl === 'undefined') {
+            previewUrl = uploadName ? '<?php echo osc_esc_js(osc_content_url()); ?>uploads/temp/' + uploadName : '';
+          }
+          if (!previewUrl && file.preview) {
+            previewUrl = file.preview;
+          } else if (!previewUrl && file.data && window.URL && URL.createObjectURL) {
+            previewUrl = URL.createObjectURL(file.data);
+          }
+
           // Create new image box
-          var elem = '<li class="qq-upload-success qq-new-img" id="' + response.body.uploadName + '">';
+          var elem = '<li class="qq-upload-success qq-new-img" id="' + uploadName + '">';
           elem += '<span class="qq-upload-file">' + file.name + '</span>';
-          elem += '<a class="qq-upload-delete" href="#" ajaxfile="' + response.body.uploadName + '" style="display: inline; cursor:pointer;"><?php echo osc_esc_js(__('Delete')); ?></a>';
+          elem += '<a class="qq-upload-delete" href="#" ajaxfile="' + uploadName + '" style="display: inline; cursor:pointer;"><?php echo osc_esc_js(__('Delete')); ?></a>';
           elem += '<div class="ajax_preview_img">';
           
           <?php if(osc_image_upload_reorder()) { ?>
           elem += '<span class="qq-upload-move" title="<?php echo osc_esc_js(__('Reorder')); ?>"><i class="fa fa-arrows-alt"></i></span>';
           <?php } ?>
 
-          elem += '<img src="' + response.uploadURL + '">';
+          elem += '<img src="' + previewUrl + '" alt="">';
           elem += '</div>';
-          elem += '<input type="hidden" name="ajax_photos[]" value="' + response.body.uploadName + '"/>';
+          elem += '<input type="hidden" name="ajax_photos[]" value="' + uploadName + '"/>';
           elem += '</li>';
           
           $('.qq-upload-list').append(elem);

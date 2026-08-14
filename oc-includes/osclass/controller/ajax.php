@@ -442,26 +442,24 @@ class CWebAjax extends BaseModel {
           exit;
         }
 
-        // auto rotate
+        // Auto-rotate when GD/Imagick is available. If processing fails, still
+        // return the original temp file so the listing form can show a preview.
+        $publicName = $filename;
         try {
           $img = ImageProcessing::fromFile(osc_content_path() . 'uploads/temp/' . $filename);
           $img->autoRotate();
           $img->resetOrientation();
           $img->saveToFile(osc_content_path() . 'uploads/temp/auto_' . $filename, $original['extension']);
           $img->saveToFile(osc_content_path() . 'uploads/temp/' . $filename, $original['extension']);
-
-          $result['uploadName'] = 'auto_' . $filename;
-          $result['uploadUrl'] = osc_content_url() . 'uploads/temp/auto_' . $filename;
-          
-          echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
-          
-        } catch (Exception $e) {
-          if(OSC_DEBUG) {
-            echo $e->getMessage();
-          } else {
-            echo '';
-          }
+          $publicName = 'auto_' . $filename;
+        } catch (Throwable $e) {
+          error_log('ajax_upload image processing: ' . $e->getMessage());
         }
+
+        $result['success'] = true;
+        $result['uploadName'] = $publicName;
+        $result['uploadUrl'] = osc_content_url() . 'uploads/temp/' . $publicName;
+        echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
         
         break;
         

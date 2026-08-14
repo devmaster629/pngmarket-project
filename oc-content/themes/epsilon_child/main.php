@@ -20,6 +20,8 @@
   <section class="home-search">
     <div class="container pngm-home-banner">
       <div class="box">
+        <h1 class="pngm-title isDesktop"><span class="pngm-w-buy"><?php _e('Buy', 'epsilon'); ?></span> <span class="pngm-sep">&ndash;</span> <span class="pngm-w-sell"><?php _e('Sell', 'epsilon'); ?></span> <span class="pngm-sep">&ndash;</span> <span class="pngm-w-find"><?php _e('Find Anything', 'epsilon'); ?></span></h1>
+
         <form action="<?php echo osc_base_url(true); ?>" method="GET" class="nocsrf">
           <input type="hidden" name="page" value="search" />
           

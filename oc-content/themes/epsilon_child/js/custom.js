@@ -1629,6 +1629,25 @@
       e.stopPropagation();
       open(fullSrc(this));
     });
+
+    document.addEventListener('error', function (e) {
+      var el = e.target;
+      if (!el || el.tagName !== 'IMG' || !el.closest) {
+        return;
+      }
+      if (!el.closest('.upload-photos .ajax_preview_img, #photos .ajax_preview_img')) {
+        return;
+      }
+      if (el.getAttribute('data-pngm-src-tried')) {
+        return;
+      }
+      var src = el.getAttribute('src') || '';
+      if (src.indexOf('/uploads/temp/auto_') === -1) {
+        return;
+      }
+      el.setAttribute('data-pngm-src-tried', '1');
+      el.src = src.replace('/uploads/temp/auto_', '/uploads/temp/');
+    }, true);
   }
 
   function initUppyOverNav() {

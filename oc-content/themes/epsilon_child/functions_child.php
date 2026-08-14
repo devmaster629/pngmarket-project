@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.3.2');
+    define('PNGM_CHILD_VERSION', '1.3.5');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
