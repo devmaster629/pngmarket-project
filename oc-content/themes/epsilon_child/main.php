@@ -406,7 +406,7 @@
 
   <?php View::newInstance()->_exportVariableToView('latestItems', eps_random_items()); ?>
   
-  <?php if(osc_count_latest_items() > 0 && !($location_cookie['success'] === true && eps_param('location_home') == 1)) { ?>
+  <?php if(osc_count_latest_items() > 0) { ?>
     <section class="home-latest">
       <div class="container">
         <div class="block">
