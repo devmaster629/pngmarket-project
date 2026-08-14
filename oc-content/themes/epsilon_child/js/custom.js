@@ -1047,9 +1047,9 @@
       return new window.Swiper(el, {
         slideClass: 'swiper-slide',
         resistanceRatio: 0.65,
-        touchStartPreventDefault: false,
         zoom: {
-          maxRatio: 5,
+          enabled: true,
+          maxRatio: 4,
           minRatio: 1,
           toggle: true
         },
@@ -1067,7 +1067,24 @@
               window.epsLazyLoadImages('item-gallery');
             }
 
+            var slide = swp.slides[swp.activeIndex];
+            if (slide) {
+              var lazy = slide.querySelector('img[data-src]');
+              if (lazy && lazy.getAttribute('src') !== lazy.getAttribute('data-src')) {
+                lazy.setAttribute('src', lazy.getAttribute('data-src'));
+              }
+            }
+
             syncThumbs(swp.activeIndex);
+          },
+          init: function () {
+            container.find('img[data-src]').each(function () {
+              var img = window.jQuery(this);
+              var real = img.attr('data-src');
+              if (real && img.attr('src') !== real) {
+                img.attr('src', real);
+              }
+            });
           },
           zoomChange: function (swp, scale) {
             // While pinched in, disable slide swipe so fingers stay on the photo.
@@ -1114,14 +1131,14 @@
         escKey: true,
         keyPress: true,
         controls: true,
-        mousewheel: true,
+        mousewheel: false,
         hideBarsDelay: 4000,
         thumbWidth: 90,
         thumbContHeight: 80,
-        // Mobile: keep pinch-zoom usable inside lightbox.
-        swipeThreshold: 50,
-        enableDrag: true,
-        enableSwipe: true
+        swipeThreshold: 80,
+        enableDrag: !isTouch,
+        enableSwipe: true,
+        speed: 280
       });
     }
 
@@ -1144,56 +1161,42 @@
       window.pngmItemSwiper = initSwiper();
       initLightbox();
 
-      // Mobile: pinch-zoom on the gallery itself; open fullscreen via button
-      // (or double-tap). Prevent accidental lightbox open while pinching.
-      if (isTouch) {
-        var touchMoved = false;
-        var lastTap = 0;
+      // Pinch / pan must not open the lightbox. A clean tap still does, so
+      // pinch-zoom can happen on the full-size photo.
+      var touchMoved = false;
+      var touchCount = 1;
 
-        container.on('touchstart.pngmZoom', 'li.swiper-slide > a', function () {
-          touchMoved = false;
-        });
+      container.on('touchstart.pngmZoom', 'li.swiper-slide > a', function (e) {
+        var touches = e.originalEvent && e.originalEvent.touches;
+        touchCount = touches ? touches.length : 1;
+        touchMoved = false;
+      });
 
-        container.on('touchmove.pngmZoom', 'li.swiper-slide > a', function () {
-          touchMoved = true;
-        });
+      container.on('touchmove.pngmZoom', 'li.swiper-slide > a', function (e) {
+        var touches = e.originalEvent && e.originalEvent.touches;
+        if (touches && touches.length > 1) {
+          touchCount = touches.length;
+        }
+        touchMoved = true;
+      });
 
-        container.on('click.pngmZoom', 'li.swiper-slide > a', function (e) {
-          var now = Date.now();
-          var swp = window.pngmItemSwiper;
-          var zoomed = swp && swp.zoom && swp.zoom.scale && swp.zoom.scale > 1.05;
+      container[0].addEventListener('click', function (e) {
+        var link = e.target.closest ? e.target.closest('li.swiper-slide > a') : null;
+        if (!link || !container[0].contains(link)) {
+          return;
+        }
 
-          // Double-tap toggles Swiper zoom instead of opening lightbox.
-          if (now - lastTap < 320) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            lastTap = 0;
+        var swp = window.pngmItemSwiper;
+        var zoomed = swp && swp.zoom && parseFloat(swp.zoom.scale) > 1.05;
 
-            if (swp && swp.zoom) {
-              if (zoomed) {
-                swp.zoom.out();
-              } else {
-                swp.zoom.in();
-              }
-            }
-
-            return false;
-          }
-
-          lastTap = now;
-
-          // Pinch / pan stay on the photo. Fullscreen is the expand button.
-          if (touchMoved || zoomed) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-          }
-
+        if (touchCount > 1 || touchMoved || zoomed) {
           e.preventDefault();
-          e.stopImmediatePropagation();
-          return false;
-        });
-      }
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+          }
+        }
+      }, true);
 
       root.find('.pngm-gallery-fullscreen').on('click', function (e) {
         e.preventDefault();
@@ -1229,10 +1232,13 @@
 
       var startX = 0;
       var startY = 0;
+      var startFingers = 1;
 
       $(document).off('touchstart.pngmLgClose touchend.pngmLgClose');
       $(document).on('touchstart.pngmLgClose', '.lg-item', function (e) {
-        var t = e.originalEvent && e.originalEvent.touches ? e.originalEvent.touches[0] : null;
+        var touches = e.originalEvent && e.originalEvent.touches;
+        startFingers = touches ? touches.length : 1;
+        var t = touches && touches[0];
         if (!t) {
           return;
         }
@@ -1241,14 +1247,19 @@
       });
 
       $(document).on('touchend.pngmLgClose', '.lg-item', function (e) {
+        var touches = e.originalEvent && e.originalEvent.touches;
         var t = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : null;
-        if (!t) {
+        if (!t || startFingers > 1 || (touches && touches.length > 0)) {
           return;
         }
 
-        var zoomed = $('.lg-item.lg-current').hasClass('lg-zoomable') && $('.lg-item.lg-current img').attr('style') && $('.lg-item.lg-current img').attr('style').indexOf('scale') !== -1;
-        var scale = parseFloat($('.lg-item.lg-current .lg-image').css('transform').replace(/[^0-9.,-]/g, '').split(',')[0]) || 1;
-        if (zoomed || scale > 1.08) {
+        var img = $('.lg-item.lg-current .lg-image');
+        var transform = (img.css('transform') || '');
+        var scale = 1;
+        if (transform && transform !== 'none') {
+          scale = Math.abs(parseFloat(transform.replace(/matrix\(|\)/g, '').split(',')[0]) || 1);
+        }
+        if (scale > 1.08) {
           return;
         }
 
@@ -1437,6 +1448,218 @@
     }
   }
 
+  function initItemPostMinlength() {
+    if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.validate !== 'function') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var form = $('form[name="item"]');
+
+    if (!form.length) {
+      return;
+    }
+
+    function apply() {
+      if (!form.data('validator')) {
+        return false;
+      }
+
+      form.find('input[name^="title["]').each(function () {
+        $(this).rules('add', {
+          minlength: 3,
+          messages: {
+            minlength: 'Title: enter at least 3 characters.'
+          }
+        });
+      });
+
+      form.find('textarea[name^="description["]').each(function () {
+        $(this).rules('add', {
+          minlength: 10,
+          messages: {
+            minlength: 'Description: enter at least 10 characters.'
+          }
+        });
+      });
+
+      return true;
+    }
+
+    if (!apply()) {
+      setTimeout(apply, 50);
+      setTimeout(apply, 300);
+    }
+  }
+
+  function initPostPhotoPreview() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+
+    if (!$('.upload-photos, #photos').length) {
+      return;
+    }
+
+    var viewer = $('<div class="pngm-photo-viewer" hidden role="dialog" aria-modal="true" aria-label="Photo">' +
+      '<div class="pngm-photo-viewer-bar"><button type="button" class="pngm-photo-viewer-close" aria-label="Close">&times;</button></div>' +
+      '<div class="pngm-photo-viewer-stage"><img alt=""></div>' +
+      '</div>');
+
+    $('body').append(viewer);
+
+    var stage = viewer.find('.pngm-photo-viewer-stage')[0];
+    var img = viewer.find('img')[0];
+    var scale = 1;
+    var tx = 0;
+    var ty = 0;
+    var startScale = 1;
+    var startDist = 0;
+    var panX = 0;
+    var panY = 0;
+    var lastX = 0;
+    var lastY = 0;
+    var panning = false;
+
+    function applyTransform() {
+      img.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+    }
+
+    function resetTransform() {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      applyTransform();
+    }
+
+    function distance(a, b) {
+      var dx = a.clientX - b.clientX;
+      var dy = a.clientY - b.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function fullSrc(el) {
+      var src = el.getAttribute('src') || '';
+      return src.replace('_thumbnail.', '.').replace('_preview.', '.');
+    }
+
+    function open(src) {
+      img.src = src;
+      resetTransform();
+      viewer.removeAttr('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      viewer.attr('hidden', 'hidden');
+      img.removeAttribute('src');
+      resetTransform();
+      document.body.style.overflow = '';
+    }
+
+    viewer.find('.pngm-photo-viewer-close').on('click', function (e) {
+      e.preventDefault();
+      close();
+    });
+
+    viewer.on('click', function (e) {
+      if (e.target === viewer[0] || e.target === stage) {
+        close();
+      }
+    });
+
+    $(document).on('keydown.pngmPhoto', function (e) {
+      if ((e.key === 'Escape' || e.keyCode === 27) && !viewer.is('[hidden]')) {
+        close();
+      }
+    });
+
+    stage.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 2) {
+        startDist = distance(e.touches[0], e.touches[1]);
+        startScale = scale;
+        panning = false;
+      } else if (e.touches.length === 1 && scale > 1.05) {
+        panning = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+        panX = tx;
+        panY = ty;
+      } else {
+        panning = false;
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', function (e) {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault();
+        scale = Math.min(5, Math.max(1, startScale * (distance(e.touches[0], e.touches[1]) / startDist)));
+        if (scale <= 1.02) {
+          scale = 1;
+          tx = 0;
+          ty = 0;
+        }
+        applyTransform();
+      } else if (e.touches.length === 1 && panning) {
+        e.preventDefault();
+        tx = panX + (e.touches[0].clientX - lastX);
+        ty = panY + (e.touches[0].clientY - lastY);
+        applyTransform();
+      }
+    }, { passive: false });
+
+    stage.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      scale = Math.min(5, Math.max(1, scale + (e.deltaY < 0 ? 0.2 : -0.2)));
+      if (scale === 1) {
+        tx = 0;
+        ty = 0;
+      }
+      applyTransform();
+    }, { passive: false });
+
+    $(document).on('click.pngmPhotoPreview', '.upload-photos .ajax_preview_img img, #photos .ajax_preview_img img', function (e) {
+      if ($(e.target).closest('.qq-upload-delete, .qq-upload-rotate, .qq-upload-move, .qq-upload-rotate-img').length) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      open(fullSrc(this));
+    });
+  }
+
+  function initUppyOverNav() {
+    function sync() {
+      var modal = document.querySelector('.uppy-Dashboard--modal');
+      var open = false;
+
+      if (modal) {
+        var hidden = modal.getAttribute('aria-hidden');
+        open = hidden !== 'true';
+      }
+
+      document.body.classList.toggle('pngm-uppy-open', open);
+    }
+
+    document.addEventListener('click', function () {
+      setTimeout(sync, 50);
+    });
+
+    if (window.MutationObserver) {
+      var obs = new MutationObserver(sync);
+      obs.observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['aria-hidden']
+      });
+    }
+
+    sync();
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1450,6 +1673,9 @@
     initPostingPlaceholders();
     initGeoLocate();
     initSearchSubcats();
+    initItemPostMinlength();
+    initPostPhotoPreview();
+    initUppyOverNav();
   }
 
   if (document.readyState === 'loading') {

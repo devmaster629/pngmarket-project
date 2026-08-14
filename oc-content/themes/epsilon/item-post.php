@@ -714,7 +714,7 @@
       rules: {
         "title[<?php echo osc_current_user_locale(); ?>]": {
           required: true,
-          minlength: 5
+          minlength: 3
         },
 
         "description[<?php echo osc_current_user_locale(); ?>]": {
@@ -803,7 +803,7 @@
       messages: {
         "title[<?php echo osc_current_user_locale(); ?>]": {
           required: '<?php echo osc_esc_js(__('Title: this field is required.', 'epsilon')); ?>',
-          minlength: '<?php echo osc_esc_js(__('Title: enter at least 5 characters.', 'epsilon')); ?>'
+          minlength: '<?php echo osc_esc_js(__('Title: enter at least 3 characters.', 'epsilon')); ?>'
         },
 
         "description[<?php echo osc_current_user_locale(); ?>]": {

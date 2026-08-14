@@ -122,44 +122,13 @@ body#home > .content > section.home-search {
   background: transparent;
 }
 
-.home-search h1.pngm-title,
 .home-search form,
 .home-search .latest-search {
   max-width: 100%;
 }
 
 .home-search h1.pngm-title {
-  margin: 4px 0 18px 0;
-  font-size: 27px;
-  font-weight: 800;
-  line-height: 1.25;
-  color: #1b2226;
-  /* Static — no blink / rotate animation */
-  animation: none !important;
-}
-
-/* Match logo tagline: Buy green, Sell red, Find Anything dark */
-.home-search h1.pngm-title .pngm-w-buy {
-  color: #1f6313;
-}
-
-.home-search h1.pngm-title .pngm-w-sell {
-  color: #e30000;
-}
-
-.home-search h1.pngm-title .pngm-w-find {
-  color: #1b2226;
-}
-
-.home-search h1.pngm-title .pngm-sep {
-  color: #1b2226;
-  font-weight: 700;
-}
-
-.home-search h1.pngm-title span {
-  animation: none !important;
-  -webkit-text-fill-color: unset;
-  background: none !important;
+  display: none !important;
 }
 
 /* Search field + button read as one control, like OLX. */
@@ -927,7 +896,7 @@ body#home #premium-items .simple-prod .labels {
   }
 
   .home-search h1.pngm-title {
-    font-size: 24px;
+    display: none !important;
   }
 }
 
@@ -982,11 +951,7 @@ body#home #premium-items .simple-prod .labels {
   }
 
   .home-search h1.pngm-title {
-    display: block;
-    margin: 2px 0 8px 0;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.2;
+    display: none !important;
   }
 
   body#home .home-search h2.pngm-cats-heading {
@@ -2196,6 +2161,13 @@ a.pngm-search-subcat-all {
   touch-action: pan-y;
 }
 
+#item-image .swiper-wrapper li a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
 #item-image .swiper-wrapper li a img,
 #item-image .swiper-zoom-container img {
   object-fit: contain !important;
@@ -2204,6 +2176,8 @@ a.pngm-search-subcat-all {
   background: #111;
   max-width: 100%;
   max-height: 100%;
+  pointer-events: auto;
+  -webkit-user-drag: none;
 }
 
 #item-image .swiper-zoom-container {
@@ -2221,12 +2195,12 @@ a.pngm-search-subcat-all {
   user-select: none;
 }
 
-#item-image .swiper-container.pngm-item-gallery {
-  touch-action: pan-y;
+#item-image .swiper-slide {
+  touch-action: none;
 }
 
-#item-image .swiper-slide {
-  touch-action: pan-y pinch-zoom;
+#item-image .swiper-slide-zoomed {
+  overflow: hidden;
 }
 
 #item-image .pngm-gallery-fullscreen {
@@ -2291,6 +2265,69 @@ body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-out {
 .lg-actions .lg-prev {
   background: rgba(0, 0, 0, 0.45);
   border-radius: 8px;
+}
+
+/* Upload photos: open full image before the listing is posted */
+.upload-photos .ajax_preview_img {
+  cursor: zoom-in;
+}
+
+.upload-photos .ajax_preview_img img {
+  cursor: zoom-in;
+}
+
+.pngm-photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 10, 12, .94);
+}
+
+.pngm-photo-viewer[hidden] {
+  display: none !important;
+}
+
+.pngm-photo-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding: 8px 10px;
+}
+
+.pngm-photo-viewer-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pngm-photo-viewer-stage {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pngm-photo-viewer-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Category icons — semantic SVGs (not mismatched demo PNGs) */
@@ -3454,5 +3491,113 @@ body.pngm-lg-open .lg-outer .lg-img-wrap {
   header .logo,
   header .cmain > .logo {
     max-width: none !important;
+  }
+}
+
+
+/* ==========================================================================
+   Uppy avatar / photo modal — full screen above the mobile nav
+   ========================================================================== */
+
+.uppy-Dashboard--modal,
+.uppy-Root.uppy-Dashboard--modal {
+  z-index: 10120 !important;
+}
+
+.uppy-Dashboard--modal .uppy-Dashboard-overlay {
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+.uppy-Dashboard--modal .uppy-Dashboard-inner {
+  z-index: 2 !important;
+  pointer-events: auto !important;
+}
+
+.uppy-Dashboard--modal .uppy-Dashboard-close {
+  z-index: 3 !important;
+  pointer-events: auto !important;
+}
+
+.uppy-Dashboard--modal[aria-hidden="true"] {
+  display: none !important;
+}
+
+body.pngm-uppy-open {
+  overflow: hidden !important;
+}
+
+body.pngm-uppy-open #navi-bar {
+  display: none !important;
+}
+
+@media screen and (max-width: 767px) {
+  .uppy-Dashboard--modal,
+  .uppy-Root.uppy-Dashboard--modal {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .uppy-Dashboard--modal .uppy-Dashboard-inner {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    overflow: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .uppy-Dashboard--modal .uppy-Dashboard-close {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid #d5dde5 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    color: #16202a !important;
+    box-shadow: 0 2px 10px rgba(22, 34, 42, .18) !important;
+    font-size: 28px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .uppy-DashboardContent-bar {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-right: 56px !important;
+  }
+
+  .uppy-StatusBar {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .uppy-StatusBar-actionBtn--upload,
+  .uppy-StatusBar.is-waiting .uppy-StatusBar-actionBtn--upload {
+    min-height: 44px;
   }
 }

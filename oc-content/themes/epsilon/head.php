@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="Mon, 01 Jul 1970 00:00:00 GMT" />
 <?php if(!osc_is_search_page()) { ?><meta name="robots" content="index, follow" /><?php } ?>
 <?php if(!osc_is_search_page()) { ?><meta name="googlebot" content="index, follow" /><?php } ?>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
 <?php 
   if(eps_param('generate_favicons') == 1 && !function_exists('pwa_call_after_install')) {
     osc_current_web_theme_path('head-favicon.php');

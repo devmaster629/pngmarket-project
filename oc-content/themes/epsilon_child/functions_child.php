@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.2.5');
+    define('PNGM_CHILD_VERSION', '1.3.2');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -41,6 +41,16 @@ function pngm_enqueue_assets()
 }
 
 osc_add_hook('header', 'pngm_enqueue_assets', 8);
+
+/**
+ * Allow pinch-zoom on photos. Parent theme locked scale at 1.0.
+ */
+function pngm_viewport_meta()
+{
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />' . "\n";
+}
+
+osc_add_hook('header', 'pngm_viewport_meta', 1);
 
 
 /**
@@ -555,3 +565,36 @@ function pngm_active_location_label()
 
     return '';
 }
+
+/**
+ * Publish/edit form: title and description may be 3 characters.
+ */
+function pngm_item_post_minlength_script()
+{
+    if (!osc_is_publish_page() && !osc_is_edit_page()) {
+        return;
+    }
+
+    $title_msg = osc_esc_js(__('Title: enter at least 3 characters.', 'epsilon'));
+    $desc_msg = osc_esc_js(__('Description: enter at least 10 characters.', 'epsilon'));
+    ?>
+<script>
+(function ($) {
+  $(function () {
+    var form = $('form[name="item"]');
+    if (!form.length || !form.data('validator')) {
+      return;
+    }
+    form.find('input[name^="title["]').each(function () {
+      $(this).rules('add', { minlength: 3, messages: { minlength: '<?php echo $title_msg; ?>' } });
+    });
+    form.find('textarea[name^="description["]').each(function () {
+      $(this).rules('add', { minlength: 10, messages: { minlength: '<?php echo $desc_msg; ?>' } });
+    });
+  });
+})(jQuery);
+</script>
+    <?php
+}
+
+osc_add_hook('footer', 'pngm_item_post_minlength_script', 20);
