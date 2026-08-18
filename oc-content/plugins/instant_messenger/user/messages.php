@@ -412,6 +412,10 @@ $(document).ready(function() {
 
   // SUBMIT MESSAGE
   $('body').on('click', '#im-message-form button', function(e){
+    if($(this).closest('.im-file-list, .im-file-chip').length) {
+      return;
+    }
+
     var button = $(this);
     var form = $(this).closest('form');
     var inputs = form.find('input, select, textarea');

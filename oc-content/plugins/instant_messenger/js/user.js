@@ -1,4 +1,11 @@
 $(document).ready(function(){
+  if(document.getElementById('im-message-form') || document.querySelector('.im-file-messages')) {
+    $('body').addClass('im-chat-page');
+    var box = document.querySelector('.im-table.im-messages');
+    if(box) {
+      box.scrollTop = box.scrollHeight;
+    }
+  }
 
   function imComposerMinHeight() {
     return ($(window).width() <= 360) ? 85 : 50;
@@ -23,6 +30,10 @@ $(document).ready(function(){
       $('body #im-message-form button.im-button-alt').css('right', '');
       $('body #im-message-form .im-attachment').css('right', '');
     }
+
+    if(typeof window.pngmLayoutChat === 'function') {
+      window.pngmLayoutChat();
+    }
   }
 
   window.imResetComposerHeight = function() {
@@ -35,6 +46,9 @@ $(document).ready(function(){
     ta.style.overflowY = 'hidden';
     $('body #im-message-form button.im-button-alt').css('right', '');
     $('body #im-message-form .im-attachment').css('right', '');
+    if(typeof window.pngmLayoutChat === 'function') {
+      window.pngmLayoutChat();
+    }
   };
 
   // AUTO-EXPAND TEXTAREA
@@ -117,9 +131,10 @@ $(document).ready(function(){
         name.textContent = file.name;
         chip.appendChild(name);
 
-        var remove = document.createElement('button');
-        remove.type = 'button';
+        var remove = document.createElement('span');
         remove.className = 'im-file-remove';
+        remove.setAttribute('role', 'button');
+        remove.setAttribute('tabindex', '0');
         remove.setAttribute('aria-label', 'Remove file');
         remove.innerHTML = '&times;';
         remove.addEventListener('click', function(e) {

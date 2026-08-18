@@ -3163,6 +3163,10 @@ body [class*="wach-web"] {
   display: none !important;
 }
 
+#search-filters {
+  display: none !important;
+}
+
 body#item .basic .row.details,
 body#item .custom-fields,
 body#item .props > h2,
@@ -3849,12 +3853,54 @@ body.pngm-filter-open {
 
   body.pngm-filter-open #side-menu .box.filter {
     bottom: 0;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
   }
 
+  body.pngm-filter-open #side-menu .box.filter .nav {
+    flex: 0 0 auto;
+  }
+
+  body.pngm-filter-open #side-menu .box.filter .section.filter-menu,
+  body.pngm-filter-open #side-menu .box.filter > .section {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+
+  body.pngm-filter-open #side-menu .box.filter .section > .wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+
+  body.pngm-filter-open #side-menu form.search-side-form.pngm-filter-laid-out {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  body.pngm-filter-open #side-menu .pngm-filter-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  body.pngm-filter-open #side-menu .box.filter .row.buttons.srch,
   #side-menu .box .section.filter-menu .row.buttons.srch,
   #side-menu .filter-menu .row.buttons.srch {
-    position: sticky !important;
-    bottom: 0 !important;
+    position: static !important;
+    flex: 0 0 auto;
+    bottom: auto !important;
     left: 0;
     z-index: 5;
     width: 100%;
@@ -3869,6 +3915,37 @@ body.pngm-filter-open {
     height: 44px;
   }
 
+  /* Vehicle attribute radios / selects: room to tap, like the original filter fields */
+  body.pngm-filter-open #side-menu #atr-search .control-group,
+  body.pngm-filter-open #side-menu [id$="atr-search"] .control-group {
+    margin-bottom: 18px;
+  }
+
+  body.pngm-filter-open #side-menu #atr-search ul.atr-ul li,
+  body.pngm-filter-open #side-menu [id$="atr-search"] ul.atr-ul li,
+  body.pngm-filter-open #side-menu .sidebar-hooks #atr-search ul.atr-ul li {
+    width: 100%;
+    margin: 0 0 10px 0;
+  }
+
+  body.pngm-filter-open #side-menu .atr-input-box.atr-radio,
+  body.pngm-filter-open #side-menu .atr-input-box.atr-checkbox {
+    margin: 0 0 12px 0;
+    min-height: 28px;
+  }
+
+  body.pngm-filter-open #side-menu .atr-input-box.atr-radio input[type="radio"] + label,
+  body.pngm-filter-open #side-menu .atr-input-box.atr-checkbox input[type="checkbox"] + label {
+    font-size: 15px;
+    line-height: 22px;
+    padding: 4px 0;
+  }
+
+  body.pngm-filter-open #side-menu [id$="search-category-box"],
+  body.pngm-filter-open #side-menu #search-category-box {
+    display: none !important;
+  }
+
   body.body-ua .container.primary {
     gap: 6px;
     margin-bottom: 12px;
@@ -3876,6 +3953,98 @@ body.pngm-filter-open {
 
   body.body-ua #user-main {
     padding: 8px 12px 16px;
+  }
+
+  /* Telegram-style chat: only the message board scrolls; composer stays on screen. */
+  body.im-chat-page {
+    overflow: hidden !important;
+    height: 100dvh;
+  }
+
+  body.im-chat-page footer,
+  body.im-chat-page #footer {
+    display: none !important;
+  }
+
+  body.im-chat-page #user-menu,
+  body.im-chat-page ul.breadcrumb,
+  body.im-chat-page #breadcrumbs {
+    display: none !important;
+  }
+
+  body.im-chat-page .container.primary {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 102px - 56px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 102px - 56px - env(safe-area-inset-bottom, 0px));
+    margin-bottom: 0 !important;
+    overflow: hidden;
+  }
+
+  body.im-chat-page #user-main,
+  body.im-chat-page #user-main .user-custom-box,
+  body.im-chat-page .im-file-messages {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+    width: 100%;
+    float: none;
+  }
+
+  body.im-chat-page #user-main {
+    padding: 8px 12px 0;
+  }
+
+  body.im-chat-page .im-alt-head,
+  body.im-chat-page .im-row.im-item-context,
+  body.im-chat-page .im-error-list {
+    flex: 0 0 auto;
+  }
+
+  body.im-chat-page .im-table.im-messages {
+    float: none !important;
+    flex: 1 1 auto;
+    min-height: 80px;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 !important;
+  }
+
+  body.im-chat-page #im-message-form {
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 10040;
+    flex: none;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 8px 12px 10px;
+    background: #fff;
+    box-shadow: 0 -6px 16px rgba(16, 32, 42, .08);
+    box-sizing: border-box;
+  }
+
+  body.im-chat-page #im-message-form img.im-logged-user-img {
+    top: 16px;
+    left: 20px;
+  }
+
+  body.im-chat-page #im-message-form button.im-button-alt {
+    top: 16px;
+    right: 19px;
+  }
+
+  body.im-chat-page #im-message-form .im-attachment {
+    top: 16px;
+    right: 70px;
   }
 
   body .im-alt-head {
@@ -3891,5 +4060,97 @@ body.pngm-filter-open {
     position: relative;
     padding: 12px 8px !important;
     margin: 0 !important;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  body.im-chat-page {
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  body.im-chat-page footer,
+  body.im-chat-page #footer {
+    display: none !important;
+  }
+
+  body.im-chat-page .container.primary {
+    display: flex;
+    align-items: stretch;
+    height: calc(100vh - 154px);
+    max-height: calc(100vh - 154px);
+    margin-bottom: 0 !important;
+    overflow: hidden;
+  }
+
+  body.im-chat-page #user-menu {
+    overflow-y: auto;
+    max-height: 100%;
+    flex: 0 0 210px;
+  }
+
+  body.im-chat-page #user-main,
+  body.im-chat-page #user-main .user-custom-box,
+  body.im-chat-page .im-file-messages {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    width: auto;
+    max-height: 100%;
+    float: none;
+  }
+
+  body.im-chat-page #user-main {
+    width: calc(100% - 230px);
+    padding-bottom: 12px;
+  }
+
+  body.im-chat-page .im-alt-head,
+  body.im-chat-page .im-row.im-item-context,
+  body.im-chat-page .im-error-list {
+    flex: 0 0 auto;
+  }
+
+  body.im-chat-page .im-table.im-messages {
+    float: none !important;
+    flex: 1 1 auto;
+    min-height: 120px;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    margin: 0 !important;
+  }
+
+  body.im-chat-page #im-message-form {
+    position: relative !important;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: 2;
+    flex: none;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100%;
+    margin: 8px 0 0 !important;
+    padding: 8px 0 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  body.im-chat-page #im-message-form img.im-logged-user-img {
+    top: 15px;
+    left: 8px;
+  }
+
+  body.im-chat-page #im-message-form button.im-button-alt {
+    top: 15px;
+    right: 7px;
+  }
+
+  body.im-chat-page #im-message-form .im-attachment {
+    top: 15px;
+    right: 58px;
   }
 }

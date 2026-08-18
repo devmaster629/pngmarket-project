@@ -141,7 +141,7 @@ body #im-message {padding:15px 115px 15px 50px;overflow-y:hidden;font-size:14px;
 body #im-message:focus {outline:none;border-color:rgba(13,158,204,0.5);box-shadow:0 0 0 3px rgba(13,158,204,0.14), 0 1px 2px rgba(0,0,0,0.05);}
 body #im-message::placeholder {color:#8a8d91;opacity:1;}
 body #im-message-form img.im-logged-user-img {position:absolute;top:7px;left:8px;width:34px;height:34px;object-fit:cover;border-radius:100px;box-shadow:0 1px 2px rgba(0,0,0,0.12);z-index:3;}
-body #im-message-form button:not(.im-button-alt) {display:none;}
+body #im-message-form > button:not(.im-button-alt) {display:none;}
 body #im-message-form button.im-button-alt {display:block!important;position:absolute;right:7px;top:7px;height:36px;line-height:18px;border:none!important;border-radius:10px;padding:9px 5px;width:44px;text-align:center;font-size:15px;font-weight:bold;box-shadow:0 1px 2px rgba(0,0,0,0.08);}
 body #im-message-form button.im-button-alt i {text-align:center;line-height:16px;font-size:16px;}
 body #im-message-form button.im-button-alt i:before {font-weight:900;}
@@ -159,8 +159,8 @@ body #im-message-form .im-file-list {display:flex;flex-wrap:wrap;gap:6px;margin:
 body #im-message-form .im-file-list[hidden] {display:none;}
 body #im-message-form .im-file-chip {display:inline-flex;align-items:center;max-width:100%;padding:4px 6px 4px 8px;border:1px solid #e2e5e9;border-radius:8px;background:#f4f5f7;font-size:12px;line-height:16px;color:#333;}
 body #im-message-form .im-file-chip em {max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;}
-body #im-message-form .im-file-remove {flex:none;margin-left:4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#d8dce1;color:#333;font-size:16px;line-height:18px;cursor:pointer;}
-body #im-message-form .im-file-remove:hover {background:#c5cad0;}
+body #im-message-form .im-file-remove {display:inline-flex !important;align-items:center;justify-content:center;flex:none;margin-left:6px;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#5f6770;color:#fff;font-size:16px;line-height:1;cursor:pointer;}
+body #im-message-form .im-file-remove:hover {background:#3d444c;color:#fff;}
 body #im-message-form .im-send-hint {margin:6px 0 0 50px;font-size:12px;line-height:16px;color:#8a8d91;}
 body .im-attachment .im-att-box .im-status .im-wrap span {max-width: 100px; overflow: hidden; display: inline-block; white-space: nowrap; text-overflow: ellipsis;}
 body .im-attachment .im-att-box .im-status .im-wrap span .im-def-text {display:none;}
