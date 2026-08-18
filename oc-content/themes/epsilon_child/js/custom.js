@@ -103,8 +103,8 @@
       return;
     }
 
-    event.preventDefault();
-    openSheet(item);
+    // Mobile: go to the category page. Subcategories are listed there.
+    return;
   }
 
   function initCategories() {
@@ -746,6 +746,68 @@
       closeWidget(widget);
     }
 
+    function sortProvinceSelect($select) {
+      if (!$select || !$select.length || $select.attr('id') !== 'regionId') {
+        return;
+      }
+
+      var popular = cfg.popularProvinces || [];
+      var $empty = $select.find('option').filter(function () {
+        return !$(this).attr('value');
+      }).first().detach();
+      var items = [];
+
+      $select.find('option').each(function () {
+        var $opt = $(this);
+        var val = $opt.attr('value');
+        var name = $.trim($opt.text());
+
+        if (!val) {
+          return;
+        }
+
+        items.push({
+          val: val,
+          name: name,
+          html: $opt.prop('outerHTML'),
+          selected: $opt.prop('selected')
+        });
+      });
+
+      function provincePriority(name) {
+        var key = String(name || '').toLowerCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+        var i;
+
+        for (i = 0; i < popular.length; i++) {
+          if (popular[i] === key) {
+            return i;
+          }
+        }
+
+        return 1000;
+      }
+
+      items.sort(function (a, b) {
+        var pa = provincePriority(a.name);
+        var pb = provincePriority(b.name);
+
+        if (pa !== pb) {
+          return pa - pb;
+        }
+
+        return String(a.name).localeCompare(String(b.name));
+      });
+
+      $select.empty();
+      if ($empty.length) {
+        $select.append($empty);
+      }
+
+      $.each(items, function (i, item) {
+        $select.append(item.html);
+      });
+    }
+
     function wrapSelect($select) {
       if (!$select.length || $select.data('pngmSearchWrapped')) {
         return $select.closest('.pngm-search-select');
@@ -753,6 +815,10 @@
 
       if (!$select.is('select')) {
         return $();
+      }
+
+      if ($select.attr('id') === 'regionId') {
+        sortProvinceSelect($select);
       }
 
       var $widget = $('<div class="pngm-search-select" role="combobox" aria-haspopup="listbox"></div>');
@@ -921,6 +987,22 @@
         refresh($('#cityId'));
       }, 100);
     });
+
+    $(document).ajaxSuccess(function (event, xhr, settings) {
+      var url = settings && settings.url ? String(settings.url) : '';
+
+      if (url.indexOf('action=regions') === -1) {
+        return;
+      }
+
+      setTimeout(function () {
+        var $region = $('#regionId');
+        if ($region.length) {
+          sortProvinceSelect($region);
+          refresh($region);
+        }
+      }, 0);
+    });
   }
 
   /**
@@ -1046,6 +1128,9 @@
       var lastX = 0;
       var lastY = 0;
       var panning = false;
+      var originX = 50;
+      var originY = 50;
+      var lastTap = 0;
 
       function imgEl() {
         return typeof getImg === 'function' ? getImg() : getImg;
@@ -1056,14 +1141,18 @@
         if (!img) {
           return;
         }
-        img.style.transformOrigin = 'center center';
+        img.style.transition = 'none';
+        img.style.transformOrigin = originX + '% ' + originY + '%';
         img.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
+        img.style.willChange = scale > 1 ? 'transform' : 'auto';
       }
 
       function reset() {
         scale = 1;
         tx = 0;
         ty = 0;
+        originX = 50;
+        originY = 50;
         apply();
         if (window.pngmItemSwiper && window.pngmItemSwiper.allowTouchMove !== undefined) {
           window.pngmItemSwiper.allowTouchMove = true;
@@ -1076,11 +1165,27 @@
         }
       }
 
+      function clampPan() {
+        var limit = 180 * Math.max(0, scale - 1);
+        if (tx > limit) { tx = limit; }
+        if (tx < -limit) { tx = -limit; }
+        if (ty > limit) { ty = limit; }
+        if (ty < -limit) { ty = -limit; }
+      }
+
       stage.addEventListener('touchstart', function (e) {
+        var img = imgEl();
         if (e.touches.length === 2) {
           startDist = distance(e.touches[0], e.touches[1]);
           startScale = scale;
           panning = false;
+          if (img) {
+            var rect = img.getBoundingClientRect();
+            var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            originX = rect.width ? ((midX - rect.left) / rect.width) * 100 : 50;
+            originY = rect.height ? ((midY - rect.top) / rect.height) * 100 : 50;
+          }
         } else if (e.touches.length === 1 && scale > 1.05) {
           panning = true;
           lastX = e.touches[0].clientX;
@@ -1108,9 +1213,31 @@
           e.preventDefault();
           tx = panX + (e.touches[0].clientX - lastX);
           ty = panY + (e.touches[0].clientY - lastY);
+          clampPan();
           apply();
         }
       }, { passive: false });
+
+      stage.addEventListener('touchend', function (e) {
+        if (e.touches.length === 0 && scale < 1.08) {
+          reset();
+        }
+        if (e.touches.length < 2) {
+          startDist = 0;
+        }
+
+        if (e.changedTouches && e.changedTouches.length === 1 && !panning && scale <= 1.05) {
+          var now = Date.now();
+          if (now - lastTap < 280) {
+            scale = 2.4;
+            apply();
+            setAllowSwipe();
+            lastTap = 0;
+          } else {
+            lastTap = now;
+          }
+        }
+      }, { passive: true });
 
       return {
         reset: reset,
@@ -1333,9 +1460,48 @@
       var startX = 0;
       var startY = 0;
       var startFingers = 1;
+      var pinch = {
+        scale: 1,
+        tx: 0,
+        ty: 0,
+        startScale: 1,
+        startDist: 0,
+        panX: 0,
+        panY: 0,
+        lastX: 0,
+        lastY: 0,
+        panning: false
+      };
 
-      $(document).off('touchstart.pngmLgClose touchend.pngmLgClose');
-      $(document).on('touchstart.pngmLgClose', '.lg-item', function (e) {
+      function currentImage() {
+        return document.querySelector('.lg-item.lg-current .lg-image, .lg-item.lg-current img');
+      }
+
+      function applyLg() {
+        var img = currentImage();
+        if (!img) {
+          return;
+        }
+        img.style.transformOrigin = 'center center';
+        img.style.transition = 'none';
+        img.style.transform = 'translate3d(' + pinch.tx + 'px,' + pinch.ty + 'px,0) scale(' + pinch.scale + ')';
+      }
+
+      function resetLg() {
+        pinch.scale = 1;
+        pinch.tx = 0;
+        pinch.ty = 0;
+        applyLg();
+      }
+
+      function dist(a, b) {
+        var dx = a.clientX - b.clientX;
+        var dy = a.clientY - b.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      $(document).off('touchstart.pngmLgClose touchmove.pngmLgClose touchend.pngmLgClose');
+      $(document).on('touchstart.pngmLgClose', '.lg-outer', function (e) {
         var touches = e.originalEvent && e.originalEvent.touches;
         startFingers = touches ? touches.length : 1;
         var t = touches && touches[0];
@@ -1344,29 +1510,68 @@
         }
         startX = t.clientX;
         startY = t.clientY;
+
+        if (touches.length === 2) {
+          pinch.startDist = dist(touches[0], touches[1]);
+          pinch.startScale = pinch.scale;
+          pinch.panning = false;
+        } else if (touches.length === 1 && pinch.scale > 1.08) {
+          pinch.panning = true;
+          pinch.lastX = t.clientX;
+          pinch.lastY = t.clientY;
+          pinch.panX = pinch.tx;
+          pinch.panY = pinch.ty;
+        } else {
+          pinch.panning = false;
+        }
       });
 
-      $(document).on('touchend.pngmLgClose', '.lg-item', function (e) {
+      $(document).on('touchmove.pngmLgClose', '.lg-outer', function (e) {
         var touches = e.originalEvent && e.originalEvent.touches;
-        var t = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : null;
-        if (!t || startFingers > 1 || (touches && touches.length > 0)) {
+        if (!touches) {
           return;
         }
 
-        var img = $('.lg-item.lg-current .lg-image');
-        var transform = (img.css('transform') || '');
-        var scale = 1;
-        if (transform && transform !== 'none') {
-          scale = Math.abs(parseFloat(transform.replace(/matrix\(|\)/g, '').split(',')[0]) || 1);
+        if (touches.length >= 2 && pinch.startDist > 0) {
+          e.preventDefault();
+          pinch.scale = Math.min(5, Math.max(1, pinch.startScale * (dist(touches[0], touches[1]) / pinch.startDist)));
+          if (pinch.scale <= 1.02) {
+            pinch.scale = 1;
+            pinch.tx = 0;
+            pinch.ty = 0;
+          }
+          applyLg();
+        } else if (touches.length === 1 && pinch.panning) {
+          e.preventDefault();
+          pinch.tx = pinch.panX + (touches[0].clientX - pinch.lastX);
+          pinch.ty = pinch.panY + (touches[0].clientY - pinch.lastY);
+          applyLg();
         }
-        if (scale > 1.08) {
+      });
+
+      $(document).on('touchend.pngmLgClose', '.lg-outer', function (e) {
+        var touches = e.originalEvent && e.originalEvent.touches;
+        var t = e.originalEvent && e.originalEvent.changedTouches ? e.originalEvent.changedTouches[0] : null;
+        if (!t || startFingers > 1 || (touches && touches.length > 0)) {
+          if (!touches || touches.length === 0) {
+            pinch.startDist = 0;
+            if (pinch.scale < 1.08) {
+              resetLg();
+            }
+          }
+          return;
+        }
+
+        if (pinch.scale > 1.08) {
           return;
         }
 
         var dx = t.clientX - startX;
         var dy = t.clientY - startY;
+        var absX = Math.abs(dx);
+        var absY = Math.abs(dy);
 
-        if ((dy > 90 && Math.abs(dx) < 70) || (dx > 90 && Math.abs(dy) < 70)) {
+        if ((dy > 70 && absX < 90) || (dx > 80 && absY < 80) || (dx < -80 && absY < 80)) {
           $('.lg-close').trigger('click');
         }
       });
@@ -1779,6 +1984,63 @@
     sync();
   }
 
+  /**
+   * Mobile filter drawer: keep typing stable, pin the Filter button,
+   * and apply filters on submit instead of live AJAX while the panel is open.
+   */
+  function initMobileSearchFilters() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var originalAjax = window.epsAjaxSearch;
+
+    if (typeof originalAjax === 'function' && !window.pngmAjaxSearchWrapped) {
+      window.pngmAjaxSearchWrapped = true;
+      window.epsAjaxSearch = function (elem, event) {
+        var $elem = window.jQuery(elem);
+        var inDrawer = $elem.closest('#side-menu .box.filter').length > 0;
+        var isKeyword = $elem.attr('name') === 'sPattern';
+
+        if (inDrawer && event && event.type !== 'click') {
+          return;
+        }
+
+        if (isKeyword && event && (event.type === 'keyup' || event.type === 'input')) {
+          return;
+        }
+
+        return originalAjax.apply(this, arguments);
+      };
+    }
+
+    function uniqueIds($root) {
+      $root.find('[id]').each(function () {
+        var id = this.id;
+        if (!id || id.indexOf('pngm-f-') === 0) {
+          return;
+        }
+        var next = 'pngm-f-' + id;
+        this.id = next;
+        $root.find('label[for="' + id + '"]').attr('for', next);
+      });
+    }
+
+    $('body').on('click', '#open-search-filters, .action.open-filters', function () {
+      $('body').addClass('pngm-filter-open');
+      setTimeout(function () {
+        var $panel = $('#side-menu .box.filter');
+        uniqueIds($panel.find('.section.filter-menu'));
+        $panel.find('input[name="sPattern"]').attr('autocomplete', 'off');
+      }, 40);
+    });
+
+    $('body').on('click', '#side-menu .box.filter .back, #menu-cover', function () {
+      $('body').removeClass('pngm-filter-open');
+    });
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -1795,6 +2057,7 @@
     initItemPostMinlength();
     initPostPhotoPreview();
     initUppyOverNav();
+    initMobileSearchFilters();
   }
 
   if (document.readyState === 'loading') {

@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.3.6');
+    define('PNGM_CHILD_VERSION', '1.3.7');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -598,3 +598,105 @@ function pngm_item_post_minlength_script()
 }
 
 osc_add_hook('footer', 'pngm_item_post_minlength_script', 20);
+
+/**
+ * reCAPTCHA often fails to paint in private/incognito windows because
+ * www.google.com/recaptcha is treated as a tracker. Reload from recaptcha.net
+ * and render explicitly if the widget stayed empty.
+ */
+function pngm_recaptcha_incognito_fix()
+{
+    if (!function_exists('osc_recaptcha_public_key')) {
+        return;
+    }
+
+    $site_key = osc_recaptcha_public_key();
+    if ($site_key === '' || $site_key === false || $site_key === null) {
+        return;
+    }
+
+    $lang = substr((string) osc_current_user_locale(), 0, 2);
+    if ($lang === '') {
+        $lang = 'en';
+    }
+    ?>
+<script>
+(function () {
+  var siteKey = <?php echo json_encode($site_key); ?>;
+  var lang = <?php echo json_encode($lang); ?>;
+  var loading = false;
+
+  function widgets() {
+    return Array.prototype.slice.call(document.querySelectorAll('.g-recaptcha, [id^="anr_captcha_field_"]'));
+  }
+
+  function isRendered(el) {
+    if (!el) {
+      return true;
+    }
+    return !!el.querySelector('iframe, textarea[name="g-recaptcha-response"]');
+  }
+
+  function loadAndRender() {
+    var pending = widgets().filter(function (el) { return !isRendered(el); });
+    if (!pending.length) {
+      return;
+    }
+
+    function renderAll() {
+      pending.forEach(function (el) {
+        if (isRendered(el) || typeof window.grecaptcha === 'undefined' || typeof window.grecaptcha.render !== 'function') {
+          return;
+        }
+        try {
+          if (!el.getAttribute('data-sitekey')) {
+            el.setAttribute('data-sitekey', siteKey);
+          }
+          window.grecaptcha.render(el, { sitekey: siteKey });
+        } catch (e) {
+          // Already rendered or API not ready.
+        }
+      });
+    }
+
+    if (typeof window.grecaptcha !== 'undefined' && typeof window.grecaptcha.render === 'function') {
+      renderAll();
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+    loading = true;
+
+    window.pngmRecaptchaOnload = function () {
+      renderAll();
+    };
+
+    var script = document.createElement('script');
+    script.src = 'https://www.recaptcha.net/recaptcha/api.js?hl=' + encodeURIComponent(lang) + '&onload=pngmRecaptchaOnload&render=explicit';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  function boot() {
+    if (!widgets().length) {
+      return;
+    }
+    setTimeout(loadAndRender, 600);
+    setTimeout(loadAndRender, 1800);
+    setTimeout(loadAndRender, 4000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+    <?php
+}
+
+osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 30);

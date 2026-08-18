@@ -104,8 +104,6 @@
             <span><?php echo eps_get_simple_name($item_extra['i_transaction'], 'transaction', false); ?></span>
           <?php } ?>          
         <?php } ?>
-        
-        <span><?php echo (osc_item_views() == 1 ? __('1 person viewed', 'epsilon') : sprintf(__('%s people viewed', 'epsilon'), osc_item_views())); ?></span>
       </div>
 
       <div class="action isDetail">

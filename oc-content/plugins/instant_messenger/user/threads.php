@@ -205,7 +205,7 @@
         ?>
 
 
-        <div class="im-table-row im-has-tooltip<?php if($is_read == 0) { ?> im-unread<?php } ?><?php if($offer) { ?> im-is-offer<?php } ?>" <?php if($is_read == 0) { ?>title="<?php _e('There are unread messages in this thread!', 'instant_messenger'); ?>"<?php } ?>>
+        <div class="im-table-row im-has-tooltip im-thread-row<?php if($is_read == 0) { ?> im-unread<?php } ?><?php if($offer) { ?> im-is-offer<?php } ?>" data-href="<?php echo osc_esc_html(osc_route_url('im-messages', array('thread-id' => $t['i_thread_id'], 'secret' => 'n'))); ?>" <?php if($is_read == 0) { ?>title="<?php _e('There are unread messages in this thread!', 'instant_messenger'); ?>"<?php } ?>>
           <div class="im-col-12 no-img">
             <?php if($offer) { ?>
               <div class="im-profile-img im-is-offer"><?php _e('New offer', 'instant_messenger'); ?></div>

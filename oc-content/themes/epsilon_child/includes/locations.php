@@ -68,6 +68,137 @@ function pngm_main_city_priorities()
 }
 
 /**
+ * Most-used PNG provinces first when posting an ad.
+ *
+ * @return array lowercase name => priority (lower = higher)
+ */
+function pngm_popular_province_priorities()
+{
+    static $map = null;
+
+    if ($map !== null) {
+        return $map;
+    }
+
+    $ordered = array(
+        'National Capital District',
+        'Morobe Province',
+        'Western Highlands Province',
+        'Madang Province',
+        'Eastern Highlands Province',
+        'East New Britain Province',
+        'East Sepik Province',
+        'Central Province',
+        'West New Britain Province',
+        'Southern Highlands Province',
+        'West Sepik Province',
+        'Sandaun Province',
+        'Milne Bay Province',
+        'New Ireland Province',
+        'Chimbu Province',
+        'Simbu Province',
+        'Enga Province',
+        'Northern Province',
+        'Oro Province',
+        'Western Province',
+        'Gulf Province',
+        'Bougainville',
+        'Autonomous Region of Bougainville',
+        'Manus Province',
+        'Hela Province',
+        'Jiwaka Province',
+    );
+
+    $map = array();
+    $i = 1;
+
+    foreach ($ordered as $name) {
+        $map[pngm_location_key($name)] = $i++;
+    }
+
+    return $map;
+}
+
+/**
+ * @param array $regions
+ * @param string $name_key
+ * @return array
+ */
+function pngm_sort_regions_popular_first($regions, $name_key = 's_name')
+{
+    if (!is_array($regions) || count($regions) === 0) {
+        return is_array($regions) ? $regions : array();
+    }
+
+    $priorities = pngm_popular_province_priorities();
+
+    usort($regions, function ($a, $b) use ($priorities, $name_key) {
+        $an = pngm_location_key(isset($a[$name_key]) ? $a[$name_key] : (isset($a['s_name']) ? $a['s_name'] : ''));
+        $bn = pngm_location_key(isset($b[$name_key]) ? $b[$name_key] : (isset($b['s_name']) ? $b['s_name'] : ''));
+        $ap = isset($priorities[$an]) ? $priorities[$an] : 1000;
+        $bp = isset($priorities[$bn]) ? $priorities[$bn] : 1000;
+
+        if ($ap !== $bp) {
+            return ($ap < $bp) ? -1 : 1;
+        }
+
+        return strcasecmp($an, $bn);
+    });
+
+    return $regions;
+}
+
+/**
+ * If a province capital is missing from that region's city list, prepend it
+ * from the national city table (e.g. Port Moresby for Central Province).
+ *
+ * @param array  $cities
+ * @param string $region_name
+ * @param string $name_key
+ * @return array
+ */
+function pngm_inject_province_capital($cities, $region_name, $name_key = 's_name')
+{
+    if (!is_array($cities)) {
+        $cities = array();
+    }
+
+    $region_name = trim((string) $region_name);
+    if ($region_name === '') {
+        return $cities;
+    }
+
+    $caps = pngm_province_capitals();
+    $rk = pngm_location_key($region_name);
+
+    if (!isset($caps[$rk])) {
+        return $cities;
+    }
+
+    $capital_name = $caps[$rk];
+    $ck = pngm_location_key($capital_name);
+
+    foreach ($cities as $city) {
+        $name = isset($city[$name_key]) ? $city[$name_key] : (isset($city['s_name']) ? $city['s_name'] : '');
+        if (pngm_location_key($name) === $ck) {
+            return $cities;
+        }
+    }
+
+    if (!class_exists('City')) {
+        return $cities;
+    }
+
+    $found = City::newInstance()->findByName($capital_name);
+    if (is_array($found) && !empty($found['pk_i_id'])) {
+        $found['pngm_tier'] = 'main';
+        array_unshift($cities, $found);
+    }
+
+    return $cities;
+}
+
+/**
  * Map province/region name → preferred capital city name.
  *
  * @return array
@@ -344,6 +475,7 @@ function pngm_prepare_cities_for_posting($cities, $region_name = null, $name_key
         return array();
     }
 
+    $cities = pngm_inject_province_capital($cities, $region_name, $name_key);
     $cities = pngm_sort_cities_main_first($cities, $region_name, $name_key);
     $main_keys = pngm_main_town_keys_for_region($region_name);
 
@@ -603,6 +735,7 @@ function pngm_sort_ajax_loc_results($data)
     }
 
     $cities = pngm_sort_cities_main_first($cities, null, 'name');
+    $regions = pngm_sort_regions_popular_first($regions, 'name');
 
     if (count($regions) > 0 && count($cities) > 0) {
         $caps = pngm_province_capitals();
@@ -652,8 +785,14 @@ function pngm_location_js_config()
         $main[] = $key;
     }
 
+    $provinces = array();
+    foreach (array_keys(pngm_popular_province_priorities()) as $key) {
+        $provinces[] = $key;
+    }
+
     return array(
         'mainCities' => $main,
+        'popularProvinces' => $provinces,
         'capitals'   => pngm_province_capitals(),
         'mainTowns'  => pngm_province_main_towns(),
         'labels'     => array(
@@ -701,7 +840,28 @@ function pngm_ajax_cities_capital_first()
     exit;
 }
 
+function pngm_ajax_regions_popular_first()
+{
+    if (Params::getParam('page') !== 'ajax' || Params::getParam('action') !== 'regions') {
+        return;
+    }
+
+    $country_id = Params::getParam('countryId');
+
+    if ($country_id === '' || $country_id === null || !class_exists('Region')) {
+        return;
+    }
+
+    $regions = Region::newInstance()->findByCountry($country_id);
+    $regions = pngm_sort_regions_popular_first($regions, 's_name');
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($regions);
+    exit;
+}
+
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init_ajax', 'pngm_ajax_cities_capital_first', 1);
+    osc_add_hook('init_ajax', 'pngm_ajax_regions_popular_first', 1);
     osc_add_hook('header', 'pngm_print_location_js_config', 9);
 }

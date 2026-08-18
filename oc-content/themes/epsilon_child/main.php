@@ -71,7 +71,7 @@
      
             <div class="pngm-cat-item<?php echo (count($subcategories) > 0 ? ' has-sub' : ''); ?>">
               <a href="<?php echo $category_url; ?>" data-id="<?php echo osc_category_id(); ?>">
-                <div <?php if($color <> '' && eps_param('cat_icons') != 1) { ?>style="background-color:<?php echo eps_hex_to_rgb($color, 0.15); ?>;"<?php } ?>>
+                <div>
                   <?php if(in_array(osc_category_id(), $new_categories)) { ?>
                     <span class="lab new"><?php _e('New', 'epsilon'); ?></span>
                   <?php } ?>

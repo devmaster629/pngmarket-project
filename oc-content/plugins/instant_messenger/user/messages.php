@@ -345,7 +345,7 @@ $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']
       <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
       <img class="im-logged-user-img im-tooltip" src="<?php echo $logged_user_img; ?>" title="<?php echo osc_esc_html(sprintf(__('You are logged in as %s', 'instant_messenger'), $logged_user_name)); ?>" alt="<?php echo osc_esc_html($logged_user_name); ?>"/>
-      <textarea name="im-message" id="im-message" class="im-textarea" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>" required></textarea>
+      <textarea name="im-message" id="im-message" class="im-textarea" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
 
       <button type="submit" class="im-button-green"><?php _e('Send message', 'instant_messenger'); ?></button>
       <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
@@ -392,9 +392,16 @@ $(document).ready(function() {
     var form = $(this).closest('form');
     var inputs = form.find('input, select, textarea');
 
-    // Validate form first
+    var hasFile = form.find('input[name="im-file"]').val() != '';
+
+    // Validate form first (message is optional when an attachment is present)
     inputs.each(function(){
-      form.validate().element($(this));
+      if(hasFile && $(this).attr('name') === 'im-message') {
+        return;
+      }
+      if(form.data('validator')) {
+        form.validate().element($(this));
+      }
     });
 
 

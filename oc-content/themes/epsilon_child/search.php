@@ -313,25 +313,7 @@
   <div id="search-main" class="<?php echo $view; ?>">
     <?php osc_run_hook('search_items_top'); ?>
     
-    <div class="top-bar">
-      <h1>
-        <?php 
-          $loc = @array_values(array_filter(array(osc_search_city(), osc_search_region(), osc_search_country())))[0];
-          $cat = (isset($category['s_name']) ? $category['s_name'] : '');
-          $pattern = trim(Params::getParam('sPattern'));
-          $tit = implode(', ', array_filter(array($cat, $loc, $pattern)));
-
-          if(osc_search_total_items() <= 0) { 
-            echo __('No exact results found', 'epsilon');
-            
-          } elseif($tit != '') {
-            echo sprintf(__('%s results found in %s', 'epsilon'), osc_search_total_items(), $tit);
-          } else {
-            echo sprintf(__('%s results found', 'epsilon'), osc_search_total_items());
-          }
-        ?>
-      </h1>
-    </div>
+    <div class="top-bar pngm-search-count is-hidden" aria-hidden="true"></div>
 
     <?php
       // CATEGORY-01 — Subcategories before listings (visible on mobile too).
@@ -352,25 +334,6 @@
 
     <?php if(is_array($pngm_subcats) && count($pngm_subcats) > 0) { ?>
       <div id="pngm-search-subcats" class="pngm-search-subcats">
-        <div class="pngm-search-subcats-head">
-          <?php if (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
-            <span class="pngm-search-subcats-badge" aria-hidden="true">
-              <?php echo pngm_render_category_icon($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, false); ?>
-            </span>
-          <?php } ?>
-          <div class="pngm-search-subcats-copy">
-            <strong>
-              <?php
-                if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
-                  echo osc_esc_html($pngm_subcat_parent['s_name']);
-                } else {
-                  _e('Category', 'epsilon');
-                }
-              ?>
-            </strong>
-            <span><?php echo sprintf(__('%d types', 'epsilon'), count($pngm_subcats)); ?></span>
-          </div>
-        </div>
         <div class="pngm-search-subcats-scroll">
           <div class="pngm-search-subcats-list">
             <?php

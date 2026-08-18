@@ -30,6 +30,19 @@ $(document).ready(function(){
   $('input[name="im-file"]').change(function() {
     if( $(this)[0].files[0]['name'] != '' ) {
       $('.im-attachment .im-att-box .im-status .im-wrap span').text( $(this)[0].files[0]['name'] );
+      $('#im-message').removeAttr('required').removeClass('error');
+    }
+  });
+
+  // Whole conversation row opens the thread
+  $('body').on('click', '.im-threads .im-table-row', function(e) {
+    if($(e.target).closest('a, button, input, label').length) {
+      return;
+    }
+
+    var href = $(this).attr('data-href') || $(this).find('a.im-mes-title').attr('href');
+    if(href) {
+      window.location.href = href;
     }
   });
 
@@ -63,8 +76,18 @@ $(document).ready(function(){
         */
         
         "im-message": {
-          required: true,
-          minlength: 2
+          required: {
+            depends: function () {
+              var fileInput = $('input[name="im-file"]');
+              return !(fileInput.length && fileInput.val());
+            }
+          },
+          minlength: {
+            depends: function () {
+              return $.trim($('#im-message').val() || '').length > 0;
+            },
+            param: 2
+          }
         }
       },
       
