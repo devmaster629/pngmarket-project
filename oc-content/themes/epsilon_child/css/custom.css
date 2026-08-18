@@ -2174,7 +2174,12 @@ a.pngm-search-subcat-all {
 #item-image .swiper-container.pngm-item-gallery {
   background: #111;
   border-radius: 8px;
-  touch-action: pan-y;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+#item-image .swiper-container.pngm-item-gallery * {
+  -webkit-touch-callout: none;
 }
 
 #item-image .swiper-wrapper li a {
@@ -2249,11 +2254,121 @@ a.pngm-search-subcat-all {
   object-position: center;
 }
 
-/* lightGallery fullscreen UX + pinch zoom */
-body.pngm-lg-open {
-  overflow: hidden;
+/* Native fullscreen photo viewer (replaces lightGallery on listing pages) */
+.pngm-native-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: #000;
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
+.pngm-native-viewer[hidden] {
+  display: none !important;
+}
+
+.pngm-native-viewer.is-open {
+  display: block;
+}
+
+.pngm-nv-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.pngm-nv-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.pngm-nv-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 56px 0 56px;
+  transition: opacity 0.2s ease;
+}
+
+.pngm-nv-count {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.pngm-nv-close {
+  position: absolute;
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  right: 10px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pngm-nv-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.35s ease;
+}
+
+.pngm-nv-hint.is-gone,
+.pngm-native-viewer.pngm-nv-chrome-hidden .pngm-nv-ui,
+.pngm-native-viewer.pngm-nv-chrome-hidden .pngm-nv-close,
+.pngm-native-viewer.pngm-nv-chrome-hidden .pngm-nv-hint {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.pngm-lg-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+body.pngm-lg-open #navi-bar {
+  visibility: hidden;
+}
+
+/* lightGallery leftover (parent may still init briefly) */
 body.pngm-lg-open .lg-outer,
 body.pngm-lg-open .lg-item,
 body.pngm-lg-open .lg-img-wrap,

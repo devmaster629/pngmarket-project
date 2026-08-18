@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.4.5');
+    define('PNGM_CHILD_VERSION', '1.5.1');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -32,22 +32,30 @@ function pngm_enqueue_assets()
 
     if ($version === '') {
         $version = '?v=' . PNGM_CHILD_VERSION;
+    } else {
+        $version .= '-' . PNGM_CHILD_VERSION;
     }
 
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
 
-    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global'));
+    osc_register_script('pngm-gallery', osc_current_web_theme_url('js/gallery.js' . $version), array('jquery'));
+    osc_enqueue_script('pngm-gallery');
+
+    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global', 'pngm-gallery'));
     osc_enqueue_script('pngm-custom');
 }
 
 osc_add_hook('header', 'pngm_enqueue_assets', 8);
 
 /**
- * Allow pinch-zoom on photos. Parent theme locked scale at 1.0.
+ * Lock page pinch-zoom. Photo zoom is handled by gallery.js transforms.
+ * Also rewrite every viewport tag so Safari cannot keep the parent max-scale=5.
  */
 function pngm_viewport_meta()
 {
-    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />' . "\n";
+    $content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+    echo '<meta name="viewport" content="' . $content . '" />' . "\n";
+    echo '<script>(function(){var c=' . json_encode($content) . ';var m=document.querySelectorAll(\'meta[name="viewport"]\');for(var i=0;i<m.length;i++){m[i].setAttribute("content",c);}})();</script>' . "\n";
 }
 
 osc_add_hook('header', 'pngm_viewport_meta', 1);
