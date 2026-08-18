@@ -1,14 +1,45 @@
 $(document).ready(function(){
 
-  // AUTO-EXPAND TEXTAREA
-  $('body').on('change keyup keydown paste cut', 'textarea#im-message', function () {
-    $(this).height(0).height(this.scrollHeight - 30);
-    
-    if(this.scrollHeight > 455) {
-      $(this).css('overflow-y', 'scroll');
+  function imComposerMinHeight() {
+    return ($(window).width() <= 360) ? 85 : 50;
+  }
+
+  function imFitComposerHeight() {
+    var ta = document.getElementById('im-message');
+    if(!ta) {
+      return;
+    }
+
+    var min = imComposerMinHeight();
+    ta.style.height = 'auto';
+    var next = Math.max(min, ta.scrollHeight);
+    ta.style.height = next + 'px';
+    ta.style.overflowY = (next > 455) ? 'scroll' : 'hidden';
+
+    if(next > 455) {
       $('body #im-message-form button.im-button-alt').css('right', '17px');
       $('body #im-message-form .im-attachment').css('right', '68px');
+    } else {
+      $('body #im-message-form button.im-button-alt').css('right', '');
+      $('body #im-message-form .im-attachment').css('right', '');
     }
+  }
+
+  window.imResetComposerHeight = function() {
+    var ta = document.getElementById('im-message');
+    if(!ta) {
+      return;
+    }
+
+    ta.style.height = '';
+    ta.style.overflowY = 'hidden';
+    $('body #im-message-form button.im-button-alt').css('right', '');
+    $('body #im-message-form .im-attachment').css('right', '');
+  };
+
+  // AUTO-EXPAND TEXTAREA
+  $('body').on('change keyup keydown paste cut input', 'textarea#im-message', function () {
+    imFitComposerHeight();
   });
 
 
@@ -26,13 +57,111 @@ $(document).ready(function(){
   Tipped.create('.im-has-tooltip-left', { maxWidth: 200, radius: false } );
 
 
-  // ATTACHMENT NAME
-  $('input[name="im-file"]').change(function() {
-    if( $(this)[0].files[0]['name'] != '' ) {
-      $('.im-attachment .im-att-box .im-status .im-wrap span').text( $(this)[0].files[0]['name'] );
-      $('#im-message').removeAttr('required').removeClass('error');
+  // ATTACHMENTS: keep a file list so users can add several and remove any of them
+  (function() {
+    var pending = [];
+
+    function fileInput() {
+      return document.getElementById('im-file');
     }
-  });
+
+    function sameFile(a, b) {
+      return a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+    }
+
+    var syncing = false;
+
+    function syncInput() {
+      var input = fileInput();
+      if(!input) {
+        return;
+      }
+
+      if(typeof DataTransfer === 'undefined') {
+        if(!pending.length) {
+          input.value = '';
+        }
+        return;
+      }
+
+      try {
+        var dt = new DataTransfer();
+        pending.forEach(function(file) {
+          dt.items.add(file);
+        });
+        syncing = true;
+        input.files = dt.files;
+      } catch (e) {
+      }
+      syncing = false;
+    }
+
+    function renderList() {
+      var list = document.getElementById('im-file-list');
+      if(!list) {
+        return;
+      }
+
+      list.innerHTML = '';
+      if(!pending.length) {
+        list.hidden = true;
+        return;
+      }
+
+      list.hidden = false;
+      pending.forEach(function(file, index) {
+        var chip = document.createElement('span');
+        chip.className = 'im-file-chip';
+
+        var name = document.createElement('em');
+        name.textContent = file.name;
+        chip.appendChild(name);
+
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'im-file-remove';
+        remove.setAttribute('aria-label', 'Remove file');
+        remove.innerHTML = '&times;';
+        remove.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          pending.splice(index, 1);
+          syncInput();
+          renderList();
+        });
+        chip.appendChild(remove);
+        list.appendChild(chip);
+      });
+    }
+
+    window.imResetComposerFiles = function() {
+      pending = [];
+      var input = fileInput();
+      if(input) {
+        input.value = '';
+      }
+      renderList();
+    };
+
+    $('body').on('change', '#im-file', function() {
+      if(syncing) {
+        return;
+      }
+
+      var added = this.files ? Array.prototype.slice.call(this.files) : [];
+      added.forEach(function(file) {
+        var exists = pending.some(function(current) {
+          return sameFile(current, file);
+        });
+        if(!exists) {
+          pending.push(file);
+        }
+      });
+      syncInput();
+      renderList();
+      $('#im-message').removeAttr('required').removeClass('error');
+    });
+  })();
 
   // Whole conversation row opens the thread
   $('body').on('click', '.im-threads .im-table-row', function(e) {
@@ -78,8 +207,8 @@ $(document).ready(function(){
         "im-message": {
           required: {
             depends: function () {
-              var fileInput = $('input[name="im-file"]');
-              return !(fileInput.length && fileInput.val());
+              var fileInput = document.getElementById('im-file');
+              return !(fileInput && fileInput.files && fileInput.files.length);
             }
           },
           minlength: {

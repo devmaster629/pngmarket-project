@@ -153,7 +153,15 @@ body #im-message-form button.im-button-alt.im-btn-loading i.fa {display:inline-b
 .im-html button.im-btn-loading i.fa:before {content:"\f110";}
 .im-html button.im-btn-loading i.fa {display:inline-block;animation:im-btn-spin 0.85s linear infinite;}
 @keyframes im-btn-spin {0% {transform:rotate(0deg);}100% {transform:rotate(360deg);}}
-body #im-message-form .im-attachment {position:absolute;right:58px;top:7px;height:36px;margin:0;overflow:hidden;width:auto;}
+body #im-message-form .im-attachment {position:absolute;right:58px;top:7px;height:36px;margin:0;overflow:visible;width:auto;}
+body #im-message-form .im-attachment .im-att-box .im-status .im-wrap span {display:none;}
+body #im-message-form .im-file-list {display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 50px;width:calc(100% - 50px);}
+body #im-message-form .im-file-list[hidden] {display:none;}
+body #im-message-form .im-file-chip {display:inline-flex;align-items:center;max-width:100%;padding:4px 6px 4px 8px;border:1px solid #e2e5e9;border-radius:8px;background:#f4f5f7;font-size:12px;line-height:16px;color:#333;}
+body #im-message-form .im-file-chip em {max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;}
+body #im-message-form .im-file-remove {flex:none;margin-left:4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#d8dce1;color:#333;font-size:16px;line-height:18px;cursor:pointer;}
+body #im-message-form .im-file-remove:hover {background:#c5cad0;}
+body #im-message-form .im-send-hint {margin:6px 0 0 50px;font-size:12px;line-height:16px;color:#8a8d91;}
 body .im-attachment .im-att-box .im-status .im-wrap span {max-width: 100px; overflow: hidden; display: inline-block; white-space: nowrap; text-overflow: ellipsis;}
 body .im-attachment .im-att-box .im-status .im-wrap span .im-def-text {display:none;}
 body .im-attachment .im-att-box .im-wrap {padding:9px 10px;background:#e8eaed;border-radius:8px;color:#444;transition:0.1s;height:34px;}

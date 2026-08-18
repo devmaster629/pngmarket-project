@@ -1386,7 +1386,7 @@ function im_get_item_details($item_id, $item = array()) {
 
 
 // MANAGE MESSAGE INSERT INTO DATABASE
-function im_insert_message($thread_id, $message, $type, $file = array(), $notify = true) {
+function im_insert_message($thread_id, $message, $type, $file = array(), $notify = true, $redirect = true) {
   if(im_param('only_logged') == 1 && !osc_is_web_user_logged_in()) {
     return false;
   }
@@ -1509,9 +1509,51 @@ function im_insert_message($thread_id, $message, $type, $file = array(), $notify
   $id = ModelIM::newInstance()->insertMessage($thread['i_thread_id'], $type, 0, $message, $update_file_name, $email_sent);
   osc_run_hook('im_insert_message', $id);
 
+  if($redirect === false) {
+    return $id;
+  }
+
   osc_add_flash_ok_message(__('Message successfully sent to', 'instant_messenger') . ' ' . $send_to_user_name);
   header('Location: ' . osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)));
   exit;
+}
+
+/**
+ * Normalize $_FILES payload (single or multiple) into a list of one-file arrays.
+ *
+ * @param array $files
+ * @return array
+ */
+function im_uploaded_file_list($files)
+{
+  if(!is_array($files) || !isset($files['name'])) {
+    return array();
+  }
+
+  if(!is_array($files['name'])) {
+    if(trim((string)$files['name']) === '' || (isset($files['error']) && (int)$files['error'] === UPLOAD_ERR_NO_FILE)) {
+      return array();
+    }
+
+    return array($files);
+  }
+
+  $out = array();
+  foreach($files['name'] as $i => $name) {
+    if(trim((string)$name) === '' || (isset($files['error'][$i]) && (int)$files['error'][$i] === UPLOAD_ERR_NO_FILE)) {
+      continue;
+    }
+
+    $out[] = array(
+      'name' => $name,
+      'type' => isset($files['type'][$i]) ? $files['type'][$i] : '',
+      'tmp_name' => isset($files['tmp_name'][$i]) ? $files['tmp_name'][$i] : '',
+      'error' => isset($files['error'][$i]) ? $files['error'][$i] : UPLOAD_ERR_OK,
+      'size' => isset($files['size'][$i]) ? $files['size'][$i] : 0,
+    );
+  }
+
+  return $out;
 }
 
 

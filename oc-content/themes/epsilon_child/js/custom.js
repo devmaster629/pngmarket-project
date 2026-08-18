@@ -95,7 +95,7 @@
     }
 
     // Never swallow a tap on a subcategory link inside the in-page panel.
-    if (event.target.closest('.pngm-subcat')) {
+    if (event.target.closest && event.target.closest('.pngm-subcat')) {
       return;
     }
 
@@ -103,8 +103,9 @@
       return;
     }
 
-    // Mobile: go to the category page. Subcategories are listed there.
-    return;
+    event.preventDefault();
+    event.stopPropagation();
+    openSheet(item);
   }
 
   function initCategories() {
@@ -114,7 +115,7 @@
       return;
     }
 
-    grid.addEventListener('click', onCategoryClick);
+    grid.addEventListener('click', onCategoryClick, true);
 
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' || event.keyCode === 27) {

@@ -93,7 +93,29 @@ if($offer) {
 
 // MESSAGE SENT TO USER
 if(Params::getParam('im-action') == 'send_message') {
-  im_insert_message($thread['i_thread_id'], nl2br(htmlspecialchars(im_str(Params::getParam('im-message', false, false)), ENT_QUOTES, 'UTF-8')), $type, Params::getFiles('im-file'));
+  $message_text = nl2br(htmlspecialchars(im_str(Params::getParam('im-message', false, false)), ENT_QUOTES, 'UTF-8'));
+  $files = array();
+  if(function_exists('im_uploaded_file_list')) {
+    $files = im_uploaded_file_list(Params::getFiles('im-file'));
+    if(count($files) === 0) {
+      $files = im_uploaded_file_list(Params::getFiles('im-file[]'));
+    }
+  } else {
+    $one = Params::getFiles('im-file');
+    if(is_array($one) && isset($one['name']) && $one['name'] <> '') {
+      $files = array($one);
+    }
+  }
+
+  if(count($files) === 0) {
+    im_insert_message($thread['i_thread_id'], $message_text, $type, array());
+  } else {
+    $n = count($files);
+    foreach($files as $i => $file) {
+      $text = ($i === 0 ? $message_text : '');
+      im_insert_message($thread['i_thread_id'], $text, $type, $file, $i === 0, ($i === $n - 1));
+    }
+  }
 }
 
 
@@ -355,11 +377,13 @@ $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']
           <div class="im-att-box">
             <label class="im-status">
               <span class="im-wrap"><i class="fa fa-paperclip"></i> <span><span class="im-def-text"><?php _e('Upload file', 'instant_messenger'); ?></span></span></span>
-              <input type="file" name="im-file" id="im-file" class="im-file" />
+              <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
             </label>
           </div>
         </div>
       <?php } ?>
+      <div class="im-file-list" id="im-file-list" hidden></div>
+      <div class="im-send-hint"><?php _e('Ctrl+Enter to send', 'instant_messenger'); ?></div>
     </form>
   <?php } ?>
 </div>
@@ -392,7 +416,11 @@ $(document).ready(function() {
     var form = $(this).closest('form');
     var inputs = form.find('input, select, textarea');
 
-    var hasFile = form.find('input[name="im-file"]').val() != '';
+    var hasFile = false;
+    var fileInput = form.find('input[type="file"]')[0];
+    if(fileInput && fileInput.files && fileInput.files.length) {
+      hasFile = true;
+    }
 
     // Validate form first (message is optional when an attachment is present)
     inputs.each(function(){
@@ -405,7 +433,7 @@ $(document).ready(function() {
     });
 
 
-    if((form.find('input[name="im-file"]').val() == '' || !form.find('input[name="im-file"]').length) && imAjax == 1) {
+    if((!hasFile) && imAjax == 1) {
       if(form.valid()) {
         e.preventDefault();
         button.addClass('im-btn-loading').attr('disabled', true);
@@ -514,7 +542,14 @@ function imRefreshMessages() {
 
 // CLEAR FORM WHEN MESSAGE IS SENT
 function imClearForm() {
-  $('#im-message-form textarea[name="im-message"], #im-message-form input[name="im-file"]').val('');
+  $('#im-message-form textarea[name="im-message"]').val('');
+  $('#im-message-form input[type="file"]').val('');
+  if(typeof window.imResetComposerHeight === 'function') {
+    window.imResetComposerHeight();
+  }
+  if(typeof window.imResetComposerFiles === 'function') {
+    window.imResetComposerFiles();
+  }
 }
 
 
