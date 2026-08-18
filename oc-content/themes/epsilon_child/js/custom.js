@@ -2075,12 +2075,15 @@
 
     document.body.classList.add('im-chat-page');
 
-    function layout() {
+    function layout(opts) {
       form = document.getElementById('im-message-form');
       board = document.querySelector('.im-table.im-messages');
       if (!board) {
         return;
       }
+
+      var pinBottom = !!(opts && opts.pinBottom);
+      var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
 
       var navi = document.getElementById('navi-bar');
       var naviH = 0;
@@ -2097,15 +2100,26 @@
 
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
-      board.scrollTop = board.scrollHeight;
+
+      if (pinBottom || nearBottom) {
+        board.scrollTop = board.scrollHeight;
+      }
     }
 
     window.pngmLayoutChat = layout;
-    layout();
-    window.addEventListener('resize', layout);
-    window.addEventListener('orientationchange', layout);
-    window.setTimeout(layout, 50);
-    window.setTimeout(layout, 250);
+    layout({ pinBottom: true });
+    window.addEventListener('resize', function () {
+      layout();
+    });
+    window.addEventListener('orientationchange', function () {
+      layout({ pinBottom: true });
+    });
+    window.setTimeout(function () {
+      layout({ pinBottom: true });
+    }, 50);
+    window.setTimeout(function () {
+      layout({ pinBottom: true });
+    }, 250);
   }
 
   function init() {

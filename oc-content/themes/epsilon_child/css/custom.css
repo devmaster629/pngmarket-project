@@ -408,21 +408,7 @@ body#home > .content > section.home-search {
 /* --- Subcategory flyout (desktop) --- */
 
 .pngm-sub-toggle {
-  display: none;
-  position: absolute;
-  right: 6px;
-  top: 46px;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid #e3e8ed;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(16, 32, 42, .06);
-  color: #4a5561;
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
+  display: none !important;
 }
 
 .pngm-subcat {
@@ -1123,13 +1109,7 @@ body#home #premium-items .simple-prod .labels {
   }
 
   #home-cat .pngm-cat-item.has-sub .pngm-sub-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    top: 48px;
-    right: 4px;
-    width: 18px;
-    height: 18px;
+    display: none !important;
   }
 
   #home-cat .pngm-subcat {

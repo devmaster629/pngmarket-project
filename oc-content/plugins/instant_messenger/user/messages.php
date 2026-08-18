@@ -450,7 +450,7 @@ $(document).ready(function() {
           success: function(response){
             //console.log('Message sent!');
 
-            imRefreshMessages();
+            imRefreshMessages(true);
             imClearForm();
 
             imSubmitButtonLoading(button, false);
@@ -500,7 +500,16 @@ $(document).ready(function() {
 
 
 // REFRESH MESSAGES
-function imRefreshMessages() {
+function imStickChatToBottom($board) {
+  $board = $board && $board.length ? $board : $('.im-table.im-messages');
+  var el = $board[0];
+  if(!el) {
+    return;
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function imRefreshMessages(forceBottom) {
   $.ajax({
     url: imMessageUrl,
     type: "GET",
@@ -508,24 +517,39 @@ function imRefreshMessages() {
       //console.log('Messages loaded');
 
       if(response.length) {
+        var $board = $('.im-table.im-messages');
+        var el = $board[0];
         var content = $(response).contents().find('.im-table.im-messages').html();
         var messagesCount = $(response).contents().find('.im-table.im-messages .im-table-row').length;
-        var lastMessageId = $('.im-table.im-messages .im-table-row:last-child').attr('data-message-id');
+        var lastMessageId = $board.find('.im-table-row:last-child').attr('data-message-id');
+        var stick = !!forceBottom;
+        if(!stick && el) {
+          stick = (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
+        }
 
         if(
-          messagesCount != $('.im-table.im-messages .im-table-row').length
-          || (!$('.im-table.im-messages .im-table-row:last-child .im-date .fa-check').length && $(response).contents().find('.im-table.im-messages .im-table-row:last-child .im-date .fa-check').length)
+          messagesCount != $board.find('.im-table-row').length
+          || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $(response).contents().find('.im-table.im-messages .im-table-row:last-child .im-date .fa-check').length)
         ) {
-          $('.im-table.im-messages').html(content).animate({ scrollTop: $('.im-table.im-messages').prop("scrollHeight")}, 200);
+          $board.html(content);
+          if(stick) {
+            imStickChatToBottom($board);
+          }
 
+          if(typeof window.pngmLayoutChat === 'function') {
+            window.pngmLayoutChat({ pinBottom: stick });
+          }
 
           // IF USER SEEING OLDER MESSAGES, DO NOT COLLAPSE THEM
           if(imShowOlder == 1) {
             imShowOlderMessages();
+            if(stick) {
+              imStickChatToBottom($board);
+            }
           }
 
           // IF THERE IS NEW MESSAGE AND IT'S NOT FROM SENDER
-          if(!$('.im-table.im-messages .im-table-row:last-child').hasClass('im-from') && $('.im-table.im-messages .im-table-row:last-child').attr('data-message-id') != lastMessageId) {
+          if(!$board.find('.im-table-row:last-child').hasClass('im-from') && $board.find('.im-table-row:last-child').attr('data-message-id') != lastMessageId) {
             imPlayBeep();
 
             PageTitleNotification.On('<?php echo osc_esc_js(__('You have new message!', 'instant_messenger')); ?>');
