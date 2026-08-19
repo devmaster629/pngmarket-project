@@ -83,8 +83,6 @@
       <div class="description isDetail"><?php echo osc_highlight(strip_tags(osc_item_description()), 360); ?></div>
       
       <?php osc_run_hook('item_loop_description'); ?>
-      
-      <div class="pngm-date"><?php echo eps_smart_date(osc_item_pub_date()); ?></div>
 
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
         <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
@@ -93,7 +91,9 @@
       <?php // Staging-style detail: date • category • condition • transaction • views ?>
       <div class="extra">
         <span><?php echo eps_smart_date(osc_item_pub_date()); ?></span>
-        <span><?php echo osc_item_category(); ?></span>
+        <?php if (osc_item_category() <> '') { ?>
+          <span><?php echo osc_item_category(); ?></span>
+        <?php } ?>
         
         <?php if(!in_array(osc_item_category_id(), eps_extra_fields_hide())) { ?>
           <?php if(eps_get_simple_name($item_extra['i_condition'], 'condition', false) <> '') { ?>

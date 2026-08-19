@@ -569,6 +569,8 @@
       <?php } ?>
       
       <?php echo eps_banner('search_bottom'); ?>
+
+      <div class="paginate"><?php echo eps_fix_arrow(osc_search_pagination()); ?></div>
       
       <?php /* "Other people searched" removed — listings stay higher. */ ?>
 
@@ -579,8 +581,6 @@
       ?>
       
       <?php osc_run_hook('search_items_bottom'); ?>
-      
-      <div class="paginate"><?php echo eps_fix_arrow(osc_search_pagination()); ?></div>
     </div>
   </div>
 </div>
