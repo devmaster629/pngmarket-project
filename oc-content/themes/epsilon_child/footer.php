@@ -29,81 +29,50 @@
       'phone' => '',
       'tel' => '',
       'address' => 'Port Moresby, Papua New Guinea',
-      'tagline' => '',
+      'tagline' => 'Buy and sell across Papua New Guinea.',
     );
     $pngm_socials = function_exists('pngm_footer_social_links') ? pngm_footer_social_links() : array();
     $pngm_pages = function_exists('pngm_footer_info_pages') ? pngm_footer_info_pages() : array();
     $pngm_social_labels = array(
-      'whatsapp'  => __('WhatsApp', 'epsilon'),
       'facebook'  => __('Facebook', 'epsilon'),
       'instagram' => __('Instagram', 'epsilon'),
-      'x'         => __('X (Twitter)', 'epsilon'),
-      'linkedin'  => __('LinkedIn', 'epsilon'),
-      'pinterest' => __('Pinterest', 'epsilon'),
+      'tiktok'    => __('TikTok', 'epsilon'),
+    );
+    $pngm_social_icons = array(
+      'facebook'  => 'fab fa-facebook-f',
+      'instagram' => 'fab fa-instagram',
+      'tiktok'    => 'fab fa-tiktok',
     );
   ?>
   
   <div class="container">
     <section class="one">
       <div class="col contact">
-        <h4><?php _e('Contact', 'epsilon'); ?></h4>
-
-        <p class="logo"><?php echo eps_logo(); ?></p>
         <p class="company"><strong><?php echo osc_esc_html($pngm_contact['name']); ?></strong></p>
         <?php if ($pngm_contact['tagline'] !== '') { ?>
           <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_contact['tagline']); ?></p>
         <?php } ?>
-        <?php if ($pngm_contact['phone'] !== '') { ?>
-          <p class="pngm-footer-line"><?php _e('Phone', 'epsilon'); ?>: <a href="tel:<?php echo osc_esc_html($pngm_contact['tel']); ?>"><?php echo osc_esc_html($pngm_contact['phone']); ?></a></p>
-        <?php } ?>
-        <?php if ($pngm_contact['email'] !== '') { ?>
-          <p class="pngm-footer-line"><?php _e('Email', 'epsilon'); ?>: <a href="mailto:<?php echo osc_esc_html($pngm_contact['email']); ?>"><?php echo osc_esc_html($pngm_contact['email']); ?></a></p>
-        <?php } ?>
-        <?php if ($pngm_contact['address'] !== '') { ?>
-          <p><?php echo osc_esc_html($pngm_contact['address']); ?></p>
-        <?php } ?>
-
-        <div class="quick-links">
-          <?php if (getBoolPreference('web_contact_form_disabled') != 1) { ?>
-            <a class="btn-mini" href="<?php echo osc_contact_url(); ?>"><?php _e('Contact Us', 'epsilon'); ?></a>
-          <?php } ?>
-
-          <?php if (function_exists('im_messages') && osc_is_web_user_logged_in()) { ?>
-            <a class="btn-mini" href="<?php echo osc_route_url('im-threads'); ?>"><?php _e('Messages', 'epsilon'); ?></a>
-          <?php } ?>
-
-          <?php if (function_exists('fi_make_favorite')) { ?>
-            <a class="btn-mini" href="<?php echo osc_route_url('favorite-lists'); ?>"><?php _e('Favourites', 'epsilon'); ?></a>
-          <?php } ?>
-
-          <?php if (function_exists('bpr_companies_url')) { ?>
-            <a class="btn-mini" href="<?php echo bpr_companies_url(); ?>"><?php _e('Companies', 'epsilon'); ?></a>
-          <?php } ?>
-
-          <?php osc_run_hook('footer_links'); ?>
-        </div>
       </div>
       
       <?php if (count($pngm_socials) > 0) { ?>
         <div class="col socialx">
           <h4><?php _e('Follow us', 'epsilon'); ?></h4>
-
-          <?php foreach ($pngm_socials as $type => $url) {
-            $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
-            $icon = 'fab fa-' . ($type === 'x' ? 'twitter' : ($type === 'whatsapp' ? 'whatsapp' : $type));
-            if ($type === 'facebook') { $icon = 'fab fa-facebook-f'; }
-            if ($type === 'linkedin') { $icon = 'fab fa-linkedin'; }
-            if ($type === 'pinterest') { $icon = 'fab fa-pinterest-p'; }
-          ?>
-            <a class="<?php echo osc_esc_html($type === 'x' ? 'twitter' : $type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
-              <?php if ($type === 'x') { ?>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15px" height="15px"><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"/></svg>
-              <?php } else { ?>
-                <i class="<?php echo osc_esc_html($icon); ?>"></i>
-              <?php } ?>
-              <?php echo osc_esc_html($label); ?>
-            </a>
-          <?php } ?>
+          <div class="pngm-footer-socials">
+            <?php
+              $pngm_social_i = 0;
+              foreach ($pngm_socials as $type => $url) {
+                $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
+                $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
+                if ($pngm_social_i > 0) {
+                  echo '<span class="pngm-footer-sep">&middot;</span>';
+                }
+            ?>
+              <a class="<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer"><i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i> <?php echo osc_esc_html($label); ?></a>
+            <?php
+                $pngm_social_i += 1;
+              }
+            ?>
+          </div>
         </div>
       <?php } ?>
       
@@ -117,28 +86,27 @@
         <?php if (getBoolPreference('web_contact_form_disabled') != 1) { ?>
           <a href="<?php echo osc_contact_url(); ?>"><?php _e('Contact Us', 'epsilon'); ?></a>
         <?php } ?>
+
+        <?php
+          $pngm_has_companies = false;
+          foreach ($pngm_pages as $pngm_page) {
+            if (stripos($pngm_page['title'], 'compan') !== false || (isset($pngm_page['key']) && $pngm_page['key'] === 'companies')) {
+              $pngm_has_companies = true;
+              break;
+            }
+          }
+        ?>
+        <?php if (!$pngm_has_companies && function_exists('bpr_companies_url')) { ?>
+          <a href="<?php echo bpr_companies_url(); ?>"><?php _e('Companies', 'epsilon'); ?></a>
+        <?php } ?>
       </div>
 
-      <?php if (osc_count_web_enabled_locales() > 1) { ?>
-        <div class="col locale">
-          <h4><?php _e('Change language', 'epsilon'); ?></h4>
-          <?php osc_goto_first_locale(); ?>
-
-          <?php while (osc_has_web_enabled_locales()) { ?>
-            <a class="lang <?php if (osc_locale_code() == osc_current_user_locale()) { ?>active<?php } ?>" href="<?php echo osc_change_language_url(osc_locale_code()); ?>">
-              <img src="<?php echo eps_country_flag_image(strtolower(substr(osc_locale_code(), 3))); ?>" alt="<?php echo osc_esc_html(__('Country flag', 'epsilon')); ?>" />
-              <span><?php echo osc_locale_name(); ?>&#x200E;</span>
-            </a>
-          <?php } ?>
-        </div>
-      <?php } ?>
-      
       <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
       <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
     </section>
     
     <section class="two">
-      <span><?php _e('Copyright', 'epsilon'); ?> &copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_contact['name']); ?>. <?php _e('All rights reserved', 'epsilon'); ?>.</span>
+      <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_contact['name']); ?></span>
     </section>
   </div>
 </footer>
@@ -426,7 +394,7 @@
     <?php } ?>
     
     <?php if(osc_is_web_user_logged_in()) { ?>
-      <div class="section delim-top">
+      <div class="section delim-top pngm-side-logout">
         <a class="logout" href="<?php echo osc_user_logout_url(); ?>">
           <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M272 112v51.6h-96c-26.5 0-48 21.5-48 48v88.6c0 26.5 21.5 48 48 48h96v51.6c0 42.6 51.7 64.2 81.9 33.9l144-143.9c18.7-18.7 18.7-49.1 0-67.9l-144-144C323.8 48 272 69.3 272 112zm192 144L320 400v-99.7H176v-88.6h144V112l144 144zM96 64h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-53 0-96-43-96-96V160c0-53 43-96 96-96z"/></svg>
           <?php _e('Log out', 'epsilon'); ?>

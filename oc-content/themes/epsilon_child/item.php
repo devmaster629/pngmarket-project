@@ -8,10 +8,10 @@
     $itemviewer = (Params::getParam('itemviewer') == 1 ? 1 : 0);
     $item_extra = eps_item_extra(osc_item_id());
 
-    $location_array = array_filter(array(osc_item_city(), osc_item_region(), osc_item_country_code()));
+    $location_array = array_filter(array(osc_item_city(), osc_item_region()));
     $location = implode(', ', $location_array);
 
-    $location_full_array = array_filter(array(osc_item_address(), osc_item_zip(), osc_item_city_area(), osc_item_city(), osc_item_region(), osc_item_country()));
+    $location_full_array = array_filter(array(osc_item_city(), osc_item_region()));
     $location_full = implode('<br/>', $location_full_array);
 
     $is_company = false;
@@ -221,13 +221,8 @@
             <a href="#" id="mk-offer" class="make-offer-link" data-item-id="<?php echo osc_item_id(); ?>" data-item-currency="<?php echo osc_item_currency(); ?>" data-ajax-url="<?php echo mo_ajax_url(); ?>&moAjaxOffer=1&itemId=<?php echo osc_item_id(); ?>"><?php _e('Submit your offer', 'epsilon'); ?></a>
           <?php } ?>
 
-          <div class="row date">
-            <p>
-              <?php 
-                echo sprintf(__('Published on %s', 'epsilon'), osc_format_date(osc_item_pub_date()));
-                echo (osc_item_mod_date() <> '' ? '. ' . sprintf(__('Modified on %s', 'epsilon'), osc_format_date(osc_item_mod_date())) . '.' : '');
-              ?>
-            </p>
+          <div class="row date pngm-item-date">
+            <p><?php echo sprintf(__('Posted %s', 'epsilon'), function_exists('eps_smart_date') ? eps_smart_date(osc_item_pub_date()) : osc_format_date(osc_item_pub_date())); ?></p>
           </div>
           
            <?php eps_make_favorite(); ?>
@@ -297,10 +292,6 @@
 
               <?php if($location <> '') { ?>
                 <div class="row address"><?php echo $location_full; ?></div>
-                
-                <?php if(osc_item_latitude() <> 0 && osc_item_longitude() <> 0) { ?>
-                  <div class="row cords"><?php echo osc_item_latitude(); ?>, <?php echo osc_item_longitude(); ?></div>
-                <?php } ?>
                 
                 <?php
                   $pngm_map_q = (osc_item_latitude() <> 0 && osc_item_longitude() <> 0)

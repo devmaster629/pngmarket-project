@@ -89,33 +89,34 @@ function pngm_footer_social_links()
 {
     $out = array();
 
-    if (!function_exists('eps_param')) {
-        return $out;
-    }
+    $defaults = array(
+        'facebook'  => 'https://www.facebook.com/pngmarket',
+        'instagram' => 'https://www.instagram.com/pngmarket',
+        'tiktok'    => 'https://www.tiktok.com/@pngmarket',
+    );
 
-    // Prefer explicitly defined profile URLs.
     $map = array(
-        'whatsapp'  => 'footer_social_whatsapp',
         'facebook'  => 'footer_social_facebook',
         'instagram' => 'footer_social_instagram',
-        'x'         => 'footer_social_x',
-        'linkedin'  => 'footer_social_linkedin',
-        'pinterest' => 'footer_social_pinterest',
+        'tiktok'    => 'footer_social_tiktok',
     );
 
     foreach ($map as $type => $key) {
-        $url = trim((string) eps_param($key));
+        $url = '';
 
-        if ($url === '') {
-            continue;
+        if (function_exists('eps_param')) {
+            $url = trim((string) eps_param($key));
         }
 
-        // Skip generic share endpoints with no real account.
-        if (preg_match('#(sharer\.php|shareArticle|twitter\.com/home\?status|pinterest\.com/pin/create)#i', $url)) {
-            continue;
+        if ($url === '' && function_exists('osc_get_preference')) {
+            $url = trim((string) osc_get_preference($key, 'pngmarket'));
         }
 
-        if (!preg_match('#^(https?:|whatsapp:|wa\.me)#i', $url)) {
+        if ($url === '' || preg_match('#(sharer\.php|shareArticle|twitter\.com/home\?status|pinterest\.com/pin/create)#i', $url)) {
+            $url = $defaults[$type];
+        }
+
+        if (!preg_match('#^https?://#i', $url)) {
             $url = 'https://' . ltrim($url, '/');
         }
 
@@ -156,7 +157,7 @@ function pngm_footer_info_pages()
             $title = !empty($page['s_title']) ? $page['s_title'] : $label;
             $pages[] = array(
                 'key'   => $slug,
-                'title' => $title,
+                'title' => $label,
                 'url'   => osc_static_page_url_from_page($page),
             );
             $seen[(int) $page['pk_i_id']] = true;

@@ -2254,6 +2254,20 @@ a.pngm-search-subcat-all {
   object-position: center;
 }
 
+body#item .basic .pngm-item-date,
+body#item .basic .row.date.pngm-item-date {
+  text-align: right;
+  margin: 4px 0 0;
+}
+
+body#item .basic .pngm-item-date p {
+  margin: 0;
+}
+
+body#item .location .row.cords {
+  display: none !important;
+}
+
 /* Native fullscreen photo viewer (replaces lightGallery on listing pages) */
 .pngm-native-viewer {
   position: fixed;
@@ -3018,51 +3032,104 @@ body.body-ua .profile-box .right-block {
 
 
 /* ==========================================================================
-   FOOTER-01 — PNGMarket footer contact & information links
+   FOOTER-01 — Compact PNGMarket footer
    ========================================================================== */
 
+footer.pngm-footer {
+  background: #f4f6f8;
+  padding: 20px 0 16px;
+  color: #404040;
+}
+
+footer.pngm-footer h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+footer.pngm-footer .col.contact .company {
+  margin: 0 0 2px;
+  font-size: 18px;
+}
+
 footer.pngm-footer .pngm-footer-tagline {
-  margin: 0 0 10px;
+  margin: 0 0 4px;
   opacity: 0.9;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-/* Phone / Email: label + value on one line */
-footer.pngm-footer .col.contact p.pngm-footer-line {
-  margin: 0 0 6px;
+footer.pngm-footer .pngm-footer-socials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
 }
 
-footer.pngm-footer .col.contact p.pngm-footer-line a {
-  display: inline;
+footer.pngm-footer .pngm-footer-socials a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  text-decoration: underline;
+  width: auto;
 }
 
-footer.pngm-footer .col.contact a[href^="mailto:"],
-footer.pngm-footer .col.contact a[href^="tel:"] {
-  text-decoration: underline;
+footer.pngm-footer .pngm-footer-socials a i {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  color: #404040;
 }
 
-/* Information: one link per line (like Follow us) */
+footer.pngm-footer .pngm-footer-sep {
+  color: #888;
+  margin: 0 2px;
+}
+
 footer.pngm-footer .col.pages a {
   display: block;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   width: 100%;
 }
 
-footer.pngm-footer section.two a {
-  display: inline-flex;
-  margin-right: 15px;
+footer.pngm-footer section.two {
+  margin: 10px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid #d9dee4;
+  font-size: 13px;
+}
+
+footer.pngm-footer section.two span {
+  display: block;
+  margin: 0;
 }
 
 footer.pngm-footer .col.socialx:empty {
   display: none;
 }
 
+.pngm-contact-details {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.pngm-contact-details p {
+  margin: 0 0 4px;
+}
+
 @media screen and (max-width: 767px) {
+  footer.pngm-footer {
+    padding: 16px 0 12px;
+  }
+
   footer.pngm-footer section.one {
     flex-direction: column;
+    gap: 0;
   }
 
   footer.pngm-footer .col,
@@ -3073,53 +3140,34 @@ footer.pngm-footer .col.socialx:empty {
     width: 100%;
     max-width: 100%;
     padding-right: 0;
-    margin: 0 0 18px;
+    margin: 0 0 12px;
   }
 
-  footer.pngm-footer .quick-links {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+  footer.pngm-footer .col.pages {
+    margin-bottom: 4px;
   }
 
-  footer.pngm-footer .quick-links a,
-  footer.pngm-footer .quick-links a.btn-mini {
-    float: none;
+  footer.pngm-footer .col.pages a,
+  footer.pngm-footer .col.socialx a {
     display: block;
     width: auto;
-    max-width: 100%;
-    margin: 0 0 8px 0;
-    padding: 0;
-    background: transparent;
-    color: #404040;
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 18px;
-    text-align: left;
-    border-radius: 0;
+    margin: 0 0 4px;
+    line-height: 1.3;
   }
 
-  footer.pngm-footer .col.socialx a,
-  footer.pngm-footer .col.pages a {
-    display: block;
-    width: 100%;
-    margin: 0 0 10px;
+  footer.pngm-footer .pngm-footer-socials a {
+    display: inline-flex;
+    margin: 0;
   }
 
   footer.pngm-footer section.two {
     display: block;
-    margin: 8px 0 0;
-    padding-top: 16px;
+    margin: 4px 0 0;
+    padding-top: 10px;
   }
 
   footer.pngm-footer section.two a {
     display: none;
-  }
-
-  footer.pngm-footer section.two span {
-    display: block;
-    width: 100%;
-    margin: 0;
   }
 }
 
@@ -3433,6 +3481,33 @@ body#item #shortcuts .item-share,
     z-index: 10050 !important;
   }
 
+  #side-menu {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 10120 !important;
+  }
+
+  #side-menu > .wrap {
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  #side-menu > .wrap > .section.pngm-side-logout {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    background: #fff;
+    padding-bottom: 8px;
+    box-shadow: 0 -10px 12px -10px rgba(0, 0, 0, 0.18);
+  }
+
+  #menu-cover.mobile-box {
+    z-index: 10100;
+  }
+
   .pngm-sheet-backdrop {
     bottom: 56px;
     z-index: 10110;
@@ -3535,14 +3610,58 @@ body#item #shortcuts .item-share,
   }
 
   body#item .row.description {
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 4px;
+    padding-top: 6px;
   }
 
   body#item .row.description h2,
   body#item .location h2 {
-    margin: 0 0 6px 0;
+    margin: 0 0 4px 0;
     font-size: 15px;
+  }
+
+  #item-image {
+    margin-bottom: 4px;
+  }
+
+  #item-image .swiper-thumbs ul {
+    margin-bottom: 4px !important;
+  }
+
+  #item-main .basic {
+    margin: 0 0 8px 0;
+  }
+
+  #item-main .basic h1 {
+    margin: 0 0 4px;
+  }
+
+  #item-main .basic .price {
+    margin: 0 0 2px;
+  }
+
+  #item-main .basic .pngm-item-date,
+  #item-main .basic .row.date {
+    margin: 0;
+    text-align: right;
+  }
+
+  #item-main .basic .pngm-item-date p,
+  #item-main .basic .row.date p {
+    margin: 0;
+  }
+
+  body#item .location .row.address {
+    margin: 0 0 4px;
+    line-height: 1.35;
+  }
+
+  body#item .location .row.cords {
+    display: none !important;
+  }
+
+  body#item .location .directions {
+    margin-top: 2px;
   }
 
   body#item #item-side {
