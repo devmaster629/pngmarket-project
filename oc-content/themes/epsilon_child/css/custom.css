@@ -2113,6 +2113,8 @@ a.pngm-search-subcat-all {
   z-index: 40;
   max-height: 260px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   background: #fff;
   border: 1px solid #cfcfcf;
   border-radius: 6px;

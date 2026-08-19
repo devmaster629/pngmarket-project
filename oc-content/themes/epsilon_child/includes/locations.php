@@ -168,19 +168,15 @@ function pngm_inject_province_capital($cities, $region_name, $name_key = 's_name
         return $cities;
     }
 
-    $caps = pngm_province_capitals();
-    $rk = pngm_location_key($region_name);
+    $capital_name = pngm_capital_for_region($region_name);
 
-    if (!isset($caps[$rk])) {
+    if ($capital_name === '') {
         return $cities;
     }
 
-    $capital_name = $caps[$rk];
-    $ck = pngm_location_key($capital_name);
-
     foreach ($cities as $city) {
         $name = isset($city[$name_key]) ? $city[$name_key] : (isset($city['s_name']) ? $city['s_name'] : '');
-        if (pngm_location_key($name) === $ck) {
+        if (pngm_city_is_capital($name, $capital_name)) {
             return $cities;
         }
     }
@@ -189,7 +185,21 @@ function pngm_inject_province_capital($cities, $region_name, $name_key = 's_name
         return $cities;
     }
 
-    $found = City::newInstance()->findByName($capital_name);
+    $region_id = 0;
+    foreach ($cities as $city) {
+        if (!empty($city['fk_i_region_id'])) {
+            $region_id = (int) $city['fk_i_region_id'];
+            break;
+        }
+    }
+
+    $found = array();
+    if ($region_id > 0) {
+        $found = City::newInstance()->findByName($capital_name, $region_id);
+    }
+    if (!is_array($found) || empty($found['pk_i_id'])) {
+        $found = City::newInstance()->findByName($capital_name);
+    }
     if (is_array($found) && !empty($found['pk_i_id'])) {
         $found['pngm_tier'] = 'main';
         array_unshift($cities, $found);
@@ -310,8 +320,8 @@ function pngm_province_main_towns()
         'enga'                      => array('Wabag'),
         'hela province'             => array('Tari'),
         'hela'                      => array('Tari'),
-        'jiwaka province'           => array('Minj'),
-        'jiwaka'                    => array('Minj'),
+        'jiwaka province'           => array('Minj', 'Kurumul'),
+        'jiwaka'                    => array('Minj', 'Kurumul'),
         'central province'          => array('Port Moresby'),
         'central'                   => array('Port Moresby'),
     );
@@ -329,6 +339,77 @@ function pngm_location_key($name)
     $name = preg_replace('/\s+/u', ' ', $name);
 
     return $name;
+}
+
+/**
+ * Lookup keys for a province label from the DB / select (with/without "Province").
+ *
+ * @param string $name
+ * @return array
+ */
+function pngm_region_lookup_keys($name)
+{
+    $key = pngm_location_key($name);
+    $keys = array();
+
+    if ($key === '') {
+        return $keys;
+    }
+
+    $keys[$key] = true;
+    $stripped = preg_replace('/\s+(province|district)$/u', '', $key);
+
+    if ($stripped !== '' && $stripped !== $key) {
+        $keys[$stripped] = true;
+    }
+
+    if ($stripped !== '' && substr($key, -9) !== 'province' && substr($key, -8) !== 'district') {
+        $keys[$stripped . ' province'] = true;
+    }
+
+    return array_keys($keys);
+}
+
+/**
+ * Capital city name for a province label, or empty string.
+ *
+ * @param string $region_name
+ * @return string
+ */
+function pngm_capital_for_region($region_name)
+{
+    $caps = pngm_province_capitals();
+
+    foreach (pngm_region_lookup_keys($region_name) as $key) {
+        if (isset($caps[$key])) {
+            return $caps[$key];
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Whether a city label is the province capital (exact or "Kerema Town" style).
+ *
+ * @param string $city_name
+ * @param string $capital_name
+ * @return bool
+ */
+function pngm_city_is_capital($city_name, $capital_name)
+{
+    $city = pngm_location_key($city_name);
+    $cap = pngm_location_key($capital_name);
+
+    if ($city === '' || $cap === '') {
+        return false;
+    }
+
+    if ($city === $cap) {
+        return true;
+    }
+
+    return (bool) preg_match('/(^|[\s,\-\/])' . preg_quote($cap, '/') . '($|[\s,\-\/])/u', $city);
 }
 
 /**
@@ -350,17 +431,19 @@ function pngm_main_town_keys_for_region($region_name = null)
         return $keys;
     }
 
-    $rk = pngm_location_key($region_name);
+    $rk_keys = pngm_region_lookup_keys($region_name);
     $caps = pngm_province_capitals();
     $towns = pngm_province_main_towns();
 
-    if (isset($caps[$rk])) {
-        $keys[pngm_location_key($caps[$rk])] = true;
-    }
+    foreach ($rk_keys as $rk) {
+        if (isset($caps[$rk])) {
+            $keys[pngm_location_key($caps[$rk])] = true;
+        }
 
-    if (isset($towns[$rk]) && is_array($towns[$rk])) {
-        foreach ($towns[$rk] as $town) {
-            $keys[pngm_location_key($town)] = true;
+        if (isset($towns[$rk]) && is_array($towns[$rk])) {
+            foreach ($towns[$rk] as $town) {
+                $keys[pngm_location_key($town)] = true;
+            }
         }
     }
 
@@ -415,20 +498,30 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
     $main_keys = pngm_main_town_keys_for_region($region_name);
 
     if ($region_name !== null && $region_name !== '') {
-        $caps = pngm_province_capitals();
-        $rk = pngm_location_key($region_name);
-
-        if (isset($caps[$rk])) {
-            $capital_key = pngm_location_key($caps[$rk]);
+        $capital_name = pngm_capital_for_region($region_name);
+        if ($capital_name !== '') {
+            $capital_key = pngm_location_key($capital_name);
         }
     }
 
     usort($cities, function ($a, $b) use ($priorities, $capital_key, $name_key, $main_keys) {
-        $an = pngm_location_key(isset($a[$name_key]) ? $a[$name_key] : (isset($a['s_name']) ? $a['s_name'] : ''));
-        $bn = pngm_location_key(isset($b[$name_key]) ? $b[$name_key] : (isset($b['s_name']) ? $b['s_name'] : ''));
+        $an_raw = isset($a[$name_key]) ? $a[$name_key] : (isset($a['s_name']) ? $a['s_name'] : '');
+        $bn_raw = isset($b[$name_key]) ? $b[$name_key] : (isset($b['s_name']) ? $b['s_name'] : '');
+        $an = pngm_location_key($an_raw);
+        $bn = pngm_location_key($bn_raw);
 
-        $a_main = isset($main_keys[$an]);
-        $b_main = isset($main_keys[$bn]);
+        $a_cap = ($capital_key !== '' && pngm_city_is_capital($an_raw, $capital_key));
+        $b_cap = ($capital_key !== '' && pngm_city_is_capital($bn_raw, $capital_key));
+
+        if ($a_cap && !$b_cap) {
+            return -1;
+        }
+        if ($b_cap && !$a_cap) {
+            return 1;
+        }
+
+        $a_main = isset($main_keys[$an]) || $a_cap;
+        $b_main = isset($main_keys[$bn]) || $b_cap;
 
         if ($a_main && !$b_main) {
             return -1;
@@ -440,16 +533,6 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
 
         $ap = isset($priorities[$an]) ? $priorities[$an] : 1000;
         $bp = isset($priorities[$bn]) ? $priorities[$bn] : 1000;
-
-        // Province capital always wins within that region's city list.
-        if ($capital_key !== '') {
-            if ($an === $capital_key && $bn !== $capital_key) {
-                return -1;
-            }
-            if ($bn === $capital_key && $an !== $capital_key) {
-                return 1;
-            }
-        }
 
         if ($ap !== $bp) {
             return ($ap < $bp) ? -1 : 1;
@@ -482,7 +565,9 @@ function pngm_prepare_cities_for_posting($cities, $region_name = null, $name_key
     foreach ($cities as $i => $city) {
         $name = isset($city[$name_key]) ? $city[$name_key] : (isset($city['s_name']) ? $city['s_name'] : '');
         $key = pngm_location_key($name);
-        $cities[$i]['pngm_tier'] = isset($main_keys[$key]) ? 'main' : 'other';
+        $capital_name = pngm_capital_for_region((string) $region_name);
+        $is_cap = ($capital_name !== '' && pngm_city_is_capital($name, $capital_name));
+        $cities[$i]['pngm_tier'] = (isset($main_keys[$key]) || $is_cap) ? 'main' : 'other';
     }
 
     return array_values($cities);
@@ -820,7 +905,7 @@ function pngm_print_location_js_config()
  */
 function pngm_ajax_cities_capital_first()
 {
-    if (Params::getParam('page') !== 'ajax' || Params::getParam('action') !== 'cities') {
+    if (Params::getParam('action') !== 'cities') {
         return;
     }
 

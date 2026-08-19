@@ -341,30 +341,78 @@
       return String(name || '')
         .replace(/^\s+|\s+$/g, '')
         .toLowerCase()
+        .replace(/mt\.?\s+/g, 'mount ')
         .replace(/\s+/g, ' ');
+    }
+
+    function regionKeys(name) {
+      var key = locKey(name);
+      var keys = [];
+      var stripped;
+
+      if (!key) {
+        return keys;
+      }
+
+      keys.push(key);
+      stripped = key.replace(/\s+(province|district)$/g, '');
+      if (stripped && stripped !== key) {
+        keys.push(stripped);
+      }
+      if (stripped && !/province$/.test(key) && !/district$/.test(key)) {
+        keys.push(stripped + ' province');
+      }
+
+      return keys;
+    }
+
+    function capitalForRegion(regionName) {
+      var capitals = cfg.capitals || {};
+      var keys = regionKeys(regionName);
+      var i;
+
+      for (i = 0; i < keys.length; i++) {
+        if (capitals[keys[i]]) {
+          return capitals[keys[i]];
+        }
+      }
+
+      return '';
+    }
+
+    function cityIsCapital(cityName, capitalName) {
+      var city = locKey(cityName);
+      var cap = locKey(capitalName);
+
+      if (!city || !cap) {
+        return false;
+      }
+
+      if (city === cap) {
+        return true;
+      }
+
+      return new RegExp('(^|[\\s,\\-/])' + cap.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[\\s,\\-/])').test(city);
     }
 
     function mainKeysForRegion(regionName) {
       var keys = {};
-      var rk = locKey(regionName);
+      var rks = regionKeys(regionName);
       var capitals = cfg.capitals || {};
       var towns = cfg.mainTowns || {};
       var i;
+      var j;
+      var rk;
 
-      if (capitals[rk]) {
-        keys[locKey(capitals[rk])] = true;
-      }
-
-      if (towns[rk] && towns[rk].length) {
-        for (i = 0; i < towns[rk].length; i++) {
-          keys[locKey(towns[rk][i])] = true;
+      for (i = 0; i < rks.length; i++) {
+        rk = rks[i];
+        if (capitals[rk]) {
+          keys[locKey(capitals[rk])] = true;
         }
-      }
-
-      // Fallback: national main cities when province is unmapped.
-      if (!Object.keys(keys).length && cfg.mainCities && cfg.mainCities.length) {
-        for (i = 0; i < cfg.mainCities.length; i++) {
-          keys[locKey(cfg.mainCities[i])] = true;
+        if (towns[rk] && towns[rk].length) {
+          for (j = 0; j < towns[rk].length; j++) {
+            keys[locKey(towns[rk][j])] = true;
+          }
         }
       }
 
@@ -372,6 +420,10 @@
     }
 
     function isMainCity(name, regionName, tier) {
+      if (cityIsCapital(name, capitalForRegion(regionName))) {
+        return true;
+      }
+
       if (tier === 'main') {
         return true;
       }
@@ -403,11 +455,12 @@
       return 1000;
     }
 
-    function buildGroupedHtml(items, selectedId) {
+    function buildGroupedHtml(items, selectedId, regionName) {
       var main = [];
       var other = [];
       var i;
       var html = '<option value="">' + labelSelect + '</option>';
+      var cap = capitalForRegion(regionName);
 
       for (i = 0; i < items.length; i++) {
         if (items[i].main) {
@@ -418,6 +471,16 @@
       }
 
       main.sort(function (a, b) {
+        var ac = cityIsCapital(a.name, cap);
+        var bc = cityIsCapital(b.name, cap);
+
+        if (ac && !bc) {
+          return -1;
+        }
+        if (bc && !ac) {
+          return 1;
+        }
+
         var pa = mainPriority(a.name);
         var pb = mainPriority(b.name);
 
@@ -503,7 +566,7 @@
       }
 
       // Keep relative order (already main-first from server when data provided).
-      $city.html(buildGroupedHtml(items, selectedId));
+      $city.html(buildGroupedHtml(items, selectedId, regionName));
 
       if (selectedId) {
         $city.val(selectedId);
@@ -735,6 +798,15 @@
           }
         });
       }
+
+      // Always start at MAIN TOWNS. Do not restore a previous scroll, and do
+      // not jump down to a pre-selected city on first open.
+      $list.scrollTop(0);
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(function () {
+          $list.scrollTop(0);
+        });
+      }
     }
 
     function pickValue(widget, value, label) {
@@ -776,12 +848,27 @@
       });
 
       function provincePriority(name) {
-        var key = String(name || '').toLowerCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+        var key = String(name || '')
+          .replace(/^\s+|\s+$/g, '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ');
+        var variants = [key];
+        var stripped = key.replace(/\s+(province|district)$/g, '');
         var i;
+        var k;
 
-        for (i = 0; i < popular.length; i++) {
-          if (popular[i] === key) {
-            return i;
+        if (stripped && stripped !== key) {
+          variants.push(stripped);
+        }
+        if (stripped && !/province$/.test(key) && !/district$/.test(key)) {
+          variants.push(stripped + ' province');
+        }
+
+        for (k = 0; k < variants.length; k++) {
+          for (i = 0; i < popular.length; i++) {
+            if (popular[i] === variants[k]) {
+              return i;
+            }
           }
         }
 
