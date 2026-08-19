@@ -436,9 +436,52 @@
       return !!keys[locKey(name)];
     }
 
+    function suburbRank(name) {
+      var list = cfg.ncdSuburbs || [];
+      var key = locKey(name);
+      var i;
+
+      for (i = 0; i < list.length; i++) {
+        if (locKey(list[i]) === key) {
+          return i;
+        }
+      }
+
+      return -1;
+    }
+
+    function isNcdRegion(regionName) {
+      var keys = regionKeys(regionName);
+      var i;
+
+      for (i = 0; i < keys.length; i++) {
+        if (keys[i] === 'national capital district' || keys[i] === 'ncd') {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
     function optionHtml(id, name, selectedId) {
       var sel = String(id) === String(selectedId) ? ' selected' : '';
       return '<option value="' + id + '"' + sel + '>' + name + '</option>';
+    }
+
+    function appendGroup(html, label, rows, selectedId) {
+      var i;
+
+      if (!rows.length) {
+        return html;
+      }
+
+      html += '<optgroup label="' + label + '">';
+      for (i = 0; i < rows.length; i++) {
+        html += optionHtml(rows[i].id, rows[i].name, selectedId);
+      }
+      html += '</optgroup>';
+
+      return html;
     }
 
     function mainPriority(name) {
@@ -457,13 +500,18 @@
 
     function buildGroupedHtml(items, selectedId, regionName) {
       var main = [];
+      var suburbs = [];
       var other = [];
       var i;
       var html = '<option value="">' + labelSelect + '</option>';
       var cap = capitalForRegion(regionName);
+      var ncd = isNcdRegion(regionName);
+      var labelSuburbs = (labels.ncdSuburbs || 'Port Moresby suburbs');
 
       for (i = 0; i < items.length; i++) {
-        if (items[i].main) {
+        if (ncd && (items[i].suburb || suburbRank(items[i].name) >= 0) && !cityIsCapital(items[i].name, 'Port Moresby')) {
+          suburbs.push(items[i]);
+        } else if (items[i].main) {
           main.push(items[i]);
         } else {
           other.push(items[i]);
@@ -491,25 +539,26 @@
         return String(a.name).localeCompare(String(b.name));
       });
 
+      suburbs.sort(function (a, b) {
+        var ra = suburbRank(a.name);
+        var rb = suburbRank(b.name);
+
+        if (ra !== rb) {
+          return ra - rb;
+        }
+
+        return String(a.name).localeCompare(String(b.name));
+      });
+
       other.sort(function (a, b) {
         return String(a.name).localeCompare(String(b.name));
       });
 
-      if (main.length) {
-        html += '<optgroup label="' + labelMain + '">';
-        for (i = 0; i < main.length; i++) {
-          html += optionHtml(main[i].id, main[i].name, selectedId);
-        }
-        html += '</optgroup>';
+      html = appendGroup(html, ncd ? 'Port Moresby' : labelMain, main, selectedId);
+      if (ncd) {
+        html = appendGroup(html, labelSuburbs, suburbs, selectedId);
       }
-
-      if (other.length) {
-        html += '<optgroup label="' + labelOther + '">';
-        for (i = 0; i < other.length; i++) {
-          html += optionHtml(other[i].id, other[i].name, selectedId);
-        }
-        html += '</optgroup>';
-      }
+      html = appendGroup(html, labelOther, other, selectedId);
 
       return html;
     }
@@ -540,7 +589,8 @@
           items.push({
             id: id,
             name: name,
-            main: isMainCity(name, regionName, tier)
+            main: isMainCity(name, regionName, tier),
+            suburb: tier === 'suburb' || suburbRank(name) >= 0
           });
         }
       } else {
@@ -556,7 +606,8 @@
           items.push({
             id: id,
             name: name,
-            main: isMainCity(name, regionName, '')
+            main: isMainCity(name, regionName, ''),
+            suburb: suburbRank(name) >= 0
           });
         });
       }
@@ -587,11 +638,39 @@
       return $.trim($region.find('option:selected').text());
     }
 
+    function requestedRegionId(url) {
+      var match = String(url || '').match(/[?&]regionId=([^&]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    $(document).ajaxSend(function (event, jqXHR, settings) {
+      var url = settings && settings.url ? String(settings.url) : '';
+
+      if (url.indexOf('action=cities') === -1) {
+        return;
+      }
+
+      if (window.pngmCitiesXhr && window.pngmCitiesXhr !== jqXHR && window.pngmCitiesXhr.readyState !== 4) {
+        try {
+          window.pngmCitiesXhr.abort();
+        } catch (e) {}
+      }
+
+      window.pngmCitiesXhr = jqXHR;
+    });
+
     // After core builds the flat city list, regroup with optgroups.
     $(document).ajaxSuccess(function (event, xhr, settings) {
       var url = settings && settings.url ? String(settings.url) : '';
 
       if (url.indexOf('action=cities') === -1) {
+        return;
+      }
+
+      var requested = requestedRegionId(url);
+      var current = String($('#regionId').val() || '');
+
+      if (requested && current && requested !== current) {
         return;
       }
 
@@ -609,6 +688,10 @@
 
       // Defer so parent success handler finishes writing options first.
       setTimeout(function () {
+        if (requested && String($('#regionId').val() || '') !== requested) {
+          return;
+        }
+
         regroupCitySelect($('#cityId'), currentRegionName(), data);
       }, 0);
     });

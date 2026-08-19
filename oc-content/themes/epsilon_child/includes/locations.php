@@ -545,6 +545,214 @@ function pngm_sort_cities_main_first($cities, $region_name = null, $name_key = '
 }
 
 /**
+ * Official Port Moresby suburbs shown under National Capital District.
+ *
+ * @return array
+ */
+function pngm_ncd_suburb_names()
+{
+    return array(
+        'Badili',
+        'Baruni',
+        'Bomana',
+        'Boroko',
+        'Dogura',
+        'Ela Beach',
+        'Ensisi Valley',
+        'Erima',
+        'Gabi',
+        'Gabutu',
+        'Gereka',
+        'Gerehu',
+        'Gordon',
+        'Gordon North',
+        'Hanuabada',
+        'Hohola',
+        'Hohola North',
+        'Jacksons International Airport',
+        'Kaevaga',
+        'Kaugere',
+        'Kila Kila',
+        'Koki',
+        'Konedobu',
+        'Korobosea',
+        'Matirogo',
+        'Moitaka',
+        'Morata',
+        'Newtown',
+        'Pari',
+        'Sabama',
+        'Saraga',
+        'Tatana',
+        'Taurama',
+        'Tokarara',
+        'Touaguba Hill',
+        'Vabukori',
+        'Waigani',
+        '2 Mile',
+        '3 Mile',
+        '4 Mile',
+        '6 Mile',
+        '9 Mile',
+    );
+}
+
+/**
+ * @return array name_key => rank (0-based)
+ */
+function pngm_ncd_suburb_keys()
+{
+    static $keys = null;
+
+    if ($keys !== null) {
+        return $keys;
+    }
+
+    $keys = array();
+    foreach (pngm_ncd_suburb_names() as $i => $name) {
+        $keys[pngm_location_key($name)] = (int) $i;
+    }
+
+    return $keys;
+}
+
+/**
+ * @param string $name
+ * @return bool
+ */
+function pngm_is_ncd_region_name($name)
+{
+    foreach (pngm_region_lookup_keys($name) as $key) {
+        if ($key === 'national capital district' || $key === 'ncd') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Port Moresby first, then the official suburb list, then anything else.
+ *
+ * @param array  $cities
+ * @param string $region_name
+ * @param string $name_key
+ * @return array
+ */
+function pngm_order_ncd_suburbs($cities, $region_name, $name_key = 's_name')
+{
+    if (!is_array($cities) || !pngm_is_ncd_region_name($region_name)) {
+        return is_array($cities) ? $cities : array();
+    }
+
+    $suburb_keys = pngm_ncd_suburb_keys();
+
+    usort($cities, function ($a, $b) use ($name_key, $suburb_keys) {
+        $an = isset($a[$name_key]) ? $a[$name_key] : (isset($a['s_name']) ? $a['s_name'] : '');
+        $bn = isset($b[$name_key]) ? $b[$name_key] : (isset($b['s_name']) ? $b['s_name'] : '');
+
+        $ar = pngm_ncd_city_rank($an, $suburb_keys);
+        $br = pngm_ncd_city_rank($bn, $suburb_keys);
+
+        if ($ar !== $br) {
+            return ($ar < $br) ? -1 : 1;
+        }
+
+        return strcasecmp(pngm_location_key($an), pngm_location_key($bn));
+    });
+
+    return array_values($cities);
+}
+
+/**
+ * @param string $city_name
+ * @param array  $suburb_keys
+ * @return int
+ */
+function pngm_ncd_city_rank($city_name, $suburb_keys)
+{
+    if (pngm_city_is_capital($city_name, 'Port Moresby')) {
+        return -1;
+    }
+
+    $key = pngm_location_key($city_name);
+
+    if (isset($suburb_keys[$key])) {
+        return (int) $suburb_keys[$key];
+    }
+
+    return 1000;
+}
+
+/**
+ * Create missing NCD suburb rows so they can be saved on an ad.
+ *
+ * @param int $region_id Optional; if set, only runs when this is NCD.
+ */
+function pngm_ensure_ncd_suburbs($region_id = 0)
+{
+    static $done = false;
+
+    if ($done || !class_exists('City') || !class_exists('Region')) {
+        return;
+    }
+
+    $region = Region::newInstance()->findByName('National Capital District');
+    if (!is_array($region) || empty($region['pk_i_id'])) {
+        return;
+    }
+
+    $ncd_id = (int) $region['pk_i_id'];
+    $region_id = (int) $region_id;
+
+    if ($region_id > 0 && $region_id !== $ncd_id) {
+        return;
+    }
+
+    $done = true;
+    $city_model = City::newInstance();
+    $country = isset($region['fk_c_country_code']) && $region['fk_c_country_code'] !== ''
+        ? $region['fk_c_country_code']
+        : 'PG';
+
+    foreach (pngm_ncd_suburb_names() as $name) {
+        $existing = $city_model->findByName($name, $ncd_id);
+
+        if (is_array($existing) && !empty($existing['pk_i_id'])) {
+            if (isset($existing['b_active']) && (int) $existing['b_active'] !== 1) {
+                $city_model->update(
+                    array('b_active' => 1),
+                    array('pk_i_id' => (int) $existing['pk_i_id'])
+                );
+            }
+            continue;
+        }
+
+        $slug = preg_replace('/[^a-z0-9]+/i', '-', pngm_location_key($name));
+        $slug = trim($slug, '-');
+        if ($slug === '') {
+            continue;
+        }
+
+        $city_model->insert(array(
+            'fk_i_region_id'    => $ncd_id,
+            'fk_c_country_code' => $country,
+            's_name'            => $name,
+            's_name_native'     => '',
+            's_slug'            => $slug,
+            'b_active'          => 1,
+        ));
+    }
+}
+
+function pngm_maybe_ensure_ncd_suburbs()
+{
+    if (Params::getParam('page') === 'item') {
+        pngm_ensure_ncd_suburbs();
+    }
+}
+
+/**
  * Tag cities with pngm_tier = main|other and sort main first.
  *
  * @param array       $cities
@@ -560,14 +768,18 @@ function pngm_prepare_cities_for_posting($cities, $region_name = null, $name_key
 
     $cities = pngm_inject_province_capital($cities, $region_name, $name_key);
     $cities = pngm_sort_cities_main_first($cities, $region_name, $name_key);
+    $cities = pngm_order_ncd_suburbs($cities, $region_name, $name_key);
     $main_keys = pngm_main_town_keys_for_region($region_name);
+    $capital_name = pngm_capital_for_region((string) $region_name);
+    $suburb_keys = pngm_is_ncd_region_name($region_name) ? pngm_ncd_suburb_keys() : array();
 
     foreach ($cities as $i => $city) {
         $name = isset($city[$name_key]) ? $city[$name_key] : (isset($city['s_name']) ? $city['s_name'] : '');
         $key = pngm_location_key($name);
         $capital_name = pngm_capital_for_region((string) $region_name);
         $is_cap = ($capital_name !== '' && pngm_city_is_capital($name, $capital_name));
-        $cities[$i]['pngm_tier'] = (isset($main_keys[$key]) || $is_cap) ? 'main' : 'other';
+        $is_suburb = isset($suburb_keys[pngm_location_key($name)]);
+        $cities[$i]['pngm_tier'] = ($is_cap || isset($main_keys[$key])) ? 'main' : ($is_suburb ? 'suburb' : 'other');
     }
 
     return array_values($cities);
@@ -880,9 +1092,11 @@ function pngm_location_js_config()
         'popularProvinces' => $provinces,
         'capitals'   => pngm_province_capitals(),
         'mainTowns'  => pngm_province_main_towns(),
+        'ncdSuburbs' => pngm_ncd_suburb_names(),
         'labels'     => array(
             'main'          => __('Main towns', 'epsilon'),
             'other'         => __('Other locations', 'epsilon'),
+            'ncdSuburbs'    => __('Port Moresby suburbs', 'epsilon'),
             'select'        => __('Select a city...', 'epsilon'),
             'popular'       => __('Main cities', 'epsilon'),
             'searchRegion'  => __('Type to search province...', 'epsilon'),
@@ -914,6 +1128,8 @@ function pngm_ajax_cities_capital_first()
     if ($region_id <= 0 || !class_exists('City') || !class_exists('Region')) {
         return;
     }
+
+    pngm_ensure_ncd_suburbs($region_id);
 
     $cities = City::newInstance()->findByRegion($region_id);
     $region = Region::newInstance()->findByPrimaryKey($region_id);
@@ -948,5 +1164,6 @@ function pngm_ajax_regions_popular_first()
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init_ajax', 'pngm_ajax_cities_capital_first', 1);
     osc_add_hook('init_ajax', 'pngm_ajax_regions_popular_first', 1);
+    osc_add_hook('init', 'pngm_maybe_ensure_ncd_suburbs', 8);
     osc_add_hook('header', 'pngm_print_location_js_config', 9);
 }
