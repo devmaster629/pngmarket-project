@@ -99,9 +99,13 @@
         <div class="row">
           <label for="sPattern"><?php _e('Keyword', 'epsilon'); ?></label>
 
-          <div class="input-box">
-            <input type="text" name="sPattern" id="sPattern" placeholder="<?php echo osc_esc_html(__('Keyword...', 'epsilon')); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
+          <div class="input-box picker pattern only-search">
+            <input type="text" name="sPattern" id="sPattern" class="pattern" placeholder="<?php echo osc_esc_html(__('Word, title or description...', 'epsilon')); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
             <i class="clean fas fa-times-circle"></i>
+            <div class="results">
+              <div class="loaded"></div>
+              <div class="default"></div>
+            </div>
           </div>
         </div>
 

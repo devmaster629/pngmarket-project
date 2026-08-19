@@ -199,10 +199,10 @@
     if (typeof window.epsLoadPatternSimple === 'function') {
       window.epsLoadPatternSimple = function (elem) {
         var min = 1;
-        var form = elem.closest('form');
-        var box = form.find('.results');
-        var boxLoaded = form.find('.results .loaded');
-        var boxDefault = form.find('.results .default');
+        var picker = elem.closest('.picker');
+        var box = picker.find('.results');
+        var boxLoaded = picker.find('.results .loaded');
+        var boxDefault = picker.find('.results .default');
         var rawTerm = $.trim($(elem).val() || '');
         var term = encodeURIComponent(rawTerm);
 
@@ -1559,6 +1559,7 @@
         $form.append($btn);
       }
       $form.addClass('pngm-filter-laid-out');
+      $form.find('input[name="sPattern"]').addClass('pattern');
     }
 
     $('body').on('click', '#open-search-filters, .action.open-filters', function () {

@@ -3571,19 +3571,45 @@ body#search .container.primary {
   #side-menu > .wrap {
     height: 100%;
     max-height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     box-sizing: border-box;
+    z-index: 1;
+    isolation: isolate;
+  }
+
+  #side-menu > .wrap > .pngm-side-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   #side-menu > .wrap > .section.pngm-side-logout {
-    margin-top: auto;
-    position: sticky;
-    bottom: 0;
-    z-index: 6;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 20;
+    isolation: isolate;
+    overflow: hidden;
+    margin: 0;
     background: #fff;
     padding-bottom: 8px;
-    box-shadow: 0 -10px 12px -10px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 -8px 12px -8px rgba(0, 0, 0, 0.18);
+  }
+
+  #side-menu > .wrap > .section.pngm-side-logout a,
+  #side-menu > .wrap > .section.pngm-side-logout a svg {
+    z-index: 1;
+    background: #fff;
+  }
+
+  /* Log out belongs on the account menu, not on Filter / Location overlays. */
+  #side-menu.box-open > .wrap > .section.pngm-side-logout,
+  body.pngm-filter-open #side-menu .pngm-side-logout {
+    display: none !important;
   }
 
   #menu-cover.mobile-box {
@@ -4152,6 +4178,20 @@ body.pngm-filter-open {
     overflow: hidden !important;
     display: flex;
     flex-direction: column;
+    z-index: 10;
+  }
+
+  body.pngm-filter-open #side-menu .box.filter .picker.pattern {
+    position: relative;
+    z-index: 6;
+  }
+
+  body.pngm-filter-open #side-menu .box.filter .picker.pattern .results {
+    position: static;
+    z-index: 12;
+    max-height: 220px;
+    width: 100%;
+    margin-top: 6px;
   }
 
   body.pngm-filter-open #side-menu .box.filter .nav {

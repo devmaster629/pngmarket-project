@@ -217,6 +217,7 @@
 
 <div id="side-menu" class="mobile-box<?php if(osc_is_web_user_logged_in()) { ?> logged<?php } ?>">
   <div class="wrap">
+    <div class="pngm-side-scroll">
     <div class="section lead">
       <a href="<?php echo (osc_is_web_user_logged_in() ? osc_user_profile_url() : osc_user_login_url()); ?>" class="img-container" target="_blank" title="<?php echo osc_esc_html(__('Upload profile picture', 'epsilon')); ?>">
         <img src="<?php echo eps_profile_picture(osc_is_web_user_logged_in() ? osc_logged_user_id() : NULL, 'medium'); ?>" alt="<?php echo osc_esc_html(osc_logged_user_name() <> '' ? osc_logged_user_name() : __('Non-logged user', 'epsilon')); ?>" width="36" height="36"/>
@@ -392,6 +393,7 @@
         </a>
       </div>
     <?php } ?>
+    </div>
     
     <?php if(osc_is_web_user_logged_in()) { ?>
       <div class="section delim-top pngm-side-logout">
