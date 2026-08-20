@@ -4506,7 +4506,8 @@ body.pngm-filter-open {
 /* ==========================================================================
    Compact pattern autocomplete + icon gutter fix
    Side-menu #side-menu .box .section a was overriding left padding, so FA
-   glyphs sat on top of the first character ("strange dots").
+   glyphs sat on top of the first character ("strange dots"), and also
+   inflated listing rows in Filter results vs the main-page search dropdown.
    ========================================================================== */
 
 .picker.pattern .results .row {
@@ -4539,13 +4540,6 @@ body.pngm-filter-open {
   line-height: 16px !important;
 }
 
-#side-menu .box.filter .picker.pattern .results a.pngmarket-listing-option,
-#side-menu .box.filter .picker.pattern .results a.pngmarket-view-all,
-.picker.pattern .results a.pngmarket-listing-option,
-.picker.pattern .results a.pngmarket-view-all {
-  padding-left: 10px !important;
-}
-
 /* Listing rows must not inherit Font Awesome typeahead glyphs */
 .picker.pattern .results a.pngmarket-listing-option:after,
 .picker.pattern .results a.pngmarket-view-all:after {
@@ -4553,36 +4547,97 @@ body.pngm-filter-open {
   display: none !important;
 }
 
+/* Match main-page search density (compact listing rows) */
+.picker.pattern .results .pngmarket-listings {
+  margin: 0;
+  padding: 0;
+}
+
 .picker.pattern .results .pngmarket-listings > .lead {
-  padding: 6px 12px 4px;
+  padding: 6px 12px 4px !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  font-weight: 700;
 }
 
 .picker.pattern .results a.pngmarket-listing-option {
-  gap: 8px;
-  min-height: 0;
-  padding: 5px 10px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  line-height: 1.25 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  text-decoration: none;
 }
 
-.picker.pattern .results .pngmarket-listing-image {
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
+.picker.pattern .results .pngmarket-listing-image,
+.picker.pattern .results a.pngmarket-listing-option .pngmarket-listing-image {
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  border-radius: 6px !important;
+}
+
+.picker.pattern .results .pngmarket-listing-content {
+  gap: 1px !important;
 }
 
 .picker.pattern .results .pngmarket-listing-title {
-  font-size: 13px;
-  line-height: 1.25;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
 }
 
 .picker.pattern .results .pngmarket-listing-category,
 .picker.pattern .results .pngmarket-listing-meta {
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+.picker.pattern .results .pngmarket-listing-arrow {
+  font-size: 10px !important;
 }
 
 .picker.pattern .results a.pngmarket-view-all {
-  margin: 6px 10px 8px;
-  padding: 8px 12px;
-  gap: 6px;
+  margin: 6px 10px 8px !important;
+  padding: 8px 12px !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+}
+
+/* Filter drawer: beat #side-menu .box .section a padding/margin */
+#side-menu .box.filter .picker.pattern .results a.pngmarket-listing-option,
+body.pngm-filter-open #side-menu .box.filter .picker.pattern .results a.pngmarket-listing-option {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  line-height: 1.25 !important;
+  width: 100% !important;
+}
+
+#side-menu .box.filter .picker.pattern .results a.pngmarket-view-all,
+body.pngm-filter-open #side-menu .box.filter .picker.pattern .results a.pngmarket-view-all {
+  margin: 6px 10px 8px !important;
+  padding: 8px 12px !important;
+  line-height: 1.25 !important;
+}
+
+#side-menu .box.filter .picker.pattern .results .pngmarket-listing-image,
+body.pngm-filter-open #side-menu .box.filter .picker.pattern .results .pngmarket-listing-image {
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+body.pngm-filter-open #side-menu .box.filter .picker.pattern .results {
+  max-height: min(42vh, 280px);
+  padding: 2px 0 6px;
 }
