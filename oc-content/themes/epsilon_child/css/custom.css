@@ -2126,7 +2126,7 @@ a.pngm-search-subcat-all {
 }
 
 .pngm-search-select-group-label {
-  padding: 8px 12px 4px;
+  padding: 6px 12px 3px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2145,9 +2145,9 @@ a.pngm-search-subcat-all {
   text-align: left;
   border: 0;
   background: #fff;
-  padding: 9px 12px;
+  padding: 5px 12px;
   font-size: 14px;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #222;
   cursor: pointer;
 }
@@ -2166,6 +2166,15 @@ a.pngm-search-subcat-all {
   padding: 12px;
   font-size: 13px;
   color: #777;
+}
+
+.pngm-search-select.is-loading .pngm-search-select-input {
+  color: #666;
+  font-style: italic;
+}
+
+.pngm-search-select.is-loading .pngm-search-select-list {
+  min-height: 44px;
 }
 
 .item-publish .row.region .pngm-search-select,
@@ -4491,4 +4500,89 @@ body.pngm-filter-open {
     top: 15px;
     right: 58px;
   }
+}
+
+
+/* ==========================================================================
+   Compact pattern autocomplete + icon gutter fix
+   Side-menu #side-menu .box .section a was overriding left padding, so FA
+   glyphs sat on top of the first character ("strange dots").
+   ========================================================================== */
+
+.picker.pattern .results .row {
+  margin: 2px 0 4px 0;
+}
+
+.picker.pattern .results .lead {
+  padding: 4px 12px 2px;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.picker.pattern .option {
+  padding: 5px 12px 5px 34px !important;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.picker.pattern .results a:after {
+  left: 12px;
+  top: calc(50% - 7px);
+  font-size: 13px;
+  height: 14px;
+}
+
+#side-menu .box.filter .picker.pattern .option,
+#side-menu .box.filter .picker.pattern .results a.option {
+  margin: 0 !important;
+  padding: 5px 12px 5px 34px !important;
+  line-height: 16px !important;
+}
+
+#side-menu .box.filter .picker.pattern .results a.pngmarket-listing-option,
+#side-menu .box.filter .picker.pattern .results a.pngmarket-view-all,
+.picker.pattern .results a.pngmarket-listing-option,
+.picker.pattern .results a.pngmarket-view-all {
+  padding-left: 10px !important;
+}
+
+/* Listing rows must not inherit Font Awesome typeahead glyphs */
+.picker.pattern .results a.pngmarket-listing-option:after,
+.picker.pattern .results a.pngmarket-view-all:after {
+  content: none !important;
+  display: none !important;
+}
+
+.picker.pattern .results .pngmarket-listings > .lead {
+  padding: 6px 12px 4px;
+}
+
+.picker.pattern .results a.pngmarket-listing-option {
+  gap: 8px;
+  min-height: 0;
+  padding: 5px 10px;
+}
+
+.picker.pattern .results .pngmarket-listing-image {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.picker.pattern .results .pngmarket-listing-title {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.picker.pattern .results .pngmarket-listing-category,
+.picker.pattern .results .pngmarket-listing-meta {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.picker.pattern .results a.pngmarket-view-all {
+  margin: 6px 10px 8px;
+  padding: 8px 12px;
+  gap: 6px;
 }

@@ -193,14 +193,16 @@ function pngm_inject_province_capital($cities, $region_name, $name_key = 's_name
         }
     }
 
+    // Only inject a capital that belongs to this region — never a national
+    // findByName() fallback (that pulled Port Moresby / Lae into wrong provinces).
     $found = array();
     if ($region_id > 0) {
         $found = City::newInstance()->findByName($capital_name, $region_id);
     }
-    if (!is_array($found) || empty($found['pk_i_id'])) {
-        $found = City::newInstance()->findByName($capital_name);
-    }
     if (is_array($found) && !empty($found['pk_i_id'])) {
+        if (!empty($found['fk_i_region_id']) && (int) $found['fk_i_region_id'] !== $region_id) {
+            return $cities;
+        }
         $found['pngm_tier'] = 'main';
         array_unshift($cities, $found);
     }
@@ -1094,14 +1096,17 @@ function pngm_location_js_config()
         'mainTowns'  => pngm_province_main_towns(),
         'ncdSuburbs' => pngm_ncd_suburb_names(),
         'labels'     => array(
-            'main'          => __('Main towns', 'epsilon'),
-            'other'         => __('Other locations', 'epsilon'),
-            'ncdSuburbs'    => __('Port Moresby suburbs', 'epsilon'),
-            'select'        => __('Select a city...', 'epsilon'),
-            'popular'       => __('Main cities', 'epsilon'),
-            'searchRegion'  => __('Type to search province...', 'epsilon'),
-            'searchCity'    => __('Type to search city...', 'epsilon'),
-            'noMatch'       => __('No matching locations', 'epsilon'),
+            'main'           => __('Main towns', 'epsilon'),
+            'other'          => __('Other locations', 'epsilon'),
+            'ncdSuburbs'     => __('Port Moresby suburbs', 'epsilon'),
+            'select'         => __('Select a city...', 'epsilon'),
+            'popular'        => __('Main cities', 'epsilon'),
+            'searchRegion'   => __('Type to search province...', 'epsilon'),
+            'searchCity'     => __('Type to search city...', 'epsilon'),
+            'noMatch'        => __('No matching locations', 'epsilon'),
+            'loadingCities'  => __('Loading cities...', 'epsilon'),
+            'noResults'      => __('No results', 'epsilon'),
+            'loadError'      => __('Could not load cities', 'epsilon'),
         ),
     );
 }
@@ -1135,6 +1140,11 @@ function pngm_ajax_cities_capital_first()
     $region = Region::newInstance()->findByPrimaryKey($region_id);
     $region_name = is_array($region) && isset($region['s_name']) ? $region['s_name'] : '';
     $cities = pngm_prepare_cities_for_posting($cities, $region_name, 's_name');
+
+    // Never return a city that belongs to another province (guards capital inject / bad rows).
+    $cities = array_values(array_filter($cities, function ($city) use ($region_id) {
+        return isset($city['fk_i_region_id']) && (int) $city['fk_i_region_id'] === $region_id;
+    }));
 
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($cities);

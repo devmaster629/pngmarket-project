@@ -574,10 +574,16 @@
       var name;
       var id;
       var tier;
+      var currentRegionId = String($('#regionId').val() || '');
 
       if ($.isArray(data) && data.length) {
         for (i = 0; i < data.length; i++) {
           if (!data[i] || data[i].pk_i_id === undefined) {
+            continue;
+          }
+
+          if (currentRegionId && data[i].fk_i_region_id !== undefined
+              && String(data[i].fk_i_region_id) !== currentRegionId) {
             continue;
           }
 
@@ -623,6 +629,11 @@
         $city.val(selectedId);
       }
 
+      if (currentRegionId) {
+        $city.attr('data-pngm-region-id', currentRegionId);
+        $city.removeAttr('data-pngm-loading');
+      }
+
       if (typeof window.pngmRefreshSearchSelect === 'function') {
         window.pngmRefreshSearchSelect($city);
       }
@@ -643,6 +654,132 @@
       return match ? decodeURIComponent(match[1]) : '';
     }
 
+    function setCityLoadState(regionId, state) {
+      var $city = $('#cityId');
+      var loadingText = labels.loadingCities || 'Loading cities...';
+
+      if (!$city.length || !$city.is('select')) {
+        return;
+      }
+
+      if (state === 'loading') {
+        $city.attr('data-pngm-loading', '1');
+        $city.removeAttr('data-pngm-region-id');
+        $city.attr('data-pngm-pending-region', String(regionId || ''));
+        $city.prop('disabled', false);
+        $city.html('<option selected value="">' + $('<div>').text(loadingText).html() + '</option>');
+        $city.val('');
+      } else if (state === 'ready') {
+        $city.removeAttr('data-pngm-loading');
+        $city.removeAttr('data-pngm-pending-region');
+        $city.attr('data-pngm-region-id', String(regionId || ''));
+        $city.prop('disabled', !regionId);
+      } else {
+        $city.removeAttr('data-pngm-loading');
+        $city.removeAttr('data-pngm-pending-region');
+        $city.removeAttr('data-pngm-region-id');
+        $city.html('<option selected value="">' + $('<div>').text(labelSelect).html() + '</option>');
+        $city.val('');
+        $city.prop('disabled', true);
+      }
+
+      if (typeof window.pngmRefreshSearchSelect === 'function') {
+        window.pngmRefreshSearchSelect($city);
+      }
+    }
+
+    function applyCitiesForRegion(regionId, data) {
+      var current = String($('#regionId').val() || '');
+      var requested = String(regionId || '');
+
+      if (!requested || (current && requested !== current)) {
+        return;
+      }
+
+      var $city = $('#cityId');
+      var result = '';
+      var i;
+      var row;
+      var vname;
+      var locationsNative = '0';
+
+      if (!$city.length || !$city.is('select')) {
+        // Core may have swapped select for text input — recreate select.
+        $('#city').before('<select name="cityId" id="cityId"></select>');
+        $('#city').remove();
+        $city = $('#cityId');
+        if (typeof window.pngmRefreshSearchSelect === 'function') {
+          window.pngmRefreshSearchSelect($city);
+        }
+      }
+
+      if (!$.isArray(data) || !data.length) {
+        $city.html('<option value="">' + $('<div>').text(labels.noResults || 'No results').html() + '</option>');
+        setCityLoadState(requested, 'ready');
+        return;
+      }
+
+      result += '<option selected value="">' + $('<div>').text(labelSelect).html() + '</option>';
+
+      for (i = 0; i < data.length; i++) {
+        row = data[i];
+        if (!row || row.pk_i_id === undefined) {
+          continue;
+        }
+        // Hard filter: never paint a city from another province.
+        if (row.fk_i_region_id !== undefined && String(row.fk_i_region_id) !== requested) {
+          continue;
+        }
+        vname = row.s_name;
+        if (row.s_name_native && row.s_name_native !== '' && row.s_name_native !== 'null' && locationsNative === '1') {
+          vname = row.s_name_native;
+        }
+        result += '<option value="' + row.pk_i_id + '">' + $('<div>').text(vname).html() + '</option>';
+      }
+
+      $city.html(result);
+      setCityLoadState(requested, 'ready');
+      regroupCitySelect($city, currentRegionName(), data);
+      $city.trigger('change');
+    }
+
+    // Drop previous province cities immediately and show loading.
+    $(document).on('change.pngmClearCities', '#regionId', function () {
+      var regionId = String($(this).val() || '');
+      window.pngmCitiesToken = (window.pngmCitiesToken || 0) + 1;
+      window.pngmPendingCityRegionId = regionId;
+
+      if (!regionId) {
+        setCityLoadState('', 'idle');
+        return;
+      }
+
+      setCityLoadState(regionId, 'loading');
+    });
+
+    // Take over cities AJAX success so core cannot write a stale province list.
+    $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+      var url = options && options.url ? String(options.url) : '';
+
+      if (url.indexOf('action=cities') === -1) {
+        return;
+      }
+
+      var requested = String(requestedRegionId(url) || '');
+
+      // Replace core success entirely — we own writing #cityId.
+      options.success = function (data) {
+        var current = String($('#regionId').val() || '');
+        var pending = String(window.pngmPendingCityRegionId || current || '');
+
+        if (!requested || requested !== current || requested !== pending) {
+          return;
+        }
+
+        applyCitiesForRegion(requested, data);
+      };
+    });
+
     $(document).ajaxSend(function (event, jqXHR, settings) {
       var url = settings && settings.url ? String(settings.url) : '';
 
@@ -657,50 +794,43 @@
       }
 
       window.pngmCitiesXhr = jqXHR;
+      window.pngmCitiesRequestedRegionId = requestedRegionId(url);
     });
 
-    // After core builds the flat city list, regroup with optgroups.
-    $(document).ajaxSuccess(function (event, xhr, settings) {
+    $(document).ajaxError(function (event, xhr, settings) {
       var url = settings && settings.url ? String(settings.url) : '';
+      var requested;
+      var current;
 
       if (url.indexOf('action=cities') === -1) {
         return;
       }
 
-      var requested = requestedRegionId(url);
-      var current = String($('#regionId').val() || '');
-
-      if (requested && current && requested !== current) {
+      // Aborted on purpose when province changes again.
+      if (xhr && xhr.statusText === 'abort') {
         return;
       }
 
-      var data;
+      requested = requestedRegionId(url);
+      current = String($('#regionId').val() || '');
 
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch (e) {
-        return;
-      }
-
-      if (!$.isArray(data)) {
-        return;
-      }
-
-      // Defer so parent success handler finishes writing options first.
-      setTimeout(function () {
-        if (requested && String($('#regionId').val() || '') !== requested) {
-          return;
+      if (requested && current && requested === current) {
+        setCityLoadState(current, 'loading');
+        $('#cityId').html('<option value="">' + $('<div>').text(labels.loadError || 'Could not load cities').html() + '</option>');
+        if (typeof window.pngmRefreshSearchSelect === 'function') {
+          window.pngmRefreshSearchSelect($('#cityId'));
         }
-
-        regroupCitySelect($('#cityId'), currentRegionName(), data);
-      }, 0);
+      }
     });
 
     // Initial publish/edit form: regroup the PHP-rendered city list.
     setTimeout(function () {
       var $city = $('#cityId');
+      var regionId = String($('#regionId').val() || '');
 
       if ($city.length && $city.find('option[value!=""]').length > 0) {
+        $city.attr('data-pngm-region-id', regionId);
+        $city.removeAttr('data-pngm-loading');
         regroupCitySelect($city, currentRegionName(), null);
       }
     }, 100);
@@ -775,12 +905,21 @@
       var $select = widget.data('pngmSelect');
       var $input = widget.find('.pngm-search-select-input');
       var disabled = !!$select.prop('disabled');
+      var loading = $select.attr('data-pngm-loading') === '1';
       var label = selectedLabel($select);
 
-      $input.val(label);
-      $input.prop('disabled', disabled);
-      widget.toggleClass('is-disabled', disabled);
-      widget.find('.pngm-search-select-clear').toggle(!!label && !disabled);
+      if (loading) {
+        $input.val('');
+        $input.attr('placeholder', labels.loadingCities || 'Loading cities...');
+      } else {
+        $input.val(label);
+        $input.attr('placeholder', placeholderFor($select));
+      }
+
+      $input.prop('disabled', disabled && !loading);
+      widget.toggleClass('is-disabled', disabled && !loading);
+      widget.toggleClass('is-loading', loading);
+      widget.find('.pngm-search-select-clear').toggle(!!label && !disabled && !loading);
     }
 
     function buildListHtml($select, query) {
@@ -860,12 +999,45 @@
       var $select = widget.data('pngmSelect');
       var $list = widget.find('.pngm-search-select-list');
       var $input = widget.find('.pngm-search-select-input');
+      var loadedFor;
+      var currentRegion;
 
-      if ($select.prop('disabled')) {
+      if ($select.prop('disabled') && $select.attr('data-pngm-loading') !== '1') {
         return;
       }
 
       closeAll(widget);
+
+      // Never show a previous province's towns while cities are loading / mismatched.
+      if ($select.attr('id') === 'cityId') {
+        currentRegion = String($('#regionId').val() || '');
+        loadedFor = String($select.attr('data-pngm-region-id') || '');
+
+        if (!currentRegion) {
+          $list.html('<div class="pngm-search-select-empty">'
+            + escapeHtml(labels.selectRegionFirst || 'Select a province first')
+            + '</div>');
+          $list.show();
+          widget.addClass('is-open');
+          $input.attr('aria-expanded', 'true');
+          activeWidget = widget;
+          return;
+        }
+
+        // Only render options that were loaded for the currently selected province.
+        if (loadedFor !== currentRegion) {
+          $list.html('<div class="pngm-search-select-empty">'
+            + escapeHtml(labels.loadingCities || 'Loading cities...')
+            + '</div>');
+          $list.show();
+          widget.addClass('is-open is-loading');
+          $input.attr('aria-expanded', 'true');
+          activeWidget = widget;
+          return;
+        }
+      }
+
+      widget.removeClass('is-loading');
       $list.html(buildListHtml($select, filterText));
       $list.show();
       widget.addClass('is-open');
@@ -1130,7 +1302,14 @@
         return;
       }
 
-      syncFromSelect($el.closest('.pngm-search-select'));
+      var $widget = $el.closest('.pngm-search-select');
+      syncFromSelect($widget);
+
+      // If the city dropdown is open while province options reload, rebuild it
+      // so users never keep seeing the previous province's towns.
+      if ($widget.hasClass('is-open') && $el.attr('id') === 'cityId') {
+        showList($widget, $widget.find('.pngm-search-select-input').val());
+      }
     }
 
     window.pngmRefreshSearchSelect = refresh;
@@ -1139,6 +1318,14 @@
     if ($('#regionId').is('select') || $('#cityId').is('select')) {
       wrapSelect($('#regionId'));
       wrapSelect($('#cityId'));
+
+      // Mark PHP-rendered cities as belonging to the current province so the
+      // dropdown is allowed to open immediately on first paint.
+      if ($('#cityId').is('select') && $('#regionId').val()
+          && $('#cityId').find('option[value!=""]').length > 0) {
+        $('#cityId').attr('data-pngm-region-id', String($('#regionId').val()));
+        $('#cityId').removeAttr('data-pngm-loading');
+      }
     }
 
     $(document).on('mousedown.pngmSearchSelect', function (e) {
