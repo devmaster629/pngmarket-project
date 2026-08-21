@@ -1,0 +1,508 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Whatsapp Chat Plugin\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-04 08:37+0100\n"
+"PO-Revision-Date: 2026-03-04 08:37+0100\n"
+"Last-Translator: Miso <miso546@azet.sk>\n"
+"Language-Team: MB Themes <info@mb-themes.com>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+"X-Poedit-KeywordsList: __;_e;_m\n"
+"X-Poedit-Basepath: ../..\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: languages/en_US\n"
+"X-Poedit-SearchPath-1: .\n"
+
+#: admin/configure.php:3 index.php:91 index.php:100 index.php:130
+msgid "Configure"
+msgstr ""
+
+#: admin/configure.php:59
+msgid "Settings were successfully saved"
+msgstr ""
+
+#: admin/configure.php:68
+msgid ""
+"Plugin will enable to add WhatsApp Chat Button on Listing page or for Web "
+"contact."
+msgstr ""
+
+#: admin/configure.php:79
+msgid "Configure Item Contact Button"
+msgstr ""
+
+#: admin/configure.php:86
+msgid "Enable Button on Items"
+msgstr ""
+
+#: admin/configure.php:90
+msgid "When enabled, WhatsApp contact button on listings will be created."
+msgstr ""
+
+#: admin/configure.php:95 admin/configure.php:433
+msgid "Only for Logged-in Users"
+msgstr ""
+
+#: admin/configure.php:99 admin/configure.php:437
+msgid "When enabled, only logged-in users can use contact button."
+msgstr ""
+
+#: admin/configure.php:104
+msgid "Stats Collecting"
+msgstr ""
+
+#: admin/configure.php:108
+msgid ""
+"When enabled, usage of contact button will be collected. This includes views "
+"and clicks of button."
+msgstr ""
+
+#: admin/configure.php:113
+msgid "Ask Seller"
+msgstr ""
+
+#: admin/configure.php:117
+msgid ""
+"When enabled, seller must consent with using contact button on its listing."
+msgstr ""
+
+#: admin/configure.php:122
+msgid "Enable on Existing Items"
+msgstr ""
+
+#: admin/configure.php:126
+msgid ""
+"When enabled, contact button will be added automatically to existing "
+"listings. If you have enabled \"Ask seller\" option, this setting has no "
+"effect."
+msgstr ""
+
+#: admin/configure.php:131
+msgid "Use User Phone"
+msgstr ""
+
+#: admin/configure.php:135
+msgid ""
+"When enabled and listing phone number is not available, plugin will try to "
+"use user mobile or land phone number (if filled in profile)."
+msgstr ""
+
+#: admin/configure.php:141 admin/configure.php:451
+msgid "Add Phone Number to Button"
+msgstr ""
+
+#: admin/configure.php:143 admin/configure.php:453
+msgid "Do not add"
+msgstr ""
+
+#: admin/configure.php:144 admin/configure.php:454
+msgid "Add to same line"
+msgstr ""
+
+#: admin/configure.php:145 admin/configure.php:455
+msgid "Add on new line"
+msgstr ""
+
+#: admin/configure.php:149 admin/configure.php:459
+msgid ""
+"Select if you want to add phone number to WhatsApp button, and if yes if it "
+"should be on same line as is text, or into new line."
+msgstr ""
+
+#: admin/configure.php:150 admin/configure.php:460
+msgid "\"Add on new line\" option is recommended only for buttons of size "
+msgstr ""
+
+#: admin/configure.php:156
+msgid "Use Phone from Field"
+msgstr ""
+
+#: admin/configure.php:158
+msgid "Osclass Item Phone (v4.x or higher)"
+msgstr ""
+
+#: admin/configure.php:159
+msgid "Osclass Item Other Field (v4.x or higher)"
+msgstr ""
+
+#: admin/configure.php:160
+msgid "Custom Field Value"
+msgstr ""
+
+#: admin/configure.php:161
+msgid "City Area"
+msgstr ""
+
+#: admin/configure.php:162
+msgid "Theme Phone Field"
+msgstr ""
+
+#: admin/configure.php:163
+msgid "Telephone Plugin"
+msgstr ""
+
+#: admin/configure.php:167
+msgid ""
+"Select where from where plugin should use phone number. Custom field - you "
+"must define custom field slug to be used in setting bellow. City area - some "
+"themes (like Zara) use city area to store phone number. Theme Phone Field - "
+"themes like Veronika, Stela, Alpha - Delta use own tables to store phone "
+"number."
+msgstr ""
+
+#: admin/configure.php:172
+msgid "Custom Field Slug"
+msgstr ""
+
+#: admin/configure.php:176
+msgid ""
+"Enter slug/identifier of custom field that is used to retrieve phone number. "
+"This field has no effect, if \"Custom Field Value\" is not selected in \"Use "
+"Phone from Field\" setting."
+msgstr ""
+
+#: admin/configure.php:181
+msgid "Sanitize Phone Number"
+msgstr ""
+
+#: admin/configure.php:185
+msgid ""
+"When enabled, plugin will sanitize phone number and will try to fix leading "
+"zeros, plus sign, country code and remove unwanted characters from phone "
+"number."
+msgstr ""
+
+#: admin/configure.php:190
+msgid "Default Phone Country Code"
+msgstr ""
+
+#: admin/configure.php:194
+msgid ""
+"Enter default phone country code to be added into phone number if it does "
+"not meet minimum length setting. This setting has no effect when \"Sanitize "
+"Phone Number\" is disabled. Examples: +421, +1, +92, ..."
+msgstr ""
+
+#: admin/configure.php:199
+msgid "Minimum Phone Length"
+msgstr ""
+
+#: admin/configure.php:201
+msgid "chars"
+msgstr ""
+
+#: admin/configure.php:204
+msgid ""
+"Enter minimum phone length that is expected. This setting has no effect when "
+"\"Sanitize Phone Number\" is disabled."
+msgstr ""
+
+#: admin/configure.php:209
+msgid "Category Restriction"
+msgstr ""
+
+#: admin/configure.php:217
+msgid "If no category selected, button will be shown in all categories."
+msgstr ""
+
+#: admin/configure.php:222
+msgid "Hook Button"
+msgstr ""
+
+#: admin/configure.php:226
+msgid ""
+"Enter hooks where to add whatsapp button. Delimit by comma. No white spaces. "
+"Default: item_detail"
+msgstr ""
+
+#: admin/configure.php:231 admin/configure.php:498
+msgid "Button Customization"
+msgstr ""
+
+#: admin/configure.php:234 admin/configure.php:501
+msgid "Button Style/Type"
+msgstr ""
+
+#: admin/configure.php:236 admin/configure.php:503
+msgid "Rounded button"
+msgstr ""
+
+#: admin/configure.php:237 admin/configure.php:504
+msgid "Square button"
+msgstr ""
+
+#: admin/configure.php:238 admin/configure.php:505
+msgid "Bubble button"
+msgstr ""
+
+#: admin/configure.php:239 admin/configure.php:506
+msgid "Rounded icon button"
+msgstr ""
+
+#: admin/configure.php:240 admin/configure.php:507
+msgid "Square icon button"
+msgstr ""
+
+#: admin/configure.php:241 admin/configure.php:508
+msgid "Circle icon button"
+msgstr ""
+
+#: admin/configure.php:245 admin/configure.php:512
+msgid "Select button style/type"
+msgstr ""
+
+#: admin/configure.php:250 admin/configure.php:517
+msgid "Button Size"
+msgstr ""
+
+#: admin/configure.php:253 admin/configure.php:265 admin/configure.php:523
+msgid "Very small"
+msgstr ""
+
+#: admin/configure.php:254 admin/configure.php:274 admin/configure.php:532
+msgid "Small"
+msgstr ""
+
+#: admin/configure.php:255 admin/configure.php:283 admin/configure.php:541
+msgid "Medium"
+msgstr ""
+
+#: admin/configure.php:256 admin/configure.php:292 admin/configure.php:550
+msgid "Large"
+msgstr ""
+
+#: admin/configure.php:257 admin/configure.php:301 admin/configure.php:559
+msgid "Very large"
+msgstr ""
+
+#: admin/configure.php:265 admin/configure.php:274 admin/configure.php:283
+#: admin/configure.php:292 admin/configure.php:301 admin/configure.php:523
+#: admin/configure.php:532 admin/configure.php:541 admin/configure.php:550
+#: admin/configure.php:559
+#, php-format
+msgid "Button size %s"
+msgstr ""
+
+#: admin/configure.php:310 admin/configure.php:568
+msgid "Icon Image"
+msgstr ""
+
+#: admin/configure.php:315 admin/configure.php:325 admin/configure.php:575
+#, php-format
+msgid "Icon image #%d"
+msgstr ""
+
+#: admin/configure.php:335 admin/configure.php:585
+msgid "Custom Text in Button"
+msgstr ""
+
+#: admin/configure.php:339 admin/configure.php:589
+msgid ""
+"Enter own text to shown in button. If no text is entered, default text is "
+"used."
+msgstr ""
+
+#: admin/configure.php:344 admin/configure.php:594
+msgid "Button Padding"
+msgstr ""
+
+#: admin/configure.php:349 admin/configure.php:599
+msgid "Enter padding for button."
+msgstr ""
+
+#: admin/configure.php:354 admin/configure.php:604
+msgid "Icon Image Padding"
+msgstr ""
+
+#: admin/configure.php:359 admin/configure.php:609
+msgid "Enter padding for icon image."
+msgstr ""
+
+#: admin/configure.php:364 admin/configure.php:614
+msgid "Button Background Color"
+msgstr ""
+
+#: admin/configure.php:370 admin/configure.php:620
+msgid ""
+"Enter color in HEX format or select color with picker. Example: #0d9ecc. "
+"Keep blank to use default color."
+msgstr ""
+
+#: admin/configure.php:374 admin/configure.php:624
+msgid "Button Font Color"
+msgstr ""
+
+#: admin/configure.php:380 admin/configure.php:630
+msgid ""
+"Enter color in HEX format or select color with picker. Example: #333333. "
+"Keep blank to use default color."
+msgstr ""
+
+#: admin/configure.php:384 admin/configure.php:634
+msgid "Icon Background Color"
+msgstr ""
+
+#: admin/configure.php:390 admin/configure.php:640
+msgid ""
+"Enter color in HEX format or select color with picker. Example: #ffffff. "
+"Keep blank to use default color."
+msgstr ""
+
+#: admin/configure.php:394 admin/configure.php:644
+msgid "Custom CSS for Button"
+msgstr ""
+
+#: admin/configure.php:398 admin/configure.php:648
+msgid "Enter your own CSS code that will be added next to button."
+msgstr ""
+
+#: admin/configure.php:407 admin/configure.php:657
+msgid "This is demo site"
+msgstr ""
+
+#: admin/configure.php:407 admin/configure.php:409 admin/configure.php:657
+#: admin/configure.php:659
+msgid "Save"
+msgstr ""
+
+#: admin/configure.php:419
+msgid "Configure Web Contact Button"
+msgstr ""
+
+#: admin/configure.php:424
+msgid "Enable Web Contact Button"
+msgstr ""
+
+#: admin/configure.php:428
+msgid "When enabled, WhatsApp contact button on website will be created."
+msgstr ""
+
+#: admin/configure.php:442
+msgid "Contact Phone"
+msgstr ""
+
+#: admin/configure.php:446
+msgid ""
+"Enter site phone number in international format without using ()/- signs and "
+"white spaces. Example: +4201223321321."
+msgstr ""
+
+#: admin/configure.php:465
+msgid "Position of Button"
+msgstr ""
+
+#: admin/configure.php:467
+msgid "Bottom left (Box)"
+msgstr ""
+
+#: admin/configure.php:468
+msgid "Bottom right (Box)"
+msgstr ""
+
+#: admin/configure.php:469
+msgid "Top left (Box)"
+msgstr ""
+
+#: admin/configure.php:470
+msgid "Top right (Box)"
+msgstr ""
+
+#: admin/configure.php:474
+msgid "Select where contact button will be displayed."
+msgstr ""
+
+#: admin/configure.php:479
+msgid "Margin from Borders"
+msgstr ""
+
+#: admin/configure.php:484
+msgid "Enter margin of button from browser borders."
+msgstr ""
+
+#: admin/configure.php:489
+msgid "Auto-Hook Button"
+msgstr ""
+
+#: admin/configure.php:493
+msgid ""
+"When enabled, button is automatically added to item page using footer hook."
+msgstr ""
+
+#: admin/configure.php:670
+msgid "Plugin Setup"
+msgstr ""
+
+#: admin/configure.php:673
+msgid ""
+"No theme modification are required to use all functions of plugin, but "
+"following functions may be useful to use plugin in customized way."
+msgstr ""
+
+#: admin/configure.php:676
+msgid "Web Chat Button"
+msgstr ""
+
+#: admin/configure.php:681
+msgid "Item Chat Button"
+msgstr ""
+
+#: admin/configure.php:686
+msgid "Item Chat Button views count"
+msgstr ""
+
+#: admin/configure.php:691
+msgid "Item Chat Button clicks count"
+msgstr ""
+
+#: form/item_form.php:27
+msgid "Enable WhatsApp chat with me on this item"
+msgstr ""
+
+#: functions.php:144
+#, php-format
+msgid "Views: %dx"
+msgstr ""
+
+#: functions.php:145
+#, php-format
+msgid "Clicks: %dx"
+msgstr ""
+
+#: functions.php:162 functions.php:226
+msgid "You must login to use contact button"
+msgstr ""
+
+#: functions.php:162 functions.php:226
+msgid "Click to initiate WhatsApp chat"
+msgstr ""
+
+#: functions.php:164 functions.php:171 functions.php:228 functions.php:235
+msgid "Whatsapp chat"
+msgstr ""
+
+#: functions.php:257
+#, php-format
+msgid "Hello! I have question on your item \"%s\" (%s)"
+msgstr ""
+
+#: functions.php:259
+#, php-format
+msgid "Hello! I have question about your website \"%s\" (%s)"
+msgstr ""
+
+#: index.php:115
+msgid "Report Bug"
+msgstr ""
+
+#: index.php:116
+msgid "Support Forums"
+msgstr ""
+
+#: index.php:117
+msgid "Contact Us"
+msgstr ""

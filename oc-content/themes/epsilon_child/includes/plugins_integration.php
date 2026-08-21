@@ -59,7 +59,7 @@ function pngm_expected_plugins()
         'wa_chat' => array(
             'label'   => 'WhatsApp Chat',
             'folders' => array('wa_chat'),
-            'detect'  => array('wach_button', 'wa_chat_button', 'wach_web_button', 'wach_call_after_install'),
+            'detect'  => array('wac_item_chat_button', 'wac_web_contact_button', 'wac_call_after_install'),
             'required'=> true,
             'note'    => 'Install folder wa_chat; enable seller + site buttons; PNG country code +675.',
         ),
@@ -139,13 +139,16 @@ function pngm_plugin_integration_status()
  */
 function pngm_has_social_login()
 {
-    return pngm_any_function_exists(array(
-        'ggl_login_link',
-        'gc_login_button',
-        'fjl_login_button',
-        'fl_call_after_install',
-        'facebook_login_link',
-    ));
+    $google = function_exists('ggl_login_link') || function_exists('gc_login_button');
+    $facebook = false;
+
+    if (function_exists('fjl_login_button') && function_exists('fjl_param')) {
+        $facebook = ((string) fjl_param('enabled') === '1' && trim((string) fjl_param('app_id')) !== '');
+    } elseif (function_exists('fl_call_after_install') || function_exists('facebook_login_link')) {
+        $facebook = true;
+    }
+
+    return $google || $facebook;
 }
 
 /**
@@ -220,7 +223,10 @@ function pngm_render_social_login($context = 'login')
         echo '</div>';
     }
 
-    if (function_exists('fjl_login_button')) {
+    if (function_exists('fjl_login_button') && function_exists('fjl_param')
+        && (string) fjl_param('enabled') === '1'
+        && trim((string) fjl_param('app_id')) !== ''
+    ) {
         echo '<a target="_top" href="javascript:void(0);" class="facebook fl-button fjl-button pngm-btn-facebook" onclick="if(typeof fjlCheckLoginState===\'function\'){fjlCheckLoginState();}" title="' . osc_esc_html($fb_label) . '">';
         echo '<i class="fab fa-facebook-f" aria-hidden="true"></i><span>' . osc_esc_html($fb_label) . '</span></a>';
     } else {
@@ -242,7 +248,7 @@ function pngm_render_social_login($context = 'login')
  */
 function pngm_try_render_wa_chat_item_button()
 {
-    $candidates = array('wach_button', 'wa_chat_button', 'wach_item_button');
+    $candidates = array('wac_item_chat_button', 'wac_web_contact_button');
 
     foreach ($candidates as $fn) {
         if (!function_exists($fn)) {
@@ -296,6 +302,14 @@ function pngm_align_theme_plugin_prefs()
         }
         if ((string) eps_param('company_home_count') === '' || (int) eps_param('company_home_count') <= 0) {
             osc_set_preference('company_home_count', '5', 'theme-epsilon');
+        }
+    }
+
+    // WhatsApp Chat → PNG default country code when empty.
+    if (function_exists('wac_param') && function_exists('osc_set_preference')) {
+        $cc = trim((string) wac_param('default_country_code'));
+        if ($cc === '') {
+            osc_set_preference('default_country_code', '675', 'plugin-wa_chat');
         }
     }
 }

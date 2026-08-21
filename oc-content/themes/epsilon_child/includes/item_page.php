@@ -74,10 +74,9 @@ function pngm_seller_contact_channels()
 
     // Prefer WhatsApp Chat plugin when installed; otherwise build wa.me from phones.
     $wa_plugin = function_exists('pngm_any_function_exists') && pngm_any_function_exists(array(
-        'wach_button',
-        'wa_chat_button',
-        'wach_item_button',
-        'wach_call_after_install',
+        'wac_item_chat_button',
+        'wac_web_contact_button',
+        'wac_call_after_install',
     ));
 
     if (!$wa_plugin) {
@@ -239,10 +238,9 @@ function pngm_render_seller_contact_buttons()
     // When WhatsApp Chat plugin is active it owns listing WA buttons via its hooks.
     // Avoid a second custom wa.me button; optionally place plugin markup in this slot.
     $wa_plugin = function_exists('pngm_any_function_exists') && pngm_any_function_exists(array(
-        'wach_button',
-        'wa_chat_button',
-        'wach_item_button',
-        'wach_call_after_install',
+        'wac_item_chat_button',
+        'wac_web_contact_button',
+        'wac_call_after_install',
     ));
 
     foreach ($keys as $key) {

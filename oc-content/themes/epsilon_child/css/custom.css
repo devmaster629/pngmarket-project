@@ -3323,24 +3323,32 @@ footer.pngm-footer .col.socialx:empty {
 }
 
 .pngm-wa-chat-plugin a,
+body .wac-button,
 body .wach-button,
 body .wa-chat-button,
+body a[class*="wac"],
 body a[class*="wach"],
+body div[class*="wac"] a,
 body div[class*="wach"] a {
   max-width: 100%;
 }
 
 /* Keep site float chat clear of mobile sticky bars */
+body .wac-web,
 body .wach-web,
 body .wa-chat-web,
+body [id*="wac-web"],
 body [id*="wach-web"],
+body [class*="wac-web"],
 body [class*="wach-web"] {
   z-index: 9990;
 }
 
 @media (max-width: 767px) {
+  body.has-sticky-button .wac-web,
   body.has-sticky-button .wach-web,
   body.has-sticky-button .wa-chat-web,
+  body.has-sticky-button [class*="wac-web"],
   body.has-sticky-button [class*="wach-web"] {
     bottom: 72px !important;
   }
