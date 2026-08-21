@@ -315,10 +315,6 @@ body#home > .content > section.home-search {
     margin: 0 8px 0 -4px;
   }
 
-  /* Sticky offset that assumed the old 60px bar. */
-  #item-main .location {
-    top: 84px;
-  }
 }
 
 /* Companies / Location: keep icons when the label is long (desktop only —
@@ -2534,11 +2530,23 @@ body#home .categories .pngm-cat-item i.fas {
 
 
 /* ==========================================================================
-   ITEM contact — Call | WhatsApp | Chat row (mockup)
+   ITEM detail — Description → Location → Contact Seller (mockup)
    ========================================================================== */
 
 .pngm-contact-panel {
-  margin: 0 0 14px;
+  margin: 0;
+  padding: 14px 0 4px;
+  border-top: 1px solid #e5e7eb;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pngm-contact-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.25;
 }
 
 .pngm-contact-actions {
@@ -2558,26 +2566,27 @@ body#home .categories .pngm-cat-item i.fas {
 
 .pngm-contact-action {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 52px;
-  padding: 8px 6px;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 10px;
   border-radius: 10px;
   border: none;
   color: #fff !important;
   text-decoration: none !important;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
   box-shadow: 0 2px 6px rgba(16, 24, 40, 0.1);
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  white-space: nowrap;
 }
 
 .pngm-contact-action i {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -2609,10 +2618,7 @@ body#home .categories .pngm-cat-item i.fas {
 }
 
 .pngm-contact-note {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 11px;
-  color: #6b7280;
+  display: none !important;
 }
 
 #item-side .pngm-item-email {
@@ -2628,25 +2634,110 @@ body#item #item-side a.im-button {
   display: none !important;
 }
 
-/* Item page breathing room */
+/* Description + Location stacked mockup (all breakpoints) */
 body#item #item-main .basic {
   margin-bottom: 6px;
 }
 
-body#item #item-main .row.description,
-body#item #item-main .location,
-body#item #item-side #seller {
-  margin-top: 4px;
+body#item #item-main .row.description.pngm-item-detail-block,
+body#item #item-main .location.pngm-item-detail-block {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 14px 0;
+  border-top: 1px solid #e5e7eb;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: none;
+  position: static;
+  top: auto;
+  min-width: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+}
+
+body#item #item-main .row.description.pngm-item-detail-block {
+  padding-top: 12px;
+}
+
+body#item #item-main .description .desc-parts {
+  display: block;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+body#item #item-main .description .desc-text {
+  width: 100%;
 }
 
 body#item #item-main .row.description h2,
 body#item #item-main .location h2 {
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.25;
+}
+
+body#item #item-main .row.description h2 i {
+  color: #6b7280;
+  font-size: 15px;
+}
+
+body#item #item-main .location h2 i {
+  color: #15803d;
+  font-size: 16px;
+}
+
+/* Tighten description paragraphs as much as possible */
+body#item #item-main .description .text,
+body#item #item-main .description .desc-text-raw {
+  font-size: 14px;
+  line-height: 1.35;
+  color: #374151;
+}
+
+body#item #item-main .description .text p,
+body#item #item-main .description .desc-text-raw p,
+body#item #item-main .description .text br + br {
+  margin: 0;
+}
+
+body#item #item-main .description .text p + p,
+body#item #item-main .description .desc-text-raw p + p {
+  margin-top: 2px;
+}
+
+body#item #item-main .description .read-more-desc,
+body#item #item-main .location .directions {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #15803d !important;
+  text-decoration: none !important;
+}
+
+body#item #item-main .description .read-more-desc:hover,
+body#item #item-main .location .directions:hover {
+  color: #166534 !important;
+}
+
+body#item #item-main .location .row.address {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #374151;
 }
 
 body#item #item-side #seller {
   border-radius: 12px;
   padding: 12px;
+  margin-top: 8px;
 }
 
 @media (max-width: 767px) {
@@ -2656,7 +2747,12 @@ body#item #item-side #seller {
   }
 
   .pngm-contact-panel {
-    margin: 0 0 12px;
+    padding: 12px 0 2px;
+  }
+
+  .pngm-contact-title {
+    margin-bottom: 8px;
+    font-size: 15px;
   }
 
   .pngm-contact-actions {
@@ -2664,22 +2760,36 @@ body#item #item-side #seller {
   }
 
   .pngm-contact-action {
-    min-height: 48px;
-    padding: 7px 4px;
-    border-radius: 10px;
-    font-size: 11px;
+    min-height: 36px;
+    padding: 7px 6px;
+    border-radius: 9px;
+    font-size: 12px;
+    gap: 5px;
   }
 
   .pngm-contact-action i {
-    font-size: 15px;
+    font-size: 13px;
   }
 
-  body#item #item-main .row.description,
-  body#item #item-main .location {
-    margin-bottom: 8px;
+  body#item #item-main .row.description.pngm-item-detail-block,
+  body#item #item-main .location.pngm-item-detail-block {
+    padding: 10px 0;
+  }
+
+  body#item #item-main .row.description h2,
+  body#item #item-main .location h2 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  body#item #item-main .description .text,
+  body#item #item-main .description .desc-text-raw {
+    font-size: 13px;
+    line-height: 1.3;
   }
 
   body#item #item-main .location .directions {
+    margin-top: 4px;
     margin-bottom: 0;
   }
 }
@@ -3965,6 +4075,16 @@ body#search .container.primary {
   body#item .location h2 {
     margin: 0 0 4px 0;
     font-size: 15px;
+  }
+
+  body#item #item-main .description .text p,
+  body#item #item-main .description .desc-text-raw p {
+    margin: 0;
+  }
+
+  body#item #item-main .description .text p + p,
+  body#item #item-main .description .desc-text-raw p + p {
+    margin-top: 1px;
   }
 
   #item-image {

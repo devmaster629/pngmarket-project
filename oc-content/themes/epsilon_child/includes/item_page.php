@@ -283,7 +283,8 @@ function pngm_render_seller_contact_buttons()
     }
 
     $count = count($actions);
-    echo '<div class="pngm-contact-panel">';
+    echo '<div class="pngm-contact-panel pngm-item-detail-block">';
+    echo '<h2 class="pngm-contact-title">' . osc_esc_html(__('Contact Seller', 'epsilon')) . '</h2>';
     echo '<div class="pngm-contact-actions pngm-contact-count-' . (int) $count . '">';
 
     foreach ($actions as $action) {
@@ -300,7 +301,6 @@ function pngm_render_seller_contact_buttons()
     }
 
     echo '</div>';
-    echo '<p class="pngm-contact-note">' . osc_esc_html(__('Your phone number is safe with us', 'epsilon')) . '</p>';
     echo '</div>';
 }
 
@@ -574,6 +574,4 @@ function pngm_seller_other_ads($card_type = 'normal', $limit = 8)
     eps_related_ads('user', $card_type, $limit, 'pngm-seller-other');
 }
 
-if (function_exists('osc_add_hook')) {
-    osc_add_hook('item_contact', 'pngm_render_seller_contact_buttons', 8);
-}
+/* Contact row is rendered directly in item.php after Location (mockup order). */

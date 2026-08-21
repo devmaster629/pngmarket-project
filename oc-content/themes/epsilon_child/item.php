@@ -12,7 +12,7 @@
     $location = implode(', ', $location_array);
 
     $location_full_array = array_filter(array(osc_item_city(), osc_item_region()));
-    $location_full = implode('<br/>', $location_full_array);
+    $location_full = implode(', ', $location_full_array);
 
     $is_company = false;
     
@@ -237,9 +237,9 @@
         
         <?php echo eps_banner('item_description'); ?>
         
-        <!-- DESCRIPTION -->
-        <div class="row description">
-          <h2><?php _e('Description', 'epsilon'); ?></h2>
+        <!-- DESCRIPTION → LOCATION → CONTACT (mockup order) -->
+        <div class="row description pngm-item-detail-block">
+          <h2><i class="fas fa-align-left" aria-hidden="true"></i> <?php _e('Description', 'epsilon'); ?></h2>
 
           <div class="desc-parts">
             <div class="desc-text">
@@ -286,29 +286,35 @@
             </div>
             
             <?php osc_run_hook('item_description'); ?>
-          
-            <div class="location">
-              <h2><i class="fas fa-map-marked-alt"></i> <?php _e('Location', 'epsilon'); ?></h2>
-
-              <?php if($location <> '') { ?>
-                <div class="row address"><?php echo $location_full; ?></div>
-                
-                <?php
-                  $pngm_map_q = (osc_item_latitude() <> 0 && osc_item_longitude() <> 0)
-                    ? osc_item_latitude() . ',' . osc_item_longitude()
-                    : $location;
-                ?>
-                <a target="_blank" rel="noopener noreferrer" class="directions" href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($pngm_map_q); ?>">
-                  <?php _e('View on map', 'epsilon'); ?> &#8594;
-                </a>
-              <?php } else { ?>
-                <?php _e('Unknown location', 'epsilon'); ?>
-              <?php } ?>
-            </div>
           </div>
-          
+        </div>
+
+        <div class="location pngm-item-detail-block">
+          <h2><i class="fas fa-map-marker-alt" aria-hidden="true"></i> <?php _e('Location', 'epsilon'); ?></h2>
+
+          <?php if($location <> '') { ?>
+            <div class="row address"><?php echo osc_esc_html($location_full); ?></div>
+            
+            <?php
+              $pngm_map_q = (osc_item_latitude() <> 0 && osc_item_longitude() <> 0)
+                ? osc_item_latitude() . ',' . osc_item_longitude()
+                : $location;
+            ?>
+            <a target="_blank" rel="noopener noreferrer" class="directions" href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($pngm_map_q); ?>">
+              <?php _e('View on map', 'epsilon'); ?> &#8594;
+            </a>
+          <?php } else { ?>
+            <?php _e('Unknown location', 'epsilon'); ?>
+          <?php } ?>
+
           <div id="location-hook"><?php osc_run_hook('location'); ?></div>
         </div>
+
+        <?php
+          if (function_exists('pngm_render_seller_contact_buttons')) {
+            pngm_render_seller_contact_buttons();
+          }
+        ?>
 
 
         <!-- COMMENTS BLOCK -->
@@ -469,13 +475,6 @@
       <!-- SIDEBAR - RIGHT -->
       <div id="item-side">
         <?php osc_run_hook('item_sidebar_top'); ?>
-
-        <?php
-          // Mockup contact row: Call | WhatsApp | Chat
-          if (function_exists('pngm_render_seller_contact_buttons')) {
-              pngm_render_seller_contact_buttons();
-          }
-        ?>
 
         <?php if($email_data['visible']) { ?>
           <a class="master-button email pngm-item-email <?php echo $email_data['class']; ?>" title="<?php echo osc_esc_html($email_data['title']); ?>" href="#" data-prefix="mailto" data-part1="<?php echo osc_esc_html($email_data['part1']); ?>" data-part2="<?php echo osc_esc_html($email_data['part2']); ?>">
