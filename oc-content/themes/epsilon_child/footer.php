@@ -43,19 +43,27 @@
       'instagram' => 'fab fa-instagram',
       'tiktok'    => 'fab fa-tiktok',
     );
+    $pngm_brand = trim((string) $pngm_contact['name']);
+    if ($pngm_brand === '') {
+      $pngm_brand = 'PNGMarket';
+    }
   ?>
-  
+
   <div class="container">
-    <section class="one">
-      <div class="col contact">
-        <p class="company"><strong><?php echo osc_esc_html($pngm_contact['name']); ?></strong></p>
-        <?php if ($pngm_contact['tagline'] !== '') { ?>
-          <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_contact['tagline']); ?></p>
-        <?php } ?>
+    <div class="pngm-footer-inner">
+      <div class="pngm-footer-brand">
+        <div class="pngm-footer-brand-text">
+          <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-name">
+            <span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span>
+          </a>
+          <?php if ($pngm_contact['tagline'] !== '') { ?>
+            <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_contact['tagline']); ?></p>
+          <?php } ?>
+        </div>
       </div>
-      
+
       <?php if (count($pngm_socials) > 0) { ?>
-        <div class="col socialx">
+        <div class="pngm-footer-block pngm-footer-follow">
           <h4><?php _e('Follow us', 'epsilon'); ?></h4>
           <div class="pngm-footer-socials">
             <?php
@@ -64,10 +72,13 @@
                 $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
                 $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
                 if ($pngm_social_i > 0) {
-                  echo '<span class="pngm-footer-sep">&middot;</span>';
+                  echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
                 }
             ?>
-              <a class="<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer"><i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i> <?php echo osc_esc_html($label); ?></a>
+              <a class="pngm-footer-social pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
+                <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
+                <span><?php echo osc_esc_html($label); ?></span>
+              </a>
             <?php
                 $pngm_social_i += 1;
               }
@@ -75,39 +86,52 @@
           </div>
         </div>
       <?php } ?>
-      
-      <div class="col pages">
+
+      <div class="pngm-footer-block pngm-footer-info">
         <h4><?php _e('Information', 'epsilon'); ?></h4>
-
-        <?php foreach ($pngm_pages as $page) { ?>
-          <a href="<?php echo osc_esc_html($page['url']); ?>"><?php echo osc_esc_html($page['title']); ?></a>
-        <?php } ?>
-
-        <?php if (getBoolPreference('web_contact_form_disabled') != 1) { ?>
-          <a href="<?php echo osc_contact_url(); ?>"><?php _e('Contact Us', 'epsilon'); ?></a>
-        <?php } ?>
-
-        <?php
-          $pngm_has_companies = false;
-          foreach ($pngm_pages as $pngm_page) {
-            if (stripos($pngm_page['title'], 'compan') !== false || (isset($pngm_page['key']) && $pngm_page['key'] === 'companies')) {
-              $pngm_has_companies = true;
-              break;
+        <nav class="pngm-footer-links">
+          <?php
+            $pngm_link_i = 0;
+            foreach ($pngm_pages as $page) {
+              if ($pngm_link_i > 0) {
+                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
+              }
+              echo '<a href="' . osc_esc_html($page['url']) . '">' . osc_esc_html($page['title']) . '</a>';
+              $pngm_link_i += 1;
             }
-          }
-        ?>
-        <?php if (!$pngm_has_companies && function_exists('bpr_companies_url')) { ?>
-          <a href="<?php echo bpr_companies_url(); ?>"><?php _e('Companies', 'epsilon'); ?></a>
-        <?php } ?>
+
+            if (getBoolPreference('web_contact_form_disabled') != 1) {
+              if ($pngm_link_i > 0) {
+                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
+              }
+              echo '<a href="' . osc_contact_url() . '">' . osc_esc_html(__('Contact Us', 'epsilon')) . '</a>';
+              $pngm_link_i += 1;
+            }
+
+            $pngm_has_companies = false;
+            foreach ($pngm_pages as $pngm_page) {
+              if (stripos($pngm_page['title'], 'compan') !== false || (isset($pngm_page['key']) && $pngm_page['key'] === 'companies')) {
+                $pngm_has_companies = true;
+                break;
+              }
+            }
+            if (!$pngm_has_companies && function_exists('bpr_companies_url')) {
+              if ($pngm_link_i > 0) {
+                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
+              }
+              echo '<a href="' . bpr_companies_url() . '">' . osc_esc_html(__('Companies', 'epsilon')) . '</a>';
+            }
+          ?>
+        </nav>
       </div>
 
       <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
       <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
-    </section>
-    
-    <section class="two">
-      <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_contact['name']); ?></span>
-    </section>
+
+      <div class="pngm-footer-copy">
+        <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?></span>
+      </div>
+    </div>
   </div>
 </footer>
 

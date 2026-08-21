@@ -305,11 +305,25 @@ function pngm_align_theme_plugin_prefs()
         }
     }
 
-    // WhatsApp Chat → PNG default country code when empty.
+    // WhatsApp Chat → PNG defaults + fix broken listing hooks.
     if (function_exists('wac_param') && function_exists('osc_set_preference')) {
         $cc = trim((string) wac_param('default_country_code'));
         if ($cc === '') {
             osc_set_preference('default_country_code', '675', 'plugin-wa_chat');
+        }
+
+        $hooks = trim((string) wac_param('hooks'));
+        $parts = array_filter(array_map('trim', explode(',', $hooks)));
+        $known = array('item_detail', 'item_sidebar_user', 'item_sidebar_top', 'item_contact', 'item_sidebar');
+        $ok = false;
+        foreach ($parts as $hook) {
+            if (in_array($hook, $known, true)) {
+                $ok = true;
+                break;
+            }
+        }
+        if (!$ok) {
+            osc_set_preference('hooks', 'item_detail', 'plugin-wa_chat');
         }
     }
 }

@@ -72,54 +72,48 @@ function pngm_seller_contact_channels()
 
     // Instant Messenger owns chat. Do not duplicate the standard Message button.
 
-    // Prefer WhatsApp Chat plugin when installed; otherwise build wa.me from phones.
-    $wa_plugin = function_exists('pngm_any_function_exists') && pngm_any_function_exists(array(
-        'wac_item_chat_button',
-        'wac_web_contact_button',
-        'wac_call_after_install',
-    ));
-
-    if (!$wa_plugin) {
-        $phones = array();
-        if (function_exists('eps_get_item_phone')) {
-            $p = eps_get_item_phone();
-            if (!empty($p['found']) && empty($p['login_required']) && !empty($p['phone'])) {
-                $phones[] = $p['phone'];
-            }
+    // WhatsApp from listing / seller phones (plugin or fallback wa.me).
+    $phones = array();
+    if (function_exists('eps_get_item_phone')) {
+        $p = eps_get_item_phone();
+        if (!empty($p['found']) && empty($p['login_required']) && !empty($p['phone'])) {
+            $phones[] = $p['phone'];
         }
+    }
 
-        if ($user_id > 0 && class_exists('User')) {
-            $user = User::newInstance()->findByPrimaryKey($user_id);
-            if (is_array($user)) {
-                if (!empty($user['s_phone_mobile'])) {
-                    $phones[] = $user['s_phone_mobile'];
-                }
-                if (!empty($user['s_phone_land'])) {
-                    $phones[] = $user['s_phone_land'];
-                }
-                $item_count = isset($user['i_items']) ? (int) $user['i_items'] : 0;
-            }
-        }
-
-        foreach ($phones as $phone) {
-            $digits = pngm_whatsapp_digits($phone);
-            if ($digits !== '') {
-                $text = rawurlencode(sprintf(
-                    __('Hi, I am interested in your listing: %s', 'epsilon'),
-                    osc_item_url()
-                ));
-                $channels['whatsapp'] = array(
-                    'url'   => 'https://wa.me/' . $digits . '?text=' . $text,
-                    'label' => __('WhatsApp', 'epsilon'),
-                    'class' => 'pngm-contact-whatsapp',
-                );
-                break;
-            }
-        }
-    } elseif ($user_id > 0 && class_exists('User')) {
+    if ($user_id > 0 && class_exists('User')) {
         $user = User::newInstance()->findByPrimaryKey($user_id);
-        if (is_array($user) && isset($user['i_items'])) {
-            $item_count = (int) $user['i_items'];
+        if (is_array($user)) {
+            if (!empty($user['s_phone_mobile'])) {
+                $phones[] = $user['s_phone_mobile'];
+            }
+            if (!empty($user['s_phone_land'])) {
+                $phones[] = $user['s_phone_land'];
+            }
+            $item_count = isset($user['i_items']) ? (int) $user['i_items'] : 0;
+        }
+    }
+
+    if (function_exists('wac_get_phone')) {
+        $wac_phone = wac_get_phone(osc_item_id());
+        if (!empty($wac_phone)) {
+            array_unshift($phones, $wac_phone);
+        }
+    }
+
+    foreach ($phones as $phone) {
+        $digits = pngm_whatsapp_digits($phone);
+        if ($digits !== '') {
+            $text = rawurlencode(sprintf(
+                __('Hi, I am interested in your listing: %s', 'epsilon'),
+                osc_item_url()
+            ));
+            $channels['whatsapp'] = array(
+                'url'   => 'https://wa.me/' . $digits . '?text=' . $text,
+                'label' => __('WhatsApp', 'epsilon'),
+                'class' => 'pngm-contact-whatsapp',
+            );
+            break;
         }
     }
 
@@ -223,7 +217,7 @@ function pngm_seller_contact_channels()
 }
 
 /**
- * Render seller contact action buttons (ITEM-03).
+ * Render listing contact actions: Call | WhatsApp | Chat (mockup row).
  */
 function pngm_render_seller_contact_buttons()
 {
@@ -232,50 +226,81 @@ function pngm_render_seller_contact_buttons()
     }
 
     $channels = pngm_seller_contact_channels();
-    $keys = array('whatsapp', 'messenger', 'facebook');
-    $has = false;
 
-    // When WhatsApp Chat plugin is active it owns listing WA buttons via its hooks.
-    // Avoid a second custom wa.me button; optionally place plugin markup in this slot.
-    $wa_plugin = function_exists('pngm_any_function_exists') && pngm_any_function_exists(array(
-        'wac_item_chat_button',
-        'wac_web_contact_button',
-        'wac_call_after_install',
-    ));
-
-    foreach ($keys as $key) {
-        if ($key === 'whatsapp' && $wa_plugin) {
-            continue;
-        }
-        if (!empty($channels[$key]['url'])) {
-            $has = true;
-            break;
+    $call = null;
+    if (function_exists('eps_get_item_phone')) {
+        $phone_data = eps_get_item_phone();
+        if (!empty($phone_data['found']) && empty($phone_data['login_required'])) {
+            $call = array(
+                'url'   => !empty($phone_data['url']) ? $phone_data['url'] : '#',
+                'label' => __('Call', 'epsilon'),
+                'class' => 'pngm-action-call',
+                'icon'  => 'fas fa-phone-alt',
+                'attrs' => array(
+                    'data-prefix' => 'tel',
+                    'data-part1'  => isset($phone_data['part1']) ? $phone_data['part1'] : '',
+                    'data-part2'  => isset($phone_data['part2']) ? $phone_data['part2'] : '',
+                    'title'       => isset($phone_data['title']) ? $phone_data['title'] : __('Call', 'epsilon'),
+                ),
+            );
         }
     }
 
-    // Plugin renders WhatsApp itself; nothing else to show in this block.
-    if (!$has) {
+    $whatsapp = null;
+    if (!empty($channels['whatsapp']['url'])) {
+        $whatsapp = array(
+            'url'   => $channels['whatsapp']['url'],
+            'label' => __('WhatsApp', 'epsilon'),
+            'class' => 'pngm-action-whatsapp',
+            'icon'  => 'fab fa-whatsapp',
+            'attrs' => array(
+                'target' => '_blank',
+                'rel'    => 'noopener noreferrer',
+                'title'  => __('WhatsApp', 'epsilon'),
+            ),
+        );
+    }
+
+    $chat = null;
+    if (function_exists('im_contact_button')) {
+        $im_url = im_contact_button(osc_item(), true);
+        if ($im_url !== false && $im_url !== null && $im_url !== '') {
+            $chat = array(
+                'url'   => $im_url,
+                'label' => __('Chat', 'epsilon'),
+                'class' => 'pngm-action-chat',
+                'icon'  => 'fas fa-comment-dots',
+                'attrs' => array(
+                    'title' => __('Chat with seller', 'epsilon'),
+                ),
+            );
+        }
+    }
+
+    $actions = array_filter(array($call, $whatsapp, $chat));
+    if (empty($actions)) {
         return;
     }
 
-    echo '<div class="pngm-seller-contacts">';
+    $count = count($actions);
+    echo '<div class="pngm-contact-panel">';
+    echo '<div class="pngm-contact-actions pngm-contact-count-' . (int) $count . '">';
 
-    if (!$wa_plugin && !empty($channels['whatsapp']['url'])) {
-        $c = $channels['whatsapp'];
-        echo '<a class="master-button ' . osc_esc_html($c['class']) . '" href="' . osc_esc_html($c['url']) . '" target="_blank" rel="noopener noreferrer">';
-        echo '<i class="fab fa-whatsapp"></i><span>' . osc_esc_html($c['label']) . '</span></a>';
+    foreach ($actions as $action) {
+        $attr_html = '';
+        if (!empty($action['attrs']) && is_array($action['attrs'])) {
+            foreach ($action['attrs'] as $ak => $av) {
+                $attr_html .= ' ' . $ak . '="' . osc_esc_html($av) . '"';
+            }
+        }
+        echo '<a class="pngm-contact-action ' . osc_esc_html($action['class']) . '" href="' . osc_esc_html($action['url']) . '"' . $attr_html . '>';
+        echo '<i class="' . osc_esc_html($action['icon']) . '" aria-hidden="true"></i>';
+        echo '<span>' . osc_esc_html($action['label']) . '</span>';
+        echo '</a>';
     }
 
-    if (!empty($channels['messenger']['url'])) {
-        $c = $channels['messenger'];
-        echo '<a class="master-button ' . osc_esc_html($c['class']) . '" href="' . osc_esc_html($c['url']) . '" target="_blank" rel="noopener noreferrer">';
-        echo '<i class="fab fa-facebook-messenger"></i><span>' . osc_esc_html($c['label']) . '</span></a>';
-    } elseif (!empty($channels['facebook']['url'])) {
-        $c = $channels['facebook'];
-        echo '<a class="master-button ' . osc_esc_html($c['class']) . '" href="' . osc_esc_html($c['url']) . '" target="_blank" rel="noopener noreferrer">';
-        echo '<i class="fab fa-facebook"></i><span>' . osc_esc_html($c['label']) . '</span></a>';
-    }
-
+    echo '</div>';
+    echo '<p class="pngm-contact-note">' . osc_esc_html(__('Your phone number is safe with us', 'epsilon')) . '</p>';
     echo '</div>';
 }
 

@@ -469,24 +469,22 @@
       <!-- SIDEBAR - RIGHT -->
       <div id="item-side">
         <?php osc_run_hook('item_sidebar_top'); ?>
-        
-        <?php if($phone_data['found']) { ?>
-          <a class="master-button phone <?php echo $phone_data['class']; ?>" title="<?php echo osc_esc_html($phone_data['title']); ?>" data-prefix="tel" href="<?php echo $phone_data['url']; ?>" data-part1="<?php echo osc_esc_html($phone_data['part1']); ?>" data-part2="<?php echo osc_esc_html($phone_data['part2']); ?>">
-            <i class="fas fa-phone-alt"></i>
-            <span><?php echo $phone_data['masked']; ?></span>
-          </a>
-        <?php } ?>
+
+        <?php
+          // Mockup contact row: Call | WhatsApp | Chat
+          if (function_exists('pngm_render_seller_contact_buttons')) {
+              pngm_render_seller_contact_buttons();
+          }
+        ?>
 
         <?php if($email_data['visible']) { ?>
-          <a class="master-button email <?php echo $email_data['class']; ?>" title="<?php echo osc_esc_html($email_data['title']); ?>" href="#" data-prefix="mailto" data-part1="<?php echo osc_esc_html($email_data['part1']); ?>" data-part2="<?php echo osc_esc_html($email_data['part2']); ?>">
+          <a class="master-button email pngm-item-email <?php echo $email_data['class']; ?>" title="<?php echo osc_esc_html($email_data['title']); ?>" href="#" data-prefix="mailto" data-part1="<?php echo osc_esc_html($email_data['part1']); ?>" data-part2="<?php echo osc_esc_html($email_data['part2']); ?>">
             <i class="fas fa-at"></i>
             <span><?php echo $email_data['masked']; ?></span>
           </a>
         <?php } ?>
-        
-        <?php /* Instant Messenger (Chat with seller) is the only message action. */ ?>
-        
-        <?php osc_run_hook('item_contact'); ?>
+
+        <?php /* Contact row already includes IM Chat — skip duplicate item_contact hook output. */ ?>
 
         <div class="box" id="seller">
           <div class="line1">
@@ -531,9 +529,7 @@
             <div class="reg"><?php echo $reg_type; ?></div>
           </div>
 
-          <?php if(osc_item_user_id() > 0 && eps_chat_button(osc_item_user_id())) { ?>
-            <div class="line-chat"><?php echo eps_chat_button(osc_item_user_id()); ?></div>
-          <?php } ?>
+          <?php /* Chat is in the Call / WhatsApp / Chat row above — no duplicate here. */ ?>
 
           <?php if(osc_item_user_id() > 0) { ?>
             <div class="line3">
