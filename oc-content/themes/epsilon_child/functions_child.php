@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.5.16');
+    define('PNGM_CHILD_VERSION', '1.5.17');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -575,7 +575,7 @@ function pngm_active_location_label()
 }
 
 /**
- * Publish/edit form: title and description may be 3 characters.
+ * Publish/edit form: title min 3 characters; description has no minimum length.
  */
 function pngm_item_post_minlength_script()
 {
@@ -584,7 +584,6 @@ function pngm_item_post_minlength_script()
     }
 
     $title_msg = osc_esc_js(__('Title: enter at least 3 characters.', 'epsilon'));
-    $desc_msg = osc_esc_js(__('Description: enter at least 10 characters.', 'epsilon'));
     ?>
 <script>
 (function ($) {
@@ -597,7 +596,7 @@ function pngm_item_post_minlength_script()
       $(this).rules('add', { minlength: 3, messages: { minlength: '<?php echo $title_msg; ?>' } });
     });
     form.find('textarea[name^="description["]').each(function () {
-      $(this).rules('add', { minlength: 10, messages: { minlength: '<?php echo $desc_msg; ?>' } });
+      $(this).rules('remove', 'minlength');
     });
   });
 })(jQuery);
@@ -606,6 +605,39 @@ function pngm_item_post_minlength_script()
 }
 
 osc_add_hook('footer', 'pngm_item_post_minlength_script', 20);
+
+/**
+ * Server-side: title must be at least 3 letters; description has no minimum.
+ *
+ * @param string $flash_error
+ * @param array  $aItem
+ * @return string
+ */
+function pngm_item_title_desc_length_error($flash_error, $aItem)
+{
+    $flash_error = (string) $flash_error;
+
+    // Drop core "Description too short" (core requires 3 letters).
+    $flash_error = preg_replace('/^.*Description too short.*(\r\n|\n|\r)?/mi', '', $flash_error);
+
+    $titles = (isset($aItem['title']) && is_array($aItem['title'])) ? $aItem['title'] : array();
+    foreach ($titles as $key => $value) {
+        $value = strip_tags(trim((string) $value));
+        // Core already rejects empty titles (min 1); catch 1–2 character titles.
+        if (osc_validate_text($value, 1) && !osc_validate_text($value, 3)) {
+            if (is_string($key) && $key !== '') {
+                $flash_error .= sprintf(_m('Title too short (%s).'), $key) . PHP_EOL;
+            } else {
+                $flash_error .= _m('Title too short.') . PHP_EOL;
+            }
+        }
+    }
+
+    return $flash_error;
+}
+
+osc_add_filter('pre_item_add_error', 'pngm_item_title_desc_length_error', 10);
+osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
 
 /**
  * reCAPTCHA often fails to paint in private/incognito windows because

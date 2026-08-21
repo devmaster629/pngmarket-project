@@ -1649,12 +1649,7 @@
       });
 
       form.find('textarea[name^="description["]').each(function () {
-        $(this).rules('add', {
-          minlength: 10,
-          messages: {
-            minlength: 'Description: enter at least 10 characters.'
-          }
-        });
+        $(this).rules('remove', 'minlength');
       });
 
       return true;
