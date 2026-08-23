@@ -3778,6 +3778,12 @@ body#user-login.pngm-auth .input-box.pngm-field-ico input {
   }
 }
 
+body.pre-account.pngm-auth .g-recaptcha {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 16px;
+}
+
 .pngm-field-ico {
   position: relative;
   display: block;
@@ -4118,7 +4124,9 @@ body.pngm-contact .pngm-contact-form .row.r4 {
 
 body.pngm-contact .pngm-contact-form .g-recaptcha,
 body.pngm-contact .pngm-contact-form .recaptcha {
-  margin: 0 0 10px;
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 14px;
 }
 
 body.pngm-contact .pngm-contact-form input[type="text"],

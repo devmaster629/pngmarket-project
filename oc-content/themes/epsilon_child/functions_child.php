@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.5.41');
+    define('PNGM_CHILD_VERSION', '1.5.43');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -638,6 +638,99 @@ function pngm_item_title_desc_length_error($flash_error, $aItem)
 
 osc_add_filter('pre_item_add_error', 'pngm_item_title_desc_length_error', 10);
 osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
+
+/**
+ * Front-end login/register must verify reCAPTCHA when the widget is configured.
+ * Osclass skips the login check if Oc-Admin is logged in in the same browser,
+ * so stage can be signed in without ticking the box.
+ */
+function pngm_recaptcha_is_required()
+{
+    if (!function_exists('osc_recaptcha_enabled') || !osc_recaptcha_enabled()) {
+        return false;
+    }
+
+    $public = '';
+    if (function_exists('osc_recaptcha_public_key')) {
+        $public = trim((string) osc_recaptcha_public_key(true));
+    }
+
+    return $public !== '';
+}
+
+function pngm_recaptcha_token_valid()
+{
+    $token = '';
+    if (isset($_POST['g-recaptcha-response'])) {
+        $token = trim((string) $_POST['g-recaptcha-response']);
+    } else {
+        $token = trim((string) Params::getParam('g-recaptcha-response', false, false));
+    }
+
+    if ($token === '') {
+        return false;
+    }
+
+    if (function_exists('osc_check_recaptcha')) {
+        return osc_check_recaptcha();
+    }
+
+    return false;
+}
+
+function pngm_require_recaptcha_on_login()
+{
+    if (!pngm_recaptcha_is_required()) {
+        return;
+    }
+
+    if (pngm_recaptcha_token_valid()) {
+        return;
+    }
+
+    osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+    osc_redirect_to(osc_user_login_url());
+}
+
+function pngm_require_recaptcha_on_register()
+{
+    if (!pngm_recaptcha_is_required()) {
+        return;
+    }
+
+    if (pngm_recaptcha_token_valid()) {
+        return;
+    }
+
+    osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+    osc_redirect_to(osc_register_account_url());
+}
+
+function pngm_require_recaptcha_on_contact()
+{
+    if (Params::getParam('action') !== 'contact_post') {
+        return;
+    }
+
+    if (!pngm_recaptcha_is_required()) {
+        return;
+    }
+
+    if (pngm_recaptcha_token_valid()) {
+        return;
+    }
+
+    osc_add_flash_error_message(_m('Recaptcha validation has failed'));
+    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
+    Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
+    Session::newInstance()->_setForm('subject', Params::getParam('subject'));
+    Session::newInstance()->_setForm('message_body', Params::getParam('message'));
+    osc_redirect_to(osc_contact_url());
+}
+
+osc_add_hook('before_validating_login', 'pngm_require_recaptcha_on_login');
+osc_add_hook('before_user_register', 'pngm_require_recaptcha_on_register');
+osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
 
 /**
  * reCAPTCHA often fails to paint in private/incognito windows because
