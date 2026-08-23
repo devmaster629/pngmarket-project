@@ -62,7 +62,7 @@
   <script type="text/javascript">
     $(document).ready(function(){
       $('input[name="email"]').attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true);
-      $('input[name="password"]').attr('placeholder', '<?php echo osc_esc_js(__('YourPass123!', 'epsilon')); ?>').attr('required', true);
+      $('input[name="password"]').removeAttr('placeholder').attr('required', true);
     });
   </script>
 </body>

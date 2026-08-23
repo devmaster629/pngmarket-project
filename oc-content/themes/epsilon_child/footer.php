@@ -69,6 +69,9 @@
             <?php
               $pngm_social_i = 0;
               foreach ($pngm_socials as $type => $url) {
+                if ($type === 'whatsapp') {
+                  continue;
+                }
                 $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
                 $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
                 if ($pngm_social_i > 0) {
@@ -128,8 +131,14 @@
       <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
       <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
 
-      <div class="pngm-footer-copy">
+      <div class="pngm-footer-copy pngm-footer-copy-mobile">
         <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?></span>
+      </div>
+
+      <div class="pngm-footer-bar">
+        <div class="pngm-footer-copy">
+          <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?>. <?php _e('All rights reserved.', 'epsilon'); ?></span>
+        </div>
       </div>
     </div>
   </div>
