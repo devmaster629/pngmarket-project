@@ -81,6 +81,48 @@ function pngm_footer_contact()
 }
 
 /**
+ * Site WhatsApp chat URL (owner number — used on Contact us, not as a global FAB).
+ *
+ * @return string Empty if unknown.
+ */
+function pngm_site_whatsapp_url()
+{
+    $digits = '';
+
+    if (function_exists('eps_param')) {
+        $wa = trim((string) eps_param('footer_social_whatsapp'));
+        if (preg_match('#wa\.me/(\d+)#', $wa, $m)) {
+            $digits = $m[1];
+        } elseif (preg_match('#whatsapp\.com/send\?phone=(\d+)#', $wa, $m)) {
+            $digits = $m[1];
+        }
+    }
+
+    if ($digits === '' && function_exists('wac_param')) {
+        $raw = trim((string) wac_param('web_phone'));
+        if ($raw !== '' && strtoupper($raw) !== 'OSCLASS' && function_exists('wac_sanitize_number')) {
+            $digits = wac_sanitize_number($raw);
+        }
+    }
+
+    if ($digits === '') {
+        $contact = pngm_footer_contact();
+        $digits = preg_replace('/\D/', '', isset($contact['tel']) ? $contact['tel'] : '');
+    }
+
+    if ($digits === '') {
+        return '';
+    }
+
+    $text = '';
+    if (function_exists('osc_page_title')) {
+        $text = '?text=' . rawurlencode(sprintf(__('Hello! I have a question about %s', 'epsilon'), osc_page_title()));
+    }
+
+    return 'https://wa.me/' . $digits . $text;
+}
+
+/**
  * Active social profile links only (no empty / share-only placeholders).
  *
  * @return array type => url

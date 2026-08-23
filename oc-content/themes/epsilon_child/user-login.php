@@ -27,7 +27,7 @@
 
         <div class="row">
           <label for="email"><?php _e('E-mail', 'epsilon'); ?></label>
-          <span class="input-box"><?php UserForm::email_login_text(); ?></span>
+          <span class="input-box pngm-field-ico pngm-ico-mail"><?php UserForm::email_login_text(); ?></span>
         </div>
 
         <div class="row">
