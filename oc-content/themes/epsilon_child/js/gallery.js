@@ -1,8 +1,8 @@
 /**
  * Native-style listing photo viewer.
  *
- * Page zoom is locked (viewport max-scale 1). All zoom/pan happens on the
- * image with CSS transforms so it feels like iOS Photos / Android Gallery:
+ * Zoom/pan on listing photos uses CSS transforms (iOS Photos / Android Gallery
+ * feel). Native page pinch-to-zoom is allowed elsewhere via the viewport meta.
  *  - pinch around the fingers
  *  - drag to pan while zoomed
  *  - pinch out / double-tap to return to 1x
@@ -18,8 +18,6 @@
   var CLOSE_V = 0.55;
   var PAGE_DX = 56;
   var PAGE_V = 0.45;
-  var VIEWPORT = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
-
   function dist(a, b) {
     var dx = a.clientX - b.clientX;
     var dy = a.clientY - b.clientY;
@@ -35,14 +33,6 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
-  }
-
-  function lockViewport() {
-    var metas = document.querySelectorAll('meta[name="viewport"]');
-    var i;
-    for (i = 0; i < metas.length; i += 1) {
-      metas[i].setAttribute('content', VIEWPORT);
-    }
   }
 
   function createController(stage, getImg, options) {
@@ -216,7 +206,6 @@
         return;
       }
 
-      lockViewport();
       startT = Date.now();
       startX = touches[0].clientX;
       startY = touches[0].clientY;
@@ -594,8 +583,6 @@
     if (!root.length || !root.find('.swiper-container').length) {
       return;
     }
-
-    lockViewport();
 
     var container = root.find('.swiper-container').first();
     root.addClass('pngm-gallery-ready');

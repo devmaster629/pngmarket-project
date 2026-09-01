@@ -2267,6 +2267,54 @@ a.pngm-search-subcat-all {
   object-position: center;
 }
 
+/* P1-006 — category attributes (vehicles, etc.) on listing page */
+body#item .props.pngm-item-compact {
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+body#item #item-hook {
+  display: block;
+}
+
+body#item #atr-item {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 16px;
+}
+
+body#item #atr-item #atr-title {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #16202a;
+}
+
+body#item #atr-item > li,
+body#item #atr-item > div {
+  margin: 0;
+  padding: 8px 10px;
+  background: #f4f7f6;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+body#item #atr-item .atr-label,
+body#item #atr-item strong {
+  display: block;
+  color: #5c6570;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
+}
+
 body#item .basic .pngm-item-date,
 body#item .basic .row.date.pngm-item-date {
   text-align: right;
@@ -4240,6 +4288,109 @@ body.pngm-contact footer.pngm-footer {
 }
 
 
+/* P1-004 — Post-ad validation: toast top-right + scroll to field */
+#body-item-post #error_list,
+body.item-publish #error_list,
+#pngm-error-hidden {
+  display: none !important;
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pngm-post-toast-host {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 13000;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pngm-post-toast-host.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.pngm-post-toast {
+  position: relative;
+  padding: 14px 40px 14px 16px;
+  background: #fff;
+  border: 1px solid #f1b4b4;
+  border-left: 4px solid #c62828;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  color: #842029;
+}
+
+.pngm-post-toast-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #c62828;
+}
+
+.pngm-post-toast-msg {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #16202a;
+}
+
+.pngm-post-toast-more {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #5c6570;
+}
+
+.pngm-post-toast-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: transparent;
+  color: #5c6570;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+#body-item-post .pngm-has-error,
+body.item-publish .pngm-has-error {
+  border-left: 3px solid #c62828;
+  padding-left: 8px;
+  scroll-margin-top: 96px;
+}
+
+#body-item-post input.pngm-field-error,
+#body-item-post select.pngm-field-error,
+#body-item-post textarea.pngm-field-error,
+form[name="item"] input.pngm-field-error,
+form[name="item"] select.pngm-field-error,
+form[name="item"] textarea.pngm-field-error {
+  border-color: #c62828 !important;
+  box-shadow: 0 0 0 1px rgba(198, 40, 40, 0.15);
+}
+
+@media (max-width: 767px) {
+  .pngm-post-toast-host {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
+
 /* ==========================================================================
    Mobile review — OLX density, header, cards, search, item, gallery
    ========================================================================== */
@@ -4255,8 +4406,6 @@ body.pngm-contact footer.pngm-footer {
 body#item .basic .row.details,
 body#item .custom-fields,
 body#item .props > h2,
-body#item .props.pngm-item-compact,
-body#item #item-hook,
 body#item .pngm-contact-message,
 body#item .sticky-button,
 body#item .item-share,
@@ -4612,7 +4761,6 @@ body#search .container.primary {
   body#item .basic .row.details,
   body#item .props h2,
   body#item .custom-fields,
-  body#item #item-hook,
   body#item #shortcuts,
   body#item .item-share,
   body#item .sticky-button,

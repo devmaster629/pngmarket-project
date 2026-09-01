@@ -1661,6 +1661,173 @@
     }
   }
 
+  function initItemPostValidation() {
+    if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.validate !== 'function') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var form = $('form[name="item"]');
+
+    if (!form.length) {
+      return;
+    }
+
+    function ensureToastHost() {
+      var host = document.getElementById('pngm-post-toast-host');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'pngm-post-toast-host';
+        host.className = 'pngm-post-toast-host';
+        host.setAttribute('aria-live', 'polite');
+        host.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(host);
+      }
+      return host;
+    }
+
+    function hideToast() {
+      var host = document.getElementById('pngm-post-toast-host');
+      if (host) {
+        host.innerHTML = '';
+        host.classList.remove('is-visible');
+      }
+    }
+
+    function showPostToast(message, count) {
+      var host = ensureToastHost();
+      var extra = '';
+
+      if (count > 1) {
+        extra = '<span class="pngm-post-toast-more">' + (count - 1) + ' more field(s) need attention</span>';
+      }
+
+      host.innerHTML =
+        '<div class="pngm-post-toast" role="alert">' +
+          '<button type="button" class="pngm-post-toast-close" aria-label="Dismiss">&times;</button>' +
+          '<strong class="pngm-post-toast-title">Required field missing</strong>' +
+          '<span class="pngm-post-toast-msg">' + message + '</span>' +
+          extra +
+        '</div>';
+
+      host.classList.add('is-visible');
+
+      host.querySelector('.pngm-post-toast-close').addEventListener('click', hideToast);
+
+      window.clearTimeout(host._pngmToastTimer);
+      host._pngmToastTimer = window.setTimeout(hideToast, 6000);
+    }
+
+    function scrollTargetFor(element) {
+      var $el = $(element);
+      var selectors = [
+        '[id^="atr-"]',
+        '.atr-row',
+        '.control-group',
+        '.input-box',
+        '.row',
+        '.box'
+      ];
+      var i;
+      var $target;
+
+      for (i = 0; i < selectors.length; i += 1) {
+        $target = $el.closest(selectors[i]);
+        if ($target.length) {
+          return $target;
+        }
+      }
+
+      return $el;
+    }
+
+    function scrollToField(element) {
+      var $target = scrollTargetFor(element);
+      if (!$target.length) {
+        return;
+      }
+
+      $('html, body').animate({
+        scrollTop: Math.max(0, $target.offset().top - 96)
+      }, 320);
+
+      window.setTimeout(function () {
+        var focusEl = $(element);
+        if (focusEl.is(':visible') && !focusEl.is(':disabled')) {
+          focusEl.trigger('focus');
+        }
+      }, 340);
+    }
+
+    function enhance() {
+      var validator = form.data('validator');
+      if (!validator) {
+        return false;
+      }
+
+      if (!$('#pngm-error-hidden').length) {
+        $('<ul id="pngm-error-hidden" class="pngm-error-hidden" aria-hidden="true"></ul>').appendTo(form);
+      }
+
+      $('#error_list').addClass('pngm-error-hidden').attr('aria-hidden', 'true').empty();
+
+      validator.settings.errorLabelContainer = '#pngm-error-hidden';
+
+      validator.settings.highlight = function (element) {
+        var $el = $(element);
+        $el.addClass('error pngm-field-error');
+        $el.closest('[id^="atr-"], .atr-row, .row, .control-group, .input-box, .controls, li').addClass('pngm-has-error');
+      };
+
+      validator.settings.unhighlight = function (element) {
+        var $el = $(element);
+        $el.removeClass('error pngm-field-error');
+        $el.closest('[id^="atr-"], .atr-row, .row, .control-group, .input-box, .controls, li').removeClass('pngm-has-error');
+      };
+
+      validator.settings.errorPlacement = function () {
+        return false;
+      };
+
+      validator.settings.showErrors = function (errorMap, errorList) {
+        this.defaultShowErrors();
+        $('#error_list').empty().hide();
+        $('#pngm-error-hidden').empty().hide();
+      };
+
+      validator.settings.invalidHandler = function (event, v) {
+        var list = v.errorList || [];
+        var message = 'Please complete all required fields.';
+        var count = list.length;
+
+        if (count > 0 && list[0].message) {
+          message = list[0].message;
+        }
+
+        showPostToast(message, count);
+
+        if (count > 0 && list[0].element) {
+          scrollToField(list[0].element);
+        }
+      };
+
+      form.on('input change', 'input, select, textarea', function () {
+        if ($(this).valid()) {
+          $(this).closest('.pngm-has-error').removeClass('pngm-has-error');
+        }
+      });
+
+      return true;
+    }
+
+    if (!enhance()) {
+      setTimeout(enhance, 100);
+      setTimeout(enhance, 400);
+      setTimeout(enhance, 1200);
+      setTimeout(enhance, 2200);
+    }
+  }
+
   function initPostPhotoPreview() {
     if (typeof window.jQuery === 'undefined') {
       return;
@@ -2000,6 +2167,7 @@
     initGeoLocate();
     initSearchSubcats();
     initItemPostMinlength();
+    initItemPostValidation();
     initPostPhotoPreview();
     initUppyOverNav();
     initMobileSearchFilters();

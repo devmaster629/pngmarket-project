@@ -154,7 +154,7 @@ function pngm_footer_social_links()
             $url = trim((string) osc_get_preference($key, 'pngmarket'));
         }
 
-        if ($url === '' || preg_match('#(sharer\.php|shareArticle|twitter\.com/home\?status|pinterest\.com/pin/create)#i', $url)) {
+        if ($url === '' || preg_match('#(sharer\.php|shareArticle|/share/g/|facebook\.com/share|twitter\.com/home\?status|pinterest\.com/pin/create)#i', $url)) {
             $url = $defaults[$type];
         }
 
@@ -368,6 +368,37 @@ function pngm_ensure_footer_pages()
     osc_set_preference('footer_link', '0', 'theme-epsilon');
 }
 
+/**
+ * P1-013 — Ensure footer social URLs are official profile pages, not share links.
+ */
+function pngm_ensure_footer_social_urls()
+{
+    if (!function_exists('osc_set_preference') || !function_exists('eps_param')) {
+        return;
+    }
+
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    $bad = '#(sharer\.php|/share/g/|facebook\.com/share|shareArticle)#i';
+    $defaults = array(
+        'footer_social_facebook'  => 'https://www.facebook.com/pngmarket',
+        'footer_social_instagram' => 'https://www.instagram.com/pngmarket',
+        'footer_social_tiktok'    => 'https://www.tiktok.com/@pngmarket',
+    );
+
+    foreach ($defaults as $key => $fallback) {
+        $url = trim((string) eps_param($key));
+        if ($url === '' || preg_match($bad, $url)) {
+            osc_set_preference($key, $fallback, 'theme-epsilon');
+        }
+    }
+}
+
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init', 'pngm_ensure_footer_pages', 20);
+    osc_add_hook('init', 'pngm_ensure_footer_social_urls', 21);
 }

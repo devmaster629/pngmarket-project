@@ -229,7 +229,7 @@
         </div>
         
 
-        <div class="props pngm-item-compact">
+        <div class="props pngm-item-compact pngm-item-details">
           <div id="item-hook"><?php osc_run_hook('item_detail', osc_item()); ?></div>
         </div>
         

@@ -133,6 +133,36 @@ function pngm_plugin_integration_status()
 }
 
 /**
+ * True when Facebook Instant Login plugin is enabled with an App ID.
+ * SDK init only needs App ID; App Secret is required for server-side login.
+ *
+ * @return bool
+ */
+function pngm_facebook_login_available()
+{
+    if (!function_exists('fjl_param')) {
+        return false;
+    }
+
+    return (int) fjl_param('enabled') === 1
+        && trim((string) fjl_param('app_id')) !== '';
+}
+
+/**
+ * True when Facebook login can complete (App ID + Secret configured).
+ *
+ * @return bool
+ */
+function pngm_facebook_login_ready()
+{
+    if (!pngm_facebook_login_available()) {
+        return false;
+    }
+
+    return trim((string) fjl_param('app_secret')) !== '';
+}
+
+/**
  * True when at least one social-login plugin API is available.
  *
  * @return bool
@@ -140,9 +170,8 @@ function pngm_plugin_integration_status()
 function pngm_has_social_login()
 {
     $google = function_exists('ggl_login_link') || function_exists('gc_login_button');
-    $facebook = function_exists('fjl_login_button')
-        || function_exists('fl_call_after_install')
-        || function_exists('facebook_login_link');
+    $facebook = pngm_facebook_login_available()
+        || (function_exists('fl_call_after_install') && function_exists('facebook_login_link') && facebook_login_link() !== false && facebook_login_link() !== '#');
 
     return $google || $facebook;
 }
@@ -216,8 +245,8 @@ function pngm_render_social_login($context = 'login')
     }
 
     $fb_printed = false;
-    if (function_exists('fjl_login_button')) {
-        echo '<a target="_top" href="javascript:void(0);" class="facebook fl-button fjl-button pngm-btn-facebook" onclick="if(typeof fjlCheckLoginState===\'function\'){fjlCheckLoginState();}else{alert(\'' . osc_esc_js(__('Facebook login is not enabled yet. Enable it and set the App ID in Oc-Admin → Plugins → Facebook Instant Login.', 'epsilon')) . '\');}" title="' . osc_esc_html($fb_label) . '">';
+    if (pngm_facebook_login_available()) {
+        echo '<a target="_top" href="#" role="button" class="facebook pngm-btn-facebook" title="' . osc_esc_html($fb_label) . '">';
         echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span>' . $chevron . '</a>';
         $fb_printed = true;
     }
@@ -229,11 +258,6 @@ function pngm_render_social_login($context = 'login')
             echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span>' . $chevron . '</a>';
             $fb_printed = true;
         }
-    }
-
-    if (!$fb_printed) {
-        echo '<a class="facebook pngm-btn-facebook" href="javascript:void(0);" onclick="alert(\'' . osc_esc_js(__('Facebook login plugin is not active. Enable Facebook Instant Login in Oc-Admin → Plugins.', 'epsilon')) . '\');" title="' . osc_esc_html($fb_label) . '">';
-        echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span>' . $chevron . '</a>';
     }
 
     echo '</div>';
@@ -325,6 +349,32 @@ function pngm_align_theme_plugin_prefs()
             osc_set_preference('hooks', 'item_detail', 'plugin-wa_chat');
         }
     }
+
+    // Facebook Instant Login — optional .env credentials + theme button hook.
+    if (function_exists('fjl_param') && function_exists('osc_set_preference')) {
+        $fb_app_id = trim((string) (getenv('FB_APP_ID') ?: (isset($_ENV['FB_APP_ID']) ? $_ENV['FB_APP_ID'] : '')));
+        $fb_app_secret = trim((string) (getenv('FB_APP_SECRET') ?: (isset($_ENV['FB_APP_SECRET']) ? $_ENV['FB_APP_SECRET'] : '')));
+
+        if ($fb_app_id !== '' && trim((string) fjl_param('app_id')) === '') {
+            osc_set_preference('app_id', $fb_app_id, 'plugin-facebook_js_login');
+        }
+
+        if ($fb_app_secret !== '' && trim((string) fjl_param('app_secret')) === '') {
+            osc_set_preference('app_secret', $fb_app_secret, 'plugin-facebook_js_login');
+        }
+
+        if ($fb_app_id !== '' && $fb_app_secret !== '' && (int) fjl_param('enabled') !== 1) {
+            osc_set_preference('enabled', '1', 'plugin-facebook_js_login');
+        }
+
+        $selector = trim((string) fjl_param('custom_selector'));
+        $wanted = '.pngm-btn-facebook, .social a.facebook';
+        if ($selector === '') {
+            osc_set_preference('custom_selector', $wanted, 'plugin-facebook_js_login');
+        } elseif (strpos($selector, '.pngm-btn-facebook') === false) {
+            osc_set_preference('custom_selector', $selector . ', .pngm-btn-facebook', 'plugin-facebook_js_login');
+        }
+    }
 }
 
 osc_add_hook('init', 'pngm_align_theme_plugin_prefs', 12);
@@ -357,6 +407,7 @@ function pngm_admin_plugins_notice()
         }
         echo '</ul>';
         echo '<p><strong>Folders:</strong> <code>google_login</code>, <code>facebook_js_login</code>, <code>wa_chat</code> under <code>oc-content/plugins/</code>.</p>';
+        echo '<p>Facebook login needs the Instant Login plugin enabled with App ID + App Secret (Oc-Admin → Plugins → Facebook Instant Login), or set <code>FB_APP_ID</code> / <code>FB_APP_SECRET</code> in <code>.env</code>. The login button stays hidden until configured.</p>';
         echo '<p>Theme login/register already show Google &amp; Facebook buttons when those plugins are active. Style WhatsApp Chat float via child CSS — do not rebuild OAuth or chat.</p>';
     } else {
         echo '<p>All expected phase plugins are present and loaded. Configure OAuth / WhatsApp options inside each plugin — theme UI is ready.</p>';

@@ -231,10 +231,11 @@ function pngm_render_seller_contact_buttons()
     if (function_exists('eps_get_item_phone')) {
         $phone_data = eps_get_item_phone();
         if (!empty($phone_data['found']) && empty($phone_data['login_required'])) {
+            $phone_class = !empty($phone_data['class']) ? trim((string) $phone_data['class']) : 'masked';
             $call = array(
                 'url'   => !empty($phone_data['url']) ? $phone_data['url'] : '#',
                 'label' => __('Call', 'epsilon'),
-                'class' => 'pngm-action-call',
+                'class' => trim('pngm-action-call phone ' . $phone_class),
                 'icon'  => 'fas fa-phone-alt',
                 'attrs' => array(
                     'data-prefix' => 'tel',

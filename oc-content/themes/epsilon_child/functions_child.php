@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.5.43');
+    define('PNGM_CHILD_VERSION', '1.5.46');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -48,12 +48,13 @@ function pngm_enqueue_assets()
 osc_add_hook('header', 'pngm_enqueue_assets', 8);
 
 /**
- * Lock page pinch-zoom. Photo zoom is handled by gallery.js transforms.
- * Also rewrite every viewport tag so Safari cannot keep the parent max-scale=5.
+ * Accessible viewport — allow native pinch-to-zoom (ITEM-01 / P1-001).
+ * Listing photos still use gallery.js transform zoom; rewrite parent theme tags
+ * that ship with maximum-scale=1 or user-scalable=no.
  */
 function pngm_viewport_meta()
 {
-    $content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+    $content = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
     echo '<meta name="viewport" content="' . $content . '" />' . "\n";
     echo '<script>(function(){var c=' . json_encode($content) . ';var m=document.querySelectorAll(\'meta[name="viewport"]\');for(var i=0;i<m.length;i++){m[i].setAttribute("content",c);}})();</script>' . "\n";
 }
