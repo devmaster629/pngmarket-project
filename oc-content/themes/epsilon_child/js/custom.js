@@ -8,6 +8,321 @@
 (function () {
   'use strict';
 
+  var pngmItemValidation = (function () {
+    var pluginPatched = false;
+
+    function escapeHtml(text) {
+      var node = document.createElement('div');
+      node.textContent = text == null ? '' : String(text);
+      return node.innerHTML;
+    }
+
+    function ensureToastHost() {
+      var host = document.getElementById('pngm-post-toast-host');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'pngm-post-toast-host';
+        host.className = 'pngm-post-toast-host';
+        host.setAttribute('aria-live', 'polite');
+        host.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(host);
+      }
+      return host;
+    }
+
+    function hideToast() {
+      var host = document.getElementById('pngm-post-toast-host');
+      if (!host) {
+        return;
+      }
+      host.innerHTML = '';
+      host.classList.remove('is-visible');
+    }
+
+    function showPostToast(message, count) {
+      var host = ensureToastHost();
+      var extra = '';
+
+      if (count > 1) {
+        extra = '<span class="pngm-post-toast-more">' + (count - 1) + ' more field(s) need attention</span>';
+      }
+
+      host.innerHTML =
+        '<div class="pngm-post-toast" role="alert">' +
+          '<button type="button" class="pngm-post-toast-close" aria-label="Dismiss">&times;</button>' +
+          '<strong class="pngm-post-toast-title">Required field missing</strong>' +
+          '<span class="pngm-post-toast-msg">' + escapeHtml(message) + '</span>' +
+          extra +
+        '</div>';
+
+      host.classList.add('is-visible');
+
+      host.querySelector('.pngm-post-toast-close').addEventListener('click', hideToast);
+
+      window.clearTimeout(host._pngmToastTimer);
+      host._pngmToastTimer = window.setTimeout(hideToast, 7000);
+    }
+
+    function scrollTargetNode(element) {
+      if (!element) {
+        return null;
+      }
+
+      var node = element.nodeType ? element : (element[0] || null);
+      if (!node) {
+        return null;
+      }
+
+      var selectors = ['[id^="atr-"]', 'fieldset', '.box', '.atr-row', '.control-group', '.input-box', '.row', 'section'];
+      var i;
+
+      for (i = 0; i < selectors.length; i += 1) {
+        var match = node.closest ? node.closest(selectors[i]) : null;
+        if (match) {
+          return match;
+        }
+      }
+
+      return node;
+    }
+
+    function scrollToField(element) {
+      var node = scrollTargetNode(element);
+      if (!node || typeof node.scrollIntoView !== 'function') {
+        return;
+      }
+
+      node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+      window.setTimeout(function () {
+        var focusNode = element && element.nodeType ? element : (element && element[0] ? element[0] : null);
+        if (focusNode && typeof focusNode.focus === 'function') {
+          try {
+            focusNode.focus({ preventScroll: true });
+          } catch (e) {
+            focusNode.focus();
+          }
+        }
+      }, 320);
+    }
+
+    function highlightField(element) {
+      var $ = window.jQuery;
+      if (!$) {
+        return;
+      }
+      var $el = $(element);
+      $el.addClass('error pngm-field-error');
+      $el.closest('[id^="atr-"], fieldset, .box, .atr-row, .row, .control-group, .input-box, .controls, li, section').addClass('pngm-has-error');
+    }
+
+    function unhighlightField(element) {
+      var $ = window.jQuery;
+      if (!$) {
+        return;
+      }
+      var $el = $(element);
+      $el.removeClass('error pngm-field-error');
+      $el.closest('[id^="atr-"], fieldset, .box, .atr-row, .row, .control-group, .input-box, .controls, li, section').removeClass('pngm-has-error');
+    }
+
+    function ensureHiddenErrorList($form) {
+      var $ = window.jQuery;
+      if (!$('#pngm-error-hidden').length) {
+        $('<ul id="pngm-error-hidden" class="pngm-error-hidden" aria-hidden="true"></ul>').appendTo($form);
+      }
+      $('#error_list').addClass('pngm-error-hidden').attr('aria-hidden', 'true');
+    }
+
+    function handleInvalid(validator) {
+      var now = Date.now();
+      if (handleInvalid._lastRun && (now - handleInvalid._lastRun) < 300) {
+        return;
+      }
+      handleInvalid._lastRun = now;
+
+      var list = (validator && validator.errorList) ? validator.errorList : [];
+      var message = 'Please complete all required fields.';
+      var count = list.length;
+
+      if (count > 0 && list[0].message) {
+        message = list[0].message;
+      }
+
+      showPostToast(message, count);
+
+      if (count > 0 && list[0].element) {
+        window.setTimeout(function () {
+          scrollToField(list[0].element);
+        }, 50);
+      }
+    }
+
+    function wrapValidateOptions(options) {
+      options = options || {};
+      options.errorLabelContainer = '#pngm-error-hidden';
+      options.wrapper = options.wrapper || 'li';
+
+      options.invalidHandler = function (event, validator) {
+        handleInvalid(validator);
+      };
+
+      options.highlight = function (element) {
+        highlightField(element);
+      };
+
+      options.unhighlight = function (element) {
+        unhighlightField(element);
+      };
+
+      options.errorPlacement = function () {
+        return false;
+      };
+
+      options.showErrors = function (errorMap, errorList) {
+        this.defaultShowErrors();
+        $('#error_list').empty().hide();
+        $('#pngm-error-hidden').empty().hide();
+      };
+
+      return options;
+    }
+
+    function applyValidatorSettings(validator) {
+      var $ = window.jQuery;
+      if (!$ || !validator) {
+        return false;
+      }
+
+      var form = $(validator.currentForm || 'form[name="item"]');
+      var wrapped = wrapValidateOptions($.extend(true, {}, validator.settings));
+
+      validator.settings.invalidHandler = wrapped.invalidHandler;
+      validator.settings.highlight = wrapped.highlight;
+      validator.settings.unhighlight = wrapped.unhighlight;
+      validator.settings.errorPlacement = wrapped.errorPlacement;
+      validator.settings.showErrors = wrapped.showErrors;
+      validator.settings.errorLabelContainer = '#pngm-error-hidden';
+      validator.settings.wrapper = wrapped.wrapper;
+
+      // Parent theme binds invalidHandler to this event at init; settings alone are not enough.
+      form.off('invalid-form.validate');
+      form.on('invalid-form.validate', function (event, validatorInstance) {
+        wrapped.invalidHandler.call(validatorInstance || validator, event, validatorInstance || validator);
+      });
+
+      return true;
+    }
+
+    function bindValidatorEvents(form, validator) {
+      var $ = window.jQuery;
+      if (!$ || !form.length || !validator || validator._pngmBound) {
+        return;
+      }
+
+      validator._pngmBound = true;
+
+      form.on('click.pngmValidate', 'button[type=submit], input[type=submit]', function () {
+        window.setTimeout(function () {
+          var activeValidator = form.data('validator');
+          if (!activeValidator || !activeValidator.errorList || !activeValidator.errorList.length) {
+            return;
+          }
+
+          $('html, body').stop(true);
+          handleInvalid(activeValidator);
+        }, 50);
+      });
+
+      form.on('input.pngmValidate change.pngmValidate', 'input, select, textarea', function () {
+        if ($(this).valid()) {
+          unhighlightField(this);
+        }
+      });
+    }
+
+    function forceEnhanceValidator() {
+      var $ = window.jQuery;
+      if (!$) {
+        return false;
+      }
+
+      var form = $('form[name="item"]');
+      if (!form.length) {
+        return false;
+      }
+
+      ensureHiddenErrorList(form);
+
+      var validator = form.data('validator');
+      if (!validator) {
+        return false;
+      }
+
+      applyValidatorSettings(validator);
+      bindValidatorEvents(form, validator);
+      validator._pngmEnhanced = true;
+
+      return true;
+    }
+
+    function patchExistingForm() {
+      return forceEnhanceValidator();
+    }
+
+    function patchValidatePlugin() {
+      var $ = window.jQuery;
+      if (!$ || !$.fn.validate || $.fn.validate._pngmPatched) {
+        return !!($ && $.fn.validate && $.fn.validate._pngmPatched);
+      }
+
+      var originalValidate = $.fn.validate;
+      $.fn.validate = function (options) {
+        if (this.filter('form[name="item"]').length && options && typeof options === 'object') {
+          ensureHiddenErrorList(this.filter('form[name="item"]'));
+          options = wrapValidateOptions($.extend(true, {}, options));
+        }
+        var result = originalValidate.apply(this, arguments);
+        patchExistingForm();
+        return result;
+      };
+      $.fn.validate._pngmPatched = true;
+      pluginPatched = true;
+      return true;
+    }
+
+    function repatchValidatePlugin() {
+      var $ = window.jQuery;
+      if (!$ || !$.fn.validate) {
+        return false;
+      }
+
+      if ($.fn.validate._pngmPatched) {
+        return true;
+      }
+
+      pluginPatched = false;
+      return patchValidatePlugin();
+    }
+
+    function init() {
+      repatchValidatePlugin();
+      forceEnhanceValidator();
+    }
+
+    return {
+      init: init,
+      handleInvalid: handleInvalid,
+      patchExistingForm: patchExistingForm,
+      patchValidatePlugin: patchValidatePlugin,
+      repatchValidatePlugin: repatchValidatePlugin,
+      forceEnhanceValidator: forceEnhanceValidator
+    };
+  })();
+
+  window.pngmItemValidation = pngmItemValidation;
+  pngmItemValidation.patchValidatePlugin();
+
   var DESKTOP_FLYOUT = '(hover: hover) and (min-width: 1081px)';
 
   function usesHoverFlyout() {
@@ -1662,170 +1977,21 @@
   }
 
   function initItemPostValidation() {
-    if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.validate !== 'function') {
+    if (!window.pngmItemValidation) {
       return;
     }
 
-    var $ = window.jQuery;
-    var form = $('form[name="item"]');
+    window.pngmItemValidation.init();
 
-    if (!form.length) {
-      return;
-    }
+    var attempts = 0;
+    var timer = window.setInterval(function () {
+      attempts += 1;
+      window.pngmItemValidation.forceEnhanceValidator();
 
-    function ensureToastHost() {
-      var host = document.getElementById('pngm-post-toast-host');
-      if (!host) {
-        host = document.createElement('div');
-        host.id = 'pngm-post-toast-host';
-        host.className = 'pngm-post-toast-host';
-        host.setAttribute('aria-live', 'polite');
-        host.setAttribute('aria-atomic', 'true');
-        document.body.appendChild(host);
+      if (attempts >= 40) {
+        window.clearInterval(timer);
       }
-      return host;
-    }
-
-    function hideToast() {
-      var host = document.getElementById('pngm-post-toast-host');
-      if (host) {
-        host.innerHTML = '';
-        host.classList.remove('is-visible');
-      }
-    }
-
-    function showPostToast(message, count) {
-      var host = ensureToastHost();
-      var extra = '';
-
-      if (count > 1) {
-        extra = '<span class="pngm-post-toast-more">' + (count - 1) + ' more field(s) need attention</span>';
-      }
-
-      host.innerHTML =
-        '<div class="pngm-post-toast" role="alert">' +
-          '<button type="button" class="pngm-post-toast-close" aria-label="Dismiss">&times;</button>' +
-          '<strong class="pngm-post-toast-title">Required field missing</strong>' +
-          '<span class="pngm-post-toast-msg">' + message + '</span>' +
-          extra +
-        '</div>';
-
-      host.classList.add('is-visible');
-
-      host.querySelector('.pngm-post-toast-close').addEventListener('click', hideToast);
-
-      window.clearTimeout(host._pngmToastTimer);
-      host._pngmToastTimer = window.setTimeout(hideToast, 6000);
-    }
-
-    function scrollTargetFor(element) {
-      var $el = $(element);
-      var selectors = [
-        '[id^="atr-"]',
-        '.atr-row',
-        '.control-group',
-        '.input-box',
-        '.row',
-        '.box'
-      ];
-      var i;
-      var $target;
-
-      for (i = 0; i < selectors.length; i += 1) {
-        $target = $el.closest(selectors[i]);
-        if ($target.length) {
-          return $target;
-        }
-      }
-
-      return $el;
-    }
-
-    function scrollToField(element) {
-      var $target = scrollTargetFor(element);
-      if (!$target.length) {
-        return;
-      }
-
-      $('html, body').animate({
-        scrollTop: Math.max(0, $target.offset().top - 96)
-      }, 320);
-
-      window.setTimeout(function () {
-        var focusEl = $(element);
-        if (focusEl.is(':visible') && !focusEl.is(':disabled')) {
-          focusEl.trigger('focus');
-        }
-      }, 340);
-    }
-
-    function enhance() {
-      var validator = form.data('validator');
-      if (!validator) {
-        return false;
-      }
-
-      if (!$('#pngm-error-hidden').length) {
-        $('<ul id="pngm-error-hidden" class="pngm-error-hidden" aria-hidden="true"></ul>').appendTo(form);
-      }
-
-      $('#error_list').addClass('pngm-error-hidden').attr('aria-hidden', 'true').empty();
-
-      validator.settings.errorLabelContainer = '#pngm-error-hidden';
-
-      validator.settings.highlight = function (element) {
-        var $el = $(element);
-        $el.addClass('error pngm-field-error');
-        $el.closest('[id^="atr-"], .atr-row, .row, .control-group, .input-box, .controls, li').addClass('pngm-has-error');
-      };
-
-      validator.settings.unhighlight = function (element) {
-        var $el = $(element);
-        $el.removeClass('error pngm-field-error');
-        $el.closest('[id^="atr-"], .atr-row, .row, .control-group, .input-box, .controls, li').removeClass('pngm-has-error');
-      };
-
-      validator.settings.errorPlacement = function () {
-        return false;
-      };
-
-      validator.settings.showErrors = function (errorMap, errorList) {
-        this.defaultShowErrors();
-        $('#error_list').empty().hide();
-        $('#pngm-error-hidden').empty().hide();
-      };
-
-      validator.settings.invalidHandler = function (event, v) {
-        var list = v.errorList || [];
-        var message = 'Please complete all required fields.';
-        var count = list.length;
-
-        if (count > 0 && list[0].message) {
-          message = list[0].message;
-        }
-
-        showPostToast(message, count);
-
-        if (count > 0 && list[0].element) {
-          scrollToField(list[0].element);
-        }
-      };
-
-      form.on('input change', 'input, select, textarea', function () {
-        if ($(this).valid()) {
-          $(this).closest('.pngm-has-error').removeClass('pngm-has-error');
-        }
-      });
-
-      return true;
-    }
-
-    if (!enhance()) {
-      setTimeout(enhance, 100);
-      setTimeout(enhance, 400);
-      setTimeout(enhance, 1200);
-      setTimeout(enhance, 2200);
-    }
+    }, 250);
   }
 
   function initPostPhotoPreview() {

@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.5.46');
+    define('PNGM_CHILD_VERSION', '1.5.48');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -41,11 +41,32 @@ function pngm_enqueue_assets()
     osc_register_script('pngm-gallery', osc_current_web_theme_url('js/gallery.js' . $version), array('jquery'));
     osc_enqueue_script('pngm-gallery');
 
-    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global', 'pngm-gallery'));
+    osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global', 'validate', 'pngm-gallery'));
     osc_enqueue_script('pngm-custom');
 }
 
 osc_add_hook('header', 'pngm_enqueue_assets', 8);
+
+/**
+ * jQuery Validate can be enqueued again after custom.js; re-apply our wrapper.
+ */
+function pngm_repatch_jquery_validate()
+{
+    if (!osc_is_publish_page() && !osc_is_edit_page()) {
+        return;
+    }
+    ?>
+<script>
+(function () {
+  if (window.pngmItemValidation && window.pngmItemValidation.repatchValidatePlugin) {
+    window.pngmItemValidation.repatchValidatePlugin();
+  }
+})();
+</script>
+    <?php
+}
+
+osc_add_hook('scripts_loaded', 'pngm_repatch_jquery_validate', 999);
 
 /**
  * Accessible viewport — allow native pinch-to-zoom (ITEM-01 / P1-001).
@@ -606,6 +627,60 @@ function pngm_item_post_minlength_script()
 }
 
 osc_add_hook('footer', 'pngm_item_post_minlength_script', 20);
+
+/**
+ * Post-ad validation UX — must run after parent item-post.php inline .validate() init.
+ */
+function pngm_is_item_post_form_page()
+{
+    if (osc_is_publish_page() || osc_is_edit_page()) {
+        return true;
+    }
+
+    return osc_get_osclass_location() === 'item'
+        && in_array(Params::getParam('action'), array('item_add', 'item_edit'), true);
+}
+
+function pngm_item_post_validation_script()
+{
+    if (!pngm_is_item_post_form_page()) {
+        return;
+    }
+    ?>
+<script>
+(function ($) {
+  function enhance() {
+    if (!window.pngmItemValidation) {
+      return false;
+    }
+
+    window.pngmItemValidation.repatchValidatePlugin();
+    return window.pngmItemValidation.forceEnhanceValidator();
+  }
+
+  function scheduleEnhance() {
+    var attempts = 0;
+
+    (function tryEnhance() {
+      attempts += 1;
+
+      if (enhance() || attempts >= 80) {
+        return;
+      }
+
+      window.setTimeout(tryEnhance, 100);
+    })();
+  }
+
+  scheduleEnhance();
+  $(scheduleEnhance);
+  $(window).on('load', scheduleEnhance);
+})(jQuery);
+</script>
+    <?php
+}
+
+osc_add_hook('footer_after', 'pngm_item_post_validation_script', 999);
 
 /**
  * Server-side: title must be at least 3 letters; description has no minimum.
