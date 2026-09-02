@@ -246,7 +246,9 @@ function pngm_render_social_login($context = 'login')
 
     $fb_printed = false;
     if (pngm_facebook_login_available()) {
-        echo '<a target="_top" href="#" role="button" class="facebook pngm-btn-facebook" title="' . osc_esc_html($fb_label) . '">';
+        // Instant Login is JS-driven (not a redirect URL). Match plugin classes + onclick
+        // so OAuth opens even when the plugin jQuery selector does not attach.
+        echo '<a target="_top" href="javascript:void(0);" role="button" class="facebook fl-button fjl-button pngm-btn-facebook" onclick="if(typeof pngmFacebookLogin===\'function\'){pngmFacebookLogin();}return false;" title="' . osc_esc_html($fb_label) . '">';
         echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span>' . $chevron . '</a>';
         $fb_printed = true;
     }
@@ -378,6 +380,86 @@ function pngm_align_theme_plugin_prefs()
 }
 
 osc_add_hook('init', 'pngm_align_theme_plugin_prefs', 12);
+
+/**
+ * Bridge theme Facebook button → facebook_js_login SDK (P1-003).
+ *
+ * The Instant Login plugin normally hooks .social a.facebook via jQuery; our styled
+ * button must still call fjlCheckLoginState() once the FB SDK is ready.
+ */
+function pngm_facebook_login_bridge_script()
+{
+    if (osc_is_web_user_logged_in() || !pngm_facebook_login_available()) {
+        return;
+    }
+
+    $location = (string) osc_get_osclass_location();
+    if (!in_array($location, array('login', 'register'), true)) {
+        return;
+    }
+
+    $wait_msg = osc_esc_js(__('Facebook login is still loading. Please try again in a moment.', 'epsilon'));
+    $fail_msg = osc_esc_js(__('Facebook login is not available. Please sign in with email or contact support.', 'epsilon'));
+    ?>
+<script>
+(function () {
+  function sdkReady() {
+    return typeof window.FB !== 'undefined' && typeof window.FB.getLoginStatus === 'function';
+  }
+
+  window.pngmFacebookLogin = function () {
+    if (typeof window.fjlCheckLoginState !== 'function') {
+      window.alert(<?php echo json_encode($fail_msg); ?>);
+      return false;
+    }
+
+    if (sdkReady()) {
+      window.fjlCheckLoginState();
+      return false;
+    }
+
+    var waited = 0;
+    var timer = window.setInterval(function () {
+      waited += 100;
+
+      if (sdkReady()) {
+        window.clearInterval(timer);
+        window.fjlCheckLoginState();
+      } else if (waited >= 8000) {
+        window.clearInterval(timer);
+        window.alert(<?php echo json_encode($wait_msg); ?>);
+      }
+    }, 100);
+
+    return false;
+  };
+
+  function bindButtons() {
+    var nodes = document.querySelectorAll('.pngm-btn-facebook');
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute('data-pngm-fb-bound') === '1') {
+        continue;
+      }
+      nodes[i].setAttribute('data-pngm-fb-bound', '1');
+      nodes[i].addEventListener('click', function (event) {
+        event.preventDefault();
+        window.pngmFacebookLogin();
+        return false;
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindButtons);
+  } else {
+    bindButtons();
+  }
+})();
+</script>
+    <?php
+}
+
+osc_add_hook('footer_after', 'pngm_facebook_login_bridge_script', 15);
 
 /**
  * Admin dashboard notice: missing licensed plugins / Phase 3 exclusions.
