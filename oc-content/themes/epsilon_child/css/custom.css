@@ -4,9 +4,10 @@
    Sections map 1:1 to the HOME-xx design tickets.
 
    Do not use CSS custom properties here: Osclass' CSS merger strips them.
-   Palette in use:
-     brand        #16883f   brand dark   #126f34   brand tint  rgba(22,136,63,.10)
-     ink          #16202a   body text    #4a5561   muted       #737f8b
+   Phase 2 palette (aligned to mockups + design-system.css):
+     brand        #006b24   brand dark   #00551c   brand soft  #e8f5ec
+     legacy brand #006b24   (still used in older rules ? migrate gradually)
+     ink          #16202a   body text    #3d4651   muted       #6b7785
      hairline     #e3e8ed   hairline+    #cfd7df   canvas      #f4f6f8
    ========================================================================== */
 
@@ -17,7 +18,7 @@
 
 body {
   color: #16202a;
-  background: #f4f6f8;
+  background: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -28,11 +29,11 @@ h1, h2, h3, h4 {
 
 body#home > .content {
   padding-top: 0;
-  background: #f4f6f8;
+  background: #fff;
 }
 
 body#home > .content > section {
-  background: #f4f6f8;
+  background: #fff;
 }
 
 body#home h2 {
@@ -72,14 +73,16 @@ body#home > .content > section.home-search {
   overflow: visible;
 }
 
-/* Real flex layout: content left, <img> right — not a positioned background. */
+/* Real flex layout: content left, <img> right ? not a positioned background. */
+/* Real flex layout: content left; hero absolute so it does not push Near You down. */
 .home-search > .container.pngm-home-banner {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 28px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
   overflow: visible;
+  position: relative;
 }
 
 /* Kill parent theme decorative :after background image. */
@@ -93,33 +96,43 @@ body#home > .content > section.home-search {
 .home-search .box {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: none;
+  max-width: calc(100% - 460px);
   width: auto;
+  position: relative;
+  z-index: 1;
 }
 
-/* Tall right column matching search + categories height. */
+/* Hero fills the large right column; absolute so section height still follows cats. */
 .pngm-hero-art {
-  flex: 0 0 300px;
-  width: 300px;
-  max-width: 32%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  width: 440px;
+  max-width: 48%;
   margin: 0;
   padding: 0;
-  align-self: stretch;
-  display: flex;
-  align-items: stretch;
+  display: block;
+  overflow: hidden;
   background: transparent;
+  line-height: 0;
+  pointer-events: none;
 }
 
 .pngm-hero-art img {
   display: block;
   width: 100%;
   height: 100%;
-  max-width: 100%;
+  min-height: 360px;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   object-position: center center;
   border: 0;
   box-shadow: none;
   background: transparent;
+  pointer-events: auto;
 }
 
 .home-search h1.pngm-title,
@@ -145,7 +158,7 @@ body#home > .content > section.home-search {
 }
 
 .home-search h1.pngm-title .pngm-w-buy {
-  color: #1f6313;
+  color: #006b24;
 }
 
 .home-search h1.pngm-title .pngm-w-sell {
@@ -205,19 +218,19 @@ body#home > .content > section.home-search {
   outline: none !important;
   box-shadow: none !important;
   text-decoration: none !important;
-  border-color: #16883f;
+  border-color: #006b24;
 }
 
 .home-search form:focus-within {
-  box-shadow: 0 0 0 3px rgba(22, 136, 63, .13);
+  box-shadow: 0 0 0 3px rgba(0, 107, 36, .13);
 }
 
 .home-search form:focus-within input[name="sPattern"] {
-  border-color: #16883f;
+  border-color: #006b24;
 }
 
 .home-search form:focus-within .btn {
-  border-color: #16883f;
+  border-color: #006b24;
 }
 
 .home-search .btn {
@@ -225,7 +238,7 @@ body#home > .content > section.home-search {
   float: none;
   width: 150px;
   height: 50px;
-  border: 1px solid #16883f;
+  border: 1px solid #006b24;
   border-radius: 0 11px 11px 0;
   font-size: 15px;
   font-weight: 700;
@@ -317,7 +330,7 @@ body#home > .content > section.home-search {
 
 }
 
-/* Companies / Location: keep icons when the label is long (desktop only —
+/* Companies / Location: keep icons when the label is long (desktop only ?
    do not force display on mobile or they shove Place an ad onto a second row). */
 @media screen and (min-width: 1081px) {
   header .links .btn.company,
@@ -352,8 +365,11 @@ body#home > .content > section.home-search {
    ========================================================================== */
 
 #home-cat {
-  gap: 10px 2px;
+  gap: 2px 2px;
   align-items: flex-start;
+  row-gap: 2px;
+  margin: 0;
+  padding: 0;
 }
 
 /* The wrapper is now the flex item, so it carries the tile width and the
@@ -368,6 +384,7 @@ body#home > .content > section.home-search {
   display: block;
   width: 100%;
   margin: 0;
+  padding: 2px 4px 4px;
 }
 
 #home-cat a > div {
@@ -378,12 +395,13 @@ body#home > .content > section.home-search {
 
 /* Full category names rather than a mid-word cut. */
 #home-cat a > h3 {
-  height: 46px;
+  height: 34px;
+  margin: 0;
 }
 
 #home-cat a > h3 span {
   color: #16202a;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 15px;
 }
@@ -397,7 +415,7 @@ body#home > .content > section.home-search {
   }
 
   #home-cat > .pngm-cat-item > a:hover > h3 span {
-    color: #16883f;
+    color: #006b24;
   }
 }
 
@@ -473,8 +491,8 @@ body#home > .content > section.home-search {
 }
 
 #home-cat .pngm-subcat a:hover {
-  background: rgba(22, 136, 63, .10);
-  color: #16883f;
+  background: rgba(0, 107, 36, .10);
+  color: #006b24;
   text-decoration: none;
 }
 
@@ -485,7 +503,7 @@ body#home > .content > section.home-search {
 }
 
 #home-cat .pngm-subcat .pngm-subcat-all a {
-  color: #16883f;
+  color: #006b24;
   font-weight: 700;
 }
 
@@ -571,7 +589,7 @@ body#home > .content > section.home-search {
 }
 
 .pngm-sheet .pngm-subcat-all a {
-  color: #16883f;
+  color: #006b24;
   font-weight: 700;
 }
 
@@ -581,23 +599,41 @@ body#home > .content > section.home-search {
    ========================================================================== */
 
 body#home > .content > section.home-search {
-  padding: 10px 0 16px 0;
-  background: #f4f6f8;
+  padding: 8px 0 0 0;
+  background: #fff;
 }
 
 /* The gap between the search block and the category row. */
-body#home .home-search h2 {
-  margin: 16px 0 10px 0;
+body#home .home-search h2,
+body#home .home-search h2.pngm-cats-heading {
+  margin: 10px 0 6px 0;
   font-size: 18px;
 }
 
-/* Pull the listing sections up towards the search / categories. */
+/* Listing sections ? tighter vertical rhythm between blocks. */
 body#home > .content > section {
-  padding: 16px 0;
+  padding: 8px 0;
+}
+
+body#home > .content > section.home-location,
+body#home > .content > section.home-latest,
+body#home > .content > section.home-recent,
+body#home > .content > section.home-premium,
+body#home > .content > section.home-favorite {
+  padding: 4px 0 2px 0;
 }
 
 body#home > .content > section.home-latest {
-  padding-top: 16px;
+  padding-top: 2px;
+}
+
+body#home > .content {
+  padding-bottom: 0;
+}
+
+body#home footer.pngm-footer {
+  padding-top: 8px;
+  margin-top: 0;
 }
 
 
@@ -622,7 +658,7 @@ body#home #recent-items .simple-prod,
 body#home #latest-items .simple-prod {
   display: flex;
   width: calc(20% - 12px);
-  margin: 0 6px 14px 6px;
+  margin: 0 6px 8px 6px;
 }
 
 body#home .products.grid.nice-scroll .simple-prod,
@@ -635,7 +671,7 @@ body#home #recent-items .simple-prod {
   flex: 0 0 220px;
   width: 220px;
   max-width: 220px;
-  margin: 0 8px 10px 0;
+  margin: 0 8px 6px 0;
 }
 
 /*
@@ -826,7 +862,7 @@ body#home #recent-items .simple-prod .pngm-teaser,
   display: none !important;
 }
 
-/* Date only lives in the extra line — never as a separate row. */
+/* Date only lives in the extra line ? never as a separate row. */
 .products.grid .simple-prod .pngm-date,
 body#home #premium-items .simple-prod .pngm-date,
 body#home #latest-items .simple-prod .pngm-date,
@@ -839,8 +875,8 @@ body#home #recent-items .simple-prod .pngm-date,
 }
 
 /*
- * 4) Staging detail line — always shown on grid:
- *    "2 weeks ago • Cars • Used • Sell • 1 person viewed"
+ * 4) Staging detail line ? always shown on grid:
+ *    "2 weeks ago ? Cars ? Used ? Sell ? 1 person viewed"
  * Fixed height so every card keeps the same shape.
  */
 .products.grid .simple-prod .extra,
@@ -910,13 +946,20 @@ body#home #premium-items .simple-prod .labels {
 
 @media screen and (max-width: 1080px) {
   .home-search > .container.pngm-home-banner {
-    gap: 18px;
+    gap: 6px;
+  }
+
+  .home-search .box {
+    max-width: calc(100% - 320px);
   }
 
   .pngm-hero-art {
-    flex: 0 0 220px;
-    width: 220px;
-    max-width: 30%;
+    width: 300px;
+    max-width: 42%;
+  }
+
+  .pngm-hero-art img {
+    min-height: 300px;
   }
 
   .home-search h1.pngm-title {
@@ -1308,15 +1351,15 @@ body#home #premium-items .simple-prod .labels {
 
 /* One shared focus ring around icon + field + button (no broken inner box). */
 .pngm-global-search .global-search-form:focus-within {
-  box-shadow: 0 0 0 3px rgba(22, 136, 63, .13);
+  box-shadow: 0 0 0 3px rgba(0, 107, 36, .13);
 }
 
 .pngm-global-search .global-search-form:focus-within .input-box {
-  border-color: #16883f;
+  border-color: #006b24;
 }
 
 .pngm-global-search .global-search-form:focus-within .global-search-submit {
-  border-color: #16883f;
+  border-color: #006b24;
 }
 
 .pngm-global-search .clean {
@@ -1334,9 +1377,9 @@ body#home #premium-items .simple-prod .labels {
   min-width: 110px;
   height: 46px;
   padding: 0 18px;
-  border: 1px solid #16883f;
+  border: 1px solid #006b24;
   border-radius: 0 9px 9px 0;
-  background: #16883f;
+  background: #006b24;
   color: #fff;
   font-size: 15px;
   font-weight: 700;
@@ -1384,7 +1427,7 @@ body:not(#home) {
   padding-top: 138px;
 }
 
-/* Homepage: hero already has search — hide the bar until scroll. */
+/* Homepage: hero already has search ? hide the bar until scroll. */
 body#home .pngm-global-search.is-home {
   display: none !important;
   visibility: hidden !important;
@@ -1601,7 +1644,7 @@ body#home.pngm-sticky-search {
     align-items: center;
   }
 
-  /* Posting lives in the bottom + button — keep the header row clean. */
+  /* Posting lives in the bottom + button ? keep the header row clean. */
   header .links .publish,
   header .links .publish:not(.mini),
   header .links .publish.mini {
@@ -1745,7 +1788,7 @@ body#home.pngm-sticky-search {
 
 .pngm-empty-loc-label i {
   margin-right: 6px;
-  color: #16883f;
+  color: #006b24;
 }
 
 .pngm-empty-loc-actions {
@@ -1778,7 +1821,7 @@ body#home.pngm-sticky-search {
   border: 1px solid #d7e6db;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(22, 34, 42, .04), 0 10px 28px rgba(22, 136, 63, .07);
+  box-shadow: 0 1px 2px rgba(22, 34, 42, .04), 0 10px 28px rgba(0, 107, 36, .07);
 }
 
 .pngm-search-subcats-head {
@@ -1802,15 +1845,15 @@ body#home.pngm-sticky-search {
   align-self: center;
   border-radius: 11px;
   background: #e7f6ec;
-  color: #16883f;
-  box-shadow: inset 0 0 0 1px rgba(22, 136, 63, .12);
+  color: #006b24;
+  box-shadow: inset 0 0 0 1px rgba(0, 107, 36, .12);
 }
 
 .pngm-search-subcats-head .pngm-search-subcats-badge i {
   display: block;
   width: 1em;
   margin: 0;
-  color: #16883f;
+  color: #006b24;
   font-size: 16px;
   font-style: normal;
   line-height: 1;
@@ -1881,7 +1924,7 @@ a.pngm-search-subcat {
   flex-shrink: 0;
   border-radius: 50%;
   background: #e8f6ec;
-  color: #16883f;
+  color: #006b24;
   font-size: 12px;
 }
 
@@ -1890,18 +1933,18 @@ a.pngm-search-subcat {
 }
 
 a.pngm-search-subcat:hover {
-  border-color: #16883f;
+  border-color: #006b24;
   background: #f4fbf6;
   color: #145c2c;
-  box-shadow: 0 2px 8px rgba(22, 136, 63, .12);
+  box-shadow: 0 2px 8px rgba(0, 107, 36, .12);
   text-decoration: none;
 }
 
 a.pngm-search-subcat.is-active,
 a.pngm-search-subcat.pngm-search-subcat-all.is-active {
-  border-color: #126f34;
-  background: linear-gradient(180deg, #1a9a48 0%, #16883f 100%);
-  box-shadow: 0 4px 12px rgba(22, 136, 63, .28);
+  border-color: #00551c;
+  background: linear-gradient(180deg, #1a9a48 0%, #006b24 100%);
+  box-shadow: 0 4px 12px rgba(0, 107, 36, .28);
   color: #fff;
 }
 
@@ -1915,8 +1958,8 @@ a.pngm-search-subcat em {
   min-width: 18px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(22, 136, 63, .12);
-  color: #16883f;
+  background: rgba(0, 107, 36, .12);
+  color: #006b24;
   font-size: 11px;
   font-style: normal;
   font-weight: 700;
@@ -1998,7 +2041,7 @@ a.pngm-search-subcat-all {
 
 
 /* ==========================================================================
-   VEHICLE-01 / VEHICLE-02 — Other make/model free text
+   VEHICLE-01 / VEHICLE-02 ? Other make/model free text
    Hidden until the seller picks "Other" in Make / Brand (or model).
    ========================================================================== */
 
@@ -2021,7 +2064,7 @@ a.pngm-search-subcat-all {
 
 
 /* ==========================================================================
-   LOCATION-01 / LOCATION-02 — City select grouping
+   LOCATION-01 / LOCATION-02 ? City select grouping
    ========================================================================== */
 
 #cityId optgroup {
@@ -2181,7 +2224,7 @@ a.pngm-search-subcat-all {
 
 
 /* ==========================================================================
-   ITEM-01 / ITEM-02 — Listing photo gallery
+   ITEM-01 / ITEM-02 ? Listing photo gallery
    ========================================================================== */
 
 #item-image .swiper-container.pngm-item-gallery {
@@ -2267,7 +2310,7 @@ a.pngm-search-subcat-all {
   object-position: center;
 }
 
-/* P1-006 — category attributes (vehicles, etc.) on listing page */
+/* P1-006 ? category attributes (vehicles, etc.) on listing page */
 body#item .props.pngm-item-compact {
   margin: 12px 0 0;
   padding: 0;
@@ -2539,7 +2582,7 @@ body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-out {
   pointer-events: none;
 }
 
-/* Category icons — semantic SVGs (not mismatched demo PNGs) */
+/* Category icons ? semantic SVGs (not mismatched demo PNGs) */
 body#home .cats .pngm-cat-item img.pngm-cat-svg,
 body#home .categories img.pngm-cat-svg,
 #home-cat img.pngm-cat-svg {
@@ -2578,7 +2621,7 @@ body#home .categories .pngm-cat-item i.fas {
 
 
 /* ==========================================================================
-   ITEM detail — Description → Location → Contact Seller (mockup)
+   ITEM detail ? Description ? Location ? Contact Seller (mockup)
    ========================================================================== */
 
 .pngm-contact-panel {
@@ -2842,7 +2885,7 @@ body#item #item-side #seller {
   }
 }
 
-/* Site-owner WhatsApp lives on Contact us — hide the global floating button */
+/* Site-owner WhatsApp lives on Contact us ? hide the global floating button */
 body a.wac-btn.wac-web,
 body .wac-box,
 body .wac-box a.wac-web {
@@ -2867,7 +2910,7 @@ body .wac-box a.wac-web {
 
 
 /* ==========================================================================
-   DASHBOARD-01 — User account (cleaner nav, cards, listing actions, mobile)
+   DASHBOARD-01 ? User account (cleaner nav, cards, listing actions, mobile)
    ========================================================================== */
 
 body.body-ua {
@@ -3330,7 +3373,7 @@ body.body-ua .profile-box .right-block {
 
 
 /* ==========================================================================
-   FOOTER — PNGMarket mockup layout
+   FOOTER ? PNGMarket mockup layout
    ========================================================================== */
 
 footer.pngm-footer {
@@ -3339,7 +3382,7 @@ footer.pngm-footer {
   color: #1f2937;
 }
 
-/* Match listing content width — parent .container centers flex children */
+/* Match listing content width ? parent .container centers flex children */
 footer.pngm-footer > .container {
   align-items: stretch;
   width: 100%;
@@ -3643,7 +3686,7 @@ a#scroll-to-top svg {
 
 
 /* ==========================================================================
-   REQ-09 — Social login + WhatsApp Chat plugin visual integration
+   REQ-09 ? Social login + WhatsApp Chat plugin visual integration
    ========================================================================== */
 
 .pre-account.pngm-auth .pngm-social-login {
@@ -3872,7 +3915,7 @@ body .wa-chat-button {
 
 
 /* ==========================================================================
-   Contact us — banner + form (not stacked detail cards)
+   Contact us ? banner + form (not stacked detail cards)
    ========================================================================== */
 
 body.pngm-contact {
@@ -3999,8 +4042,8 @@ body.pngm-contact .pngm-contact-ico {
   height: 36px;
   border-radius: 8px;
   background: #fff;
-  border: 1.5px solid #16883f;
-  color: #16883f;
+  border: 1.5px solid #006b24;
+  color: #006b24;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4017,7 +4060,7 @@ body.pngm-contact .pngm-contact-email-row strong {
 
 body.pngm-contact .pngm-contact-email-row a {
   display: block;
-  color: #16883f;
+  color: #006b24;
   font-weight: 500;
   font-size: 13.5px;
   word-break: break-all;
@@ -4083,9 +4126,9 @@ body.pngm-contact .pngm-wa-btn {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1.5px solid #16883f;
+  border: 1.5px solid #006b24;
   border-radius: 8px;
-  color: #16883f;
+  color: #006b24;
   font-weight: 700;
   font-size: 14px;
   text-decoration: none;
@@ -4107,7 +4150,7 @@ body.pngm-contact .pngm-contact-privacy {
 }
 
 body.pngm-contact .pngm-privacy-ico {
-  color: #16883f;
+  color: #006b24;
   font-size: 18px;
   width: 22px;
   padding-top: 2px;
@@ -4199,7 +4242,7 @@ body.pngm-contact .pngm-send-btn {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
-  background: #16883f !important;
+  background: #006b24 !important;
   border: 0 !important;
   border-radius: 8px !important;
   color: #fff !important;
@@ -4288,7 +4331,7 @@ body.pngm-contact footer.pngm-footer {
 }
 
 
-/* P1-004 — Post-ad validation: toast top-right + scroll to field */
+/* P1-004 ? Post-ad validation: toast top-right + scroll to field */
 #body-item-post #error_list,
 body.item-publish #error_list,
 #pngm-error-hidden {
@@ -4392,7 +4435,7 @@ form[name="item"] textarea.pngm-field-error {
 
 
 /* ==========================================================================
-   Mobile review — OLX density, header, cards, search, item, gallery
+   Mobile review ? OLX density, header, cards, search, item, gallery
    ========================================================================== */
 
 .pngm-phase-hidden {
@@ -4427,23 +4470,24 @@ body#item #shortcuts .item-share,
 }
 
 .pngm-near-meta {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px 6px;
-  margin: 0 0 8px 0;
+  margin: 0;
   color: #5c6570;
   font-size: 13px;
   line-height: 1.3;
+  white-space: nowrap;
 }
 
 .pngm-near-meta .fa-map-marker-alt {
-  color: #16883f;
+  color: #6b7785;
   font-size: 12px;
 }
 
 .pngm-change-link {
-  color: #16883f;
+  color: #006b24;
   font-weight: 600;
   text-decoration: underline;
   background: none;
@@ -4453,7 +4497,7 @@ body#item #shortcuts .item-share,
 }
 
 .pngm-change-link:hover {
-  color: #126f34;
+  color: #00551c;
 }
 
 #home-cat a.all > div svg.pngm-cat-all {
@@ -4924,7 +4968,7 @@ body.pngm-lg-open .lg-outer .lg-img-wrap {
 
 
 /* ==========================================================================
-   Uppy avatar / photo modal — full screen above the mobile nav
+   Uppy avatar / photo modal ? full screen above the mobile nav
    ========================================================================== */
 
 .uppy-Dashboard--modal,
@@ -5032,7 +5076,7 @@ body.pngm-uppy-open #navi-bar {
 
 
 /* ==========================================================================
-   Mobile UX pack — header, categories, search, filters, messenger, recaptcha
+   Mobile UX pack ? header, categories, search, filters, messenger, recaptcha
    ========================================================================== */
 
 header {
@@ -5064,7 +5108,7 @@ header .logo img {
 }
 
 #home-cat a.all > div svg.pngm-cat-all {
-  color: #16883f;
+  color: #006b24;
 }
 
 .pngm-search-count.is-hidden,
@@ -5692,4 +5736,457 @@ body.pngm-filter-open #side-menu .box.filter .picker.pattern .results .pngmarket
 body.pngm-filter-open #side-menu .box.filter .picker.pattern .results {
   max-height: min(42vh, 280px);
   padding: 2px 0 6px;
+}
+
+/* ==========================================================================
+   Phase 2 ? Homepage layout: wider container, design cards, category tiles
+   Keep original home-hero.png (do not replace with design collage).
+   ========================================================================== */
+
+/* Wider content area (was 1080px ? felt too narrow on desktop). */
+.container,
+header .container,
+footer.pngm-footer .container,
+body#home > .content > section > .container,
+.home-search > .container.pngm-home-banner,
+.pngm-ds-container {
+  max-width: 1280px !important;
+}
+
+@media screen and (min-width: 1400px) {
+  .container,
+  header .container,
+  footer.pngm-footer .container,
+  body#home > .content > section > .container,
+  .home-search > .container.pngm-home-banner {
+    max-width: 1360px !important;
+  }
+}
+
+
+/* --- Category tiles: rounded square cards (design), not green circles --- */
+#home-cat a > div,
+#home-cat a.all > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 72px !important;
+  height: 72px !important;
+  margin: 0 auto 4px !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  border: 1px solid #e3e8ed !important;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .06) !important;
+}
+
+#home-cat .pngm-cat-item {
+  width: 108px;
+}
+
+#home-cat a > div img,
+#home-cat a > div svg,
+#home-cat a > div img.pngm-cat-svg {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  object-fit: contain;
+}
+
+/* Photographic category covers fill the rounded tile */
+#home-cat a > div img.pngm-cat-cover {
+  width: 64px !important;
+  height: 64px !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+  object-fit: contain !important;
+  border-radius: 12px;
+}
+
+@media screen and (max-width: 767px) {
+  #home-cat a > div img.pngm-cat-cover {
+    width: 52px !important;
+    height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+  }
+}
+
+#home-cat a > div i.fas {
+  font-size: 28px;
+  color: #006b24;
+}
+
+#home-cat a.all > div svg.pngm-cat-all {
+  color: #006b24;
+  width: 32px;
+  height: 32px;
+}
+
+#home-cat a > h3 span {
+  color: #16202a !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+
+@media screen and (min-width: 1081px) {
+  #home-cat > .pngm-cat-item > a:hover > div {
+    border-color: #cfd7df !important;
+    box-shadow: 0 4px 14px rgba(16, 24, 40, .1) !important;
+    transform: translateY(-1px);
+  }
+}
+
+
+/* --- Listing cards: match design (title ? green price ? location ? meta ? tags) --- */
+.products.grid .simple-prod .img-wrap .bar {
+  display: none !important;
+}
+
+.products.grid .simple-prod .user-image {
+  display: none !important;
+}
+
+.products.grid .simple-prod .pngm-photo-count {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.products.grid .simple-prod .pngm-fav {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+}
+
+.products.grid .simple-prod .premium-mark.isGrid {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 4;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #ffe082;
+  color: #5c4500;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.products.grid .simple-prod .simple-wrap {
+  border-radius: 12px !important;
+  border-color: #e3e8ed !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04) !important;
+}
+
+.products.grid .simple-prod .img-wrap,
+.products.grid .simple-prod.tall .img-wrap,
+.products.grid .simple-prod.verytall .img-wrap,
+.products.grid .simple-prod.wide .img-wrap,
+body#home #premium-items .simple-prod .img-wrap {
+  padding-top: 75% !important; /* ~4:3 like design */
+}
+
+.products.grid .simple-prod .data {
+  padding: 10px 12px 12px !important;
+}
+
+/* Title first ? match design mockup card titles exactly */
+.products.grid .simple-prod .title,
+body#home #latest-items .simple-prod .title,
+body#home #location-items .simple-prod .title,
+body#home #premium-items .simple-prod .title,
+body#home #favorite-items .simple-prod .title,
+body#home #recent-items .simple-prod .title,
+#search-items .products.grid .simple-prod .title,
+.products.grid .simple-prod a.title {
+  order: 1 !important;
+  display: block !important;
+  margin: 0 0 4px 0 !important;
+  min-height: 0 !important;
+  max-height: 2.6em !important;
+  overflow: hidden !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
+  color: #111827 !important;
+  text-decoration: none !important;
+  white-space: normal !important;
+  text-overflow: unset !important;
+}
+
+.products.grid .simple-prod:hover .title,
+.products.grid .simple-prod a.title:hover {
+  color: #111827 !important;
+}
+
+/* Green price under title */
+.products.grid .simple-prod .pngm-card-price,
+.products.grid .simple-prod .pngm-card-price span {
+  order: 2 !important;
+  margin: 0 0 4px 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  color: #006b24 !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+/* Location */
+.products.grid .simple-prod .info {
+  order: 3 !important;
+  margin: 0 0 3px 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  color: #6b7785 !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+}
+
+/* Date ? category */
+.products.grid .simple-prod .extra,
+.products.grid .simple-prod .pngm-card-meta {
+  order: 4 !important;
+  display: block !important;
+  margin: 0 0 2px 0 !important;
+  max-height: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  color: #6b7785 !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+}
+
+.products.grid .simple-prod .extra span + span:before,
+.products.grid .simple-prod .pngm-card-meta span + span:before {
+  content: " ? ";
+  color: #9aa3ad;
+}
+
+/* Condition ? transaction */
+.products.grid .simple-prod .pngm-card-tags {
+  order: 5 !important;
+  display: block;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  color: #6b7785;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.products.grid .simple-prod .pngm-card-tags span + span:before {
+  content: " ? ";
+  color: #9aa3ad;
+}
+
+.products.grid .simple-prod .data {
+  padding: 8px 10px 10px !important;
+}
+
+.products.grid .simple-prod .pngm-card-tags span + span:before {
+  content: " ? ";
+  color: #9aa3ad;
+}
+
+
+/* Home grid: up to 6 cards per row on wide screens */
+@media screen and (min-width: 1200px) {
+  body#home .products.grid:not(.nice-scroll) .simple-prod,
+  body#home .products.grid:not(.nice-scroll) .simple-prod.pngm-card {
+    width: calc(16.666% - 12px) !important;
+    margin: 0 6px 16px 6px !important;
+  }
+}
+
+@media screen and (min-width: 900px) and (max-width: 1199px) {
+  body#home .products.grid:not(.nice-scroll) .simple-prod,
+  body#home .products.grid:not(.nice-scroll) .simple-prod.pngm-card {
+    width: calc(20% - 12px) !important;
+  }
+}
+
+/* Section headers: See all / Change alignment */
+body#home .block > h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body#home .pngm-near-meta .pngm-change-link,
+body#home .block h2 a,
+body#home .block .see-all {
+  color: #006b24 !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Phase 2 ? Section heads (Near You / Latest / Recently Viewed) + notify
+   ========================================================================== */
+
+body#home > .content > section.home-location,
+body#home > .content > section.home-latest,
+body#home > .content > section.home-recent,
+body#home > .content > section.home-premium,
+body#home > .content > section.home-favorite {
+  background: #fff;
+}
+
+body#home .pngm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 8px 0;
+  padding: 0;
+  border: 0;
+}
+
+body#home .pngm-section-head-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+body#home .pngm-section-title,
+body#home .pngm-section-head h2.pngm-section-title {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px 14px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: #16202a !important;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+
+body#home .pngm-section-title .pngm-section-label {
+  flex: 0 0 auto;
+}
+
+body#home .pngm-section-head .pngm-near-meta,
+body#home .pngm-section-title .pngm-near-meta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 0;
+  color: #6b7785;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+body#home .pngm-section-head .pngm-change-link {
+  color: #006b24 !important;
+  font-size: 14px;
+  font-weight: 600 !important;
+  text-decoration: none;
+}
+
+body#home .pngm-section-head .pngm-change-link:hover {
+  color: #00551c !important;
+  text-decoration: underline;
+}
+
+body#home .pngm-see-all {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #006b24 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.3;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+body#home .pngm-see-all:hover {
+  color: #00551c !important;
+  text-decoration: underline !important;
+}
+
+/* Header notification bell (logged-in only) */
+header .links .pngm-notify {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  border-radius: 9px;
+}
+
+header .links .pngm-notify svg {
+  margin: 0 !important;
+  height: 20px;
+  width: 18px;
+  fill: #3d4651;
+}
+
+header .links .pngm-notify:hover svg {
+  fill: #006b24;
+}
+
+header .links .pngm-notify .counter {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  left: auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 100px;
+  background: #e11d48 !important;
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+@media screen and (max-width: 1080px) {
+  body#home .pngm-section-title,
+  body#home .pngm-section-head h2.pngm-section-title {
+    font-size: 18px !important;
+  }
+
+  body#home .pngm-see-all {
+    font-size: 14px !important;
+  }
+
+  header .links .pngm-notify {
+    width: 36px;
+    height: 36px;
+  }
 }

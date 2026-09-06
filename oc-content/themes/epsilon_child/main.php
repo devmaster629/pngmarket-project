@@ -30,7 +30,7 @@
           <?php // Keyword search is always nationwide — default location only affects browse sections. ?>
           
           <div class="input-box picker pattern">
-            <input type="text" name="sPattern" class="pattern" placeholder="<?php _e('Enter keyword...', 'epsilon'); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
+            <input type="text" name="sPattern" class="pattern" placeholder="<?php _e('Search cars, phones, furniture, and more...', 'epsilon'); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
             <i class="clean fas fa-times-circle"></i>
             <div class="results">
               <div class="loaded"></div>
@@ -77,11 +77,14 @@
                   <?php } ?>
                   
                   <?php
-                    // Prefer semantic SVG / FA icons — demo sample PNGs do not match PNG Market categories.
+                    // Prefer photographic covers (PNG), then SVG, then FA fallback.
                     $pngm_cat_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image(osc_category_id()) : '';
                     $pngm_is_svg = ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false);
+                    $pngm_is_photo = ($pngm_cat_img !== '' && !$pngm_is_svg);
                   ?>
-                  <?php if ($pngm_is_svg) { ?>
+                  <?php if ($pngm_is_photo) { ?>
+                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-cover<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
+                  <?php } elseif ($pngm_is_svg) { ?>
                     <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
                   <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
                     <?php echo pngm_render_category_icon(osc_category_id(), osc_category()); ?>
@@ -121,7 +124,7 @@
       </div>
 
       <div class="pngm-hero-art" aria-hidden="true">
-        <img src="<?php echo osc_current_web_theme_url('images/home-hero.png'); ?>" alt="" width="540" height="810" decoding="async" />
+        <img src="<?php echo osc_current_web_theme_url('images/home-hero.png'); ?>?v=<?php echo defined('PNGM_CHILD_VERSION') ? PNGM_CHILD_VERSION : '1'; ?>" alt="" width="1003" height="1350" decoding="async" />
       </div>
     </div>
   </section>
@@ -137,16 +140,28 @@
     <section class="home-location">
       <div class="container">
         <div class="block">
-          <?php $pngm_near_city = function_exists('pngm_city_only') ? pngm_city_only($location_cookie) : osc_location_native_name_selector($location_cookie, 's_name'); ?>
-          <h2 class="pngm-near-heading">
-            <span><?php _e('Latest listing near you', 'epsilon'); ?></span>
-          </h2>
-          <p class="pngm-near-meta">
-            <i class="fas fa-map-marker-alt"></i>
-            <span><?php echo osc_esc_html($pngm_near_city); ?></span>
-            <span class="pngm-near-sep">~</span>
-            <a href="#" class="change-location pngm-change-link"><?php _e('Change', 'epsilon'); ?></a>
-          </p>
+          <?php
+            $pngm_near_items = View::newInstance()->_get('items');
+            $pngm_near_shown = is_array($pngm_near_items) ? count($pngm_near_items) : 0;
+            $pngm_near_total = function_exists('pngm_location_items_total') ? pngm_location_items_total($location_cookie) : $pngm_near_shown;
+            $pngm_near_city = function_exists('pngm_city_only') ? pngm_city_only($location_cookie) : osc_location_native_name_selector($location_cookie, 's_name');
+            $pngm_near_see_all = ($pngm_near_total > $pngm_near_shown);
+          ?>
+          <div class="pngm-section-head">
+            <div class="pngm-section-head-left">
+              <h2 class="pngm-section-title">
+                <span class="pngm-section-label"><?php _e('Near You', 'epsilon'); ?></span>
+                <span class="pngm-near-meta">
+                  <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                  <span><?php echo osc_esc_html($pngm_near_city); ?></span>
+                  <a href="#" class="change-location pngm-change-link"><?php _e('Change', 'epsilon'); ?></a>
+                </span>
+              </h2>
+            </div>
+            <?php if ($pngm_near_see_all) { ?>
+              <a class="pngm-see-all" href="<?php echo function_exists('pngm_location_search_url') ? pngm_location_search_url($location_cookie) : osc_search_url(array('page' => 'search')); ?>"><?php _e('See all', 'epsilon'); ?></a>
+            <?php } ?>
+          </div>
 
           <?php if(osc_count_items() > 0) { ?>
             <div class="nice-scroll-wrap">
@@ -407,10 +422,22 @@
   <?php View::newInstance()->_exportVariableToView('latestItems', eps_random_items()); ?>
   
   <?php if(osc_count_latest_items() > 0) { ?>
+    <?php
+      $pngm_latest_shown = osc_count_latest_items();
+      $pngm_latest_total = function_exists('pngm_total_active_items') ? pngm_total_active_items() : $pngm_latest_shown;
+      $pngm_latest_see_all = ($pngm_latest_total > $pngm_latest_shown);
+    ?>
     <section class="home-latest">
       <div class="container">
         <div class="block">
-          <h2><?php _e('Latest listings', 'epsilon'); ?></h2>
+          <div class="pngm-section-head">
+            <div class="pngm-section-head-left">
+              <h2 class="pngm-section-title"><?php _e('Latest Listings', 'epsilon'); ?></h2>
+            </div>
+            <?php if ($pngm_latest_see_all) { ?>
+              <a class="pngm-see-all" href="<?php echo osc_search_url(array('page' => 'search')); ?>"><?php _e('See all', 'epsilon'); ?></a>
+            <?php } ?>
+          </div>
 
           <div id="latest-items" class="products grid">
             <?php 
@@ -442,9 +469,11 @@
       <section class="home-recent">
         <div class="container">
           <div id="recent-ads" class="block onhome">
-            <h2>
-              <span><?php _e('Recently viewed listings', 'epsilon'); ?></span>
-            </h2>
+            <div class="pngm-section-head">
+              <div class="pngm-section-head-left">
+                <h2 class="pngm-section-title"><?php _e('Recently Viewed', 'epsilon'); ?></h2>
+              </div>
+            </div>
 
             <div class="nice-scroll-wrap">
               <div class="nice-scroll-prev"><i class="fas fa-caret-left"></i></div>

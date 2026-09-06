@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.5.49');
+    define('PNGM_CHILD_VERSION', '1.6.14');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -17,6 +17,81 @@ require_once dirname(__FILE__) . '/includes/footer_helpers.php';
 require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
+
+/**
+ * Total active listings matching a default-location cookie (no result limit).
+ *
+ * @param array $location
+ * @return int
+ */
+function pngm_location_items_total($location)
+{
+    if (!is_array($location) || empty($location['success'])) {
+        return 0;
+    }
+
+    $mSearch = new Search();
+    if (!empty($location['fk_c_country_code'])) {
+        $mSearch->addCountry($location['fk_c_country_code']);
+    }
+    if (!empty($location['fk_i_region_id'])) {
+        $mSearch->addRegion($location['fk_i_region_id']);
+    }
+    if (!empty($location['fk_i_city_id'])) {
+        $mSearch->addCity($location['fk_i_city_id']);
+    }
+    $mSearch->limit(0, 1);
+    $mSearch->addGroupBy(DB_TABLE_PREFIX . 't_item.pk_i_id');
+    $mSearch->doSearch();
+
+    return (int) $mSearch->count();
+}
+
+/**
+ * Search URL for the current default location cookie.
+ *
+ * @param array $location
+ * @return string
+ */
+function pngm_location_search_url($location)
+{
+    $params = array('page' => 'search');
+    if (!empty($location['fk_i_city_id'])) {
+        $params['sCity'] = $location['fk_i_city_id'];
+    } elseif (!empty($location['fk_i_region_id'])) {
+        $params['sRegion'] = $location['fk_i_region_id'];
+    } elseif (!empty($location['fk_c_country_code'])) {
+        $params['sCountry'] = $location['fk_c_country_code'];
+    }
+    return osc_search_url($params);
+}
+
+/**
+ * Total active site listings (for Latest "See all").
+ *
+ * @return int
+ */
+function pngm_total_active_items()
+{
+    $mSearch = new Search();
+    $mSearch->limit(0, 1);
+    $mSearch->doSearch();
+    return (int) $mSearch->count();
+}
+
+/**
+ * Notification (search alerts) count for the logged-in user.
+ *
+ * @return int
+ */
+function pngm_notification_count()
+{
+    if (!osc_is_web_user_logged_in() || !class_exists('Alerts')) {
+        return 0;
+    }
+    $alerts = Alerts::newInstance()->findByUser(osc_logged_user_id());
+    return is_array($alerts) ? count($alerts) : 0;
+}
 
 
 /**
@@ -36,6 +111,8 @@ function pngm_enqueue_assets()
         $version .= '-' . PNGM_CHILD_VERSION;
     }
 
+    // Phase 2 design system first, then page overrides in custom.css.
+    osc_enqueue_style('pngm-design-system', osc_current_web_theme_url('css/design-system.css' . $version));
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
 
     osc_register_script('pngm-gallery', osc_current_web_theme_url('js/gallery.js' . $version), array('jquery'));

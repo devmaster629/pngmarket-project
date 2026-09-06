@@ -253,24 +253,29 @@ function pngm_category_svg_url($category_id)
 }
 
 /**
- * Image URL for a category icon (semantic SVG first, never wrong sample PNGs).
+ * Image URL for a category icon.
+ * Prefer photographic covers (small_cat/{id}.png) to match Phase 2 design,
+ * then semantic SVG, then theme defaults.
  *
  * @param int $category_id
  * @return string
  */
 function pngm_get_cat_image($category_id)
 {
+    $id = (int) $category_id;
+
+    // Phase 2 design covers (photo / 3D tiles).
+    if (defined('ABS_PATH')) {
+        $child = ABS_PATH . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png';
+        if (is_file($child) && filesize($child) > 500) {
+            $ver = defined('PNGM_CHILD_VERSION') ? ('?v=' . PNGM_CHILD_VERSION) : '';
+            return osc_base_url() . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png' . $ver;
+        }
+    }
+
     $svg = pngm_category_svg_url($category_id);
     if ($svg !== false) {
         return $svg;
-    }
-
-    // Child / parent custom PNG by id (correct uploads only).
-    if (defined('ABS_PATH')) {
-        $child = ABS_PATH . 'oc-content/themes/epsilon_child/images/small_cat/' . (int) $category_id . '.png';
-        if (is_file($child)) {
-            return osc_base_url() . 'oc-content/themes/epsilon_child/images/small_cat/' . (int) $category_id . '.png';
-        }
     }
 
     if (function_exists('eps_get_cat_image') && (string) eps_param('sample_images') !== '1') {

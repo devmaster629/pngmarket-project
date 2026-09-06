@@ -19,18 +19,22 @@
         <?php } ?>
       </a>
 
-      <a class="bar" href="<?php echo osc_item_url(); ?>">
+      <?php if(osc_count_item_resources() > 0) { ?>
+        <span class="pngm-photo-count isGrid" aria-hidden="true"><i class="fas fa-camera"></i> <?php echo osc_count_item_resources(); ?></span>
+      <?php } ?>
+
+      <a class="bar isDetail" href="<?php echo osc_item_url(); ?>">
         <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-          <div class="price isGrid isDetail"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
+          <div class="price isDetail"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
         <?php } ?>
         
         <?php if(osc_count_item_resources() > 0) { ?>
-          <div class="image-counter"><i class="fas fa-camera"></i> <?php echo osc_count_item_resources(); ?></div>
+          <div class="image-counter isDetail"><i class="fas fa-camera"></i> <?php echo osc_count_item_resources(); ?></div>
         <?php } ?>
       </a>
       
       <?php if(osc_item_user_id() > 0 && eps_has_profile_picture(osc_item_user_id())) { ?>
-        <a href="<?php echo eps_user_public_profile_url(osc_item_user_id()); ?>" class="user-image isGrid isDetail">
+        <a href="<?php echo eps_user_public_profile_url(osc_item_user_id()); ?>" class="user-image isDetail">
           <img class="<?php echo (eps_is_lazy() ? 'lazy' : ''); ?>" <?php echo (eps_is_lazy_browser() ? 'loading="lazy"' : ''); ?> src="<?php echo (eps_is_lazy() ? eps_get_load_image() : eps_profile_picture(osc_item_user_id(), 'small')); ?>" data-src="<?php echo eps_profile_picture(osc_item_user_id(), 'small'); ?>" alt="<?php echo osc_esc_html(osc_item_contact_name()); ?>"/>
 
           <?php if(eps_user_is_company(osc_item_user_id())) { ?>
@@ -43,7 +47,7 @@
         </a>
       <?php } ?>
       
-      <div class="isGrid isDetail"><?php eps_make_favorite(); ?></div>
+      <div class="pngm-fav isGrid isDetail"><?php eps_make_favorite(); ?></div>
       
       <?php if(osc_item_is_premium()) { ?>
         <span class="premium-mark isGrid isDetail"><?php _e('Premium', 'epsilon'); ?></span>
@@ -55,7 +59,12 @@
     </div>
 
     <div class="data">
+      <?php // Design card order: title → green price → location → date•category → condition•type ?>
       <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
+
+      <?php if(eps_check_category_price(osc_item_category_id())) { ?>
+        <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
+      <?php } ?>
 
       <div class="info">
         <?php if(osc_item_is_premium()) { ?>
@@ -72,8 +81,6 @@
       </div>
 
       <?php
-        // Always output the teaser slot so every grid card keeps the same shape.
-        // Text only when the description is useful (HOME-06); empty slot stays reserved.
         $pngm_teaser = function_exists('pngm_item_teaser') ? pngm_item_teaser(80) : '';
       ?>
       <div class="pngm-teaser<?php echo ($pngm_teaser === '' ? ' is-empty' : ''); ?>"><?php echo $pngm_teaser; ?></div>
@@ -84,27 +91,27 @@
       
       <?php osc_run_hook('item_loop_description'); ?>
 
-      <?php if(eps_check_category_price(osc_item_category_id())) { ?>
-        <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
-      <?php } ?>
-
-      <?php // Staging-style detail: date • category • condition • transaction • views ?>
-      <div class="extra">
+      <div class="extra pngm-card-meta">
         <span><?php echo eps_smart_date(osc_item_pub_date()); ?></span>
         <?php if (osc_item_category() <> '') { ?>
           <span><?php echo osc_item_category(); ?></span>
         <?php } ?>
-        
-        <?php if(!in_array(osc_item_category_id(), eps_extra_fields_hide())) { ?>
-          <?php if(eps_get_simple_name($item_extra['i_condition'], 'condition', false) <> '') { ?>
-            <span><?php echo eps_get_simple_name($item_extra['i_condition'], 'condition', false); ?></span>
-          <?php } ?>
-
-          <?php if(eps_get_simple_name($item_extra['i_transaction'], 'transaction', false) <> '') { ?>
-            <span><?php echo eps_get_simple_name($item_extra['i_transaction'], 'transaction', false); ?></span>
-          <?php } ?>          
-        <?php } ?>
       </div>
+
+      <?php
+        $pngm_cond = '';
+        $pngm_trx = '';
+        if (!in_array(osc_item_category_id(), eps_extra_fields_hide())) {
+          $pngm_cond = eps_get_simple_name($item_extra['i_condition'], 'condition', false);
+          $pngm_trx = eps_get_simple_name($item_extra['i_transaction'], 'transaction', false);
+        }
+      ?>
+      <?php if ($pngm_cond !== '' || $pngm_trx !== '') { ?>
+        <div class="pngm-card-tags">
+          <?php if ($pngm_cond !== '') { ?><span><?php echo osc_esc_html($pngm_cond); ?></span><?php } ?>
+          <?php if ($pngm_trx !== '') { ?><span><?php echo osc_esc_html($pngm_trx); ?></span><?php } ?>
+        </div>
+      <?php } ?>
 
       <div class="action isDetail">
         <?php if(eps_check_category_price(osc_item_category_id())) { ?>
