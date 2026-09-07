@@ -131,21 +131,33 @@
 
   <?php osc_run_hook('home_search_after'); ?>
 
-  <?php if(eps_param('location_home') == 1 && $location_cookie['success'] === true) { ?>
+  <?php
+    // Near You stays on the homepage whenever the feature is enabled.
+    // Without a saved location, still render the section + prompt to set one.
+    $pngm_near_enabled = (eps_param('location_home') == 1);
+    $pngm_near_has_loc = ($pngm_near_enabled && @$location_cookie['success'] === true);
+  ?>
+  <?php if ($pngm_near_enabled) { ?>
     <?php
-      $default_items = View::newInstance()->_get('items'); 
-      View::newInstance()->_exportVariableToView('items', eps_location_items($location_cookie));
+      $default_items = View::newInstance()->_get('items');
+      if ($pngm_near_has_loc) {
+        View::newInstance()->_exportVariableToView('items', eps_location_items($location_cookie));
+      }
     ?>
-    
+
     <section class="home-location">
       <div class="container">
         <div class="block">
           <?php
-            $pngm_near_items = View::newInstance()->_get('items');
+            $pngm_near_items = $pngm_near_has_loc ? View::newInstance()->_get('items') : array();
             $pngm_near_shown = is_array($pngm_near_items) ? count($pngm_near_items) : 0;
-            $pngm_near_total = function_exists('pngm_location_items_total') ? pngm_location_items_total($location_cookie) : $pngm_near_shown;
-            $pngm_near_city = function_exists('pngm_city_only') ? pngm_city_only($location_cookie) : osc_location_native_name_selector($location_cookie, 's_name');
-            $pngm_near_see_all = ($pngm_near_total > $pngm_near_shown);
+            $pngm_near_total = ($pngm_near_has_loc && function_exists('pngm_location_items_total'))
+              ? pngm_location_items_total($location_cookie)
+              : $pngm_near_shown;
+            $pngm_near_city = $pngm_near_has_loc
+              ? (function_exists('pngm_city_only') ? pngm_city_only($location_cookie) : osc_location_native_name_selector($location_cookie, 's_name'))
+              : __('Your area', 'epsilon');
+            $pngm_near_see_all = ($pngm_near_has_loc && $pngm_near_total > $pngm_near_shown);
           ?>
           <div class="pngm-section-head">
             <div class="pngm-section-head-left">
@@ -154,7 +166,7 @@
                 <span class="pngm-near-meta">
                   <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
                   <span><?php echo osc_esc_html($pngm_near_city); ?></span>
-                  <a href="#" class="change-location pngm-change-link"><?php _e('Change', 'epsilon'); ?></a>
+                  <a href="#" class="change-location pngm-change-link"><?php echo $pngm_near_has_loc ? __('Change', 'epsilon') : __('Set location', 'epsilon'); ?></a>
                 </span>
               </h2>
             </div>
@@ -163,36 +175,42 @@
             <?php } ?>
           </div>
 
-          <?php if(osc_count_items() > 0) { ?>
+          <?php if ($pngm_near_has_loc && osc_count_items() > 0) { ?>
             <div class="nice-scroll-wrap">
               <div class="nice-scroll-prev"><i class="fas fa-caret-left"></i></div>
-              
+
               <div id="location-items" class="products grid nice-scroll">
-                <?php 
-                  $c = 1; 
-                  
-                  while(osc_has_items()) {
+                <?php
+                  $c = 1;
+
+                  while (osc_has_items()) {
                     eps_draw_item($c, false, 'pngm-card');
                     $c++;
                   }
-                  
+
                   View::newInstance()->_erase('items');
                 ?>
               </div>
-              
+
               <div class="nice-scroll-next"><i class="fas fa-caret-right"></i></div>
             </div>
           <?php } else { ?>
             <div class="empty-alt pngm-empty-near">
-              <strong><?php _e('No exact results found', 'epsilon'); ?></strong>
-              <span><?php _e('Try another area, or browse the newest listings below.', 'epsilon'); ?></span>
-              <a href="#" class="change-location btn btn-secondary mini"><?php _e('Change location', 'epsilon'); ?></a>
+              <?php if ($pngm_near_has_loc) { ?>
+                <strong><?php _e('No exact results found', 'epsilon'); ?></strong>
+                <span><?php _e('Try another area, or browse the newest listings below.', 'epsilon'); ?></span>
+                <a href="#" class="change-location btn btn-secondary mini"><?php _e('Change location', 'epsilon'); ?></a>
+              <?php } else { ?>
+                <strong><?php _e('Choose your location', 'epsilon'); ?></strong>
+                <span><?php _e('Set your area to see listings near you.', 'epsilon'); ?></span>
+                <a href="#" class="change-location btn btn-secondary mini"><?php _e('Set location', 'epsilon'); ?></a>
+              <?php } ?>
             </div>
           <?php } ?>
         </div>
       </div>
     </section>
-    
+
     <?php View::newInstance()->_exportVariableToView('items', $default_items); ?>
   <?php } ?>
   

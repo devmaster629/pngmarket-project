@@ -228,15 +228,21 @@
   <?php } ?>
 </div>
 
-<?php if(eps_banner('body_left') !== false) { ?>
+<?php
+  $pngm_body_left = eps_banner('body_left');
+  $pngm_body_right = eps_banner('body_right');
+  $pngm_body_left_ok = ($pngm_body_left !== false && is_string($pngm_body_left) && strpos($pngm_body_left, ' blank') === false && trim(strip_tags($pngm_body_left, '<img><iframe><ins><a><svg>')) !== '');
+  $pngm_body_right_ok = ($pngm_body_right !== false && is_string($pngm_body_right) && strpos($pngm_body_right, ' blank') === false && trim(strip_tags($pngm_body_right, '<img><iframe><ins><a><svg>')) !== '');
+?>
+<?php if ($pngm_body_left_ok) { ?>
   <div id="body-banner" class="bleft">
-    <?php echo eps_banner('body_left'); ?>
+    <?php echo $pngm_body_left; ?>
   </div>
 <?php } ?>
 
-<?php if(eps_banner('body_right') !== false) { ?>
+<?php if ($pngm_body_right_ok) { ?>
   <div id="body-banner" class="bright">
-    <?php echo eps_banner('body_right'); ?>
+    <?php echo $pngm_body_right; ?>
   </div>
 <?php } ?>
 

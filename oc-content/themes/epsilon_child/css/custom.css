@@ -5763,6 +5763,59 @@ body#home > .content > section > .container,
   }
 }
 
+/*
+ * Parent #body-banner is sized for a 1120px content column. Our layout is
+ * 1280/1360px, so those fixed left/right strips overlapped the page edges and
+ * stole clicks/hover on logo, search, categories, and outer listing cards.
+ */
+#body-banner,
+#body-banner.bleft,
+#body-banner.bright {
+  width: calc((100% - 1280px) / 2) !important;
+  max-width: calc((100% - 1280px) / 2) !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+#body-banner.bright {
+  left: auto !important;
+  right: 0 !important;
+}
+
+#body-banner:not(.blank) > *,
+#body-banner .banner-theme,
+#body-banner a,
+#body-banner img,
+#body-banner iframe,
+#body-banner ins {
+  pointer-events: auto !important;
+}
+
+#body-banner.blank,
+#body-banner:empty,
+#body-banner:not(:has(img)):not(:has(iframe)):not(:has(ins)):not(:has(.banner-theme)):not(:has(a)) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+@media screen and (min-width: 1400px) {
+  #body-banner,
+  #body-banner.bleft,
+  #body-banner.bright {
+    width: calc((100% - 1360px) / 2) !important;
+    max-width: calc((100% - 1360px) / 2) !important;
+  }
+}
+
+@media screen and (max-width: 1320px) {
+  #body-banner,
+  #body-banner.bleft,
+  #body-banner.bright {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
 
 /* --- Category tiles: rounded square cards (design), not green circles --- */
 #home-cat a > div,
@@ -6041,12 +6094,25 @@ body#home .block .see-all {
    Phase 2 ? Section heads (Near You / Latest / Recently Viewed) + notify
    ========================================================================== */
 
+body#home > .content > section.home-search {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
 body#home > .content > section.home-location,
 body#home > .content > section.home-latest,
 body#home > .content > section.home-recent,
 body#home > .content > section.home-premium,
 body#home > .content > section.home-favorite {
   background: #fff;
+}
+
+body#home > .content > section.home-location {
+  position: relative;
+  z-index: 2;
+  display: block !important;
+  visibility: visible !important;
 }
 
 body#home .pngm-section-head {
