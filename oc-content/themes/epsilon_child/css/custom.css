@@ -96,7 +96,7 @@ body#home > .content > section.home-search {
 .home-search .box {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: calc(100% - 460px);
+  max-width: calc(100% - 445px);
   width: auto;
   position: relative;
   z-index: 1;
@@ -109,7 +109,7 @@ body#home > .content > section.home-search {
   right: 0;
   bottom: 0;
   z-index: 0;
-  width: 440px;
+  width: 425px;
   max-width: 48%;
   margin: 0;
   padding: 0;
@@ -599,14 +599,14 @@ body#home > .content > section.home-search {
    ========================================================================== */
 
 body#home > .content > section.home-search {
-  padding: 8px 0 0 0;
+  padding: 18px 0 0 0;
   background: #fff;
 }
 
 /* The gap between the search block and the category row. */
 body#home .home-search h2,
 body#home .home-search h2.pngm-cats-heading {
-  margin: 10px 0 6px 0;
+  margin: 20px 0 6px 0;
   font-size: 18px;
 }
 
@@ -620,11 +620,11 @@ body#home > .content > section.home-latest,
 body#home > .content > section.home-recent,
 body#home > .content > section.home-premium,
 body#home > .content > section.home-favorite {
-  padding: 4px 0 2px 0;
+  padding: 14px 0 2px 0;
 }
 
 body#home > .content > section.home-latest {
-  padding-top: 2px;
+  padding-top: 12px;
 }
 
 body#home > .content {
