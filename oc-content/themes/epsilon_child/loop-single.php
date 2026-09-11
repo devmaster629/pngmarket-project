@@ -47,8 +47,6 @@
         </a>
       <?php } ?>
       
-      <div class="pngm-fav isGrid isDetail"><?php eps_make_favorite(); ?></div>
-      
       <?php if(osc_item_is_premium()) { ?>
         <span class="premium-mark isGrid isDetail"><?php _e('Premium', 'epsilon'); ?></span>
       <?php } ?>
@@ -59,31 +57,29 @@
     </div>
 
     <div class="data">
-      <?php // Design card order: title → green price → location → date•category → condition•type ?>
-      <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
+      <?php // Mockup card: title + Premium → green price → location · date → Category • Condition • Transaction ?>
+      <div class="pngm-card-title-row">
+        <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
+        <?php if(osc_item_is_premium()) { ?>
+          <span class="premium-mark pngm-premium-inline"><?php _e('Premium', 'epsilon'); ?></span>
+        <?php } ?>
+      </div>
 
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
         <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
       <?php } ?>
 
-      <div class="info">
-        <?php if(osc_item_is_premium()) { ?>
-          <span class="premium-mark isList"><?php _e('Premium', 'epsilon'); ?></span>
-        <?php } ?>
-        
+      <div class="info pngm-card-loc">
         <?php if(isset($item_extra['i_sold']) && $item_extra['i_sold'] == 1) { ?>
           <span class="label sold isList"><?php _e('Sold', 'epsilon'); ?></span>
         <?php } else if(isset($item_extra['i_sold']) && $item_extra['i_sold'] == 2) { ?>
           <span class="label reserved isList"><?php _e('Reserved', 'epsilon'); ?></span>
         <?php } ?>
       
-        <?php echo function_exists('pngm_city_only') ? osc_esc_html(pngm_city_only()) : eps_item_location(); ?>
+        <span class="pngm-card-city"><?php echo function_exists('pngm_city_only') ? osc_esc_html(pngm_city_only()) : eps_item_location(); ?></span>
+        <span class="pngm-card-sep" aria-hidden="true">·</span>
+        <span class="pngm-card-time"><?php echo eps_smart_date(osc_item_pub_date()); ?></span>
       </div>
-
-      <?php
-        $pngm_teaser = function_exists('pngm_item_teaser') ? pngm_item_teaser(80) : '';
-      ?>
-      <div class="pngm-teaser<?php echo ($pngm_teaser === '' ? ' is-empty' : ''); ?>"><?php echo $pngm_teaser; ?></div>
       
       <?php osc_run_hook('item_loop_title'); ?>
       
@@ -91,25 +87,25 @@
       
       <?php osc_run_hook('item_loop_description'); ?>
 
-      <div class="extra pngm-card-meta">
-        <span><?php echo eps_smart_date(osc_item_pub_date()); ?></span>
-        <?php if (osc_item_category() <> '') { ?>
-          <span><?php echo osc_item_category(); ?></span>
-        <?php } ?>
-      </div>
-
       <?php
-        $pngm_cond = '';
-        $pngm_trx = '';
+        $pngm_meta_bits = array();
+        if (osc_item_category() <> '') {
+          $pngm_meta_bits[] = osc_item_category();
+        }
         if (!in_array(osc_item_category_id(), eps_extra_fields_hide())) {
           $pngm_cond = eps_get_simple_name($item_extra['i_condition'], 'condition', false);
           $pngm_trx = eps_get_simple_name($item_extra['i_transaction'], 'transaction', false);
+          if ($pngm_cond !== '') {
+            $pngm_meta_bits[] = $pngm_cond;
+          }
+          if ($pngm_trx !== '') {
+            $pngm_meta_bits[] = $pngm_trx;
+          }
         }
       ?>
-      <?php if ($pngm_cond !== '' || $pngm_trx !== '') { ?>
+      <?php if (count($pngm_meta_bits) > 0) { ?>
         <div class="pngm-card-tags">
-          <?php if ($pngm_cond !== '') { ?><span><?php echo osc_esc_html($pngm_cond); ?></span><?php } ?>
-          <?php if ($pngm_trx !== '') { ?><span><?php echo osc_esc_html($pngm_trx); ?></span><?php } ?>
+          <?php echo osc_esc_html(implode(' • ', $pngm_meta_bits)); ?>
         </div>
       <?php } ?>
 
@@ -158,13 +154,15 @@
       <?php eps_make_favorite(); ?>
     </div>
       
-    <div class="labels isGrid">
+      <div class="labels isGrid">
       <?php if(isset($item_extra['i_sold']) && $item_extra['i_sold'] == 1) { ?>
         <span class="label sold"><?php _e('Sold', 'epsilon'); ?></span>
       <?php } else if(isset($item_extra['i_sold']) && $item_extra['i_sold'] == 2) { ?>
         <span class="label reserved"><?php _e('Reserved', 'epsilon'); ?></span>
       <?php } ?>
     </div>
+
+    <div class="pngm-fav isGrid isDetail"><?php eps_make_favorite(); ?></div>
     
     <?php osc_run_hook('item_loop_bottom'); ?>
   </div>

@@ -74,6 +74,19 @@
   if($search_location == '') { //Params::getParam('sLocation') != '') {
     $search_location = Params::getParam('sLocation');
   }
+
+  // Clear-all keeps current category when browsing a category page.
+  $pngm_clear_filters = array('page' => 'search');
+  if ($search_cat_id > 0) {
+    $pngm_clear_filters['sCategory'] = $search_cat_id;
+  }
+
+  $pngm_keyword_ph = __('Word, title or description...', 'epsilon');
+  if (is_array($category) && @$category['s_name'] <> '') {
+    $pngm_keyword_ph = sprintf(__('Search in %s', 'epsilon'), $category['s_name']);
+  }
+
+  $pngm_total_results = (int) osc_search_total_items();
 ?>
 
 <div class="container primary">
@@ -81,6 +94,11 @@
     <?php osc_run_hook('search_sidebar_pre'); ?>
     
     <div class="wrap">
+      <div class="pngm-filters-head">
+        <h2><?php _e('Filters', 'epsilon'); ?></h2>
+        <a class="pngm-filters-clear" href="<?php echo osc_search_url($pngm_clear_filters); ?>"><?php _e('Clear all', 'epsilon'); ?></a>
+      </div>
+
       <form action="<?php echo osc_base_url(true); ?>" method="GET" class="search-side-form nocsrf">
         <input type="hidden" class="ajaxRun" value=""/>
         <input type="hidden" name="page" value="search"/>
@@ -100,7 +118,7 @@
           <label for="sPattern"><?php _e('Keyword', 'epsilon'); ?></label>
 
           <div class="input-box picker pattern only-search">
-            <input type="text" name="sPattern" id="sPattern" class="pattern" placeholder="<?php echo osc_esc_html(__('Word, title or description...', 'epsilon')); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
+            <input type="text" name="sPattern" id="sPattern" class="pattern" placeholder="<?php echo osc_esc_html($pngm_keyword_ph); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
             <i class="clean fas fa-times-circle"></i>
             <div class="results">
               <div class="loaded"></div>
@@ -229,7 +247,7 @@
       </form>
     </div>
     
-    <div id="search-category-box">
+    <div id="search-category-box" class="pngm-desktop-hide">
       <h3><?php _e('Select category', 'epsilon'); ?></h3>
       <div class="wrap">
         <?php
@@ -314,10 +332,8 @@
   </div>
 
 
-  <div id="search-main" class="<?php echo $view; ?>">
+  <div id="search-main" class="<?php echo $view; ?><?php if($search_cat_id > 0) { ?> pngm-has-category<?php } ?>">
     <?php osc_run_hook('search_items_top'); ?>
-    
-    <div class="top-bar pngm-search-count is-hidden" aria-hidden="true"></div>
 
     <?php
       // CATEGORY-01 — Subcategories before listings (visible on mobile too).
@@ -345,20 +361,19 @@
               if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) {
                 $pngm_all_params['sCategory'] = $pngm_subcat_parent['pk_i_id'];
               }
+              $pngm_all_label = __('All', 'epsilon');
+              if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
+                $pngm_all_label = sprintf(__('All %s', 'epsilon'), $pngm_subcat_parent['s_name']);
+              }
             ?>
             <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
               <?php if (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
                 <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, false); ?></span>
               <?php } ?>
-              <span class="pngm-search-subcat-name">
-                <?php
-                  if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['s_name'] <> '') {
-                    echo sprintf(__('All in %s', 'epsilon'), osc_esc_html($pngm_subcat_parent['s_name']));
-                  } else {
-                    _e('All', 'epsilon');
-                  }
-                ?>
-              </span>
+              <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_all_label); ?></span>
+              <?php if (is_array($pngm_subcat_parent) && @$pngm_subcat_parent['i_num_items'] > 0) { ?>
+                <em><?php echo (int) $pngm_subcat_parent['i_num_items']; ?></em>
+              <?php } ?>
             </a>
             <?php foreach($pngm_subcats as $pngm_sc) {
               $pngm_sc_params = $params_spec;
@@ -380,6 +395,35 @@
     <?php } ?>
     
     <?php osc_run_hook('search_items_filter'); ?>
+
+    <?php if($filter_check > 0) { ?>
+      <div id="search-filters" class="pngm-search-chips">
+        <?php foreach($search_params_remove as $n => $v) { ?>
+          <?php if($v['name'] <> '' && $v['title'] <> '' && $v['to_remove'] === true) { ?>
+            <?php
+              $rem_param = $params_all;
+
+              if($v['is_meta'] === true) {
+                unset($rem_param['meta'][$v['field_id']]);
+              } else {
+                unset($rem_param[$n]);
+              }
+              
+              if(in_array($n, array('sCity','city','sRegion','region','sCountry','country'))) {
+                unset($rem_param['sLocation']);
+              }
+            ?>
+
+            <a class="pngm-chip" href="<?php echo osc_search_url($rem_param); ?>" data-type="<?php echo osc_esc_html(strtolower($v['type'])); ?>" data-param="<?php echo osc_esc_html($v['param']); ?>" title="<?php echo osc_esc_html($v['title'] . ': ' . $v['name']); ?>">
+              <span><?php echo osc_esc_html($v['name']); ?></span>
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </a>
+          <?php } ?>
+        <?php } ?>
+
+        <a class="pngm-chips-clear" href="<?php echo osc_search_url($pngm_clear_filters); ?>"><?php _e('Clear all', 'epsilon'); ?></a>
+      </div>
+    <?php } ?>
     
     <?php
       osc_get_premiums(20); //eps_param('premium_search_count')
@@ -425,14 +469,19 @@
     </div>
     
     <div id="search-quick-bar" class="pngm-search-toolbar">
-      <div class="sort-type">
-        <label for="orderSelect"><?php _e('Sort', 'epsilon'); ?></label>
-        <?php echo eps_simple_sort(); ?>
+      <div class="pngm-search-count">
+        <?php echo sprintf(__('%s results', 'epsilon'), number_format($pngm_total_results)); ?>
       </div>
-      <a href="#" id="open-search-filters" class="btn pngm-filter-btn isMobile">
-        <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M496 384H160v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h80v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h336c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160h-80v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h336v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h80c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160H288V48c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16C7.2 64 0 71.2 0 80v32c0 8.8 7.2 16 16 16h208v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h208c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"/></svg>
-        <span><?php _e('Filter', 'epsilon'); ?></span>
-      </a>
+      <div class="pngm-search-toolbar-actions">
+        <a href="#" id="open-search-filters" class="btn pngm-filter-btn isMobile">
+          <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M496 384H160v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h80v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h336c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160h-80v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h336v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h80c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160H288V48c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16C7.2 64 0 71.2 0 80v32c0 8.8 7.2 16 16 16h208v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h208c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"/></svg>
+          <span><?php _e('Filter', 'epsilon'); ?></span>
+        </a>
+        <div class="sort-type">
+          <label for="orderSelect"><?php _e('Sort by', 'epsilon'); ?></label>
+          <?php echo eps_simple_sort(); ?>
+        </div>
+      </div>
     </div>
 
     <?php
@@ -448,34 +497,6 @@
       <a class="personal<?php if(Params::getParam('sCompany') === '0') { ?> active<?php } ?>" href="<?php echo osc_search_url($p2); ?>"><?php _e('Personal', 'epsilon'); ?></a>
       <a class="company<?php if(Params::getParam('sCompany') === '1') { ?> active<?php } ?>" href="<?php echo osc_search_url($p3); ?>"><?php _e('Company', 'epsilon'); ?></a>
     </div>
-
-    <?php if($filter_check > 0) { ?>
-      <div id="search-filters">
-        <?php foreach($search_params_remove as $n => $v) { ?>
-          <?php if($v['name'] <> '' && $v['title'] <> '' && $v['to_remove'] === true) { ?>
-            <?php
-              $rem_param = $params_all;
-
-              if($v['is_meta'] === true) {
-                unset($rem_param['meta'][$v['field_id']]);
-              } else {
-                unset($rem_param[$n]);
-              }
-              
-              if(in_array($n, array('sCity','city','sRegion','region','sCountry','country'))) {
-                unset($rem_param['sLocation']);
-              }
-            ?>
-
-            <a href="<?php echo osc_search_url($rem_param); ?>" data-type="<?php echo osc_esc_html(strtolower($v['type'])); ?>" data-param="<?php echo osc_esc_html($v['param']); ?>" title="<?php echo osc_esc_html($v['title'] . ': ' . $v['name']); ?>"><?php echo $v['title'] . ': ' . $v['name']; ?></a>
-          <?php } ?>
-        <?php } ?>
-
-        <?php if($filter_check >= 2) { ?>
-          <a class="bold remove-all-filters" href="<?php echo osc_search_url(array('page' => 'search')); ?>"><?php _e('Remove all', 'epsilon'); ?></a>
-        <?php } ?>
-      </div>
-    <?php } ?>
     
     <div id="search-items">     
       <?php if(osc_count_items() == 0) { ?>
