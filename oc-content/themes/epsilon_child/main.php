@@ -159,17 +159,15 @@
               : __('Your area', 'epsilon');
             $pngm_near_see_all = ($pngm_near_has_loc && $pngm_near_total > $pngm_near_shown);
           ?>
-          <div class="pngm-section-head">
-            <div class="pngm-section-head-left">
-              <h2 class="pngm-section-title">
-                <span class="pngm-section-label"><?php _e('Near You', 'epsilon'); ?></span>
-                <span class="pngm-near-meta">
-                  <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-                  <span><?php echo osc_esc_html($pngm_near_city); ?></span>
-                  <a href="#" class="change-location pngm-change-link"><?php echo $pngm_near_has_loc ? __('Change', 'epsilon') : __('Set location', 'epsilon'); ?></a>
-                </span>
-              </h2>
-            </div>
+          <div class="pngm-section-head pngm-near-head">
+            <h2 class="pngm-section-title">
+              <span class="pngm-section-label"><?php _e('Near You', 'epsilon'); ?></span>
+              <span class="pngm-near-meta">
+                <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                <span class="pngm-near-city"><?php echo osc_esc_html($pngm_near_city); ?></span>
+                <a href="#" class="change-location pngm-change-link"><?php echo $pngm_near_has_loc ? __('Change', 'epsilon') : __('Set location', 'epsilon'); ?></a>
+              </span>
+            </h2>
             <?php if ($pngm_near_see_all) { ?>
               <a class="pngm-see-all" href="<?php echo function_exists('pngm_location_search_url') ? pngm_location_search_url($location_cookie) : osc_search_url(array('page' => 'search')); ?>"><?php _e('See all', 'epsilon'); ?></a>
             <?php } ?>

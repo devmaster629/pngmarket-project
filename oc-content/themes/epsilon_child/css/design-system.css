@@ -538,11 +538,13 @@ textarea.pngm-ds-textarea:focus {
   color: #006b24;
 }
 
+/* Single + button style: green pill on the SVG only (not on the <a> too). */
 .pngm-ds-navi .post,
 #navi-bar .post {
-  background: #006b24;
-  color: #fff;
-  border-radius: 999px;
+  background: transparent !important;
+  color: inherit;
+  border-radius: 0;
+  box-shadow: none !important;
 }
 
 

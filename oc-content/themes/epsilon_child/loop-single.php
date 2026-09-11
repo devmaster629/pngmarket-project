@@ -48,7 +48,7 @@
       <?php } ?>
       
       <?php if(osc_item_is_premium()) { ?>
-        <span class="premium-mark isGrid isDetail"><?php _e('Premium', 'epsilon'); ?></span>
+        <span class="premium-mark isGrid"><?php _e('Premium', 'epsilon'); ?></span>
       <?php } ?>
       
       <?php if($is_day_offer) { ?>
@@ -57,12 +57,9 @@
     </div>
 
     <div class="data">
-      <?php // Mockup card: title + Premium → green price → location · date → Category • Condition • Transaction ?>
+      <?php // Card: title → green price → location · date → Category • Condition • Transaction ?>
       <div class="pngm-card-title-row">
         <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
-        <?php if(osc_item_is_premium()) { ?>
-          <span class="premium-mark pngm-premium-inline"><?php _e('Premium', 'epsilon'); ?></span>
-        <?php } ?>
       </div>
 
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
