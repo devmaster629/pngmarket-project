@@ -83,6 +83,7 @@ body#home > .content > section.home-search {
   gap: 4px;
   overflow: visible;
   position: relative;
+  min-height: 387px;
 }
 
 /* Kill parent theme decorative :after background image. */
@@ -102,14 +103,14 @@ body#home > .content > section.home-search {
   z-index: 1;
 }
 
-/* Hero fills the large right column; absolute so section height still follows cats. */
+/* Fixed 425×387 hero slot — image asset matches this size with full collage. */
 .pngm-hero-art {
   position: absolute;
   top: 0;
   right: 0;
-  bottom: 0;
   z-index: 0;
   width: 425px;
+  height: 387px;
   max-width: 48%;
   margin: 0;
   padding: 0;
@@ -122,11 +123,10 @@ body#home > .content > section.home-search {
 
 .pngm-hero-art img {
   display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
-  max-width: none;
-  max-height: none;
+  width: 425px;
+  height: 387px;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center center;
   border: 0;
@@ -955,11 +955,18 @@ body#home #premium-items .simple-prod .labels {
 
   .pngm-hero-art {
     width: 300px;
+    height: 273px; /* keep 425:387 ratio */
     max-width: 42%;
   }
 
   .pngm-hero-art img {
-    min-height: 300px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .home-search > .container.pngm-home-banner {
+    min-height: 273px;
   }
 
   .home-search h1.pngm-title {

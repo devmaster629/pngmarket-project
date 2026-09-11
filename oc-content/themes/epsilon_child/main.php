@@ -124,7 +124,7 @@
       </div>
 
       <div class="pngm-hero-art" aria-hidden="true">
-        <img src="<?php echo osc_current_web_theme_url('images/home-hero.png'); ?>?v=<?php echo defined('PNGM_CHILD_VERSION') ? PNGM_CHILD_VERSION : '1'; ?>" alt="" width="1003" height="1350" decoding="async" />
+        <img src="<?php echo osc_current_web_theme_url('images/home-hero.png'); ?>?v=<?php echo defined('PNGM_CHILD_VERSION') ? PNGM_CHILD_VERSION : '1'; ?>" alt="" width="425" height="387" decoding="async" />
       </div>
     </div>
   </section>
