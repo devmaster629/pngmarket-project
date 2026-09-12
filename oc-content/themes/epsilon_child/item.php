@@ -643,7 +643,7 @@
       echo eps_banner('item_bottom');
       
       if(eps_param('recent_item') == 1) {
-        eps_recent_ads(eps_param('recent_design'), eps_param('recent_count'), 'onitem');
+        eps_recent_ads('pngm-card', eps_param('recent_count'), 'onitem');
       }
 
       if (function_exists('pngm_similar_ads')) {

@@ -513,8 +513,19 @@
 
     if (typeof window.epsLoadPatternSimple === 'function') {
       window.epsLoadPatternSimple = function (elem) {
-        var min = 1;
         var picker = elem.closest('.picker');
+
+        // Search results page: keyword goes straight to the board — no suggestion dropdown.
+        if (
+          $('body#search').length &&
+          (picker.hasClass('pngm-no-suggest') ||
+            elem.closest('.search-side-form, .pngm-global-search').length)
+        ) {
+          picker.find('.results').hide(0);
+          return false;
+        }
+
+        var min = 1;
         var box = picker.find('.results');
         var boxLoaded = picker.find('.results .loaded');
         var boxDefault = picker.find('.results .default');
@@ -2182,6 +2193,71 @@
   }
 
   /**
+   * Live-refresh search board on keyword / price / filter changes (no Search button).
+   * Syncs the header search bar with the sidebar form on the search page.
+   */
+  function initLiveSearchBoard() {
+    if (typeof window.jQuery === 'undefined' || !document.body || document.body.id !== 'search') {
+      return;
+    }
+
+    var $ = window.jQuery;
+
+    function triggerAjax($elem, event) {
+      if (typeof window.epsAjaxSearch !== 'function') {
+        return;
+      }
+      if (String(window.ajaxSearch) !== '1') {
+        return;
+      }
+      window.epsAjaxSearch($elem, event || $.Event('keyup'));
+    }
+
+    // Price range: refresh as the user types (parent only binds change).
+    $('body#search').on(
+      'keyup input',
+      'form.search-side-form input[name="sPriceMin"], form.search-side-form input[name="sPriceMax"]',
+      function (event) {
+        if ($(this).closest('#side-menu .box.filter').length) {
+          return;
+        }
+        triggerAjax($(this), event);
+      }
+    );
+
+    // Header keyword → sidebar pattern → AJAX results (no suggestion dropdown).
+    $('body#search').on('keyup input', '.pngm-global-search input.pattern', function (event) {
+      var val = $(this).val();
+      var $side = $('form.search-side-form').not('#side-menu form').first().find('input[name="sPattern"]');
+      if (!$side.length) {
+        $side = $('.filter-menu form.search-side-form').first().find('input[name="sPattern"]');
+      }
+      if ($side.length) {
+        $side.val(val);
+        triggerAjax($side, event);
+      }
+    });
+
+    $('body#search').on('submit', '.global-search-form', function (e) {
+      e.preventDefault();
+      var $input = $(this).find('input.pattern');
+      var $side = $('.filter-menu form.search-side-form').first().find('input[name="sPattern"]');
+      if ($side.length) {
+        $side.val($input.val());
+        triggerAjax($side, $.Event('keyup'));
+      }
+    });
+
+    // Keep header keyword in sync after AJAX board refresh.
+    $('body#search').on('keyup input', 'form.search-side-form input[name="sPattern"]', function () {
+      if ($(this).closest('#side-menu .box.filter').length) {
+        return;
+      }
+      $('.pngm-global-search input.pattern').val($(this).val());
+    });
+  }
+
+  /**
    * Mobile filter drawer: keep typing stable, pin the Filter button,
    * and apply filters on submit instead of live AJAX while the panel is open.
    */
@@ -2198,13 +2274,10 @@
       window.epsAjaxSearch = function (elem, event) {
         var $elem = window.jQuery(elem);
         var inDrawer = $elem.closest('#side-menu .box.filter').length > 0;
-        var isKeyword = $elem.attr('name') === 'sPattern';
 
+        // While the mobile filter drawer is open, don't live-refresh on every
+        // keystroke/change — Apply ("Show results") submits instead.
         if (inDrawer && event && event.type !== 'click') {
-          return;
-        }
-
-        if (isKeyword && event && (event.type === 'keyup' || event.type === 'input')) {
           return;
         }
 
@@ -2336,6 +2409,7 @@
     initItemPostValidation();
     initPostPhotoPreview();
     initUppyOverNav();
+    initLiveSearchBoard();
     initMobileSearchFilters();
     initChatLayout();
   }

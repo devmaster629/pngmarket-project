@@ -117,13 +117,9 @@
         <div class="row">
           <label for="sPattern"><?php _e('Keyword', 'epsilon'); ?></label>
 
-          <div class="input-box picker pattern only-search">
+          <div class="input-box picker pattern only-search pngm-no-suggest">
             <input type="text" name="sPattern" id="sPattern" class="pattern" placeholder="<?php echo osc_esc_html($pngm_keyword_ph); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off"/>
             <i class="clean fas fa-times-circle"></i>
-            <div class="results">
-              <div class="loaded"></div>
-              <div class="default"></div>
-            </div>
           </div>
         </div>
 
@@ -134,17 +130,8 @@
             <?php osc_categories_select('sCategory', $category, __('Category...', 'epsilon')) ; ?>
           </div>
         </div>
-        
-        <div class="row">
-          <label for="sLocation"><?php _e('Location', 'epsilon'); ?></label>
 
-          <div class="input-box picker location only-search">
-            <input name="sLocation" type="text" class="location-pick" id="sLocation" placeholder="<?php echo osc_esc_html(__('Region, city...', 'epsilon')); ?>" value="<?php echo osc_esc_html($search_location); ?>" autocomplete="off"/>
-            <i class="clean fas fa-times-circle"></i>
-            <div class="results"></div>
-          </div>
-        </div>
-        
+        <?php /* Location is set via header / Near You — not duplicated in sidebar filters. */ ?>
         <?php echo osc_run_hook('search_sidebar_location'); ?>
 
 
@@ -236,10 +223,9 @@
           <div class="row sidebar-hooks"><?php echo $search_hooks; ?></div>
         <?php } ?>
         
-        <div class="row buttons srch">
+        <div class="row buttons srch pngm-filter-apply-only">
           <button type="submit" class="btn mbBg init-search" id="search-button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18"><path d="M508.5 468.9L387.1 347.5c-2.3-2.3-5.3-3.5-8.5-3.5h-13.2c31.5-36.5 50.6-84 50.6-136C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c52 0 99.5-19.1 136-50.6v13.2c0 3.2 1.3 6.2 3.5 8.5l121.4 121.4c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17zM208 368c-88.4 0-160-71.6-160-160S119.6 48 208 48s160 71.6 160 160-71.6 160-160 160z"/></svg>
-            <span><?php _e('Search', 'epsilon'); ?></span>
+            <span><?php _e('Show results', 'epsilon'); ?></span>
           </button>
         </div>
         
@@ -396,7 +382,7 @@
     
     <?php osc_run_hook('search_items_filter'); ?>
 
-    <?php if($filter_check > 0) { ?>
+    <?php if(false && $filter_check > 0) { ?>
       <div id="search-filters" class="pngm-search-chips">
         <?php foreach($search_params_remove as $n => $v) { ?>
           <?php if($v['name'] <> '' && $v['title'] <> '' && $v['to_remove'] === true) { ?>
@@ -477,8 +463,9 @@
           <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M496 384H160v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h80v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h336c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160h-80v-16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h336v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h80c8.8 0 16-7.2 16-16v-32c0-8.8-7.2-16-16-16zm0-160H288V48c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v16H16C7.2 64 0 71.2 0 80v32c0 8.8 7.2 16 16 16h208v16c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16v-16h208c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"/></svg>
           <span><?php _e('Filter', 'epsilon'); ?></span>
         </a>
-        <div class="sort-type">
-          <label for="orderSelect"><?php _e('Sort by', 'epsilon'); ?></label>
+        <div class="sort-type pngm-sort-control">
+          <span class="pngm-sort-prefix" aria-hidden="true"><span class="pngm-sort-label-full"><?php _e('Sort by', 'epsilon'); ?>:</span><span class="pngm-sort-label-short"><?php _e('Sort', 'epsilon'); ?>:</span></span>
+          <label class="pngm-sr-only" for="orderSelect"><?php _e('Sort by', 'epsilon'); ?></label>
           <?php echo eps_simple_sort(); ?>
         </div>
       </div>
@@ -500,80 +487,31 @@
     
     <div id="search-items">     
       <?php if(osc_count_items() == 0) { ?>
-        <?php
-          $pngm_location_label = function_exists('pngm_active_location_label') ? pngm_active_location_label() : '';
-          $pngm_clear_params = array('page' => 'search', 'pngmClearLocation' => 1);
-          if(Params::getParam('sPattern') <> '') {
-            $pngm_clear_params['sPattern'] = Params::getParam('sPattern');
-          }
-          if(Params::getParam('sCategory') <> '') {
-            $pngm_clear_params['sCategory'] = Params::getParam('sCategory');
-          }
-          $pngm_clear_location_url = osc_search_url($pngm_clear_params);
-          $pngm_fallback_items = function_exists('pngm_newest_listings_nearby') ? pngm_newest_listings_nearby(12) : array();
-        ?>
-        <div class="list-empty round3 pngm-empty-search">
-          <span class="titles"><?php _e('No exact results found', 'epsilon'); ?></span>
-          <p class="pngm-empty-lead"><?php _e('We could not find listings that match your search. Try a different keyword, or browse the newest ads below.', 'epsilon'); ?></p>
-
-          <div class="pngm-empty-location">
-            <?php if($pngm_location_label <> '') { ?>
-              <span class="pngm-empty-loc-label">
-                <i class="fas fa-map-marker-alt"></i>
-                <?php echo sprintf(__('Showing suggestions for %s', 'epsilon'), osc_esc_html($pngm_location_label)); ?>
-              </span>
-            <?php } else { ?>
-              <span class="pngm-empty-loc-label">
-                <i class="fas fa-map-marker-alt"></i>
-                <?php _e('Showing the newest listings', 'epsilon'); ?>
-              </span>
-            <?php } ?>
-
-            <div class="pngm-empty-loc-actions">
-              <a href="#" class="btn btn-secondary mini change-location change-search-location"><?php _e('Change location', 'epsilon'); ?></a>
-              <?php if($pngm_location_label <> '') { ?>
-                <a href="<?php echo $pngm_clear_location_url; ?>" class="btn btn-white mini"><?php _e('Clear location', 'epsilon'); ?></a>
-              <?php } ?>
-            </div>
+        <div class="pngm-no-results">
+          <div class="pngm-no-results-illu" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="160" height="128" fill="none">
+              <rect x="28" y="28" width="110" height="88" rx="10" fill="#EEF2F5" stroke="#D5DEE6" stroke-width="2"/>
+              <rect x="38" y="38" width="90" height="10" rx="3" fill="#DDE5EB"/>
+              <circle cx="48" cy="43" r="2.5" fill="#C5D0D9"/>
+              <circle cx="56" cy="43" r="2.5" fill="#C5D0D9"/>
+              <circle cx="64" cy="43" r="2.5" fill="#C5D0D9"/>
+              <path d="M48 98c12-18 28-28 44-28s28 8 36 18v8H48v2z" fill="#D7E8DE"/>
+              <path d="M62 92c6-10 14-16 24-16 8 0 14 4 20 10" stroke="#B7CFC0" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <circle cx="78" cy="72" r="6" fill="#C9D9D0"/>
+              <circle cx="102" cy="68" r="8" fill="#C9D9D0"/>
+              <circle cx="128" cy="78" r="5" fill="#C9D9D0"/>
+              <circle cx="132" cy="108" r="34" fill="#F4F7F9" stroke="#5C6570" stroke-width="8"/>
+              <circle cx="132" cy="108" r="22" fill="#fff" stroke="#5C6570" stroke-width="3"/>
+              <path d="M156 132l22 22" stroke="#5C6570" stroke-width="10" stroke-linecap="round"/>
+            </svg>
           </div>
-
-          <div class="tips">
-            <div class="row"><?php _e('Tips for better results', 'epsilon'); ?></div>
-            <div class="row"><i class="fa fa-circle"></i><?php _e('Use more general keywords', 'epsilon'); ?></div>
-            <div class="row"><i class="fa fa-circle"></i><?php _e('Check spelling', 'epsilon'); ?></div>
-            <div class="row"><i class="fa fa-circle"></i><?php _e('Reduce filters, use less of them', 'epsilon'); ?></div>
-            <div class="row last"><a href="<?php echo osc_search_url(array('page' => 'search'));?>"><?php _e('Reset filter', 'epsilon'); ?> &#8594;</a></div>
+          <h2 class="pngm-no-results-title"><?php _e('No listings found', 'epsilon'); ?></h2>
+          <p class="pngm-no-results-text"><?php _e('Try changing your keyword or filters.', 'epsilon'); ?></p>
+          <div class="pngm-no-results-actions">
+            <a class="pngm-no-results-btn pngm-no-results-btn-outline" href="<?php echo osc_search_url($pngm_clear_filters); ?>"><?php _e('Clear filters', 'epsilon'); ?></a>
+            <a class="pngm-no-results-btn pngm-no-results-btn-solid" href="<?php echo osc_search_url(array('page' => 'search')); ?>"><?php _e('Browse all listings', 'epsilon'); ?></a>
           </div>
         </div>
-
-        <?php if(is_array($pngm_fallback_items) && count($pngm_fallback_items) > 0) { ?>
-          <?php
-            $pngm_default_items = View::newInstance()->_get('items');
-            View::newInstance()->_exportVariableToView('items', $pngm_fallback_items);
-          ?>
-          <div class="pngm-empty-suggestions">
-            <h2>
-              <?php
-                if($pngm_location_label <> '') {
-                  echo sprintf(__('Newest listings near %s', 'epsilon'), osc_esc_html($pngm_location_label));
-                } else {
-                  _e('Newest listings', 'epsilon');
-                }
-              ?>
-            </h2>
-            <div class="products grid">
-              <?php
-                $c = 1;
-                while(osc_has_items()) {
-                  eps_draw_item($c, false, 'pngm-card');
-                  $c++;
-                }
-              ?>
-            </div>
-          </div>
-          <?php View::newInstance()->_exportVariableToView('items', $pngm_default_items); ?>
-        <?php } ?>
-
       <?php } else { ?>
         <?php echo eps_banner('search_top'); ?>
 
@@ -601,7 +539,8 @@
 
       <?php 
         if(eps_param('recent_search') == 1) {
-          eps_recent_ads(eps_param('recent_design'), eps_param('recent_count'), 'onsearch');
+          // Match home dashboard: same count + pngm-card size/design
+          eps_recent_ads('pngm-card', eps_param('recent_count'), 'onsearch');
         }
       ?>
       

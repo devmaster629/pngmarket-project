@@ -40,7 +40,7 @@
   var darkMode = '<?php echo (eps_is_dark_mode() ? 1 : 0); ?>';
   var imgPreviewRatio = <?php echo round($dimNormal[0]/$dimNormal[1], 3); ?>;
   var searchRewrite = '/<?php echo osc_get_preference('rewrite_search_url', 'osclass'); ?>';
-  var ajaxSearch = '<?php echo (eps_param('search_ajax') == 1 ? '1' : '0'); ?>';
+  var ajaxSearch = '1';
   var ajaxForms = '<?php echo (eps_param('forms_ajax') == 1 ? '1' : '0'); ?>';
   var locationPick = '<?php echo (eps_param('location_pick') == 1 ? '0' : '0'); ?>';
   var delTitleNc = '<?php echo osc_esc_js(__('Parent category cannot be selected', 'epsilon')); ?>';

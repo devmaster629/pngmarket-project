@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.6.31');
+    define('PNGM_CHILD_VERSION', '1.6.37');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -594,8 +594,8 @@ osc_add_hook('init', 'pngm_clear_location_stay', 1);
 
 
 /**
- * Newest listings for the active location (URL params, then cookie).
- * Used by SEARCH-04 when the keyword search returns nothing.
+ * Newest listings nationwide (no location filter).
+ * Used when a keyword search returns nothing.
  *
  * @param int $limit
  *
@@ -606,32 +606,6 @@ function pngm_newest_listings_nearby($limit = 12)
     $mSearch = new Search();
     $mSearch->order('dt_pub_date', 'DESC');
     $mSearch->limit(0, (int) $limit);
-
-    $city = Params::getParam('sCity');
-    $region = Params::getParam('sRegion');
-    $country = Params::getParam('sCountry');
-
-    if ($city === '' && $region === '' && $country === '' && function_exists('eps_location_from_cookies')) {
-        $cookie = eps_location_from_cookies();
-
-        if (@$cookie['success'] === true) {
-            if (@$cookie['fk_i_city_id'] > 0) {
-                $city = $cookie['fk_i_city_id'];
-            } elseif (@$cookie['fk_i_region_id'] > 0) {
-                $region = $cookie['fk_i_region_id'];
-            } elseif (@$cookie['fk_c_country_code'] !== '') {
-                $country = $cookie['fk_c_country_code'];
-            }
-        }
-    }
-
-    if ($city !== '' && $city !== null) {
-        $mSearch->addCity($city);
-    } elseif ($region !== '' && $region !== null) {
-        $mSearch->addRegion($region);
-    } elseif ($country !== '' && $country !== null) {
-        $mSearch->addCountry($country);
-    }
 
     $items = $mSearch->doSearch();
 

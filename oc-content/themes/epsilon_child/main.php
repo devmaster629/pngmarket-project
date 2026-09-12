@@ -474,7 +474,7 @@
 
 
   <?php if(eps_param('recent_home') == 1) { ?>
-    <?php $recent_items = eps_recent_ads(eps_param('recent_design'), eps_param('recent_count'), 'onhome', true); ?>
+    <?php $recent_items = eps_recent_ads('pngm-card', eps_param('recent_count'), 'onhome', true); ?>
     
     <?php if(is_array($recent_items) && count($recent_items) > 0) { ?>
       <?php
