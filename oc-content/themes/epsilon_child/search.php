@@ -131,7 +131,16 @@
           </div>
         </div>
 
-        <?php /* Location is set via header / Near You — not duplicated in sidebar filters. */ ?>
+        <div class="row">
+          <label for="sLocation"><?php _e('Location', 'epsilon'); ?></label>
+
+          <div class="input-box picker location only-search">
+            <input name="sLocation" type="text" class="location-pick" id="sLocation" placeholder="<?php echo osc_esc_html(__('Region, city...', 'epsilon')); ?>" value="<?php echo osc_esc_html($search_location); ?>" autocomplete="off"/>
+            <i class="clean fas fa-times-circle"></i>
+            <div class="results"></div>
+          </div>
+        </div>
+
         <?php echo osc_run_hook('search_sidebar_location'); ?>
 
 

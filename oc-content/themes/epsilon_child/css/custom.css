@@ -7287,9 +7287,7 @@ body#search #search-menu .row.buttons.srch {
   display: none !important;
 }
 
-/* Location removed from sidebar filters (and empty-state location banner). */
-body#search #search-menu .row:has(#sLocation),
-body#search #search-menu .picker.location.only-search,
+/* Keep empty-state location banner hidden; sidebar Location filter stays visible. */
 body#search .pngm-empty-location {
   display: none !important;
 }
@@ -7654,10 +7652,14 @@ body#search #search-items .paginate a.active {
   }
 
   body.pngm-filter-open #side-menu .picker.pattern .results,
-  body.pngm-filter-open #side-menu .picker.pattern.pngm-no-suggest .results,
-  body.pngm-filter-open #side-menu .row:has(#sLocation),
-  body.pngm-filter-open #side-menu .picker.location.only-search {
+  body.pngm-filter-open #side-menu .picker.pattern.pngm-no-suggest .results {
     display: none !important;
+  }
+
+  body.pngm-filter-open #side-menu .picker.location .results {
+    display: block;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   body#search #search-items .products.grid .simple-prod {

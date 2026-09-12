@@ -2255,6 +2255,47 @@
       }
       $('.pngm-global-search input.pattern').val($(this).val());
     });
+
+    function clearSearchLocation($form) {
+      if (!$form || !$form.length) {
+        return;
+      }
+      $form.find('input[name="sCity"], input[name="sRegion"], input[name="sCountry"]').val('');
+      $form.find('input[name="sLocation"]').val('');
+      $form.find('.picker.location .results').hide(0);
+      $form.find('.picker.location .clean').hide(0);
+
+      var $city = $form.find('input[name="sCity"]').first();
+      if ($city.length) {
+        // Parent ajax ignores sLocation keyups; trigger via sCity change instead.
+        triggerAjax($city, $.Event('change'));
+      }
+    }
+
+    // X clear on location picker → drop city/region/country and refresh board.
+    $('body#search').on('click', 'form.search-side-form .picker.location .clean', function (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      clearSearchLocation($(this).closest('form.search-side-form'));
+    });
+
+    // Deleting all location text → same refresh once hidden loc fields were set.
+    $('body#search').on('keyup input', 'form.search-side-form input[name="sLocation"]', function () {
+      if ($(this).closest('#side-menu .box.filter').length) {
+        return;
+      }
+      if ($.trim($(this).val() || '') !== '') {
+        return;
+      }
+      var $form = $(this).closest('form.search-side-form');
+      var hadLoc =
+        $.trim($form.find('input[name="sCity"]').val() || '') !== '' ||
+        $.trim($form.find('input[name="sRegion"]').val() || '') !== '' ||
+        $.trim($form.find('input[name="sCountry"]').val() || '') !== '';
+      if (hadLoc) {
+        clearSearchLocation($form);
+      }
+    });
   }
 
   /**
