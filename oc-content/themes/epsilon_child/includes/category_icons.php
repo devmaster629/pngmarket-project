@@ -253,34 +253,316 @@ function pngm_category_svg_url($category_id)
 }
 
 /**
- * Image URL for a category icon.
- * Prefer photographic covers (small_cat/{id}.png) to match Phase 2 design,
- * then semantic SVG, then theme defaults.
+ * Photographic theme cover by subcategory name (unique product photo, not parent duplicate).
  *
- * @param int $category_id
- * @return string
+ * @param string $category_name
+ * @return string|false URL
  */
-function pngm_get_cat_image($category_id)
+function pngm_category_theme_photo_url($category_name)
 {
-    $id = (int) $category_id;
+    $key = '';
+    $n = function_exists('mb_strtolower')
+        ? mb_strtolower(trim((string) $category_name), 'UTF-8')
+        : strtolower(trim((string) $category_name));
 
-    // Phase 2 design covers (photo / 3D tiles).
-    if (defined('ABS_PATH')) {
-        $child = ABS_PATH . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png';
-        if (is_file($child) && filesize($child) > 500) {
-            $ver = defined('PNGM_CHILD_VERSION') ? ('?v=' . PNGM_CHILD_VERSION) : '';
-            return osc_base_url() . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png' . $ver;
+    $map = array(
+        'motorcycle parts' => 'moto-parts',
+        'car parts' => 'car-parts',
+        'motorcycl' => 'motorcycles',
+        'truck' => 'trucks',
+        'bus' => 'buses',
+        'van' => 'buses',
+        'boat' => 'boats',
+        'marine' => 'boats',
+        'heavy' => 'heavy',
+        'machinery' => 'heavy',
+        'rv' => 'rvs',
+        'caravan' => 'rvs',
+        'car' => 'cars',
+        'mobile phone' => 'phones',
+        'phone accessor' => 'phone-acc',
+        'computer accessor' => 'pc-acc',
+        'computer' => 'laptops',
+        'laptop' => 'laptops',
+        'tv' => 'tvs',
+        'entertainment' => 'tvs',
+        'audio' => 'audio',
+        'speaker' => 'audio',
+        'camera' => 'cameras',
+        'gaming' => 'gaming',
+        'console' => 'gaming',
+        'home appliance' => 'appliances',
+        'furniture' => 'furniture',
+        'bag' => 'bags',
+        'dog' => 'dogs',
+        'house' => 'houses',
+        'bicycle' => 'bicycles',
+        'bike' => 'bicycles',
+        'admin' => 'jobs',
+        'job' => 'jobs',
+        'tool' => 'tools',
+        'farm machin' => 'tractor',
+        'tractor' => 'tractor',
+        'other vehicle' => 'other-vehicles',
+        'other electronic' => 'other-electronics',
+    );
+
+    foreach ($map as $needle => $slug) {
+        if (strpos($n, $needle) !== false) {
+            $key = $slug;
+            break;
         }
     }
 
-    $svg = pngm_category_svg_url($category_id);
+    if ($key === '') {
+        return false;
+    }
+
+    // Prefer dedicated theme file, else a known subcategory id that already has this photo.
+    $themePath = ABS_PATH . 'oc-content/themes/epsilon_child/images/small_cat/themes/' . $key . '.png';
+    $ver = defined('PNGM_CHILD_VERSION') ? ('?v=' . PNGM_CHILD_VERSION) : '';
+    if (is_file($themePath) && filesize($themePath) >= 4000) {
+        return osc_base_url() . 'oc-content/themes/epsilon_child/images/small_cat/themes/' . $key . '.png' . $ver;
+    }
+
+    $idBySlug = array(
+        'cars' => 18,
+        'motorcycles' => 9,
+        'trucks' => 10,
+        'buses' => 11,
+        'boats' => 14,
+        'car-parts' => 12,
+        'moto-parts' => 13,
+        'heavy' => 15,
+        'rvs' => 16,
+        'other-vehicles' => 17,
+        'phones' => 31,
+        'phone-acc' => 32,
+        'laptops' => 33,
+        'pc-acc' => 34,
+        'tvs' => 35,
+        'audio' => 36,
+        'cameras' => 37,
+        'gaming' => 101,
+        'appliances' => 102,
+        'other-electronics' => 100,
+        'furniture' => 38,
+        'bags' => 47,
+        'dogs' => 69,
+        'houses' => 75,
+        'bicycles' => 64,
+        'jobs' => 83,
+        'tools' => 103,
+        'tractor' => 125,
+    );
+
+    if (isset($idBySlug[$key])) {
+        $file = pngm_category_cover_file((int) $idBySlug[$key]);
+        if ($file !== false) {
+            return $file['url'];
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Absolute path + URL for a category cover PNG if it exists.
+ *
+ * @param int $category_id
+ * @return array|false {path,url}
+ */
+function pngm_category_cover_file($category_id)
+{
+    $id = (int) $category_id;
+    if ($id <= 0 || !defined('ABS_PATH')) {
+        return false;
+    }
+
+    $path = ABS_PATH . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png';
+    // Ignore tiny silhouette placeholders (< ~4KB); keep photo covers only.
+    if (!is_file($path) || filesize($path) < 4000) {
+        return false;
+    }
+
+    $ver = defined('PNGM_CHILD_VERSION') ? ('?v=' . PNGM_CHILD_VERSION) : '';
+
+    return array(
+        'path' => $path,
+        'url'  => osc_base_url() . 'oc-content/themes/epsilon_child/images/small_cat/' . $id . '.png' . $ver,
+    );
+}
+
+/**
+ * Latest listing thumbnail for a category (meaningful subcategory image).
+ *
+ * @param int $category_id
+ * @return string|false
+ */
+function pngm_category_listing_cover_url($category_id)
+{
+    $category_id = (int) $category_id;
+    if ($category_id <= 0 || !class_exists('Search') || !class_exists('ItemResource')) {
+        return false;
+    }
+
+    static $memo = array();
+    if (array_key_exists($category_id, $memo)) {
+        return $memo[$category_id];
+    }
+
+    try {
+        $mSearch = new Search();
+        $mSearch->addCategory($category_id);
+        if (method_exists($mSearch, 'withPicture')) {
+            $mSearch->withPicture(true);
+        }
+        $mSearch->order('dt_pub_date', 'DESC');
+        $mSearch->limit(0, 8);
+        $items = $mSearch->doSearch();
+    } catch (Exception $e) {
+        return $memo[$category_id] = false;
+    }
+
+    if (!is_array($items) || count($items) === 0) {
+        return $memo[$category_id] = false;
+    }
+
+    foreach ($items as $item) {
+        $item_id = isset($item['pk_i_id']) ? (int) $item['pk_i_id'] : 0;
+        if ($item_id <= 0) {
+            continue;
+        }
+
+        $resources = ItemResource::newInstance()->getAllResourcesFromItem($item_id);
+        if (!is_array($resources) || count($resources) === 0) {
+            continue;
+        }
+
+        $res = $resources[0];
+        $path = isset($res['s_path']) ? $res['s_path'] : '';
+        $name = isset($res['s_name']) ? $res['s_name'] : '';
+        $ext = isset($res['s_extension']) ? $res['s_extension'] : 'jpg';
+
+        if ($path === '' || $name === '') {
+            continue;
+        }
+
+        $thumb = osc_base_url() . $path . $name . '_thumbnail.' . $ext;
+        $preview = osc_base_url() . $path . $name . '_preview.' . $ext;
+
+        // Prefer preview when thumbnail is tiny / missing on disk.
+        $abs_thumb = ABS_PATH . $path . $name . '_thumbnail.' . $ext;
+        $abs_preview = ABS_PATH . $path . $name . '_preview.' . $ext;
+        if (is_file($abs_preview) && filesize($abs_preview) > 800) {
+            return $memo[$category_id] = $preview;
+        }
+        if (is_file($abs_thumb) && filesize($abs_thumb) > 400) {
+            return $memo[$category_id] = $thumb;
+        }
+        if (is_file(ABS_PATH . $path . $name . '.' . $ext)) {
+            return $memo[$category_id] = osc_base_url() . $path . $name . '.' . $ext;
+        }
+    }
+
+    return $memo[$category_id] = false;
+}
+
+/**
+ * Image URL for a category / subcategory icon.
+ * Prefer unique per-id covers (small_cat/{id}.png), then a listing photo from
+ * that category, then parent cover / SVG / defaults.
+ *
+ * @param int         $category_id
+ * @param string      $category_name
+ * @param int         $parent_id
+ * @return string
+ */
+function pngm_get_cat_image($category_id, $category_name = '', $parent_id = 0)
+{
+    $id = (int) $category_id;
+    $parent_id = (int) $parent_id;
+
+    // Unique cover file for this exact category / subcategory id.
+    $own = pngm_category_cover_file($id);
+    if ($own !== false) {
+        return $own['url'];
+    }
+
+    // Listing photo from this category only (not parent).
+    $listing = pngm_category_listing_cover_url($id);
+    if ($listing !== false) {
+        return $listing;
+    }
+
+    if ($category_name === '' && $id > 0 && class_exists('Category')) {
+        $row = Category::newInstance()->findByPrimaryKey($id);
+        if (is_array($row)) {
+            $category_name = isset($row['s_name']) ? $row['s_name'] : '';
+            if ($parent_id <= 0 && !empty($row['fk_i_parent_id'])) {
+                $parent_id = (int) $row['fk_i_parent_id'];
+            }
+        }
+    }
+
+    // Unique product photo by subcategory name theme (cars vs boats vs phones…).
+    $themePhoto = pngm_category_theme_photo_url($category_name);
+    if ($themePhoto !== false) {
+        return $themePhoto;
+    }
+
+    // Last resort: parent photographic cover (roots only).
+    if ($parent_id > 0) {
+        $parent_file = pngm_category_cover_file($parent_id);
+        if ($parent_file !== false) {
+            return $parent_file['url'];
+        }
+    }
+
+    $svg = pngm_category_svg_url($id);
     if ($svg !== false) {
         return $svg;
     }
+    if ($parent_id > 0) {
+        $psvg = pngm_category_svg_url($parent_id);
+        if ($psvg !== false) {
+            return $psvg;
+        }
+    }
 
     if (function_exists('eps_get_cat_image') && (string) eps_param('sample_images') !== '1') {
-        return eps_get_cat_image($category_id);
+        return eps_get_cat_image($id);
     }
 
     return osc_current_web_theme_url() . 'images/small_cat/default.png';
+}
+
+/**
+ * Render a photographic category / subcategory visual (home + search strip).
+ *
+ * @param int   $category_id
+ * @param array $category
+ * @param int   $parent_id
+ * @return string
+ */
+function pngm_render_category_visual($category_id, $category = array(), $parent_id = 0)
+{
+    $name = '';
+    if (is_array($category) && !empty($category['s_name'])) {
+        $name = $category['s_name'];
+    } elseif (is_array($category) && !empty($category['name'])) {
+        $name = $category['name'];
+    }
+
+    if ($parent_id <= 0 && is_array($category) && !empty($category['fk_i_parent_id'])) {
+        $parent_id = (int) $category['fk_i_parent_id'];
+    }
+
+    $url = pngm_get_cat_image((int) $category_id, $name, (int) $parent_id);
+    $is_svg = (stripos($url, '.svg') !== false);
+    $class = $is_svg ? 'pngm-cat-svg' : 'pngm-cat-cover';
+    $lazy = (function_exists('eps_is_lazy') && eps_is_lazy()) ? ' lazy' : '';
+    $alt = osc_esc_html($name !== '' ? $name : __('Category', 'epsilon'));
+
+    return '<img src="' . osc_esc_html($url) . '" alt="' . $alt . '" class="' . $class . $lazy . '" loading="lazy" decoding="async" />';
 }

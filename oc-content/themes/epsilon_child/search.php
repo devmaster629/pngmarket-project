@@ -353,7 +353,9 @@
               }
             ?>
             <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
-              <?php if (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
+              <?php if (function_exists('pngm_render_category_visual') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
+                <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, 0); ?></span>
+              <?php } elseif (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
                 <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, false); ?></span>
               <?php } ?>
               <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_all_label); ?></span>
@@ -364,9 +366,12 @@
             <?php foreach($pngm_subcats as $pngm_sc) {
               $pngm_sc_params = $params_spec;
               $pngm_sc_params['sCategory'] = $pngm_sc['id'];
+              $pngm_sc_parent_id = is_array($pngm_subcat_parent) ? (int) @$pngm_subcat_parent['pk_i_id'] : 0;
             ?>
               <a class="pngm-search-subcat<?php if($search_cat_id == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>">
-                <?php if (function_exists('pngm_render_category_icon')) { ?>
+                <?php if (function_exists('pngm_render_category_visual')) { ?>
+                  <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_sc['id'], array('s_name' => $pngm_sc['name']), $pngm_sc_parent_id); ?></span>
+                <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
                   <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_sc['id'], array('s_name' => $pngm_sc['name']), false); ?></span>
                 <?php } ?>
                 <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_sc['name']); ?></span>
