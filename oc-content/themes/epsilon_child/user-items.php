@@ -10,6 +10,10 @@
   <?php osc_current_web_theme_path('header.php') ; ?>
 
   <?php
+    if (!function_exists('pngm_ua_render_sidebar')) {
+      require_once dirname(__FILE__) . '/includes/account_ua.php';
+    }
+
     $param = (osc_version() >= 830 ? 'sItemType' : 'itemType');
     $current_type = (Params::getParam($param) <> '' ? Params::getParam($param) : 'all');
 
@@ -30,10 +34,10 @@
     );
   ?>
   
-  <div class="container primary">
-    <div id="user-menu" class="pngm-user-menu"><?php eps_user_menu(); ?></div>
+  <div class="container primary pngm-ua-shell">
+    <?php pngm_ua_render_sidebar(); ?>
 
-    <div id="user-main">
+    <div id="user-main" class="pngm-ua-main">
       <?php osc_run_hook('user_items_top'); ?>
       
       <div class="pngm-ua-pagehead">

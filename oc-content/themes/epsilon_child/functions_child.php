@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.6.62');
+    define('PNGM_CHILD_VERSION', '1.6.65');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -18,6 +18,7 @@ require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
+require_once dirname(__FILE__) . '/includes/account_ua.php';
 
 /**
  * Total active listings matching a default-location cookie (no result limit).
@@ -115,6 +116,18 @@ function pngm_enqueue_assets()
     // Phase 2 design system first, then page overrides in custom.css.
     osc_enqueue_style('pngm-design-system', osc_current_web_theme_url('css/design-system.css' . $version));
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
+
+    $is_ua = false;
+    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
+        $loc = osc_get_osclass_location();
+        $is_ua = ($loc === 'user') || (strpos((string) Params::getParam('route'), 'im-') === 0)
+            || (strpos((string) Params::getParam('route'), 'bpr-') === 0)
+            || (strpos((string) Params::getParam('route'), 'favorite') === 0)
+            || (strpos((string) Params::getParam('route'), 'osp-') === 0);
+    }
+    if ($is_ua) {
+        osc_enqueue_style('pngm-account-ua', osc_current_web_theme_url('css/account-ua.css' . $version));
+    }
 
     osc_register_script('pngm-gallery', osc_current_web_theme_url('js/gallery.js' . $version), array('jquery'));
     osc_enqueue_script('pngm-gallery');
