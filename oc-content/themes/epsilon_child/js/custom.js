@@ -1817,6 +1817,106 @@
         $(this).addClass('pngm-nav-favorite');
       }
     });
+
+    initUaMobileDrawer($);
+  }
+
+  /**
+   * Mobile account nav: hide in-page sidebar; open designed drawer via hamburger.
+   * Must beat theme #side-menu (z-index 10120) and menu-cover (10100).
+   */
+  function initUaMobileDrawer($) {
+    var $sidebar = $('#user-menu.pngm-ua-sidebar');
+    if (!$sidebar.length) {
+      return;
+    }
+
+    function isMobileUa() {
+      return window.matchMedia('(max-width: 980px)').matches;
+    }
+
+    function hideGlobalSideMenu() {
+      var $menu = $('#side-menu');
+      $menu.stop(true, true).hide(0).removeClass('box-open');
+      $menu.find('.box').hide(0);
+      $menu.css({
+        'margin-left': '',
+        'margin-right': '',
+        opacity: ''
+      });
+    }
+
+    function openUaNav(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
+      }
+      hideGlobalSideMenu();
+      $('body').addClass('pngm-ua-nav-open');
+      $('#menu-cover').stop(true, true).fadeIn(200);
+    }
+
+    function closeUaNav() {
+      $('body').removeClass('pngm-ua-nav-open');
+    }
+
+    // Replace theme hamburger handler on account pages so #side-menu never opens.
+    var $btn = $('header .menu.btn');
+
+    function bindHamburger() {
+      $btn.off('click.pngmUaNav');
+      // Wipe theme global.js click binder on this control for UA pages only.
+      $btn.off('click');
+      $btn.on('click.pngmUaNav', function (e) {
+        if (!isMobileUa()) {
+          return;
+        }
+        openUaNav(e);
+      });
+    }
+
+    bindHamburger();
+    // Beat late global.js / other ready handlers that re-bind the hamburger.
+    window.setTimeout(bindHamburger, 0);
+    window.setTimeout(bindHamburger, 400);
+
+    // Capture fallback if another script re-binds later
+    var btnEl = $btn.get(0);
+    if (btnEl && !btnEl.getAttribute('data-pngm-ua-nav')) {
+      btnEl.setAttribute('data-pngm-ua-nav', '1');
+      btnEl.addEventListener('click', function (e) {
+        if (!isMobileUa()) {
+          return;
+        }
+        openUaNav(e);
+      }, true);
+    }
+
+    $(document)
+      .off('click.pngmUaNavClose')
+      .on('click.pngmUaNavClose', '#menu-cover, .pngm-ua-nav-close', function () {
+        closeUaNav();
+        hideGlobalSideMenu();
+      });
+
+    $(document)
+      .off('keydown.pngmUaNav')
+      .on('keydown.pngmUaNav', function (e) {
+        if (e.key === 'Escape') {
+          closeUaNav();
+          $('#menu-cover').stop(true, true).fadeOut(200);
+          hideGlobalSideMenu();
+        }
+      });
+
+    $(window).on('resize.pngmUaNav', function () {
+      if (!isMobileUa()) {
+        closeUaNav();
+      }
+    });
   }
 
   function initPostingPlaceholders() {

@@ -3693,8 +3693,9 @@ body.body-ua .profile-box .right-block {
     gap: 12px;
   }
 
-  body.body-ua #user-menu,
-  body.body-ua #user-menu.pngm-user-menu {
+  /* Legacy flat #user-menu only — designed pngm-ua-sidebar is a drawer */
+  body.body-ua #user-menu:not(.pngm-ua-sidebar),
+  body.body-ua #user-menu.pngm-user-menu:not(.pngm-ua-sidebar) {
     display: flex !important;
     width: 100%;
     position: relative;
@@ -3709,22 +3710,22 @@ body.body-ua .profile-box .right-block {
     scrollbar-width: thin;
   }
 
-  body.body-ua #user-menu a {
+  body.body-ua #user-menu:not(.pngm-ua-sidebar) a {
     flex: 0 0 auto;
     white-space: nowrap;
     margin: 0;
     padding: 10px 12px;
   }
 
-  body.body-ua #user-menu a.public {
+  body.body-ua #user-menu:not(.pngm-ua-sidebar) a.public {
     margin-bottom: 0;
   }
 
-  body.body-ua #user-menu a.logout {
+  body.body-ua #user-menu:not(.pngm-ua-sidebar) a.logout {
     margin-top: 0;
   }
 
-  body.body-ua #user-menu .menu-hooks {
+  body.body-ua #user-menu:not(.pngm-ua-sidebar) .menu-hooks {
     display: contents;
   }
 

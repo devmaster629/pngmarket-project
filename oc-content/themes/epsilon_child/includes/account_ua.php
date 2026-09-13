@@ -315,6 +315,7 @@ function pngm_ua_render_sidebar($active = '')
     };
 
     echo '<aside id="user-menu" class="pngm-ua-sidebar" aria-label="' . osc_esc_html(__('Account menu', 'epsilon')) . '">';
+    echo '<button type="button" class="pngm-ua-nav-close" aria-label="' . osc_esc_html(__('Close menu', 'epsilon')) . '">&times;</button>';
     echo '<div class="pngm-ua-brand">';
     echo '<a href="' . osc_esc_html(osc_base_url()) . '" class="pngm-ua-brand-link">';
     echo '<span class="pngm-ua-brand-mark" aria-hidden="true"><i class="fas fa-check"></i></span>';
