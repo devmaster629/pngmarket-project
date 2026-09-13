@@ -1735,6 +1735,12 @@
         return;
       }
 
+      // Attributes plugin calls .rules() when jquery.validate is loaded; without a
+      // form validator instance that throws: Cannot read properties of undefined (settings)
+      if (!$('form[name="item"]').data('validator')) {
+        return;
+      }
+
       $('#atr-make select[data-level], .atr-form #atr-make select[data-level]').each(function () {
         var level = parseInt($(this).attr('data-level'), 10) || 0;
 

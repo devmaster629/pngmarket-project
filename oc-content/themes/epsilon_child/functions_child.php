@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.6.48');
+    define('PNGM_CHILD_VERSION', '1.6.62');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -17,6 +17,7 @@ require_once dirname(__FILE__) . '/includes/footer_helpers.php';
 require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
+require_once dirname(__FILE__) . '/includes/post_wizard.php';
 
 /**
  * Total active listings matching a default-location cookie (no result limit).
@@ -120,6 +121,12 @@ function pngm_enqueue_assets()
 
     osc_register_script('pngm-custom', osc_current_web_theme_url('js/custom.js' . $version), array('jquery', 'global', 'validate', 'pngm-gallery'));
     osc_enqueue_script('pngm-custom');
+
+    if (function_exists('osc_is_publish_page') && (osc_is_publish_page() || (function_exists('osc_is_edit_page') && osc_is_edit_page()))) {
+        osc_enqueue_style('pngm-post-wizard', osc_current_web_theme_url('css/post-wizard.css' . $version));
+        osc_register_script('pngm-post-wizard', osc_current_web_theme_url('js/post-wizard.js' . $version), array('jquery', 'pngm-custom'));
+        osc_enqueue_script('pngm-post-wizard');
+    }
 }
 
 osc_add_hook('header', 'pngm_enqueue_assets', 8);
