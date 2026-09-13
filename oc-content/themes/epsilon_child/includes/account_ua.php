@@ -43,6 +43,9 @@ function pngm_ua_active_key()
     if ($route === 'im-threads' || $route === 'im-messages' || strpos((string) $route, 'im-') === 0) {
         return 'messages';
     }
+    if ($route === 'pngm-notif-prefs' || $sec === 'pngm-notif') {
+        return 'notifications';
+    }
     if ($route === 'bpr-profile') {
         return 'business';
     }
@@ -342,7 +345,7 @@ function pngm_ua_render_sidebar($active = '')
     echo '</div>';
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Settings', 'epsilon')) . '</div>';
-    $item('notifications', osc_user_alerts_url(), __('Notification Preferences', 'epsilon'), 'fas fa-sliders-h');
+    $item('notifications', function_exists('pngm_notif_prefs_url') ? pngm_notif_prefs_url() : osc_route_url('pngm-notif-prefs'), __('Notification Preferences', 'epsilon'), 'fas fa-sliders-h');
     $item('security', osc_change_user_password_url(), __('Account & Security', 'epsilon'), 'fas fa-shield-alt');
     echo '</div>';
 

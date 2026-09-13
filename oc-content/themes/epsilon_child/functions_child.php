@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.6.73');
+    define('PNGM_CHILD_VERSION', '1.6.76');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -19,6 +19,7 @@ require_once dirname(__FILE__) . '/includes/category_icons.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
+require_once dirname(__FILE__) . '/includes/notification_prefs.php';
 
 /**
  * Total active listings matching a default-location cookie (no result limit).
@@ -123,7 +124,8 @@ function pngm_enqueue_assets()
         $is_ua = ($loc === 'user') || (strpos((string) Params::getParam('route'), 'im-') === 0)
             || (strpos((string) Params::getParam('route'), 'bpr-') === 0)
             || (strpos((string) Params::getParam('route'), 'favorite') === 0)
-            || (strpos((string) Params::getParam('route'), 'osp-') === 0);
+            || (strpos((string) Params::getParam('route'), 'osp-') === 0)
+            || (Params::getParam('route') === 'pngm-notif-prefs');
     }
     if ($is_ua) {
         osc_enqueue_style('pngm-account-ua', osc_current_web_theme_url('css/account-ua.css' . $version));
