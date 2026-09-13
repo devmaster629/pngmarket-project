@@ -282,6 +282,114 @@ function pngm_ua_recent_activity($user_id, $limit = 4)
 }
 
 /**
+ * Shared account page header: title + optional subtitle + Hi userchip.
+ *
+ * @param string $title
+ * @param string $subtitle
+ */
+function pngm_ua_render_page_header($title, $subtitle = '')
+{
+    $user_id = osc_logged_user_id();
+    $name = osc_logged_user_name();
+    echo '<div class="pngm-ua-top pngm-ua-page-head">';
+    echo '<div class="pngm-ua-welcome">';
+    echo '<h1>' . osc_esc_html($title) . '</h1>';
+    if ($subtitle !== '') {
+        echo '<p>' . osc_esc_html($subtitle) . '</p>';
+    }
+    echo '</div>';
+    echo '<div class="pngm-ua-userchip">';
+    echo '<a href="' . osc_esc_html(osc_user_profile_url()) . '" class="pngm-ua-userchip-link">';
+    echo '<img src="' . osc_esc_html(function_exists('eps_profile_picture') ? eps_profile_picture($user_id, 'medium') : osc_user_profile_img_url($user_id)) . '" alt="" width="48" height="48" />';
+    echo '<span>';
+    echo '<strong>' . sprintf(__('Hi, %s', 'epsilon'), osc_esc_html($name)) . '</strong>';
+    echo '<small>' . osc_esc_html(__('My Account', 'epsilon')) . ' <i class="fas fa-chevron-down" aria-hidden="true"></i></small>';
+    echo '</span></a></div></div>';
+}
+
+/**
+ * Dial-code list for profile phone selector (ISO + dial + flag).
+ *
+ * @return array
+ */
+function pngm_ua_phone_dial_codes()
+{
+    return array(
+        array('iso' => 'PG', 'dial' => '675', 'flag' => '🇵🇬', 'label' => 'Papua New Guinea'),
+        array('iso' => 'AU', 'dial' => '61', 'flag' => '🇦🇺', 'label' => 'Australia'),
+        array('iso' => 'NZ', 'dial' => '64', 'flag' => '🇳🇿', 'label' => 'New Zealand'),
+        array('iso' => 'ID', 'dial' => '62', 'flag' => '🇮🇩', 'label' => 'Indonesia'),
+        array('iso' => 'FJ', 'dial' => '679', 'flag' => '🇫🇯', 'label' => 'Fiji'),
+        array('iso' => 'SB', 'dial' => '677', 'flag' => '🇸🇧', 'label' => 'Solomon Islands'),
+        array('iso' => 'VU', 'dial' => '678', 'flag' => '🇻🇺', 'label' => 'Vanuatu'),
+        array('iso' => 'US', 'dial' => '1', 'flag' => '🇺🇸', 'label' => 'United States'),
+        array('iso' => 'GB', 'dial' => '44', 'flag' => '🇬🇧', 'label' => 'United Kingdom'),
+        array('iso' => 'IN', 'dial' => '91', 'flag' => '🇮🇳', 'label' => 'India'),
+        array('iso' => 'CN', 'dial' => '86', 'flag' => '🇨🇳', 'label' => 'China'),
+        array('iso' => 'PH', 'dial' => '63', 'flag' => '🇵🇭', 'label' => 'Philippines'),
+        array('iso' => 'MY', 'dial' => '60', 'flag' => '🇲🇾', 'label' => 'Malaysia'),
+        array('iso' => 'SG', 'dial' => '65', 'flag' => '🇸🇬', 'label' => 'Singapore'),
+    );
+}
+
+/**
+ * Split stored phone into dial code + local number.
+ *
+ * @param string $phone
+ * @return array{dial:string,local:string,iso:string}
+ */
+function pngm_ua_phone_split($phone)
+{
+    $raw = trim((string) $phone);
+    $digits = preg_replace('/\D+/', '', $raw);
+    $codes = pngm_ua_phone_dial_codes();
+    usort($codes, function ($a, $b) {
+        return strlen($b['dial']) - strlen($a['dial']);
+    });
+
+    foreach ($codes as $row) {
+        $d = $row['dial'];
+        if ($digits !== '' && strpos($digits, $d) === 0 && strlen($digits) > strlen($d)) {
+            return array(
+                'dial' => $d,
+                'local' => substr($digits, strlen($d)),
+                'iso' => $row['iso'],
+            );
+        }
+    }
+
+    return array(
+        'dial' => '675',
+        'local' => $digits,
+        'iso' => 'PG',
+    );
+}
+
+/**
+ * Merge dial + local into s_phone_mobile before profile save.
+ */
+function pngm_ua_profile_phone_merge()
+{
+    if (Params::getParam('page') !== 'user' || Params::getParam('action') !== 'profile_post') {
+        return;
+    }
+    if (!Params::existParam('pngm_phone_dial') && !Params::existParam('pngm_phone_local')) {
+        return;
+    }
+    $dial = preg_replace('/\D+/', '', (string) Params::getParam('pngm_phone_dial'));
+    $local = preg_replace('/\D+/', '', (string) Params::getParam('pngm_phone_local'));
+    if ($dial === '') {
+        $dial = '675';
+    }
+    if ($local === '') {
+        Params::setParam('s_phone_mobile', '');
+        return;
+    }
+    Params::setParam('s_phone_mobile', '+' . $dial . $local);
+}
+osc_add_hook('init', 'pngm_ua_profile_phone_merge', 4);
+
+/**
  * Render design-matching account sidebar.
  *
  * @param string $active
