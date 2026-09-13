@@ -145,7 +145,7 @@
       $form.find('.pngm-post-field-error').each(function () {
         hideFieldError($(this));
       });
-      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
+      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, .pngm-post-upload-card.is-invalid, .pngm-post-price-field.is-invalid, .control-group.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
     }
 
     function hideFieldError($err) {
@@ -189,31 +189,192 @@
       return id;
     }
 
+    function countUploadedPhotos() {
+      var count = 0;
+      var seen = {};
+      $('#photos .qq-upload-success .ajax_preview_img img, #photos li.qq-upload-success, #photos .qq-upload-list li.qq-upload-success, #uppy-gallery img, #photos .uppy-Dashboard-Item--complete img').each(function () {
+        var key = this.getAttribute('src') || this.getAttribute('data-src') || this.getAttribute('qq-file-id') || this.id || '';
+        if (this.tagName === 'LI') {
+          key = 'li-' + (this.getAttribute('qq-file-id') || $(this).index());
+        }
+        if (!key || seen[key]) {
+          return;
+        }
+        // Skip empty temp placeholders
+        if (typeof key === 'string' && /uploads\/temp\/?$/.test(key)) {
+          return;
+        }
+        seen[key] = true;
+        count += 1;
+      });
+      // FineUploader also stores successful uploads as hidden inputs in some themes
+      if (count < 1) {
+        count = $('#photos input[name="photos[]"], #photos input[name^="photos["], input[name="ajax_photos[]"]').filter(function () {
+          return $.trim($(this).val() || '') !== '';
+        }).length;
+      }
+      return count;
+    }
+
     function showError($el, msg) {
       if (!$el || !$el.length) {
         return;
       }
       $el.addClass('is-invalid');
-      var $err = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap').find('.pngm-post-field-error').first();
+      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .control-group.atr-field, .atr-field');
+      if (!$wrap.length && $el.hasClass('pngm-post-upload-card')) {
+        $wrap = $el;
+      }
+      if ($wrap.length) {
+        $wrap.addClass('is-invalid');
+      }
+      var $err = $wrap.find('.pngm-post-field-error').first();
+      if (!$err.length) {
+        $err = $form.find('.pngm-post-field-error[data-for="photos"]').first();
+      }
+      if (!$err.length && $wrap.length) {
+        $err = $('<div class="pngm-post-field-error" role="alert"/>');
+        $wrap.append($err);
+      }
       if (!$err.length) {
         $err = $form.find('.pngm-post-field-error[data-for="catId"]').first();
       }
       showFieldError($err, msg);
     }
 
+    function focusFirstInvalid() {
+      var $bad = $form.find('.is-invalid:visible').first();
+      if (!$bad.length) {
+        return;
+      }
+      var top = $bad.offset();
+      if (top) {
+        $('html, body').stop(true).animate({ scrollTop: Math.max(0, top.top - 110) }, 220);
+      }
+      if ($bad.is('input, textarea, select')) {
+        try {
+          $bad.trigger('focus');
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    function attrGroupLabel($group) {
+      var $lab = $group.find('> label.control-label, > .control-label').first();
+      if (!$lab.length) {
+        $lab = $group.find('label').first();
+      }
+      var text = $.trim($lab.clone().children('.req, .req *').remove().end().text().replace(/\*/g, ''));
+      return text || (labels.requiredField || 'Required field');
+    }
+
+    function isFilledSelect($sel) {
+      var v = String($sel.val() || '');
+      return v !== '' && v !== '0';
+    }
+
+    /**
+     * Validate Attributes plugin fields marked required (*) in the current step.
+     * Make/Brand cascade: levels 1–2 that are visible with options must be filled;
+     * level 3+ stays optional (VEHICLE-03).
+     */
+    function validateRequiredAttributes($scope) {
+      var ok = true;
+      var $groups = $scope.find('.atr-form .control-group.atr-field, .atr-form .atr-field.control-group, #post-hooks .control-group.atr-field');
+      $groups.each(function () {
+        var $group = $(this);
+        if (!$group.is(':visible')) {
+          return;
+        }
+        if (!$group.find('label .req, .control-label .req, span.req').length) {
+          return;
+        }
+
+        var name = attrGroupLabel($group);
+        var msgNeed = (labels.needAttr || 'Please complete: %s').replace('%s', name);
+        var typeClass = ($group.attr('class') || '').toLowerCase();
+
+        if (typeClass.indexOf('atr-type-radio') !== -1) {
+          if (!$group.find('input[type="radio"]:checked').length) {
+            showError($group.find('input[type="radio"]').first(), msgNeed);
+            ok = false;
+          }
+          return;
+        }
+
+        if (typeClass.indexOf('atr-type-checkbox') !== -1) {
+          if (!$group.find('input[type="checkbox"]:checked').length) {
+            showError($group.find('input[type="checkbox"]').first(), msgNeed);
+            ok = false;
+          }
+          return;
+        }
+
+        if (typeClass.indexOf('atr-type-select') !== -1) {
+          var $selects = $group.find('select:visible');
+          var missing = false;
+          $selects.each(function () {
+            var $sel = $(this);
+            var level = parseInt($sel.attr('data-level'), 10) || 1;
+            if (level >= 3) {
+              return;
+            }
+            var hasOptions = $sel.find('option').filter(function () {
+              return String($(this).val() || '') !== '';
+            }).length > 0;
+            if (!hasOptions) {
+              return;
+            }
+            if (!isFilledSelect($sel)) {
+              showError($sel, msgNeed);
+              missing = true;
+              return false;
+            }
+          });
+          if (missing) {
+            ok = false;
+          }
+          return;
+        }
+
+        // TEXT / NUMBER / PHONE / EMAIL / TEXTAREA / DATE
+        var $inputs = $group.find('input:visible:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea:visible');
+        $inputs.each(function () {
+          if (!$.trim($(this).val() || '')) {
+            showError($(this), msgNeed);
+            ok = false;
+          }
+        });
+      });
+
+      // "Other" free-text make/model when visible
+      var $otherBox = $scope.find('#atr-make_other');
+      if ($otherBox.length && ($otherBox.hasClass('pngm-other-visible') || $otherBox.is(':visible'))) {
+        var $otherInp = $otherBox.find('input, textarea').filter(':visible').first();
+        if ($otherInp.length && !$.trim($otherInp.val() || '')) {
+          showError($otherInp, labels.needMakeOther || 'Please specify make / model.');
+          ok = false;
+        }
+      }
+
+      return ok;
+    }
+
     function validateStep(n) {
       clearFieldErrors();
+      $form.find('.control-group.is-invalid, .atr-field.is-invalid, .pngm-post-price-field.is-invalid').removeClass('is-invalid');
       if (n === 1) {
         syncCatFromSubcategory();
         if (!$catId.val()) {
           showError($sub, labels.selectSub);
           $sub.addClass('is-invalid');
+          focusFirstInvalid();
           return false;
         }
         clearSubcategoryWarning();
         return true;
       }
       if (n === 2) {
+        var $step2 = $form.find('.pngm-post-step-panel[data-step="2"]');
         var title = $form.find('input[name^="title"]').val() || '';
         var desc = $form.find('textarea[name^="description"]').val() || '';
         var ok = true;
@@ -225,7 +386,38 @@
           showError($form.find('textarea[name^="description"]'), labels.needDesc);
           ok = false;
         }
+
+        var $priceField = $step2.find('.pngm-post-price-field');
+        if ($priceField.length) {
+          var mode = String($('input[name="pngm_price_mode"]:checked').val() || 'PAID');
+          if (mode === 'PAID') {
+            var priceRaw = String($('#price').val() || '').replace(/,/g, '').trim();
+            var priceNum = parseFloat(priceRaw);
+            if (!priceRaw || isNaN(priceNum) || priceNum <= 0) {
+              showError($('#price').length ? $('#price') : $priceField, labels.needPrice || 'Please enter a price, or choose Check with seller.');
+              ok = false;
+            }
+          }
+        }
+
+        if (!validateRequiredAttributes($step2)) {
+          ok = false;
+        }
+
+        if (!ok) {
+          focusFirstInvalid();
+        }
         return ok;
+      }
+      if (n === 3) {
+        var photoCount = countUploadedPhotos();
+        if (photoCount < 1) {
+          var $photoCard = $form.find('#pngm-step-photos .pngm-post-upload-card, #photos').first();
+          showError($photoCard.length ? $photoCard : $form.find('#photos'), labels.needPhoto || 'Please upload at least one photo.');
+          focusFirstInvalid();
+          return false;
+        }
+        return true;
       }
       if (n === 4) {
         var okLoc = true;
@@ -238,6 +430,9 @@
         if ($city.length && !$city.val() && !$('#sCity').val()) {
           showError($city, labels.needCity || 'Please select a city / town.');
           okLoc = false;
+        }
+        if (!okLoc) {
+          focusFirstInvalid();
         }
         return okLoc;
       }
@@ -263,6 +458,9 @@
           showError($email, labels.needEmail || 'Please enter a valid email.');
           okContact = false;
         }
+        if (!okContact) {
+          focusFirstInvalid();
+        }
         return okContact;
       }
       if (n === 6) {
@@ -270,6 +468,7 @@
           showError($('#pngm_terms'), labels.needTerms);
           var $termsErr = $form.find('.pngm-post-field-error[data-for="pngm_terms"]');
           showFieldError($termsErr, labels.needTerms);
+          focusFirstInvalid();
           return false;
         }
         return true;
@@ -414,6 +613,9 @@
       }
       if ($.trim(title).length < 3) {
         missing.push(labels.needTitle || 'Title required');
+      }
+      if (countUploadedPhotos() < 1) {
+        missing.push(labels.needPhoto || 'At least one photo required');
       }
       if (!$('#regionId').val() && !$('#sRegion').val()) {
         missing.push(labels.needRegion || 'Select a province / region');

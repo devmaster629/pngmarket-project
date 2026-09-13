@@ -1055,7 +1055,7 @@ function atr_generate_post_elem($a, $item_id, $linked = false) {
     return false;
   }
   
-  $required = ((ATR_HTML5_VALIDATION === true && $attribute['b_required'] == 1) ? 'required' : '');
+  $required = ((ATR_HTML5_VALIDATION === true && isset($a['b_required']) && $a['b_required'] == 1) ? 'required' : '');
 
   $name = atr_name($a['locales']);
   $type = $a['s_type'];

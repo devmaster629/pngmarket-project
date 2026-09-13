@@ -274,8 +274,8 @@
               <p><?php echo osc_esc_html($steps[3]['sub']); ?></p>
             </div>
             <div class="pngm-post-card upload-photos pngm-post-upload-card">
-              <h3 class="pngm-post-card-title"><?php _e('Add Photos', 'epsilon'); ?></h3>
-              <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Upload clear photos of your item. First photo is the cover.', 'epsilon'); ?></p>
+              <h3 class="pngm-post-card-title"><?php _e('Add Photos', 'epsilon'); ?> <span class="req">*</span></h3>
+              <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Upload clear photos of your item. First photo is the cover. At least one photo is required.', 'epsilon'); ?></p>
               <div class="box photos photoshow drag_drop in" id="photos">
                 <?php
                   if (osc_images_enabled_at_items()) {
@@ -285,6 +285,7 @@
                   }
                 ?>
               </div>
+              <div class="pngm-post-field-error" data-for="photos" hidden></div>
               <p class="pngm-post-upload-meta"><?php echo sprintf(__('Up to %d photos · JPG/PNG · max 10MB each', 'epsilon'), $max_imgs); ?></p>
               <?php osc_run_hook('item_publish_images'); ?>
             </div>
@@ -610,6 +611,11 @@
       'selectSub' => __('Please select a subcategory.', 'epsilon'),
       'needTitle' => __('Please enter a title.', 'epsilon'),
       'needDesc' => __('Please enter a description.', 'epsilon'),
+      'needPrice' => __('Please enter a price, or choose Check with seller.', 'epsilon'),
+      'needAttr' => __('Please complete: %s', 'epsilon'),
+      'needMakeOther' => __('Please specify make / model.', 'epsilon'),
+      'needPhoto' => __('Please upload at least one photo.', 'epsilon'),
+      'requiredField' => __('Required field', 'epsilon'),
       'needTerms' => __('Please accept the Terms of Use.', 'epsilon'),
       'needRegion' => __('Please select a province / region.', 'epsilon'),
       'needCity' => __('Please select a city / town.', 'epsilon'),

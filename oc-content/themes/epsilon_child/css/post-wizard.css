@@ -366,8 +366,29 @@ body.pngm-post-wizard .item-publish textarea {
 .pngm-post-field.is-invalid select,
 .pngm-post-select.is-invalid,
 input.is-invalid,
-textarea.is-invalid {
+textarea.is-invalid,
+select.is-invalid,
+.control-group.is-invalid select,
+.control-group.is-invalid input[type="text"],
+.control-group.is-invalid input[type="number"],
+.control-group.is-invalid input[type="tel"],
+.control-group.is-invalid textarea {
   border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15);
+}
+
+.control-group.is-invalid > .control-label,
+.pngm-post-price-field.is-invalid .pngm-post-label {
+  color: #dc2626;
+}
+
+.control-group.atr-field .pngm-post-field-error {
+  margin-top: 6px;
+}
+
+.pngm-post-upload-card.is-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
 }
 
 .pngm-post-field-error {
