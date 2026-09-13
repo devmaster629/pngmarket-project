@@ -356,3 +356,165 @@ function pngm_ua_render_sidebar($active = '')
     echo '<a class="pngm-ua-logout" href="' . osc_esc_html(osc_user_logout_url()) . '"><i class="fas fa-sign-out-alt" aria-hidden="true"></i><span>' . osc_esc_html(__('Logout', 'epsilon')) . '</span></a>';
     echo '</aside>';
 }
+
+/**
+ * Listing status counts for My Listings tabs.
+ *
+ * @param int $user_id
+ * @return array{all:int,active:int,pending_validate:int,blocked:int,expired:int}
+ */
+function pngm_ua_listing_counts($user_id)
+{
+    $user_id = (int) $user_id;
+    $empty = array(
+        'all' => 0,
+        'active' => 0,
+        'pending_validate' => 0,
+        'blocked' => 0,
+        'expired' => 0,
+    );
+    if ($user_id <= 0) {
+        return $empty;
+    }
+
+    $m = Item::newInstance();
+    return array(
+        'all' => (int) $m->countItemTypesByUserID($user_id, 'all'),
+        'active' => (int) $m->countItemTypesByUserID($user_id, 'active'),
+        'pending_validate' => (int) $m->countItemTypesByUserID($user_id, 'pending_validate'),
+        'blocked' => (int) $m->countItemTypesByUserID($user_id, 'blocked'),
+        'expired' => (int) $m->countItemTypesByUserID($user_id, 'expired'),
+    );
+}
+
+/**
+ * Current listing status for badge styling.
+ *
+ * @return array{key:string,label:string}
+ */
+function pngm_ua_item_status()
+{
+    if (function_exists('osc_item_is_expired') && osc_item_is_expired()) {
+        return array('key' => 'expired', 'label' => __('Expired', 'epsilon'));
+    }
+    if (function_exists('osc_item_is_enabled') && !osc_item_is_enabled()) {
+        return array('key' => 'inactive', 'label' => __('Inactive', 'epsilon'));
+    }
+    if (function_exists('osc_item_is_inactive') && osc_item_is_inactive()) {
+        return array('key' => 'pending', 'label' => __('Pending validation', 'epsilon'));
+    }
+    return array('key' => 'active', 'label' => __('Active', 'epsilon'));
+}
+
+/**
+ * Category breadcrumb for current item (Root > Child).
+ *
+ * @return string
+ */
+function pngm_ua_item_category_path()
+{
+    $cat_id = (int) osc_item_category_id();
+    if ($cat_id <= 0) {
+        return (string) osc_item_category();
+    }
+
+    $tree = Category::newInstance()->hierarchy($cat_id);
+    if (!is_array($tree) || empty($tree)) {
+        return (string) osc_item_category();
+    }
+
+    $parts = array();
+    $locale = osc_current_user_locale();
+    foreach ($tree as $cat) {
+        $name = '';
+        if (isset($cat['locale'][$locale]['s_name'])) {
+            $name = $cat['locale'][$locale]['s_name'];
+        } elseif (isset($cat['s_name'])) {
+            $name = $cat['s_name'];
+        }
+        if ($name !== '') {
+            $parts[] = $name;
+        }
+    }
+
+    return !empty($parts) ? implode(' > ', $parts) : (string) osc_item_category();
+}
+
+/**
+ * Compact location for listing cards.
+ *
+ * @return string
+ */
+function pngm_ua_item_location_short()
+{
+    $parts = array_filter(array(osc_item_city(), osc_item_region()));
+    if (empty($parts) && function_exists('eps_user_item_location')) {
+        return (string) eps_user_item_location();
+    }
+    return implode(', ', $parts);
+}
+
+/**
+ * Build My Listings filter URL preserving search params.
+ *
+ * @param string $type
+ * @param array  $extra
+ * @return string
+ */
+function pngm_ua_items_url($type = 'all', $extra = array())
+{
+    $param = (osc_version() >= 830 ? 'sItemType' : 'itemType');
+    $base = osc_user_list_items_url();
+    $q = array();
+
+    if ($type !== '' && $type !== 'all') {
+        $q[$param] = $type;
+    }
+
+    $keep = array('sPattern', 'sCategory', 'sOrder', 'sOrderType');
+    foreach ($keep as $k) {
+        $v = Params::getParam($k);
+        if ($v !== '' && $v !== null) {
+            $q[$k] = $v;
+        }
+    }
+
+    if (is_array($extra)) {
+        foreach ($extra as $k => $v) {
+            if ($v === null || $v === '') {
+                unset($q[$k]);
+            } else {
+                $q[$k] = $v;
+            }
+        }
+    }
+
+    if (empty($q)) {
+        return $base;
+    }
+
+    $sep = (strpos($base, '?') !== false) ? '&' : '?';
+    return $base . $sep . http_build_query($q);
+}
+
+/**
+ * Allow Inactive (blocked) in user item type search.
+ */
+function pngm_ua_search_item_types($types)
+{
+    if (!is_array($types)) {
+        $types = array();
+    }
+    $has_blocked = false;
+    foreach ($types as $t) {
+        if (isset($t['pk_i_id']) && $t['pk_i_id'] === 'blocked') {
+            $has_blocked = true;
+            break;
+        }
+    }
+    if (!$has_blocked) {
+        $types[] = array('pk_i_id' => 'blocked', 's_name' => __('Inactive', 'epsilon'));
+    }
+    return $types;
+}
+osc_add_filter('search_item_types', 'pngm_ua_search_item_types');
