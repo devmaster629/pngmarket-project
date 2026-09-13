@@ -8,11 +8,24 @@
     $itemviewer = (Params::getParam('itemviewer') == 1 ? 1 : 0);
     $item_extra = eps_item_extra(osc_item_id());
 
-    $location_array = array_filter(array(osc_item_city(), osc_item_region()));
+    $location_array = array_filter(array(osc_item_city(), osc_item_region(), osc_item_country()));
     $location = implode(', ', $location_array);
 
-    $location_full_array = array_filter(array(osc_item_city(), osc_item_region()));
+    $location_full_array = array_filter(array(osc_item_city(), osc_item_region(), osc_item_country()));
     $location_full = implode(', ', $location_full_array);
+
+    $pngm_map_lat = (float) osc_item_latitude();
+    $pngm_map_lng = (float) osc_item_longitude();
+    $pngm_map_has_coords = ($pngm_map_lat != 0.0 || $pngm_map_lng != 0.0);
+    $pngm_map_q = $pngm_map_has_coords
+      ? ($pngm_map_lat . ',' . $pngm_map_lng)
+      : $location;
+    $pngm_map_embed = $pngm_map_q !== ''
+      ? ('https://maps.google.com/maps?q=' . rawurlencode($pngm_map_q) . '&z=14&output=embed')
+      : '';
+    $pngm_map_link = $pngm_map_q !== ''
+      ? ('https://www.google.com/maps/search/?api=1&query=' . rawurlencode($pngm_map_q))
+      : '';
 
     $is_company = false;
     
@@ -227,17 +240,19 @@
           
            <?php eps_make_favorite(); ?>
         </div>
-        
 
-        <div class="props pngm-item-compact pngm-item-details">
-          <div id="item-hook"><?php osc_run_hook('item_detail', osc_item()); ?></div>
-        </div>
-        
+        <?php
+          // Contact actions under title (same on mobile + desktop mockup)
+          if (function_exists('pngm_render_seller_contact_buttons')) {
+            pngm_render_seller_contact_buttons();
+          }
+        ?>
+
         <?php osc_run_hook('item_meta'); ?>
-        
+
         <?php echo eps_banner('item_description'); ?>
-        
-        <!-- DESCRIPTION → LOCATION → CONTACT (mockup order) -->
+
+        <!-- DESCRIPTION → DETAILS → LOCATION (same order desktop + mobile) -->
         <div class="row description pngm-item-detail-block">
           <h2><i class="fas fa-align-left" aria-hidden="true"></i> <?php _e('Description', 'epsilon'); ?></h2>
 
@@ -263,7 +278,7 @@
                         <?php show_qrcode(); ?>
                       </div>
                     <?php } ?>
-                  
+
                     <div class="desc-text-raw"><?php echo osc_item_description(); ?></div>
                   </div>
 
@@ -279,42 +294,52 @@
                       <?php show_qrcode(); ?>
                     </div>
                   <?php } ?>
-                  
+
                   <?php echo osc_item_description(); ?>
                 </div>
               <?php } ?>
             </div>
-            
+
             <?php osc_run_hook('item_description'); ?>
           </div>
+        </div>
+
+        <div class="props pngm-item-compact pngm-item-details">
+          <div id="item-hook"><?php osc_run_hook('item_detail', osc_item()); ?></div>
         </div>
 
         <div class="location pngm-item-detail-block">
           <h2><i class="fas fa-map-marker-alt" aria-hidden="true"></i> <?php _e('Location', 'epsilon'); ?></h2>
 
-          <?php if($location <> '') { ?>
-            <div class="row address"><?php echo osc_esc_html($location_full); ?></div>
-            
-            <?php
-              $pngm_map_q = (osc_item_latitude() <> 0 && osc_item_longitude() <> 0)
-                ? osc_item_latitude() . ',' . osc_item_longitude()
-                : $location;
-            ?>
-            <a target="_blank" rel="noopener noreferrer" class="directions" href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($pngm_map_q); ?>">
-              <?php _e('View on map', 'epsilon'); ?> &#8594;
-            </a>
+          <?php if($location <> '' || $pngm_map_embed !== '') { ?>
+            <?php if($pngm_map_embed !== '') { ?>
+              <div class="pngm-item-map">
+                <iframe
+                  class="pngm-item-map-frame"
+                  title="<?php echo osc_esc_html(__('Listing location map', 'epsilon')); ?>"
+                  src="<?php echo osc_esc_html($pngm_map_embed); ?>"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                ></iframe>
+              </div>
+            <?php } ?>
+
+            <?php if($location <> '') { ?>
+              <div class="row address"><?php echo osc_esc_html($location_full); ?></div>
+            <?php } ?>
+
+            <?php if($pngm_map_link !== '') { ?>
+              <a target="_blank" rel="noopener noreferrer" class="directions" href="<?php echo osc_esc_html($pngm_map_link); ?>">
+                <?php _e('View on map', 'epsilon'); ?> &#8594;
+              </a>
+            <?php } ?>
           <?php } else { ?>
             <?php _e('Unknown location', 'epsilon'); ?>
           <?php } ?>
 
           <div id="location-hook"><?php osc_run_hook('location'); ?></div>
         </div>
-
-        <?php
-          if (function_exists('pngm_render_seller_contact_buttons')) {
-            pngm_render_seller_contact_buttons();
-          }
-        ?>
 
 
         <!-- COMMENTS BLOCK -->

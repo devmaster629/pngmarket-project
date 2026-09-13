@@ -430,6 +430,10 @@
     }
 
     function onWheel(e) {
+      // Inline desktop gallery: never zoom with mouse wheel (page should scroll).
+      if (options.wheelZoom === false) {
+        return;
+      }
       e.preventDefault();
       var next = scale * (e.deltaY > 0 ? 0.88 : 1.14);
       zoomAround(e.clientX, e.clientY, next);
@@ -510,7 +514,10 @@
     stage.addEventListener('touchmove', onMove, touchOpts);
     stage.addEventListener('touchend', onEnd, touchOpts);
     stage.addEventListener('touchcancel', onEnd, touchOpts);
-    stage.addEventListener('wheel', onWheel, { passive: false });
+    // Skip wheel zoom on the listing gallery so desktop mouse scroll pans the page.
+    if (options.wheelZoom !== false) {
+      stage.addEventListener('wheel', onWheel, { passive: false });
+    }
     stage.addEventListener('mousedown', onMouseDown);
 
     ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (type) {
@@ -923,6 +930,7 @@
         return slide[0] || null;
       }, {
         swipeClose: false,
+        wheelZoom: false,
         immediateTap: true,
         onZoomChange: function (zoomed) {
           if (window.pngmItemSwiper && window.pngmItemSwiper.allowTouchMove !== undefined) {
