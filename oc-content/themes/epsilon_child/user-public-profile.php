@@ -1,229 +1,285 @@
 <?php
+  if (!function_exists('pngm_ua_render_sidebar')) {
+    require_once dirname(__FILE__) . '/includes/account_ua.php';
+  }
+
   $user = osc_user();
+  $user_id = (int) osc_user_id();
+  $is_own = osc_is_web_user_logged_in() && ((int) osc_logged_user_id() === $user_id);
+  $show_sidebar = osc_is_web_user_logged_in();
 
-  $user_location_array = array(osc_user_address(), osc_user_zip(), osc_user_city_area(), osc_user_city(), osc_user_region(), osc_user_country());
-  $user_location_array = array_filter($user_location_array);
-  $user_location = implode(', ', $user_location_array);
+  $city = trim((string) osc_user_city());
+  $region = trim((string) osc_user_region());
+  $user_location = implode(', ', array_filter(array($city, $region)));
 
-  $is_company = false;
-  $user_item_count = $user['i_items'];
+  $contact_name = (osc_user_name() !== '' ? osc_user_name() : __('Anonymous', 'epsilon'));
+  $initials = function_exists('pngm_ua_user_initials') ? pngm_ua_user_initials($contact_name) : strtoupper(substr($contact_name, 0, 2));
+  $has_photo = function_exists('eps_has_profile_picture') && eps_has_profile_picture($user_id);
 
-  if($user['b_company'] == 1) {
-    $is_company = true;
+  $email_verified = is_array($user) && !empty($user['b_active']);
+  $phone_verified = is_array($user) && (trim((string) @$user['s_phone_mobile']) !== '' || trim((string) @$user['s_phone_land']) !== '');
+  $id_verified = is_array($user) && !empty($user['b_company']); // Pro/company treated as stronger identity signal
+  $is_verified_seller = $email_verified && ($phone_verified || $id_verified);
+
+  $member_since = '';
+  if (is_array($user) && !empty($user['dt_reg_date']) && $user['dt_reg_date'] !== '0000-00-00 00:00:00') {
+    $ts = strtotime($user['dt_reg_date']);
+    if ($ts) {
+      $member_since = date('M Y', $ts);
+    }
   }
 
-  $reg_type = '';
-  $last_online = '';
-
-  if($user && $user['dt_reg_date'] <> '') {
-    $reg_type = sprintf(__('Registered for %s', 'epsilon'), eps_smart_date2($user['dt_reg_date']));
-  } else if ($user) {
-    $reg_type = __('Registered user', 'epsilon');
+  $about_raw = trim(strip_tags((string) osc_user_info()));
+  $about_len = function_exists('mb_strlen') ? mb_strlen($about_raw) : strlen($about_raw);
+  if ($about_len > 250) {
+    $about_display = function_exists('mb_substr') ? mb_substr($about_raw, 0, 250) : substr($about_raw, 0, 250);
+    $about_len = 250;
   } else {
-    $reg_type = __('Unregistered user', 'epsilon');
+    $about_display = $about_raw;
   }
 
-  if($user) {
-    $last_online = sprintf(__('Last online %s', 'epsilon'), eps_smart_date($user['dt_access_date']));
+  $msg_url = '';
+  $msg_title = '';
+  $show_message = !$is_own;
+  if ($show_message) {
+    if (function_exists('im_create_thread_url')) {
+      if (!osc_is_web_user_logged_in()) {
+        $msg_url = osc_user_login_url();
+        $msg_title = __('Sign in to message this seller', 'epsilon');
+      } else {
+        $msg_url = im_create_thread_url(array('user_id' => $user_id));
+      }
+    } elseif (function_exists('eps_item_fancy_url') && getBoolPreference('item_contact_form_disabled') != 1) {
+      $msg_url = eps_item_fancy_url('contact_public', array('userId' => $user_id));
+    } else {
+      $show_message = false;
+    }
   }
 
-  $user_about = nl2br(strip_tags(osc_user_info()));
-  $contact_name = (osc_user_name() <> '' ? osc_user_name() : __('Anonymous', 'epsilon'));
+  $total_items = function_exists('osc_search_total_items') ? (int) osc_search_total_items() : (int) osc_count_items();
+  $pattern = Params::getParam('sPattern');
+  $order = Params::getParam('sOrder');
+  $order_type = Params::getParam('sOrderType');
+  if ($order === '') {
+    $order = 'dt_pub_date';
+  }
+  if ($order_type === '') {
+    $order_type = 'DESC';
+  }
+  $sort_key = $order . '|' . $order_type;
+  $sort_options = array(
+    'dt_pub_date|DESC' => __('Sort: Newest First', 'epsilon'),
+    'dt_pub_date|ASC' => __('Sort: Oldest First', 'epsilon'),
+    'i_price|DESC' => __('Sort: Price high–low', 'epsilon'),
+    'i_price|ASC' => __('Sort: Price low–high', 'epsilon'),
+  );
 
-  $user_phone_mobile_data = eps_get_phone($user['s_phone_mobile']);
-  $user_phone_land_data = eps_get_phone($user['s_phone_land']);
-  $im_active = function_exists('im_contact_user_button');
+  $msg_classes = 'pngm-seller-msg';
+  if (strpos((string) $msg_url, 'contact_public') !== false || strpos((string) $msg_url, 'fancy') !== false) {
+    $msg_classes .= ' open-form public-contact';
+  }
 ?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" dir="<?php echo eps_language_dir(); ?>" lang="<?php echo str_replace('_', '-', osc_current_user_locale()); ?>">
 <head>
-  <?php osc_current_web_theme_path('head.php') ; ?>
+  <?php osc_current_web_theme_path('head.php'); ?>
   <meta name="robots" content="index, follow" />
   <meta name="googlebot" content="index, follow" />
 </head>
 
-<body id="public">
+<body id="public" class="<?php echo $show_sidebar ? 'body-ua pngm-ua pngm-ua-seller' : 'pngm-ua-seller-guest'; ?>">
   <?php
     View::newInstance()->_exportVariableToView('user', $user);
     osc_current_web_theme_path('header.php');
     View::newInstance()->_exportVariableToView('user', $user);
   ?>
 
-  <div class="container primary">
-    <div id="item-side">
+  <div class="container primary<?php echo $show_sidebar ? ' pngm-ua-shell' : ' pngm-seller-shell'; ?>">
+    <?php if ($show_sidebar) { pngm_ua_render_sidebar($is_own ? 'public' : ''); } ?>
+
+    <div id="user-main" class="pngm-ua-main pngm-seller">
       <?php osc_run_hook('user_public_profile_sidebar_top'); ?>
 
-      <div class="box" id="seller">
-        <div class="line1">
-          <div class="img">
-            <img src="<?php echo eps_profile_picture(osc_user_id(), 'small'); ?>" alt="<?php echo osc_esc_html($contact_name); ?>" />
+      <div class="pngm-seller-panel">
+        <section class="pngm-seller-hero">
+          <div class="pngm-seller-identity">
+            <div class="pngm-seller-avatar" aria-hidden="true">
+              <?php if ($has_photo) { ?>
+                <img src="<?php echo eps_profile_picture($user_id, 'medium'); ?>" alt="" width="88" height="88" />
+              <?php } else { ?>
+                <span><?php echo osc_esc_html($initials); ?></span>
+              <?php } ?>
+            </div>
+            <div class="pngm-seller-id-copy">
+              <h1 class="pngm-seller-name"><?php echo osc_esc_html($contact_name); ?></h1>
+              <?php if ($is_verified_seller) { ?>
+                <div class="pngm-seller-verified">
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                  <span><?php _e('Verified Seller', 'epsilon'); ?></span>
+                </div>
+              <?php } ?>
+              <?php if ($member_since !== '') { ?>
+                <div class="pngm-seller-since"><?php echo sprintf(__('Member since %s', 'epsilon'), osc_esc_html($member_since)); ?></div>
+              <?php } ?>
+            </div>
+          </div>
 
-            <?php if(eps_user_is_online(osc_user_id())) { ?>
-              <div class="online" title="<?php echo osc_esc_html(__('User is online', 'epsilon')); ?>"></div>
-            <?php } else { ?>
-              <div class="online off" title="<?php echo osc_esc_html(__('User is offline', 'epsilon')); ?>"></div>
+          <ul class="pngm-seller-badges">
+            <?php if ($email_verified) { ?>
+              <li><i class="fas fa-check-circle" aria-hidden="true"></i><span><?php _e('Email verified', 'epsilon'); ?></span></li>
             <?php } ?>
-          </div>
-
-          <div class="data">
-            <strong class="name"><?php echo $contact_name; ?></strong>
-
-            <div class="items"><?php echo sprintf(__('%d active listings', 'epsilon'), $user_item_count); ?></div>
-
-            <?php if($is_company) { ?>
-              <div class="pro"><?php _e('Pro', 'epsilon'); ?></div>
+            <?php if ($phone_verified) { ?>
+              <li><i class="fas fa-check-circle" aria-hidden="true"></i><span><?php _e('Phone verified', 'epsilon'); ?></span></li>
             <?php } ?>
-          </div>
-        </div>
+            <?php if ($id_verified) { ?>
+              <li><i class="fas fa-check-circle" aria-hidden="true"></i><span><?php _e('ID verified', 'epsilon'); ?></span></li>
+            <?php } ?>
+          </ul>
 
-        <?php if(function_exists('ur_show_rating_link')) { ?>
-          <div class="line-rating">
-            <span class="ur-fdb">
-              <span class="strs"><?php echo ur_show_rating_stars(osc_user_id(), osc_user_email()); ?></span>
-              <span class="lnk"><?php echo ur_add_rating_link(osc_user_id()); ?></span>
-            </span>
-          </div>
-        <?php } ?>
-
-        <div class="line2">
-          <div class="date"><?php echo $last_online; ?></div>
-          <div class="reg"><?php echo $reg_type; ?></div>
-        </div>
-
-        <?php if(!$im_active && eps_chat_button(osc_user_id())) { ?>
-          <div class="line-chat"><?php echo eps_chat_button(osc_user_id()); ?></div>
-        <?php } ?>
-
-        <div class="line3">
-          <?php if($user_location != '') { ?>
-            <div class="address"><i class="fas fa-map-marked-alt"></i> <?php echo $user_location; ?></div>
+          <?php if ($user_location !== '') { ?>
+            <p class="pngm-seller-loc"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span><?php echo osc_esc_html($user_location); ?></span></p>
           <?php } ?>
 
-          <?php if($user_phone_mobile_data['found']) { ?>
-            <a class="phone-mobile phone <?php echo $user_phone_mobile_data['class']; ?>" title="<?php echo osc_esc_html($user_phone_mobile_data['title']); ?>" data-prefix="tel" href="<?php echo $user_phone_mobile_data['url']; ?>" data-part1="<?php echo osc_esc_html($user_phone_mobile_data['part1']); ?>" data-part2="<?php echo osc_esc_html($user_phone_mobile_data['part2']); ?>">
-              <i class="fas fa-phone-alt"></i>
-              <span><?php echo $user_phone_mobile_data['masked']; ?></span>
+          <hr class="pngm-seller-rule" />
+
+          <?php if ($about_display !== '') { ?>
+            <div class="pngm-seller-about">
+              <h2><?php _e('About Me', 'epsilon'); ?></h2>
+              <div class="pngm-seller-about-box">
+                <p><?php echo nl2br(osc_esc_html($about_display)); ?></p>
+                <span class="pngm-seller-about-count"><?php echo (int) $about_len; ?>/250</span>
+              </div>
+            </div>
+          <?php } ?>
+
+          <?php if ($show_message && $msg_url !== '') { ?>
+            <a class="<?php echo osc_esc_html($msg_classes); ?>" href="<?php echo osc_esc_html($msg_url); ?>"<?php echo $msg_title !== '' ? ' title="' . osc_esc_html($msg_title) . '"' : ''; ?><?php echo (strpos($msg_classes, 'open-form') !== false) ? ' data-type="contact_public"' : ''; ?>>
+              <i class="fas fa-comment" aria-hidden="true"></i>
+              <span><?php _e('Message Seller', 'epsilon'); ?></span>
             </a>
           <?php } ?>
+        </section>
 
-          <?php if($user_phone_land_data['found']) { ?>
-            <a class="phone-land phone <?php echo $user_phone_land_data['class']; ?>" title="<?php echo osc_esc_html($user_phone_land_data['title']); ?>" data-prefix="tel" href="<?php echo $user_phone_land_data['url']; ?>" data-part1="<?php echo osc_esc_html($user_phone_land_data['part1']); ?>" data-part2="<?php echo osc_esc_html($user_phone_land_data['part2']); ?>">
-              <i class="fas fa-phone-alt"></i>
-              <span><?php echo $user_phone_land_data['masked']; ?></span>
-            </a>
+        <hr class="pngm-seller-rule" />
+
+        <section class="pngm-seller-listings">
+          <?php osc_run_hook('user_public_profile_items_top'); ?>
+          <?php echo eps_banner('public_profile_top'); ?>
+
+          <h2 class="pngm-seller-listings-title"><?php _e('Seller Listings', 'epsilon'); ?></h2>
+
+          <?php if (osc_version() >= 830) { ?>
+            <form name="user-public-profile-search" action="<?php echo osc_base_url(true); ?>" method="get" class="pngm-seller-toolbar nocsrf">
+              <input type="hidden" name="page" value="user" />
+              <input type="hidden" name="action" value="pub_profile" />
+              <input type="hidden" name="id" value="<?php echo osc_esc_html($user['pk_i_id']); ?>" />
+
+              <?php osc_run_hook('user_public_profile_search_form_top'); ?>
+
+              <div class="pngm-seller-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text" name="sPattern" value="<?php echo osc_esc_html($pattern); ?>" placeholder="<?php echo osc_esc_html(__('Search listings...', 'epsilon')); ?>" />
+              </div>
+
+              <div class="pngm-seller-filters">
+                <div class="pngm-seller-select">
+                  <?php UserForm::search_category_select($user_id); ?>
+                </div>
+                <div class="pngm-seller-select">
+                  <select name="pngm_sort" id="pngm_seller_sort" aria-label="<?php echo osc_esc_html(__('Sort listings', 'epsilon')); ?>">
+                    <?php foreach ($sort_options as $key => $label) { ?>
+                      <option value="<?php echo osc_esc_html($key); ?>"<?php echo ($sort_key === $key) ? ' selected' : ''; ?>><?php echo osc_esc_html($label); ?></option>
+                    <?php } ?>
+                  </select>
+                  <input type="hidden" name="sOrder" id="pngm_seller_order" value="<?php echo osc_esc_html($order); ?>" />
+                  <input type="hidden" name="sOrderType" id="pngm_seller_order_type" value="<?php echo osc_esc_html($order_type); ?>" />
+                </div>
+              </div>
+
+              <?php osc_run_hook('user_public_profile_search_form_bottom'); ?>
+              <button type="submit" class="is-sr-only"><?php _e('Apply', 'epsilon'); ?></button>
+            </form>
           <?php } ?>
-        </div>
+
+          <p class="pngm-seller-count">
+            <?php echo sprintf(_n('%d listing found', '%d listings found', $total_items, 'epsilon'), $total_items); ?>
+          </p>
+
+          <?php if (osc_count_items() > 0) { ?>
+            <div class="pngm-seller-grid">
+              <?php
+                $c = 0;
+                while (osc_has_items()) {
+                  $c++;
+                  $thumb = '';
+                  if (osc_count_item_resources() > 0) {
+                    $thumb = osc_resource_thumbnail_url();
+                  }
+                  $price = function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price();
+                  $item_city = function_exists('pngm_city_only') ? pngm_city_only() : osc_item_city();
+                  if ($item_city === '') {
+                    $item_city = osc_item_region();
+                  }
+              ?>
+                <a class="pngm-seller-item" href="<?php echo osc_item_url(); ?>">
+                  <span class="pngm-seller-item-media">
+                    <?php if ($thumb !== '') { ?>
+                      <img src="<?php echo osc_esc_html($thumb); ?>" alt="" loading="lazy" />
+                    <?php } else { ?>
+                      <span class="pngm-seller-item-empty" aria-hidden="true"></span>
+                    <?php } ?>
+                  </span>
+                  <span class="pngm-seller-item-body">
+                    <strong class="pngm-seller-item-title"><?php echo osc_esc_html(osc_item_title()); ?></strong>
+                    <?php if (eps_check_category_price(osc_item_category_id()) && $price !== '') { ?>
+                      <em class="pngm-seller-item-price"><?php echo osc_esc_html($price); ?></em>
+                    <?php } ?>
+                    <?php if ($item_city !== '') { ?>
+                      <span class="pngm-seller-item-city"><?php echo osc_esc_html($item_city); ?></span>
+                    <?php } ?>
+                    <span class="pngm-seller-item-time"><?php echo osc_esc_html(eps_smart_date(osc_item_pub_date())); ?></span>
+                  </span>
+                </a>
+              <?php
+                  if ($c === 3 && osc_count_items() > 3) {
+                    echo eps_banner('public_profile_middle');
+                  }
+                }
+              ?>
+            </div>
+
+            <div class="pngm-seller-paginate paginate"><?php echo eps_fix_arrow(osc_pagination_items()); ?></div>
+          <?php } else { ?>
+            <div class="pngm-seller-empty"><?php _e('No listings found', 'epsilon'); ?></div>
+          <?php } ?>
+
+          <?php echo eps_banner('public_profile_bottom'); ?>
+        </section>
       </div>
 
-      <?php if(!$im_active && getBoolPreference('item_contact_form_disabled') != 1) { ?>
-        <a href="<?php echo eps_item_fancy_url('contact_public', array('userId' => osc_user_id())); ?>" class="open-form public-contact master-button" data-type="contact_public">
-          <i class="fas fa-envelope-open"></i>
-          <span><?php _e('Send message', 'epsilon'); ?></span>
-        </a>
-      <?php } ?>
-
-      <a href="<?php echo osc_search_url(array('page' => 'search', 'userId' => osc_user_id())); ?>" class="seller-button seller-items"><?php echo __('All seller items', 'epsilon') . ' (' . $user_item_count . ')'; ?></a>
-
-      <?php if(trim(osc_user_website()) <> '') { ?>
-        <a href="<?php echo osc_user_website(); ?>" target="_blank" rel="nofollow noreferrer" class="seller-button seller-url">
-          <i class="fas fa-external-link-alt"></i>
-          <span><?php echo rtrim(str_replace(array('https://', 'http://'), '', osc_user_website()), '/'); ?></span>
-        </a>
-      <?php } ?>
-
-      <?php if($user_about <> '') { ?>
-        <div class="box" id="about">
-          <strong><?php _e('About seller', 'epsilon'); ?></strong>
-          <div><?php echo $user_about; ?></div>
-        </div>
-      <?php } ?>
-
-      <div class="box" id="share">
-        <?php osc_reset_resources(); ?>
-        <a class="whatsapp isMobile" href="whatsapp://send?text=<?php echo urlencode(osc_user_public_profile_url(osc_user_id())); ?>" data-action="share/whatsapp/share"><i class="fab fa-whatsapp"></i> <?php _e('Whatsapp', 'epsilon'); ?></a></span>
-        <a class="facebook" title="<?php echo osc_esc_html(__('Share on Facebook', 'epsilon')); ?>" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode(osc_user_public_profile_url(osc_user_id())); ?>"><i class="fab fa-facebook"></i> <?php _e('Facebook', 'epsilon'); ?></a>
-        <a class="twitter" title="<?php echo osc_esc_html(__('Share on Twitter', 'epsilon')); ?>" target="_blank" href="https://twitter.com/intent/tweet?text=<?php echo urlencode(meta_title()); ?>&url=<?php echo urlencode(osc_user_public_profile_url(osc_user_id())); ?>"><i class="fab fa-twitter"></i> <?php _e('Twitter', 'epsilon'); ?></a>
-        <a class="pinterest" title="<?php echo osc_esc_html(__('Share on Pinterest', 'epsilon')); ?>" target="_blank" href="https://pinterest.com/pin/create/button/?url=<?php echo urlencode(osc_user_public_profile_url(osc_user_id())); ?>&media=<?php echo eps_profile_picture(osc_user_id(), 'large'); ?>&description=<?php echo htmlspecialchars(meta_title()); ?>"><i class="fab fa-pinterest"></i> <?php _e('Pinterest', 'epsilon'); ?></a>
-      </div>
-
-      <?php echo eps_banner('public_profile_sidebar'); ?>
       <?php osc_run_hook('user_public_profile_sidebar_bottom'); ?>
-    </div>
-
-
-    <div id="public-main">
-      <?php osc_run_hook('user_public_profile_items_top'); ?>
-
-      <?php echo eps_banner('public_profile_top'); ?>
-
-      <h1><?php echo sprintf(__('%s\'s listings', 'epsilon'), $contact_name); ?></h1>
-
-      <?php if(osc_version() >= 830) { ?>
-        <form name="user-public-profile-search" action="<?php echo osc_base_url(true); ?>" method="get" class="user-public-profile-search-form nocsrf">
-          <input type="hidden" name="page" value="user"/>
-          <input type="hidden" name="action" value="pub_profile"/>
-          <input type="hidden" name="id" value="<?php echo osc_esc_html($user['pk_i_id']); ?>"/>
-
-          <?php osc_run_hook('user_public_profile_search_form_top'); ?>
-
-          <div class="control-group">
-            <label class="control-label" for="sPattern"><?php _e('Keyword', 'epsilon'); ?></label>
-
-            <div class="controls">
-              <?php UserForm::search_pattern_text(); ?>
-            </div>
-          </div>
-
-          <div class="control-group">
-            <label class="control-label" for="sCategory"><?php _e('Category', 'epsilon'); ?></label>
-
-            <div class="controls">
-              <?php UserForm::search_category_select(); ?>
-            </div>
-          </div>
-
-          <div class="control-group">
-            <label class="control-label" for="sCity"><?php _e('City', 'epsilon'); ?></label>
-
-            <div class="controls">
-              <?php UserForm::search_city_select(); ?>
-            </div>
-          </div>
-
-          <?php osc_run_hook('user_public_profile_search_form_bottom'); ?>
-
-          <div class="actions">
-            <button type="submit" class="btn btn-primary"><?php _e('Apply', 'epsilon'); ?></button>
-          </div>
-        </form>
-      <?php } ?>
-
-      <?php if(osc_count_items() > 0) { ?>
-        <div class="products list">
-          <?php
-            $c = 1;
-            while(osc_has_items()) {
-              eps_draw_item($c);
-
-              if($c == 3 && osc_count_items() > 3) {
-                echo eps_banner('public_profile_middle');
-              }
-
-              $c++;
-            }
-          ?>
-        </div>
-
-        <div class="paginate"><?php echo eps_fix_arrow(osc_pagination_items()); ?></div>
-
-      <?php } else { ?>
-        <div class="empty"><?php _e('User has no active listings', 'epsilon'); ?></div>
-      <?php } ?>
-
-      <?php echo eps_banner('public_profile_bottom'); ?>
     </div>
   </div>
 
-  <?php osc_current_web_theme_path('footer.php') ; ?>
+  <script>
+  (function ($) {
+    $(function () {
+      var $sort = $('#pngm_seller_sort');
+      if ($sort.length) {
+        $sort.on('change', function () {
+          var parts = String($sort.val() || 'dt_pub_date|DESC').split('|');
+          $('#pngm_seller_order').val(parts[0] || 'dt_pub_date');
+          $('#pngm_seller_order_type').val(parts[1] || 'DESC');
+          $sort.closest('form').trigger('submit');
+        });
+      }
+      $('select[name="sCategory"]').on('change', function () {
+        $(this).closest('form').trigger('submit');
+      });
+    });
+  })(jQuery);
+  </script>
+
+  <?php osc_current_web_theme_path('footer.php'); ?>
 </body>
 </html>

@@ -282,6 +282,30 @@ function pngm_ua_recent_activity($user_id, $limit = 4)
 }
 
 /**
+ * Initials from a display name (e.g. Valves Solutions → VS).
+ *
+ * @param string $name
+ * @return string
+ */
+function pngm_ua_user_initials($name)
+{
+    $name = trim(preg_replace('/\s+/', ' ', (string) $name));
+    if ($name === '') {
+        return '?';
+    }
+    $parts = explode(' ', $name);
+    if (count($parts) === 1) {
+        if (function_exists('mb_substr')) {
+            return strtoupper(mb_substr($parts[0], 0, 2));
+        }
+        return strtoupper(substr($parts[0], 0, 2));
+    }
+    $a = function_exists('mb_substr') ? mb_substr($parts[0], 0, 1) : substr($parts[0], 0, 1);
+    $b = function_exists('mb_substr') ? mb_substr($parts[count($parts) - 1], 0, 1) : substr($parts[count($parts) - 1], 0, 1);
+    return strtoupper($a . $b);
+}
+
+/**
  * Shared account page header: title + optional subtitle + Hi userchip.
  *
  * @param string $title
