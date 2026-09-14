@@ -29,10 +29,9 @@
       'phone' => '',
       'tel' => '',
       'address' => 'Port Moresby, Papua New Guinea',
-      'tagline' => 'Buy and sell across Papua New Guinea.',
+      'tagline' => '',
     );
     $pngm_socials = function_exists('pngm_footer_social_links') ? pngm_footer_social_links() : array();
-    $pngm_pages = function_exists('pngm_footer_info_pages') ? pngm_footer_info_pages() : array();
     $pngm_social_labels = array(
       'facebook'  => __('Facebook', 'epsilon'),
       'instagram' => __('Instagram', 'epsilon'),
@@ -47,101 +46,99 @@
     if ($pngm_brand === '') {
       $pngm_brand = 'PNGMarket';
     }
+
+    $pngm_nav = array();
+    if (function_exists('pngm_ensure_footer_pages')) {
+      pngm_ensure_footer_pages();
+    }
+    if (class_exists('Page')) {
+      $pngm_nav_map = array(
+        'about'   => __('About PNGMarket', 'epsilon'),
+        'terms'   => __('Terms of Service', 'epsilon'),
+        'privacy' => __('Privacy Policy', 'epsilon'),
+      );
+      foreach ($pngm_nav_map as $slug => $label) {
+        $page = Page::newInstance()->findByInternalName($slug);
+        if (is_array($page) && !empty($page['pk_i_id']) && function_exists('osc_static_page_url_from_page')) {
+          $pngm_nav[] = array('title' => $label, 'url' => osc_static_page_url_from_page($page));
+        }
+      }
+    }
+    if (getBoolPreference('web_contact_form_disabled') != 1) {
+      $pngm_nav[] = array('title' => __('Contact Us', 'epsilon'), 'url' => osc_contact_url());
+    }
+    if (function_exists('bpr_companies_url')) {
+      $pngm_nav[] = array('title' => __('Companies', 'epsilon'), 'url' => bpr_companies_url());
+    }
+
+    $pngm_desc = sprintf(
+        __('%s is Papua New Guinea’s trusted online marketplace to buy, sell and find anything.', 'epsilon'),
+        $pngm_brand
+    );
   ?>
 
-  <div class="container">
-    <div class="pngm-footer-inner">
-      <div class="pngm-footer-brand">
-        <div class="pngm-footer-brand-text">
-          <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-name">
-            <span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span>
+  <div class="pngm-footer-inner">
+      <div class="pngm-footer-top">
+        <div class="pngm-footer-brand">
+          <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
+            <?php if (function_exists('eps_logo')) { ?>
+              <?php echo eps_logo(); ?>
+            <?php } else { ?>
+              <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
+            <?php } ?>
           </a>
-          <?php if ($pngm_contact['tagline'] !== '') { ?>
-            <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_contact['tagline']); ?></p>
-          <?php } ?>
+          <p class="pngm-footer-desc"><?php echo osc_esc_html($pngm_desc); ?></p>
         </div>
+
+        <?php if (count($pngm_nav) > 0) { ?>
+          <nav class="pngm-footer-nav" aria-label="<?php echo osc_esc_html(__('Footer', 'epsilon')); ?>">
+            <?php
+              $pngm_link_i = 0;
+              foreach ($pngm_nav as $item) {
+                if ($pngm_link_i > 0) {
+                  echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
+                }
+            ?>
+              <a href="<?php echo osc_esc_html($item['url']); ?>">
+                <span><?php echo osc_esc_html($item['title']); ?></span>
+                <i class="fas fa-chevron-right pngm-footer-chevron" aria-hidden="true"></i>
+              </a>
+            <?php
+                $pngm_link_i += 1;
+              }
+            ?>
+          </nav>
+        <?php } ?>
       </div>
 
-      <?php if (count($pngm_socials) > 0) { ?>
-        <div class="pngm-footer-block pngm-footer-follow">
-          <h4><?php _e('Follow us', 'epsilon'); ?></h4>
-          <div class="pngm-footer-socials">
-            <?php
-              $pngm_social_i = 0;
-              foreach ($pngm_socials as $type => $url) {
+      <div class="pngm-footer-bottom">
+        <?php if (count($pngm_socials) > 0) { ?>
+          <div class="pngm-footer-follow">
+            <span class="pngm-footer-follow-label"><?php _e('Follow us', 'epsilon'); ?></span>
+            <div class="pngm-footer-socials">
+              <?php foreach ($pngm_socials as $type => $url) {
                 if ($type === 'whatsapp') {
                   continue;
                 }
                 $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
                 $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
-                if ($pngm_social_i > 0) {
-                  echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
-                }
-            ?>
-              <a class="pngm-footer-social pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
-                <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
-                <span><?php echo osc_esc_html($label); ?></span>
-              </a>
-            <?php
-                $pngm_social_i += 1;
-              }
-            ?>
+              ?>
+                <a class="pngm-footer-social pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo osc_esc_html($label); ?>" title="<?php echo osc_esc_html($label); ?>">
+                  <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
+                </a>
+              <?php } ?>
+            </div>
           </div>
-        </div>
-      <?php } ?>
+        <?php } ?>
 
-      <div class="pngm-footer-block pngm-footer-info">
-        <h4><?php _e('Information', 'epsilon'); ?></h4>
-        <nav class="pngm-footer-links">
-          <?php
-            $pngm_link_i = 0;
-            foreach ($pngm_pages as $page) {
-              if ($pngm_link_i > 0) {
-                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
-              }
-              echo '<a href="' . osc_esc_html($page['url']) . '">' . osc_esc_html($page['title']) . '</a>';
-              $pngm_link_i += 1;
-            }
-
-            if (getBoolPreference('web_contact_form_disabled') != 1) {
-              if ($pngm_link_i > 0) {
-                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
-              }
-              echo '<a href="' . osc_contact_url() . '">' . osc_esc_html(__('Contact Us', 'epsilon')) . '</a>';
-              $pngm_link_i += 1;
-            }
-
-            $pngm_has_companies = false;
-            foreach ($pngm_pages as $pngm_page) {
-              if (stripos($pngm_page['title'], 'compan') !== false || (isset($pngm_page['key']) && $pngm_page['key'] === 'companies')) {
-                $pngm_has_companies = true;
-                break;
-              }
-            }
-            if (!$pngm_has_companies && function_exists('bpr_companies_url')) {
-              if ($pngm_link_i > 0) {
-                echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
-              }
-              echo '<a href="' . bpr_companies_url() . '">' . osc_esc_html(__('Companies', 'epsilon')) . '</a>';
-            }
-          ?>
-        </nav>
-      </div>
-
-      <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
-      <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
-
-      <div class="pngm-footer-copy pngm-footer-copy-mobile">
-        <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?></span>
-      </div>
-
-      <div class="pngm-footer-bar">
         <div class="pngm-footer-copy">
           <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?>. <?php _e('All rights reserved.', 'epsilon'); ?></span>
         </div>
       </div>
+
+      <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
+      <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
     </div>
-  </div>
 </footer>
 
 <?php osc_run_hook('footer_after'); ?>
