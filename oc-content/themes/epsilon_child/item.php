@@ -234,9 +234,13 @@
             <a href="#" id="mk-offer" class="make-offer-link" data-item-id="<?php echo osc_item_id(); ?>" data-item-currency="<?php echo osc_item_currency(); ?>" data-ajax-url="<?php echo mo_ajax_url(); ?>&moAjaxOffer=1&itemId=<?php echo osc_item_id(); ?>"><?php _e('Submit your offer', 'epsilon'); ?></a>
           <?php } ?>
 
-          <div class="row date pngm-item-date">
-            <p><?php echo sprintf(__('Posted %s', 'epsilon'), function_exists('eps_smart_date') ? eps_smart_date(osc_item_pub_date()) : osc_format_date(osc_item_pub_date())); ?></p>
-          </div>
+          <?php if (function_exists('pngm_render_item_meta_bar')) {
+            pngm_render_item_meta_bar();
+          } else { ?>
+            <div class="row date pngm-item-date">
+              <p><?php echo sprintf(__('Posted %s', 'epsilon'), function_exists('eps_smart_date') ? eps_smart_date(osc_item_pub_date()) : osc_format_date(osc_item_pub_date())); ?></p>
+            </div>
+          <?php } ?>
           
            <?php eps_make_favorite(); ?>
         </div>
