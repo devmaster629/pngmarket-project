@@ -92,22 +92,55 @@ if (strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST' && $action !== ''
         exit;
     }
 
-    if ($action === 'toggle_twofa') {
+    if ($action === 'twofa_start') {
+        pngm_sec_2fa_begin_setup();
+        header('Location: ' . $sec_url . ((strpos($sec_url, '?') !== false) ? '&' : '?') . 'setup=1#pngm-sec-twofa');
+        exit;
+    }
+
+    if ($action === 'twofa_cancel_setup') {
+        Session::newInstance()->_drop('pngm_2fa_setup_secret');
+        header('Location: ' . $sec_url . '#pngm-sec-twofa');
+        exit;
+    }
+
+    if ($action === 'twofa_confirm') {
+        $setup_secret = pngm_sec_2fa_setup_secret();
+        $code = Params::getParam('totp_code');
+        if (!$setup_secret) {
+            osc_add_flash_warning_message(__('Setup expired. Please start again.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-twofa');
+            exit;
+        }
+        if (!pngm_sec_totp_verify($setup_secret, $code)) {
+            osc_add_flash_error_message(__('That authenticator code is incorrect. Try again with a fresh code.', 'epsilon'));
+            header('Location: ' . $sec_url . ((strpos($sec_url, '?') !== false) ? '&' : '?') . 'setup=1#pngm-sec-twofa');
+            exit;
+        }
         $data = pngm_sec_get($user_id);
-        $enable = Params::getParam('twofa') === '1';
-        $data['twofa'] = $enable ? 1 : 0;
+        $data['twofa'] = 1;
+        $data['totp_secret'] = $setup_secret;
         pngm_sec_save($user_id, $data);
-        pngm_sec_log_activity(
-            $user_id,
-            'twofa',
-            $enable ? __('Two-step verification enabled', 'epsilon') : __('Two-step verification disabled', 'epsilon')
-        );
-        osc_add_flash_ok_message(
-            $enable
-                ? __('Two-step verification is now enabled for your account', 'epsilon')
-                : __('Two-step verification has been turned off', 'epsilon')
-        );
-        header('Location: ' . $sec_url);
+        Session::newInstance()->_drop('pngm_2fa_setup_secret');
+        pngm_sec_trust_current_device($user_id);
+        pngm_sec_log_activity($user_id, 'twofa', __('Two-step verification enabled', 'epsilon'));
+        osc_add_flash_ok_message(__('Two-step verification is enabled with your authenticator app.', 'epsilon'));
+        header('Location: ' . $sec_url . '#pngm-sec-twofa');
+        exit;
+    }
+
+    if ($action === 'twofa_disable') {
+        $data = pngm_sec_get($user_id);
+        $data['twofa'] = 0;
+        $data['totp_secret'] = '';
+        $data['trusted_devices'] = array();
+        pngm_sec_save($user_id, $data);
+        Cookie::newInstance()->pop(pngm_sec_2fa_cookie_name());
+        Cookie::newInstance()->set();
+        Session::newInstance()->_drop('pngm_2fa_setup_secret');
+        pngm_sec_log_activity($user_id, 'twofa', __('Two-step verification disabled', 'epsilon'));
+        osc_add_flash_ok_message(__('Two-step verification has been turned off', 'epsilon'));
+        header('Location: ' . $sec_url . '#pngm-sec-twofa');
         exit;
     }
 
@@ -171,14 +204,24 @@ $sessions = pngm_sec_touch_session($user_id);
 $sec = pngm_sec_get($user_id);
 $activity = isset($sec['activity']) && is_array($sec['activity']) ? $sec['activity'] : array();
 $email = (string) osc_logged_user_email();
-$twofa_on = !empty($sec['twofa']);
+$twofa_on = pngm_sec_twofa_is_enabled($user_id);
+$setup_secret = pngm_sec_2fa_setup_secret();
+$show_setup = (!$twofa_on && ($setup_secret || Params::getParam('setup') === '1'));
+if ($show_setup && !$setup_secret) {
+    $setup_secret = pngm_sec_2fa_begin_setup();
+}
+$setup_uri = ($show_setup && $setup_secret) ? pngm_sec_totp_otpauth_uri($setup_secret, $email) : '';
+$setup_qr = $setup_uri !== '' ? pngm_sec_totp_qr_url($setup_uri) : '';
 $pass_changed = !empty($sec['password_changed_at']) ? pngm_sec_time_label($sec['password_changed_at']) : '';
 $google_on = !empty($sec['connected']['google']);
 $facebook_on = !empty($sec['connected']['facebook']);
 $delete_url = osc_base_url(true) . '?page=user&action=delete&id=' . $user_id . '&secret=' . urlencode((string) $user['s_secret']);
 $show_pass = Params::getParam('edit') === 'password';
 $show_email = Params::getParam('edit') === 'email';
-$show_twofa = Params::getParam('edit') === 'twofa';
+// Never open both forms at once
+if ($show_pass && $show_email) {
+    $show_email = false;
+}
 ?>
 
 <div class="pngm-sec">
@@ -215,7 +258,7 @@ $show_twofa = Params::getParam('edit') === 'twofa';
         </div>
       </section>
 
-      <section class="pngm-sec-card pngm-sec-panel" id="pngm-sec-password"<?php echo $show_pass ? '' : ' hidden'; ?>>
+      <section class="pngm-sec-card pngm-sec-panel<?php echo $show_pass ? ' is-open' : ' is-collapsed'; ?>" id="pngm-sec-password" aria-hidden="<?php echo $show_pass ? 'false' : 'true'; ?>">
         <h2><span>1b.</span> <?php _e('Change password', 'epsilon'); ?></h2>
         <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form" autocomplete="off">
           <input type="hidden" name="pngm_sec_action" value="change_password" />
@@ -248,7 +291,7 @@ $show_twofa = Params::getParam('edit') === 'twofa';
         </form>
       </section>
 
-      <section class="pngm-sec-card pngm-sec-panel" id="pngm-sec-email"<?php echo $show_email ? '' : ' hidden'; ?>>
+      <section class="pngm-sec-card pngm-sec-panel<?php echo $show_email ? ' is-open' : ' is-collapsed'; ?>" id="pngm-sec-email" aria-hidden="<?php echo $show_email ? 'false' : 'true'; ?>">
         <h2><?php _e('Change email', 'epsilon'); ?></h2>
         <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form">
           <input type="hidden" name="pngm_sec_action" value="change_email" />
@@ -273,20 +316,53 @@ $show_twofa = Params::getParam('edit') === 'twofa';
           <h2><span>2.</span> <?php _e('Two-step verification', 'epsilon'); ?></h2>
           <span class="pngm-sec-badge<?php echo $twofa_on ? ' is-ok' : ''; ?>"><?php echo $twofa_on ? __('Enabled', 'epsilon') : __('Not enabled', 'epsilon'); ?></span>
         </div>
-        <p class="pngm-sec-help"><?php _e('Add an extra layer of security. We’ll ask for a one-time code when you sign in from a new device.', 'epsilon'); ?></p>
-        <?php if ($show_twofa || $twofa_on) { ?>
-          <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form">
-            <input type="hidden" name="pngm_sec_action" value="toggle_twofa" />
-            <input type="hidden" name="twofa" value="<?php echo $twofa_on ? '0' : '1'; ?>" />
+        <p class="pngm-sec-help"><?php _e('Protect your account with Google Authenticator (or any TOTP app). We’ll ask for a 6-digit code when you sign in from a new device.', 'epsilon'); ?></p>
+
+        <?php if ($twofa_on) { ?>
+          <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form" onsubmit="return confirm('<?php echo osc_esc_js(__('Turn off two-step verification?', 'epsilon')); ?>');">
+            <input type="hidden" name="pngm_sec_action" value="twofa_disable" />
             <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
-            <div class="pngm-sec-actions">
-              <button type="submit" class="pngm-ua-btn<?php echo $twofa_on ? ' is-ghost' : ''; ?>">
-                <?php echo $twofa_on ? __('Turn off two-step verification', 'epsilon') : __('Enable two-step verification', 'epsilon'); ?>
-              </button>
-            </div>
+            <button type="submit" class="pngm-ua-btn is-ghost"><?php _e('Turn off two-step verification', 'epsilon'); ?></button>
           </form>
+        <?php } elseif ($show_setup && $setup_secret) { ?>
+          <div class="pngm-sec-totp">
+            <ol class="pngm-sec-totp-steps">
+              <li><?php _e('Install Google Authenticator, Authy, or another authenticator app.', 'epsilon'); ?></li>
+              <li><?php _e('Scan this QR code with the app (or enter the key manually).', 'epsilon'); ?></li>
+              <li><?php _e('Enter the 6-digit code the app shows to finish setup.', 'epsilon'); ?></li>
+            </ol>
+            <div class="pngm-sec-totp-pair">
+              <div class="pngm-sec-totp-qr">
+                <img src="<?php echo osc_esc_html($setup_qr); ?>" width="180" height="180" alt="<?php echo osc_esc_html(__('Authenticator QR code', 'epsilon')); ?>" />
+              </div>
+              <div class="pngm-sec-totp-manual">
+                <span><?php _e('Can’t scan? Enter this key:', 'epsilon'); ?></span>
+                <code class="pngm-sec-totp-key"><?php echo osc_esc_html(trim(chunk_split($setup_secret, 4, ' '))); ?></code>
+              </div>
+            </div>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form pngm-sec-totp-confirm">
+              <input type="hidden" name="pngm_sec_action" value="twofa_confirm" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <label class="pngm-sec-field">
+                <span><?php _e('Authenticator code', 'epsilon'); ?></span>
+                <input type="text" name="totp_code" inputmode="numeric" pattern="[0-9]*" maxlength="6" minlength="6" required autocomplete="one-time-code" placeholder="••••••" />
+              </label>
+              <div class="pngm-sec-actions">
+                <button type="submit" class="pngm-ua-btn"><?php _e('Confirm and enable', 'epsilon'); ?></button>
+              </div>
+            </form>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-totp-cancel">
+              <input type="hidden" name="pngm_sec_action" value="twofa_cancel_setup" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <button type="submit" class="pngm-ua-btn is-ghost"><?php _e('Cancel setup', 'epsilon'); ?></button>
+            </form>
+          </div>
         <?php } else { ?>
-          <a class="pngm-ua-btn is-ghost" href="<?php echo osc_esc_html($sec_url . (strpos($sec_url, '?') !== false ? '&' : '?') . 'edit=twofa#pngm-sec-twofa'); ?>"><?php _e('Set up two-step verification', 'epsilon'); ?></a>
+          <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" class="pngm-sec-form">
+            <input type="hidden" name="pngm_sec_action" value="twofa_start" />
+            <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+            <button type="submit" class="pngm-ua-btn"><?php _e('Enable two-step verification', 'epsilon'); ?></button>
+          </form>
         <?php } ?>
       </section>
 
@@ -454,11 +530,17 @@ $show_twofa = Params::getParam('edit') === 'twofa';
     return document.getElementById(key === 'email' ? 'pngm-sec-email' : 'pngm-sec-password');
   }
 
+  function setPanelOpen(panel, open) {
+    if (!panel) return;
+    panel.classList.toggle('is-collapsed', !open);
+    panel.classList.toggle('is-open', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
   function closePanels(exceptKey) {
     ['password', 'email'].forEach(function (key) {
       if (exceptKey && key === exceptKey) return;
-      var panel = panelByKey(key);
-      if (panel) panel.hidden = true;
+      setPanelOpen(panelByKey(key), false);
     });
   }
 
@@ -468,7 +550,7 @@ $show_twofa = Params::getParam('edit') === 'twofa';
       var panel = panelByKey(key);
       if (!panel) return;
       closePanels(key);
-      panel.hidden = false;
+      setPanelOpen(panel, true);
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       var first = panel.querySelector('input:not([disabled])');
       if (first) first.focus();
@@ -478,8 +560,7 @@ $show_twofa = Params::getParam('edit') === 'twofa';
   document.querySelectorAll('[data-pngm-sec-close]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var key = btn.getAttribute('data-pngm-sec-close');
-      var panel = panelByKey(key);
-      if (panel) panel.hidden = true;
+      setPanelOpen(panelByKey(key), false);
     });
   });
 

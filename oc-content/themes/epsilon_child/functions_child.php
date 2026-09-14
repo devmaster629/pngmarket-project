@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.9.1');
+    define('PNGM_CHILD_VERSION', '1.9.5');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -122,6 +122,9 @@ function pngm_enqueue_assets()
 
     $is_ua = false;
     $is_pub_profile = false;
+    $is_ua = false;
+    $is_pub_profile = false;
+    $is_twofa = (Params::getParam('route') === 'pngm-twofa-verify');
     if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
         $loc = osc_get_osclass_location();
         $is_ua = ($loc === 'user') || (strpos((string) Params::getParam('route'), 'im-') === 0)
@@ -136,7 +139,7 @@ function pngm_enqueue_assets()
     ) {
         $is_pub_profile = true;
     }
-    if ($is_ua || $is_pub_profile) {
+    if ($is_ua || $is_pub_profile || $is_twofa) {
         osc_enqueue_style('pngm-account-ua', osc_current_web_theme_url('css/account-ua.css' . $version));
     }
 

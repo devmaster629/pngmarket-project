@@ -4419,6 +4419,10 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
   box-sizing: border-box;
 }
 
+.pngm-sec-panel.is-collapsed {
+  display: none !important;
+}
+
 .pngm-sec-card h2 {
   margin: 0 0 14px;
   font-size: 16px;
@@ -4441,6 +4445,12 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
 
 .pngm-sec-card-top h2 {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pngm-sec-card-top .pngm-sec-badge {
+  flex: 0 0 auto;
 }
 
 .pngm-sec-help {
@@ -4494,12 +4504,16 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
 .pngm-sec-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  justify-content: center;
+  padding: 4px 10px;
   border-radius: 999px;
   background: #eef1f4;
   color: #6b7785;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pngm-sec-badge.is-ok {
@@ -4754,4 +4768,187 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
     justify-content: center;
   }
 }
+
+/* —— Two-step verification (public) —— */
+body.file-twofa-verify .primary.container {
+  max-width: 480px;
+  margin: 40px auto 64px;
+  padding: 0 16px;
+}
+
+.pngm-twofa-box {
+  background: #fff;
+  border: 1px solid #e6ebe8;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(22, 32, 42, 0.06);
+  padding: 28px 28px 24px;
+}
+
+.pngm-twofa-box h1 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  line-height: 1.25;
+  color: #16202a;
+}
+
+.pngm-twofa-lead {
+  margin: 0 0 20px;
+  color: #5b6670;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pngm-twofa-debug {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px solid #f0d78c;
+  color: #7a5b00;
+  font-size: 13px;
+}
+
+.pngm-twofa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pngm-twofa-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a4650;
+}
+
+.pngm-twofa-field input {
+  height: 48px;
+  border: 1px solid #d5ddd8;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 22px;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-weight: 700;
+  color: #16202a;
+}
+
+.pngm-twofa-field input:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+}
+
+.pngm-twofa-form .btn {
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: #1b5e20;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pngm-twofa-form .btn:hover {
+  background: #174e1a;
+}
+
+.pngm-twofa-resend {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.pngm-twofa-link {
+  background: none;
+  border: 0;
+  color: #1b5e20;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.pngm-twofa-back {
+  display: block;
+  margin-top: 18px;
+  text-align: center;
+  color: #8a94a0;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.pngm-twofa-back:hover {
+  color: #1b5e20;
+}
+
+/* —— Authenticator setup (Account & Security) —— */
+.pngm-sec-totp-steps {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: #5b6670;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pngm-sec-totp-steps li + li {
+  margin-top: 4px;
+}
+
+.pngm-sec-totp-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.pngm-sec-totp-qr {
+  flex: 0 0 auto;
+  padding: 8px;
+  border: 1px solid #e6ebe8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pngm-sec-totp-qr img {
+  display: block;
+  width: 180px;
+  height: 180px;
+}
+
+.pngm-sec-totp-manual {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: #5b6670;
+}
+
+.pngm-sec-totp-key {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f3f7f3;
+  border: 1px dashed #c5d4c7;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #16202a;
+  word-break: break-all;
+}
+
+.pngm-sec-totp-confirm .pngm-sec-field input {
+  letter-spacing: 0.28em;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pngm-sec-totp-cancel {
+  margin-top: 10px;
+}
+
 
