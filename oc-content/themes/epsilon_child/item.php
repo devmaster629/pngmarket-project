@@ -261,47 +261,21 @@
           <h2><i class="fas fa-align-left" aria-hidden="true"></i> <?php _e('Description', 'epsilon'); ?></h2>
 
           <div class="desc-parts">
-            <div class="desc-text">
-              <?php if(eps_param('shorten_description') == 1) { ?>
-                <div class="text visible">
-                  <?php if(function_exists('show_qrcode')) { ?>
-                    <div class="qr-code">
-                      <strong><?php _e('Scan QR', 'epsilon'); ?></strong>
-                      <?php show_qrcode(); ?>
-                    </div>
-                  <?php } ?>
-
-                  <div class="desc-text-raw"><?php echo substr(strip_tags(osc_item_description()), 0, 720) . (strlen(strip_tags(osc_item_description())) > 720 ? '...' : ''); ?></div>
-                </div>
-
-                <?php if(strlen(osc_item_description()) > 720) { ?>
-                  <div class="text hidden">
-                    <?php if(function_exists('show_qrcode')) { ?>
-                      <div class="qr-code">
-                        <strong><?php _e('Scan QR', 'epsilon'); ?></strong>
-                        <?php show_qrcode(); ?>
-                      </div>
-                    <?php } ?>
-
-                    <div class="desc-text-raw"><?php echo osc_item_description(); ?></div>
-                  </div>
-
-                  <div class="links">
-                    <a href="#" class="read-more-desc"><?php _e('Read more', 'epsilon'); ?> <i class="fas fa-angle-down"></i></a>
+            <div class="desc-text pngm-desc" data-max-lines="5">
+              <div class="text visible">
+                <?php if(function_exists('show_qrcode')) { ?>
+                  <div class="qr-code">
+                    <strong><?php _e('Scan QR', 'epsilon'); ?></strong>
+                    <?php show_qrcode(); ?>
                   </div>
                 <?php } ?>
-              <?php } else { ?>
-                <div class="text visible">
-                  <?php if(function_exists('show_qrcode')) { ?>
-                    <div class="qr-code">
-                      <strong><?php _e('Scan QR', 'epsilon'); ?></strong>
-                      <?php show_qrcode(); ?>
-                    </div>
-                  <?php } ?>
 
-                  <?php echo osc_item_description(); ?>
-                </div>
-              <?php } ?>
+                <div class="desc-text-raw pngm-desc-body"><?php echo osc_item_description(); ?></div>
+              </div>
+
+              <div class="links pngm-desc-more" hidden>
+                <a href="#" class="pngm-show-more-desc"><?php _e('Show more', 'epsilon'); ?> <i class="fas fa-angle-down" aria-hidden="true"></i></a>
+              </div>
             </div>
 
             <?php osc_run_hook('item_description'); ?>

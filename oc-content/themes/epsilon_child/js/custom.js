@@ -2539,6 +2539,81 @@
     }, 250);
   }
 
+  /**
+   * Listing description: clamp to 5 lines and only show "Show more" when overflowing.
+   */
+  function initItemDescriptionClamp() {
+    var wraps = document.querySelectorAll('body#item .pngm-desc');
+    if (!wraps.length) {
+      return;
+    }
+
+    function measure(wrap) {
+      var body = wrap.querySelector('.pngm-desc-body');
+      var more = wrap.querySelector('.pngm-desc-more');
+      if (!body || !more) {
+        return;
+      }
+
+      if (wrap.classList.contains('is-expanded')) {
+        more.hidden = true;
+        wrap.classList.remove('is-collapsed');
+        return;
+      }
+
+      var maxLines = parseInt(wrap.getAttribute('data-max-lines') || '5', 10) || 5;
+      wrap.classList.remove('is-collapsed');
+      more.hidden = true;
+
+      // Force layout with full text, then compare against 5-line cap
+      var styles = window.getComputedStyle(body);
+      var lineHeight = parseFloat(styles.lineHeight);
+      if (!lineHeight || isNaN(lineHeight)) {
+        lineHeight = parseFloat(styles.fontSize) * 1.4;
+      }
+      var maxHeight = lineHeight * maxLines;
+      var fullHeight = body.scrollHeight;
+
+      if (fullHeight > maxHeight + 2) {
+        wrap.classList.add('is-collapsed');
+        more.hidden = false;
+      } else {
+        wrap.classList.remove('is-collapsed');
+        more.hidden = true;
+      }
+    }
+
+    function measureAll() {
+      var i;
+      for (i = 0; i < wraps.length; i += 1) {
+        measure(wraps[i]);
+      }
+    }
+
+    measureAll();
+    window.setTimeout(measureAll, 50);
+    window.setTimeout(measureAll, 250);
+    window.addEventListener('resize', measureAll);
+
+    document.body.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a.pngm-show-more-desc') : null;
+      if (!link) {
+        return;
+      }
+      e.preventDefault();
+      var wrap = link.closest('.pngm-desc');
+      if (!wrap) {
+        return;
+      }
+      wrap.classList.remove('is-collapsed');
+      wrap.classList.add('is-expanded');
+      var more = wrap.querySelector('.pngm-desc-more');
+      if (more) {
+        more.hidden = true;
+      }
+    });
+  }
+
   function init() {
     initCategories();
     initStickyHomeSearch();
@@ -2559,6 +2634,7 @@
     initLiveSearchBoard();
     initMobileSearchFilters();
     initChatLayout();
+    initItemDescriptionClamp();
   }
 
   if (document.readyState === 'loading') {

@@ -139,6 +139,11 @@ function pngm_atr_enhance_html($html)
         return '';
     }
 
+    // Plugin always prints the title UL even with zero rows — hide empty section
+    if (!preg_match('/<li\b[^>]*\batr-line\b/i', $html)) {
+        return '';
+    }
+
     // Mark for our CSS (keep existing theme/styled classes)
     if (strpos($html, 'pngm-atr-visual') === false) {
         $html = preg_replace('/(<ul\b[^>]*\bid=["\']atr-item["\'][^>]*\bclass=["\'])/', '$1pngm-atr-visual ', $html, 1);

@@ -2682,6 +2682,14 @@ body#item #item-hook {
   display: block;
 }
 
+body#item .props.pngm-item-details:empty,
+body#item .props.pngm-item-details:not(:has(#atr-item)) {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 body#item #atr-item.pngm-atr-visual,
 body#item #atr-item {
   list-style: none;
@@ -3292,6 +3300,38 @@ body#item #item-main .description .desc-parts {
 
 body#item #item-main .description .desc-text {
   width: 100%;
+}
+
+/* Collapse long descriptions to 5 lines; "Show more" only when needed (JS) */
+body#item #item-main .description .pngm-desc.is-collapsed .pngm-desc-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+}
+
+body#item #item-main .description .pngm-desc-more[hidden] {
+  display: none !important;
+}
+
+body#item #item-main .description .pngm-show-more-desc {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #15803d !important;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+body#item #item-main .description .pngm-show-more-desc:hover {
+  color: #166534 !important;
+}
+
+body#item #item-main .description .pngm-show-more-desc i {
+  font-size: 12px;
+  margin-left: 2px;
 }
 
 body#item #item-main .row.description h2,
