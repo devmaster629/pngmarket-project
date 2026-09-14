@@ -6257,6 +6257,7 @@ body.pngm-filter-open {
     height: calc(100dvh - 102px - 56px - env(safe-area-inset-bottom, 0px));
     max-height: calc(100dvh - 102px - 56px - env(safe-area-inset-bottom, 0px));
     margin-bottom: 0 !important;
+    padding-bottom: 0;
     overflow: hidden;
   }
 
@@ -6272,6 +6273,8 @@ body.pngm-filter-open {
     overflow: hidden;
     width: 100%;
     float: none;
+    background: transparent !important;
+    border-radius: 0 !important;
   }
 
   body.im-chat-page #user-main {
@@ -6294,43 +6297,120 @@ body.pngm-filter-open {
     margin: 0 !important;
   }
 
+  /* Mobile composer: one slim bar inside the white board (no empty card gap) */
+  body.im-chat-page .pngm-im-split,
+  body.im-chat-page .pngm-im-board-pane,
+  body.im-chat-page .pngm-im-board-pane > .im-file-messages {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: 100%;
+    max-height: none;
+  }
+
+  body.im-chat-page .pngm-im-board-pane {
+    margin: 0 0 10px !important;
+    padding: 12px 12px 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  body.im-chat-page .pngm-im-mobile-back,
+  body.im-chat-page .im-alt-head,
+  body.im-chat-page .im-row.im-item-context,
+  body.im-chat-page .im-error-list {
+    flex: 0 0 auto;
+  }
+
   body.im-chat-page #im-message-form {
-    position: fixed !important;
-    left: 0;
-    right: 0;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    z-index: 10040;
-    flex: none;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 2;
+    flex: 0 0 auto !important;
     float: none !important;
-    width: 100% !important;
-    max-width: 100%;
-    margin: 0 !important;
-    padding: 8px 12px 10px;
+    width: calc(100% + 24px) !important;
+    max-width: none;
+    margin: 8px -12px 0 !important;
+    padding: 10px 12px !important;
     background: #fff;
-    box-shadow: 0 -6px 16px rgba(16, 32, 42, .08);
+    border: 0;
+    border-top: 1px solid #eef1f4;
+    border-radius: 0 0 12px 12px !important;
+    box-shadow: none;
     box-sizing: border-box;
   }
 
+  body.im-chat-page #im-message-form .im-send-hint,
   body.im-chat-page #im-message-form img.im-logged-user-img {
-    top: 16px;
-    left: 20px;
+    display: none !important;
+  }
+
+  body.im-chat-page #im-message-form .im-file-list {
+    margin: 0 0 8px 0 !important;
+    width: 100% !important;
+  }
+
+  body.im-chat-page #im-message,
+  body.im-chat-page #im-message-form .im-textarea {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 120px !important;
+    padding: 11px 96px 11px 14px !important;
+    border-radius: 22px !important;
+    background: #f4f6f8 !important;
+    border: 1px solid #e6eaf0 !important;
+    box-shadow: none !important;
+    font-size: 15px !important;
+    line-height: 20px !important;
   }
 
   body.im-chat-page #im-message-form button.im-button-alt {
-    top: 16px;
-    right: 19px;
+    top: 12px !important;
+    right: 18px !important;
+    transform: none;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: #2e7d32 !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body.im-chat-page #im-message-form button.im-button-alt i {
+    line-height: 1 !important;
+    font-size: 15px !important;
   }
 
   body.im-chat-page #im-message-form .im-attachment {
-    top: 16px;
-    right: 70px;
+    top: 14px !important;
+    right: 62px !important;
+    transform: none;
+    height: 36px !important;
   }
 
-  body .im-alt-head {
+  body.im-chat-page #im-message-form .im-attachment .im-wrap {
+    background: transparent !important;
+    padding: 8px !important;
+    height: auto !important;
+    color: #6b7785 !important;
+  }
+
+  body.im-chat-page #user-main {
+    padding: 8px 12px 0;
+  }
+
+  body.im-chat-page .im-alt-head {
     margin: 0 0 8px 0 !important;
   }
 
-  body .im-alt-head .im-head2 {
+  body.im-chat-page .im-alt-head .im-head2 {
     font-size: 22px;
     line-height: 26px;
   }

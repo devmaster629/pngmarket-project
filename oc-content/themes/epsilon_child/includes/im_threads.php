@@ -1,7 +1,8 @@
 <?php
 /**
- * Messages tab entry: open the latest conversation (no standalone list page).
- * Included from instant_messenger/user/threads.php when present.
+ * Messages tab entry.
+ * Desktop: redirect to latest conversation (split list + board).
+ * Mobile: show conversation list; tap a chat to open details.
  */
 
 if (!defined('ABS_PATH')) {
@@ -11,10 +12,11 @@ if (!defined('ABS_PATH')) {
 require_once dirname(__FILE__) . '/im_ui.php';
 
 $user_id = (int) osc_logged_user_id();
-$rows = pngm_im_prepare_conversations($user_id, 1, 0);
+$rows = pngm_im_prepare_conversations($user_id, 50, 0);
+$is_mobile = pngm_im_is_mobile_request();
 
-// Prefer opening the most recent thread instead of a list-only page
-if (is_array($rows) && !empty($rows[0]['url'])) {
+// Desktop: open latest thread (list sits beside the board there)
+if (!$is_mobile && is_array($rows) && !empty($rows[0]['url'])) {
     $go = $rows[0]['url'];
     if (!headers_sent()) {
         header('Location: ' . $go);
@@ -24,8 +26,6 @@ if (is_array($rows) && !empty($rows[0]['url'])) {
     echo '<noscript><meta http-equiv="refresh" content="0;url=' . osc_esc_html($go) . '"></noscript>';
     exit;
 }
-
-// No conversations yet — lightweight empty state (+ blocked users)
 ?>
 <link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
 <script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/tipped.js"></script>
@@ -39,16 +39,7 @@ if (is_array($rows) && !empty($rows[0]['url'])) {
       <?php }
   } ?>
 
-  <div class="pngm-im-list-pane">
-    <div class="pngm-im-list-head">
-      <h1><?php _e('Messages', 'epsilon'); ?></h1>
-    </div>
-    <div class="pngm-im-empty" id="pngm-messages-empty">
-      <i class="fas fa-comments" aria-hidden="true"></i>
-      <p><?php _e('No conversations found', 'epsilon'); ?></p>
-      <a class="pngm-ua-btn" href="<?php echo osc_search_url(array()); ?>"><?php _e('Browse listings', 'epsilon'); ?></a>
-    </div>
-  </div>
+  <?php pngm_im_render_conversation_list($rows, 0); ?>
 
   <div class="pngm-im-blocked">
     <?php
@@ -59,3 +50,4 @@ if (is_array($rows) && !empty($rows[0]['url'])) {
     ?>
   </div>
 </div>
+<?php pngm_im_ui_script(); ?>

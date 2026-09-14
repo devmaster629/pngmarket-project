@@ -198,6 +198,10 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)
 <div class="pngm-im pngm-im-split">
   <?php pngm_im_render_conversation_list($pngm_im_rows, (int) $thread['i_thread_id']); ?>
   <div class="pngm-im-board-pane">
+    <a class="pngm-im-mobile-back" href="<?php echo osc_esc_html(osc_route_url('im-threads')); ?>">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span><?php _e('Messages', 'epsilon'); ?></span>
+    </a>
 <?php } ?>
 
 <div class="im-html im-file-messages im-theme-<?php echo osc_current_web_theme(); ?>">

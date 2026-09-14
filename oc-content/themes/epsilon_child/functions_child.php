@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.8.5');
+    define('PNGM_CHILD_VERSION', '1.8.9');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -991,8 +991,8 @@ function pngm_recaptcha_incognito_fix()
 osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 30);
 
 /**
- * Messages tab should open the latest conversation, not a list-only page.
- * Runs on init (before HTML) so Location headers work inside the UA shell.
+ * Messages tab should open the latest conversation on desktop only.
+ * Mobile keeps the conversation list first, then opens a thread on tap.
  */
 function pngm_im_redirect_threads_to_latest()
 {
@@ -1022,6 +1022,10 @@ function pngm_im_redirect_threads_to_latest()
         return;
     }
     require_once $ui;
+
+    if (function_exists('pngm_im_is_mobile_request') && pngm_im_is_mobile_request()) {
+        return;
+    }
 
     $rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 1, 0);
     if (!is_array($rows) || empty($rows[0]['url'])) {

@@ -2521,7 +2521,7 @@
 
       var formH = form ? form.offsetHeight : 0;
       var top = board.getBoundingClientRect().top;
-      var available = Math.floor(window.innerHeight - top - formH - naviH - 8);
+      var available = Math.floor(window.innerHeight - top - formH - naviH - 4);
       if (available < 80) {
         available = 80;
       }
@@ -2626,6 +2626,10 @@
   }
 
   function init() {
+    try {
+      var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
+      document.cookie = 'pngm_im_mobile=' + (mobileIm ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax';
+    } catch (e) {}
     initCategories();
     initStickyHomeSearch();
     initPatternSearchLocation();

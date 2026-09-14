@@ -12,6 +12,26 @@ if (!function_exists('pngm_ua_user_initials')) {
 }
 
 /**
+ * Rough mobile/tablet request check (matches list-first Messages flow).
+ *
+ * @return bool
+ */
+function pngm_im_is_mobile_request()
+{
+    if (isset($_COOKIE['pngm_im_mobile']) && $_COOKIE['pngm_im_mobile'] === '1') {
+        return true;
+    }
+    if (isset($_COOKIE['pngm_im_mobile']) && $_COOKIE['pngm_im_mobile'] === '0') {
+        return false;
+    }
+    $ua = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+    if ($ua === '') {
+        return false;
+    }
+    return (bool) preg_match('/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i', $ua);
+}
+
+/**
  * Build conversation rows for the logged-in user.
  *
  * @param int $user_id
@@ -180,9 +200,6 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
     <form class="pngm-im-search" action="#" method="get" role="search" data-pngm-im-search="1">
       <i class="fas fa-search" aria-hidden="true"></i>
       <input type="text" id="pngm-im-search-input" placeholder="<?php echo osc_esc_html(__('Search conversations…', 'epsilon')); ?>" autocomplete="off" />
-      <button type="submit" class="pngm-im-search-btn" title="<?php echo osc_esc_html(__('Search', 'epsilon')); ?>">
-        <i class="fas fa-sliders-h" aria-hidden="true"></i>
-      </button>
     </form>
 
     <div class="pngm-im-convo-list" id="pngm-messages-list">
@@ -408,6 +425,14 @@ function pngm_im_ui_script()
     });
   }
 
+  function isMobileImLayout() {
+    return window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
+  }
+
+  try {
+    document.cookie = 'pngm_im_mobile=' + (isMobileImLayout() ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax';
+  } catch (cookieErr) {}
+
   if (list && boardPane) {
     list.addEventListener('click', function (e) {
       var link = e.target.closest ? e.target.closest('a.pngm-im-convo') : null;
@@ -415,6 +440,10 @@ function pngm_im_ui_script()
         return;
       }
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
+        return;
+      }
+      // Mobile: full page navigation to chat details
+      if (isMobileImLayout()) {
         return;
       }
       var url = link.getAttribute('href');
@@ -430,7 +459,7 @@ function pngm_im_ui_script()
     });
 
     window.addEventListener('popstate', function () {
-      if (!document.querySelector('.pngm-im-split')) {
+      if (!document.querySelector('.pngm-im-split') || isMobileImLayout()) {
         return;
       }
       loadBoard(window.location.href, false);
