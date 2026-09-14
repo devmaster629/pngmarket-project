@@ -183,6 +183,7 @@ function pngm_footer_info_pages()
         'about'   => __('About', 'epsilon'),
         'terms'   => __('Terms', 'epsilon'),
         'privacy' => __('Privacy', 'epsilon'),
+        'safety'  => __('Safety Tips', 'epsilon'),
     );
 
     $pages = array();
@@ -219,7 +220,7 @@ function pngm_footer_info_pages()
                     continue;
                 }
 
-                if (in_array($internal, array('about', 'terms', 'privacy', 'example_page'), true)) {
+                if (in_array($internal, array('about', 'terms', 'privacy', 'safety', 'example_page'), true)) {
                     continue;
                 }
 
@@ -281,11 +282,58 @@ function pngm_footer_page_seed()
                 . '</ul>'
                 . '<p>Contact: <a href="mailto:' . osc_esc_html($contact['email']) . '">' . osc_esc_html($contact['email']) . '</a>.</p>',
         ),
+        'safety' => array(
+            'title' => 'Safety Tips',
+            'text'  => '<p><strong>Stay safe when buying and selling on ' . $brand . '.</strong> Deals are between you and the other person — follow these tips to protect yourself and your community.</p>'
+                . '<h2>Meet safely</h2>'
+                . '<ul>'
+                . '<li>Meet in a public place during daytime when possible.</li>'
+                . '<li>Bring a friend or family member if you can.</li>'
+                . '<li>Tell someone where you are going and when you expect to return.</li>'
+                . '</ul>'
+                . '<h2>Protect your money</h2>'
+                . '<ul>'
+                . '<li>Never send money, deposits, or gift cards to someone you have not met.</li>'
+                . '<li>Be careful with unusual payment requests or pressure to pay quickly.</li>'
+                . '<li>Inspect items carefully before you pay.</li>'
+                . '</ul>'
+                . '<h2>Communicate carefully</h2>'
+                . '<ul>'
+                . '<li>Keep early conversations in ' . $brand . ' messages when you can.</li>'
+                . '<li>Do not share bank details, passwords, or one-time codes.</li>'
+                . '<li>Trust your instincts — if something feels wrong, walk away.</li>'
+                . '</ul>'
+                . '<h2>Report problems</h2>'
+                . '<p>If you see a suspicious listing or feel unsafe, stop the deal and '
+                . '<a href="' . osc_esc_html(osc_contact_url()) . '">contact us</a>'
+                . ' so we can help.</p>',
+        ),
     );
 }
 
 /**
- * Ensure About / Terms / Privacy pages exist and are footer-linked.
+ * Public URL for the Safety Tips static page (creates it if missing).
+ *
+ * @return string
+ */
+function pngm_safety_tips_url()
+{
+    if (function_exists('pngm_ensure_footer_pages')) {
+        pngm_ensure_footer_pages();
+    }
+
+    if (class_exists('Page')) {
+        $page = Page::newInstance()->findByInternalName('safety');
+        if (is_array($page) && !empty($page['pk_i_id']) && function_exists('osc_static_page_url_from_page')) {
+            return osc_static_page_url_from_page($page);
+        }
+    }
+
+    return function_exists('osc_contact_url') ? osc_contact_url() : '#';
+}
+
+/**
+ * Ensure About / Terms / Privacy / Safety pages exist and are footer-linked.
  */
 function pngm_ensure_footer_pages()
 {
@@ -293,15 +341,11 @@ function pngm_ensure_footer_pages()
         return;
     }
 
-    // Run at most once per request lifecycle flag in preference.
-    $done = osc_get_preference('pngm_footer_pages_seeded', 'pngmarket');
-    if ($done === '1') {
-        // Still verify pages exist (in case DB was reset).
-        $about = Page::newInstance()->findByInternalName('about');
-        if (is_array($about) && !empty($about['pk_i_id'])) {
-            return;
-        }
+    static $ran = false;
+    if ($ran) {
+        return;
     }
+    $ran = true;
 
     $locale = 'en_US';
     if (function_exists('osc_current_user_locale') && osc_current_user_locale() !== '') {
@@ -310,6 +354,7 @@ function pngm_ensure_footer_pages()
 
     $seed = pngm_footer_page_seed();
     $manager = Page::newInstance();
+    $created_any = false;
 
     foreach ($seed as $slug => $content) {
         $existing = $manager->findByInternalName($slug);
@@ -337,6 +382,7 @@ function pngm_ensure_footer_pages()
                 ),
             )
         );
+        $created_any = true;
     }
 
     // Hide / unlink the Osclass example page from the footer.
@@ -356,16 +402,20 @@ function pngm_ensure_footer_pages()
         }
     }
 
-    if (trim((string) eps_param('site_name')) === '') {
+    if (function_exists('eps_param') && trim((string) eps_param('site_name')) === '') {
         osc_set_preference('site_name', 'PNGMarket', 'theme-epsilon');
     }
 
-    if (trim((string) eps_param('site_email')) === '') {
+    if (function_exists('eps_param') && trim((string) eps_param('site_email')) === '') {
         osc_set_preference('site_email', 'info@pngmarket.online', 'theme-epsilon');
     }
 
     osc_set_preference('pngm_footer_pages_seeded', '1', 'pngmarket');
     osc_set_preference('footer_link', '0', 'theme-epsilon');
+
+    if ($created_any && function_exists('osc_reset_preferences')) {
+        // no-op: preference write is enough for next requests
+    }
 }
 
 /**

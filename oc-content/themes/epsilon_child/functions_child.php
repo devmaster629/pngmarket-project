@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.0.8');
+    define('PNGM_CHILD_VERSION', '2.1.7');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -127,6 +127,30 @@ function pngm_enqueue_assets()
         || in_array($page_param, array('login', 'register'), true)
     ) {
         osc_enqueue_style('pngm-auth', osc_current_web_theme_url('css/auth.css' . $version));
+    }
+
+    $is_about = false;
+    if ($page_param === 'page') {
+        $slug = (string) Params::getParam('slug');
+        if ($slug === '' && function_exists('osc_static_page_slug')) {
+            $slug = (string) osc_static_page_slug();
+        }
+        if ($slug === 'about' || (string) Params::getParam('s_internal_name') === 'about') {
+            $is_about = true;
+        }
+    }
+    if (function_exists('osc_is_static_page') && osc_is_static_page() && function_exists('osc_static_page_slug')) {
+        if ((string) osc_static_page_slug() === 'about') {
+            $is_about = true;
+        }
+    }
+    // Fallback: match common about URLs
+    $req = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    if (!$is_about && preg_match('#/(about)(/|\?|$)#i', $req)) {
+        $is_about = true;
+    }
+    if ($is_about) {
+        osc_enqueue_style('pngm-about', osc_current_web_theme_url('css/about.css' . $version));
     }
 
     $is_ua = false;

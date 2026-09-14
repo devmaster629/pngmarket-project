@@ -1,0 +1,569 @@
+/**
+ * PNG Market — About page (Information).
+ * Keep site navbar unchanged; only hide the sticky search strip on this page.
+ */
+
+body.pngm-about {
+  background: #fff;
+  padding-top: 72px !important;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+  body.pngm-about {
+    padding-top: 60px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-about {
+    padding-top: 64px !important;
+  }
+}
+
+body.pngm-about .pngm-global-search {
+  display: none !important;
+}
+
+body.pngm-about #breadcrumbs {
+  display: none !important;
+}
+
+body.pngm-about > .content {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #fff !important;
+  min-height: 0 !important;
+}
+
+body.pngm-about > .content > section.container:after,
+body.pngm-about .page-text {
+  display: none !important;
+}
+
+.pngm-about-page {
+  width: 100%;
+  background: #fff;
+}
+
+.pngm-about-inner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+/* —— Hero —— */
+.pngm-about-hero {
+  padding: 48px 0 32px;
+  background: #fff;
+}
+
+.pngm-about-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 36px 48px;
+  align-items: center;
+}
+
+.pngm-about-hero-copy h1 {
+  margin: 0 0 16px;
+  font-size: 42px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #16202a;
+}
+
+.pngm-about-hero-copy p {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #5b6773;
+  max-width: 34em;
+}
+
+.pngm-about-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.pngm-about-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none !important;
+  box-sizing: border-box;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.pngm-about-btn-primary {
+  background: #006b24;
+  color: #fff !important;
+  border: 1px solid #006b24;
+}
+
+.pngm-about-btn-primary:hover {
+  background: #00551c;
+  border-color: #00551c;
+  color: #fff !important;
+}
+
+.pngm-about-btn-secondary {
+  background: #fff;
+  color: #006b24 !important;
+  border: 1.5px solid #006b24;
+}
+
+.pngm-about-btn-secondary:hover {
+  background: #e8f5ec;
+  color: #00551c !important;
+}
+
+.pngm-about-hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.pngm-about-hero-glow {
+  position: absolute;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 107, 36, 0.14) 0%, rgba(232, 245, 236, 0.35) 45%, transparent 70%);
+  pointer-events: none;
+}
+
+.pngm-about-hero-visual img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* —— Values cards (above Helps) —— */
+.pngm-about-values {
+  padding: 8px 0;
+  background: #f4f6f8;
+}
+
+.pngm-about-values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.pngm-about-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e6ebf0;
+  border-radius: 16px;
+  padding: 22px 20px;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.05);
+  box-sizing: border-box;
+}
+
+.pngm-about-card-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border-radius: 50%;
+  background: #e8f5ec;
+  color: #006b24;
+  font-size: 20px;
+}
+
+.pngm-about-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pngm-about-card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 800;
+  color: #16202a;
+}
+
+.pngm-about-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #6b7785;
+}
+
+.pngm-about-checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pngm-about-checks li {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 26px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3a4650;
+}
+
+.pngm-about-checks li:last-child {
+  margin-bottom: 0;
+}
+
+.pngm-about-checks li::before {
+  content: "\f00c";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e8f5ec;
+  color: #006b24;
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* —— How it helps —— */
+.pngm-about-helps {
+  padding: 52px 0 40px;
+  background: #fff;
+}
+
+.pngm-about-helps-head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 36px;
+}
+
+.pngm-about-helps-head h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #16202a;
+  letter-spacing: -0.02em;
+}
+
+.pngm-about-helps-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #6b7785;
+}
+
+.pngm-about-helps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px 24px;
+}
+
+.pngm-about-help {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  text-align: left;
+  padding: 0;
+  border: 0;
+}
+
+.pngm-about-help-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border-radius: 50%;
+  border: 0;
+  color: #006b24;
+  background: #e8f5ec;
+  font-size: 18px;
+}
+
+.pngm-about-help-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pngm-about-help h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #16202a;
+}
+
+.pngm-about-help p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #6b7785;
+}
+
+/* —— Safety banner (below Helps) —— */
+.pngm-about-safety {
+  padding: 8px 0 56px;
+  background: #fff;
+}
+
+.pngm-about-safety-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: #eef8f1;
+  border: 1px solid #d7ebdd;
+  box-sizing: border-box;
+}
+
+.pngm-about-safety-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pngm-about-safety-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #006b24;
+  color: #fff;
+  font-size: 18px;
+}
+
+.pngm-about-safety-copy h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #16202a;
+}
+
+.pngm-about-safety-copy p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5b6773;
+  max-width: 46em;
+}
+
+.pngm-about-safety-banner .pngm-about-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* —— Tablet —— */
+@media screen and (max-width: 980px) {
+  .pngm-about-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .pngm-about-hero-copy h1 {
+    font-size: 34px;
+  }
+
+  /* Keep copy before image (match mobile mockup order) */
+  .pngm-about-hero-visual {
+    order: 0;
+    min-height: 0;
+  }
+
+  .pngm-about-hero-visual img {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .pngm-about-values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pngm-about-helps-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 20px;
+  }
+
+  .pngm-about-help {
+    padding: 0;
+  }
+
+  .pngm-about-safety-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pngm-about-safety-banner .pngm-about-btn {
+    width: 100%;
+  }
+}
+
+/* —— Mobile: same structure as desktop, stacked —— */
+@media screen and (max-width: 640px) {
+  .pngm-about-inner {
+    padding: 0 16px;
+  }
+
+  .pngm-about-hero {
+    padding: 24px 0 20px;
+  }
+
+  .pngm-about-hero-grid {
+    gap: 20px;
+  }
+
+  .pngm-about-hero-copy {
+    display: contents;
+  }
+
+  .pngm-about-hero-copy h1 {
+    order: 1;
+    font-size: 28px;
+    margin: 0 0 12px;
+  }
+
+  .pngm-about-hero-copy p {
+    order: 2;
+    font-size: 15px;
+    max-width: none;
+  }
+
+  .pngm-about-hero-visual {
+    order: 3;
+    margin: 4px 0;
+  }
+
+  .pngm-about-hero-visual img {
+    max-width: 100%;
+  }
+
+  .pngm-about-hero-actions {
+    order: 4;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .pngm-about-hero-actions .pngm-about-btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .pngm-about-values-grid {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    gap: 14px;
+  }
+
+  .pngm-about-card {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 16px;
+  }
+
+  .pngm-about-card-ico {
+    margin: 0;
+  }
+
+  .pngm-about-card h2 {
+    font-size: 17px;
+  }
+
+  .pngm-about-helps {
+    padding: 32px 0 24px;
+  }
+
+  .pngm-about-helps-head {
+    margin: 0 auto 24px;
+    text-align: center;
+  }
+
+  .pngm-about-helps-head h2 {
+    font-size: 22px;
+  }
+
+  .pngm-about-helps-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .pngm-about-help {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: 14px;
+    padding: 0;
+  }
+
+  .pngm-about-help-ico {
+    margin: 0;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    background: #e8f5ec;
+  }
+
+  .pngm-about-help-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pngm-about-help h3 {
+    margin: 0 0 6px;
+  }
+
+  .pngm-about-safety {
+    padding: 8px 0 40px;
+  }
+
+  .pngm-about-safety-banner {
+    gap: 18px;
+    padding: 20px 18px;
+  }
+
+  .pngm-about-safety-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
