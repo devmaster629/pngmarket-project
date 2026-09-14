@@ -7895,57 +7895,27 @@ body#search .pngm-empty-location {
 
 /* Keyword: no suggestion dropdown on search sidebar. */
 body#search #search-menu .picker.pattern .results,
-body#search #search-menu .picker.pattern.pngm-no-suggest .results,
-body#search .pngm-global-search .picker.pattern.global .results {
+body#search #search-menu .picker.pattern.pngm-no-suggest .results {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-/* Search page: full-width search field (no submit button gap / cut corner). */
+/* Search page: hide top global search (filters sidebar has keyword already). */
 body#search .pngm-global-search {
-  text-align: left;
-}
-
-body#search .pngm-global-search > .container {
-  display: block !important;
-  float: none !important;
-  width: 100% !important;
-  max-width: 1080px !important;
-  margin: 0 auto !important;
-  padding: 0 !important;
-}
-
-body#search .pngm-global-search .global-search-submit {
   display: none !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-  padding: 0 !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
   margin: 0 !important;
+  padding: 0 !important;
   border: 0 !important;
   overflow: hidden !important;
-  flex: 0 0 0 !important;
-  position: absolute !important;
-  left: -9999px !important;
+  pointer-events: none !important;
 }
 
-body#search .pngm-global-search .global-search-form {
-  display: flex !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-body#search .pngm-global-search .picker.pattern.global,
-body#search .pngm-global-search .input-box {
-  width: 100% !important;
-  max-width: 100% !important;
-  flex: 1 1 100% !important;
-}
-
-body#search .pngm-global-search .input-box {
-  border: 1px solid #c9d0d8 !important;
-  border-radius: 9px !important;
+body#search:not(#home) {
+  padding-top: 72px !important;
 }
 
 /* --- 4-column search grid + card polish --- */
@@ -8189,54 +8159,8 @@ body#search #search-items .paginate a.active {
     display: none !important;
   }
 
-  body#search .pngm-global-search {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    text-align: left !important;
-  }
-
-  body#search .pngm-global-search > .container {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  body#search .pngm-global-search .global-search-submit {
-    display: none !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    flex: 0 0 0 !important;
-    position: absolute !important;
-    left: -9999px !important;
-  }
-
-  body#search .pngm-global-search > .container,
-  body#search .pngm-global-search .global-search-form {
-    display: flex !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  body#search .pngm-global-search .picker.pattern.global,
-  body#search .pngm-global-search .input-box {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
-  }
-
-  body#search .pngm-global-search .input-box {
-    border: 1px solid #c9d0d8 !important;
-    border-radius: 9px !important;
-  }
-
-  body#search .pngm-global-search .picker.pattern.global .results {
-    width: 100% !important;
+  body#search:not(#home) {
+    padding-top: 64px !important;
   }
 
   body#search #search-quick-bar .sort-type .pngm-sort-label-full {

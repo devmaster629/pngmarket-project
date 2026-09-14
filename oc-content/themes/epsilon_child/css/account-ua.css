@@ -2,6 +2,30 @@
    PNG Market ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Account dashboard (sidebar + dashboard details)
    ========================================================================== */
 
+/* Hide site-wide search bar on all My Account pages. */
+body.body-ua .pngm-global-search {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Header only — no sticky search offset (normally 138px). */
+body.body-ua:not(#home) {
+  padding-top: 72px !important;
+}
+
+@media screen and (max-width: 767px) {
+  body.body-ua:not(#home) {
+    padding-top: 64px !important;
+  }
+}
+
 body.body-ua.pngm-ua {
   background: #f4f6f8;
 }
@@ -2370,6 +2394,13 @@ a.pngm-seller-msg {
 a.pngm-seller-msg:hover {
   background: #256b29 !important;
   color: #fff !important;
+}
+
+/* Instant Messenger injects a.im-contact2 on public profiles — hide it. */
+body.pngm-ua-seller a.im-contact2,
+body.pngm-ua-seller-guest a.im-contact2,
+.pngm-seller a.im-contact2 {
+  display: none !important;
 }
 
 .pngm-seller-listings {

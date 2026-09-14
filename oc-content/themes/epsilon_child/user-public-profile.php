@@ -256,8 +256,6 @@
           <?php echo eps_banner('public_profile_bottom'); ?>
         </section>
       </div>
-
-      <?php osc_run_hook('user_public_profile_sidebar_bottom'); ?>
     </div>
   </div>
 
