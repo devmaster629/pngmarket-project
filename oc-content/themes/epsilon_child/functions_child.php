@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.7.2');
+    define('PNGM_CHILD_VERSION', '1.8.5');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -989,3 +989,48 @@ function pngm_recaptcha_incognito_fix()
 }
 
 osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 30);
+
+/**
+ * Messages tab should open the latest conversation, not a list-only page.
+ * Runs on init (before HTML) so Location headers work inside the UA shell.
+ */
+function pngm_im_redirect_threads_to_latest()
+{
+    if (!osc_is_web_user_logged_in()) {
+        return;
+    }
+
+    $route = (string) Params::getParam('route');
+    if ($route !== 'im-threads' && $route !== 'im-thread-page') {
+        return;
+    }
+
+    // Let threads.php handle block / flag / notify / remove actions first
+    if (Params::getParam('action') === 'block_email') {
+        return;
+    }
+    if ((int) Params::getParam('remove-id') > 0
+        || (int) Params::getParam('thread-flag-id') > 0
+        || (int) Params::getParam('thread-notify-id') > 0
+        || (int) Params::getParam('thread-remove-id') > 0
+    ) {
+        return;
+    }
+
+    $ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
+    if (!file_exists($ui)) {
+        return;
+    }
+    require_once $ui;
+
+    $rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 1, 0);
+    if (!is_array($rows) || empty($rows[0]['url'])) {
+        return;
+    }
+
+    header('Location: ' . $rows[0]['url']);
+    exit;
+}
+
+osc_add_hook('init', 'pngm_im_redirect_threads_to_latest', 9);
+

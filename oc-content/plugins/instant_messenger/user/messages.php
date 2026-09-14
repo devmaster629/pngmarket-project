@@ -14,6 +14,11 @@ $is_chat_refresh = (Params::getParam('imaction') == 'refresh' ? true : false);
 $thread_id = (int)Params::getParam('thread-id');
 $thread = ModelIM::newInstance()->getThreadById($thread_id);
 if(!im_is_valid_thread($thread)) {
+  $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
+  if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
+    require $pngm_unauth;
+    return;
+  }
   osc_add_flash_error_message(__('This thread is not available to you. You are not eligible to view or access its content.', 'instant_messenger'));
   header('Location: ' . (osc_is_web_user_logged_in() ? osc_route_url('im-threads') : osc_base_url()));
   exit;
@@ -167,13 +172,33 @@ if($thread['i_to_user_id'] > 0) {
 }
 
 if(!$result['can_view']) {
+  $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
+  if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
+    require $pngm_unauth;
+    return;
+  }
   osc_add_flash_error_message(__('This thread is not available to you. You are not eligible to view or access its content.', 'instant_messenger'));
   header('Location: ' . (osc_is_web_user_logged_in() ? osc_route_url('im-threads') : osc_base_url()));
   exit;
 }
 
-$messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']); 
+$messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']);
+
+$pngm_im_split = false;
+$pngm_im_rows = array();
+$pngm_im_ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
+if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)) {
+  require_once $pngm_im_ui;
+  $pngm_im_rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 50, 0);
+  $pngm_im_split = true;
+}
 ?>
+
+<?php if ($pngm_im_split) { ?>
+<div class="pngm-im pngm-im-split">
+  <?php pngm_im_render_conversation_list($pngm_im_rows, (int) $thread['i_thread_id']); ?>
+  <div class="pngm-im-board-pane">
+<?php } ?>
 
 <div class="im-html im-file-messages im-theme-<?php echo osc_current_web_theme(); ?>">
   <h2 class="im-head"><?php echo $t_title; ?></h2>
@@ -388,6 +413,15 @@ $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']
   <?php } ?>
 </div>
 
+<?php if (!empty($pngm_im_split)) { ?>
+  </div><!-- .pngm-im-board-pane -->
+</div><!-- .pngm-im-split -->
+<?php
+  if (function_exists('pngm_im_ui_script')) {
+    pngm_im_ui_script();
+  }
+}
+?>
 
 <?php
   $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";

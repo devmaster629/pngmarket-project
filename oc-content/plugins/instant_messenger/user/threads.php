@@ -1,9 +1,5 @@
-<link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
-<script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/tipped.js"></script>
-<script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/user.js?v=<?php echo date('Ymdhis'); ?>"></script>
-
 <?php 
-  // REDIRECT LOGGED OUT USER
+  // REDIRECT LOGGED OUT USER (must run before any HTML so Location headers work)
   if(!osc_is_web_user_logged_in()) {
     osc_add_flash_error_message(__('Please log in to see your conversations.', 'instant_messenger'));
     header('Location:' . osc_user_login_url()); 
@@ -88,6 +84,10 @@
     return;
   }
 ?>
+
+<link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
+<script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/tipped.js"></script>
+<script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/user.js?v=<?php echo date('Ymdhis'); ?>"></script>
 
 <div class="im-html im-file-threads im-theme-<?php echo osc_current_web_theme(); ?>">
   <div class="im-table im-threads im-body">

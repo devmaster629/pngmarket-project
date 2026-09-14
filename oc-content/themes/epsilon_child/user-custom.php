@@ -27,13 +27,13 @@
   }
 ?>
 
-<body id="user-custom" class="body-ua pngm-ua plugin-<?php echo osc_esc_html($plugin); ?> file-<?php echo osc_esc_html($file); ?><?php echo $is_bpr ? ' pngm-ua-bpr' : ''; ?><?php echo ($plugin === 'instant_messenger' && $file === 'threads') ? ' pngm-ua-messages' : ''; ?>">
+<body id="user-custom" class="body-ua pngm-ua plugin-<?php echo osc_esc_html($plugin); ?> file-<?php echo osc_esc_html($file); ?><?php echo $is_bpr ? ' pngm-ua-bpr' : ''; ?><?php echo ($plugin === 'instant_messenger' && in_array($file, array('threads', 'messages'), true)) ? ' pngm-ua-messages' : ''; ?>">
   <?php osc_current_web_theme_path('header.php'); ?>
 
   <div class="container primary pngm-ua-shell">
     <?php pngm_ua_render_sidebar($ua_active); ?>
 
-    <div id="user-main" class="pngm-ua-main pngm-ua-panel<?php echo $is_bpr ? ' pngm-bpr-panel' : ''; ?><?php echo ($plugin === 'instant_messenger' && $file === 'threads') ? ' pngm-messages-panel' : ''; ?>">
+    <div id="user-main" class="pngm-ua-main pngm-ua-panel<?php echo $is_bpr ? ' pngm-bpr-panel' : ''; ?><?php echo ($plugin === 'instant_messenger' && in_array($file, array('threads', 'messages'), true)) ? ' pngm-messages-panel' : ''; ?>">
       <div class="user-custom-box<?php echo $is_bpr ? ' pngm-bpr-wrap' : ''; ?>">
         <?php osc_render_file(); ?>
       </div>
