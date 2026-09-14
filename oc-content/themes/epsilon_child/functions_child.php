@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.6.89');
+    define('PNGM_CHILD_VERSION', '1.6.93');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -20,6 +20,7 @@ require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
 require_once dirname(__FILE__) . '/includes/notification_prefs.php';
+require_once dirname(__FILE__) . '/includes/attributes_display.php';
 
 /**
  * Total active listings matching a default-location cookie (no result limit).
