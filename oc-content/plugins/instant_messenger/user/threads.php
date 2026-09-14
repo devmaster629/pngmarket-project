@@ -81,6 +81,12 @@
   $start = ($page_id - 1) * $per_page;
 
   $threads = ModelIM::newInstance()->getThreadsByUserId(osc_logged_user_id(), $per_page, $start); 
+
+  $pngm_im_threads = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_threads.php';
+  if (file_exists($pngm_im_threads)) {
+    require $pngm_im_threads;
+    return;
+  }
 ?>
 
 <div class="im-html im-file-threads im-theme-<?php echo osc_current_web_theme(); ?>">

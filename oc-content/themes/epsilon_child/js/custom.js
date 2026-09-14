@@ -2502,9 +2502,20 @@
       var pinBottom = !!(opts && opts.pinBottom);
       var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
 
+      // Desktop: CSS handles board max-height; only pin scroll position.
+      // Mobile: fill remaining viewport under header/composer (telegram-style).
+      if (window.innerWidth > 767) {
+        board.style.maxHeight = '';
+        board.style.overflowY = '';
+        if (pinBottom || nearBottom) {
+          board.scrollTop = board.scrollHeight;
+        }
+        return;
+      }
+
       var navi = document.getElementById('navi-bar');
       var naviH = 0;
-      if (window.innerWidth <= 767 && navi && window.getComputedStyle(navi).display !== 'none') {
+      if (navi && window.getComputedStyle(navi).display !== 'none') {
         naviH = navi.offsetHeight;
       }
 

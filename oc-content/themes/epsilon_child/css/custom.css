@@ -6343,63 +6343,94 @@ body.pngm-filter-open {
 }
 
 @media screen and (min-width: 768px) {
+  /* Desktop chat: keep UA shell alignment + allow page scroll to footer */
   body.im-chat-page {
-    overflow: hidden;
-    height: 100vh;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   body.im-chat-page footer,
   body.im-chat-page #footer {
-    display: none !important;
+    display: block !important;
   }
 
+  body.im-chat-page .container.primary.pngm-ua-shell,
   body.im-chat-page .container.primary {
-    display: flex;
-    align-items: stretch;
-    height: calc(100vh - 154px);
-    max-height: calc(100vh - 154px);
-    margin-bottom: 0 !important;
-    overflow: hidden;
+    display: grid !important;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start !important;
+    height: auto !important;
+    max-height: none !important;
+    margin-top: 18px !important;
+    margin-bottom: 36px !important;
+    overflow: visible !important;
   }
 
-  body.im-chat-page #user-menu {
-    overflow-y: auto;
-    max-height: 100%;
-    flex: 0 0 210px;
+  body.im-chat-page #user-menu,
+  body.im-chat-page #user-menu.pngm-ua-sidebar {
+    display: flex !important;
+    float: none !important;
+    width: 260px !important;
+    max-width: 260px !important;
+    flex: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    align-self: start;
   }
 
   body.im-chat-page #user-main,
-  body.im-chat-page #user-main .user-custom-box,
-  body.im-chat-page .im-file-messages {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
+  body.im-chat-page #user-main.pngm-ua-main,
+  body.im-chat-page #user-main.pngm-ua-panel {
+    display: block !important;
+    float: none !important;
+    width: auto !important;
+    max-width: none !important;
+    flex: none !important;
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
-    width: auto;
-    max-height: 100%;
-    float: none;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    align-self: start;
+    padding: 20px 20px 28px;
+    box-sizing: border-box;
   }
 
-  body.im-chat-page #user-main {
-    width: calc(100% - 230px);
-    padding-bottom: 12px;
+  body.im-chat-page #user-main .user-custom-box,
+  body.im-chat-page .im-file-messages {
+    display: block !important;
+    float: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    min-height: 0;
   }
 
   body.im-chat-page .im-alt-head,
   body.im-chat-page .im-row.im-item-context,
   body.im-chat-page .im-error-list {
-    flex: 0 0 auto;
+    float: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  body.im-chat-page .im-alt-head {
+    margin: 0 0 16px 0 !important;
   }
 
   body.im-chat-page .im-table.im-messages {
     float: none !important;
-    flex: 1 1 auto;
-    min-height: 120px;
+    width: 100% !important;
+    max-height: min(56vh, 560px);
     overflow-x: hidden;
     overflow-y: auto !important;
-    margin: 0 !important;
+    margin: 0 0 12px !important;
   }
 
   body.im-chat-page #im-message-form {
@@ -6408,7 +6439,6 @@ body.pngm-filter-open {
     right: auto;
     bottom: auto;
     z-index: 2;
-    flex: none;
     float: none !important;
     width: 100% !important;
     max-width: 100%;

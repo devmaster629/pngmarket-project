@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PNG Market ÃÂ¢ÃÂÃÂ Account dashboard (sidebar + dashboard details)
+   PNG Market ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Account dashboard (sidebar + dashboard details)
    ========================================================================== */
 
 body.body-ua.pngm-ua {
@@ -794,7 +794,7 @@ body.body-ua #user-main.pngm-ua-panel h1 {
 }
 
 /* ==========================================================================
-   My Listings ÃÂ¢ÃÂÃÂ Complete Management
+   My Listings ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Complete Management
    ========================================================================== */
 
 .pngm-listings-head {
@@ -1686,7 +1686,7 @@ button.pngm-notif-card {
   }
 }
 
-/* ÃÂÃÂ My Profile ÃÂÃÂ */
+/* ÃÂÃÂÃÂÃÂ My Profile ÃÂÃÂÃÂÃÂ */
 .pngm-profile {
   max-width: 720px;
 }
@@ -2153,7 +2153,7 @@ a.pngm-profile-upload-hidden {
   }
 }
 
-/* ÂÂ Public Seller Profile (design match) ÂÂ */
+/* ÃÂÃÂ Public Seller Profile (design match) ÃÂÃÂ */
 body.pngm-ua-seller #user-main.pngm-seller,
 body.pngm-ua-seller-guest .pngm-seller {
   background: transparent;
@@ -2693,7 +2693,7 @@ form.pngm-seller-toolbar[name="user-public-profile-search"],
   }
 }
 
-/*  Business Profile (BPR) redesign  */
+/* ÂÂ Business Profile (BPR) redesign ÂÂ */
 .pngm-ua-bpr .pngm-bpr-wrap,
 .pngm-ua-bpr .user-custom-box.pngm-bpr-wrap {
   max-width: 820px;
@@ -3616,5 +3616,192 @@ form.pngm-seller-toolbar[name="user-public-profile-search"],
 
   .pngm-bpr-cover-box {
     max-width: none;
+  }
+}
+
+/* ==========================================================================
+   Messages — Conversations (same language as My Listings)
+   ========================================================================== */
+
+body.pngm-ua-messages #user-main.pngm-messages-panel,
+body.pngm-ua-messages .user-custom-box {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+body.pngm-ua-messages .pngm-messages .im-alt-head,
+body.pngm-ua-messages .pngm-messages .im-table-head {
+  display: none !important;
+}
+
+.pngm-messages-limits {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #6d4c00;
+  font-size: 13px;
+}
+
+.pngm-message-card.is-unread {
+  border-color: #c8e6c9;
+  box-shadow: 0 0 0 1px rgba(46, 125, 50, 0.08);
+}
+
+.pngm-message-card .pngm-listing-title {
+  font-weight: 800;
+}
+
+.pngm-message-card.is-unread .pngm-listing-title a {
+  color: #1b5e20;
+}
+
+.pngm-message-av {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f5e9;
+}
+
+.pngm-message-av-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 22px;
+  font-weight: 800;
+  color: #2e7d32;
+  letter-spacing: 0.02em;
+}
+
+.pngm-message-av-fallback.is-offer {
+  font-size: 13px;
+  text-transform: uppercase;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.pngm-message-snippet {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #2e7d32 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.pngm-listing-badge.is-unread {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.pngm-listing-badge.is-flagged {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.pngm-listing-badge.is-read {
+  background: #eceff1;
+  color: #546e7a;
+}
+
+.pngm-messages-empty i {
+  display: block;
+  margin: 0 auto 10px;
+  font-size: 28px;
+  color: #2e7d32;
+}
+
+.pngm-messages-blocked {
+  margin-top: 22px;
+}
+
+.pngm-messages-blocked .im-table.im-block {
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.pngm-messages-blocked .im-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #eef1f4;
+  font-size: 15px;
+  color: #16202a;
+}
+
+.pngm-messages-blocked .im-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 14px;
+  color: #3a4553;
+}
+
+.pngm-messages-blocked .im-table-row:last-child {
+  border-bottom: 0;
+}
+
+.pngm-messages-blocked .im-col-22,
+.pngm-messages-blocked .im-col-2 {
+  float: none !important;
+  width: auto !important;
+}
+
+.pngm-messages-blocked .im-remove-block {
+  color: #c62828;
+  text-decoration: none;
+}
+
+.pngm-messages-blocked .im-empty {
+  justify-content: center;
+  color: #8a94a0;
+}
+
+body.pngm-ua-messages .pngm-messages .im-pagination,
+body.pngm-ua-messages .pngm-messages .paginate {
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .pngm-message-card.pngm-listing-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pngm-message-card .pngm-listing-thumb {
+    width: 100%;
+    max-width: none;
+    height: 140px;
+    flex-basis: auto;
+  }
+
+  .pngm-message-card .pngm-listing-body {
+    grid-template-columns: 1fr;
+  }
+
+  .pngm-message-card .pngm-listing-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .pngm-message-card .pngm-listing-actions {
+    flex-wrap: wrap;
   }
 }
