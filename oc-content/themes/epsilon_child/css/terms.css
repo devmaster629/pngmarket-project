@@ -1,0 +1,431 @@
+/**
+ * PNG Market — Terms of Service page.
+ * Keep site navbar unchanged; hide sticky search on this page.
+ */
+
+body.pngm-terms,
+body#page.pngm-terms,
+body.pngm-terms:not(#home) {
+  background: #fff;
+  padding-top: 72px !important;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+  body.pngm-terms,
+  body#page.pngm-terms,
+  body.pngm-terms:not(#home) {
+    padding-top: 60px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-terms,
+  body#page.pngm-terms,
+  body.pngm-terms:not(#home) {
+    padding-top: 64px !important;
+  }
+}
+
+body.pngm-terms .pngm-global-search {
+  display: none !important;
+}
+
+body.pngm-terms #breadcrumbs {
+  display: none !important;
+}
+
+body.pngm-terms > .content {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #fff !important;
+  min-height: 0 !important;
+}
+
+body.pngm-terms > .content > section.container:after,
+body.pngm-terms .page-text {
+  display: none !important;
+}
+
+.pngm-terms-page {
+  width: 100%;
+  background: #fff;
+  padding: 28px 0 72px;
+  box-sizing: border-box;
+}
+
+.pngm-terms-inner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-areas:
+    "crumbs crumbs"
+    "head toc"
+    "main toc";
+  gap: 20px 48px;
+  align-items: start;
+}
+
+.pngm-terms-crumbs { grid-area: crumbs; }
+.pngm-terms-head { grid-area: head; }
+.pngm-terms-toc { grid-area: toc; }
+.pngm-terms-main { grid-area: main; }
+
+.pngm-terms-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #8a9690;
+}
+
+.pngm-terms-crumbs a {
+  color: #16883f;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pngm-terms-crumbs a:hover {
+  text-decoration: underline;
+}
+
+.pngm-terms-head h1 {
+  margin: 0 0 14px;
+  font-size: 40px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #1a2e22;
+  font-weight: 700;
+}
+
+.pngm-terms-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.pngm-terms-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid #d7e0dc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #5a6b61;
+  background: #fff;
+}
+
+.pngm-terms-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #44554c;
+  max-width: 52em;
+}
+
+/* —— Contents (right sidebar on desktop) —— */
+.pngm-terms-toc {
+  position: sticky;
+  top: 88px;
+  background: #fff;
+  border: 1px solid #d7e0dc;
+  border-radius: 12px;
+  padding: 18px 16px;
+  box-sizing: border-box;
+}
+
+.pngm-terms-toc-toggle {
+  display: none;
+}
+
+.pngm-terms-toc-label {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a2e22;
+}
+
+.pngm-terms-toc-list ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pngm-terms-toc-list li {
+  margin: 0;
+}
+
+.pngm-terms-toc-list a {
+  display: block;
+  padding: 7px 4px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #146c35;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.pngm-terms-toc-list a:hover,
+.pngm-terms-toc-list a:focus {
+  background: rgba(22, 136, 63, 0.08);
+  color: #0e5a2c;
+}
+
+/* —— Sections —— */
+.pngm-terms-section {
+  padding: 0 0 22px;
+  margin: 0 0 22px;
+  border-bottom: 1px solid #e6ece8;
+  scroll-margin-top: 96px;
+}
+
+.pngm-terms-section:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pngm-terms-section h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #146c35;
+  font-weight: 700;
+}
+
+.pngm-terms-body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #44554c;
+}
+
+.pngm-terms-body p {
+  display: block;
+  margin: 0 0 10px;
+  width: auto;
+}
+
+.pngm-terms-body p:last-child {
+  margin-bottom: 0;
+}
+
+body.pngm-terms .pngm-terms-body ul {
+  display: block !important;
+  list-style: disc !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  margin: 0 0 8px !important;
+  padding-left: 1.35em !important;
+  width: auto !important;
+}
+
+body.pngm-terms .pngm-terms-body ul > li {
+  display: list-item !important;
+  list-style: disc !important;
+  margin: 0 0 8px;
+  width: auto !important;
+}
+
+body.pngm-terms .pngm-terms-body ul > li::marker {
+  color: #16883f;
+}
+
+.pngm-terms-body a {
+  color: #146c35;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pngm-terms-body a:hover {
+  text-decoration: underline;
+}
+
+.pngm-terms-more {
+  display: none;
+}
+
+.pngm-terms-contact-list {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin-top: 12px !important;
+}
+
+.pngm-terms-contact-list li {
+  display: flex !important;
+  list-style: none !important;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px !important;
+}
+
+.pngm-terms-contact-list i {
+  width: 16px;
+  color: #16883f;
+  text-align: center;
+}
+
+/* —— Mobile —— */
+@media screen and (max-width: 900px) {
+  .pngm-terms-page {
+    padding: 16px 0 56px;
+  }
+
+  .pngm-terms-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+  .pngm-terms-crumbs { order: 1; }
+  .pngm-terms-head { order: 2; }
+  .pngm-terms-toc { order: 3; }
+  .pngm-terms-main { order: 4; }
+
+  .pngm-terms-head h1 {
+    font-size: 28px;
+  }
+
+  .pngm-terms-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .pngm-terms-chip {
+    justify-content: center;
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .pngm-terms-toc {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+    padding: 0;
+    border: 1.5px solid #d7e0dc;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .pngm-terms-toc-toggle {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    color: #1a2e22;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  .pngm-terms-toc-toggle i {
+    color: #5a6b61;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+  }
+
+  .pngm-terms-toc-toggle.is-open i {
+    transform: rotate(180deg);
+  }
+
+  .pngm-terms-toc-label {
+    display: none;
+  }
+
+  .pngm-terms-toc-list {
+    display: none;
+    margin: 0;
+    border-top: 1px solid #e6ece8;
+    padding: 8px 12px 12px;
+    background: #fff;
+  }
+
+  .pngm-terms-toc-list.is-open {
+    display: block;
+  }
+
+  .pngm-terms-section {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    scroll-margin-top: 80px;
+  }
+
+  .pngm-terms-section h2 {
+    font-size: 16px;
+  }
+
+  .pngm-terms-section .pngm-terms-body {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.55;
+    max-height: calc(1.55em * 2);
+  }
+
+  .pngm-terms-section.is-expanded .pngm-terms-body {
+    display: block;
+    -webkit-line-clamp: unset;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pngm-terms-section.pngm-terms-no-clamp:not(.is-expanded) .pngm-terms-body {
+    display: none;
+    -webkit-line-clamp: unset;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pngm-terms-section.pngm-terms-no-clamp.is-expanded .pngm-terms-body {
+    display: block;
+  }
+
+  .pngm-terms-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #16883f;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pngm-terms-more i {
+    font-size: 11px;
+  }
+}
+
+@media screen and (min-width: 901px) and (max-width: 1100px) {
+  .pngm-terms-inner {
+    gap: 16px 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+  }
+
+  .pngm-terms-head h1 {
+    font-size: 34px;
+  }
+}

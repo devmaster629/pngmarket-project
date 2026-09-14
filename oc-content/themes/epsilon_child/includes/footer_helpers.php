@@ -266,7 +266,7 @@ function pngm_footer_page_seed()
                 . ' or use our Contact Us form.</p>',
         ),
         'terms' => array(
-            'title' => 'Terms of Use',
+            'title' => 'Terms of Service',
             'text'  => '<p>By using ' . $brand . ' you agree to post accurate listings, communicate respectfully, and comply with the laws of Papua New Guinea.</p>'
                 . '<ul>'
                 . '<li>You are responsible for the content of your listings and messages.</li>'

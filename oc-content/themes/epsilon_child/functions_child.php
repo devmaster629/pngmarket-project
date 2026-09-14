@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.2.6');
+    define('PNGM_CHILD_VERSION', '2.2.7');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -143,7 +143,7 @@ function pngm_enqueue_assets()
         $static_slug = (string) osc_static_page_slug();
     }
     $req = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
-    if ($static_slug === '' && preg_match('#/(about|privacy)(/|\?|$)#i', $req, $m)) {
+    if ($static_slug === '' && preg_match('#/(about|privacy|terms)(/|\?|$)#i', $req, $m)) {
         $static_slug = strtolower($m[1]);
     }
 
@@ -152,6 +152,9 @@ function pngm_enqueue_assets()
     }
     if ($static_slug === 'privacy') {
         osc_enqueue_style('pngm-privacy', osc_current_web_theme_url('css/privacy.css' . $version));
+    }
+    if ($static_slug === 'terms') {
+        osc_enqueue_style('pngm-terms', osc_current_web_theme_url('css/terms.css' . $version));
     }
 
     $is_contact = ($loc === 'contact')
