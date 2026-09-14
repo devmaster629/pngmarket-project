@@ -1,0 +1,295 @@
+/**
+ * PNG Market — Contact page overrides.
+ * Keep existing light-green hero; hide search; two-column design layout.
+ */
+
+body.pngm-contact,
+body#contact.pngm-contact,
+body.pngm-contact:not(#home) {
+  padding-top: 72px !important;
+  background: #f4f5f7;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+  body.pngm-contact,
+  body#contact.pngm-contact,
+  body.pngm-contact:not(#home) {
+    padding-top: 60px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-contact,
+  body#contact.pngm-contact,
+  body.pngm-contact:not(#home) {
+    padding-top: 64px !important;
+  }
+}
+
+body.pngm-contact .pngm-global-search {
+  display: none !important;
+}
+
+body.pngm-contact #breadcrumbs {
+  display: none !important;
+}
+
+body.pngm-contact.pre-account .content {
+  padding: 0 0 40px !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+  background: #f4f5f7 !important;
+}
+
+body.pngm-contact.pre-account > .content > section.container:after {
+  display: none !important;
+}
+
+body.pngm-contact.pre-account > .content > section.pngm-contact-wrap.container,
+body.pngm-contact section.pngm-contact-wrap {
+  display: block !important;
+  width: 100% !important;
+  max-width: 1080px !important;
+  margin: 20px auto 0 !important;
+  padding: 0 16px !important;
+  box-sizing: border-box;
+}
+
+body.pngm-contact.pre-account .box.pngm-contact-page {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+
+body.pngm-contact .pngm-contact-sidebar,
+body.pngm-contact .pngm-contact-form {
+  background: #fff;
+  border: 1px solid #e6e8ec;
+  border-radius: 16px;
+  padding: 24px 22px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body.pngm-contact .pngm-contact-section-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: #16202a;
+}
+
+body.pngm-contact .pngm-contact-section-lead {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7785;
+}
+
+body.pngm-contact .pngm-contact-method {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eef0f3;
+}
+
+body.pngm-contact .pngm-contact-method:last-of-type {
+  border-bottom: 0;
+  margin-bottom: 8px;
+}
+
+body.pngm-contact .pngm-contact-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e8f5ec;
+  border: 0;
+  color: #006b24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+body.pngm-contact .pngm-contact-method strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #16202a;
+  margin-bottom: 2px;
+}
+
+body.pngm-contact .pngm-contact-method a {
+  display: block;
+  color: #006b24;
+  font-weight: 600;
+  font-size: 14px;
+  word-break: break-word;
+  text-decoration: none;
+}
+
+body.pngm-contact .pngm-contact-method a:hover {
+  text-decoration: underline;
+}
+
+body.pngm-contact .pngm-contact-plain {
+  display: block;
+  font-size: 14px;
+  color: #3a4650;
+  line-height: 1.45;
+}
+
+body.pngm-contact .pngm-contact-method em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 12.5px;
+  color: #8a9199;
+}
+
+body.pngm-contact .pngm-contact-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #e8f6ee;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 8px;
+}
+
+body.pngm-contact .pngm-privacy-ico {
+  color: #006b24;
+  font-size: 18px;
+  width: 22px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+body.pngm-contact .pngm-contact-privacy strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #16202a;
+  margin-bottom: 2px;
+}
+
+body.pngm-contact .pngm-contact-privacy span {
+  display: block;
+  font-size: 13px;
+  color: #5c6570;
+  line-height: 1.45;
+}
+
+body.pngm-contact .pngm-contact-form-top {
+  display: block !important;
+}
+
+body.pngm-contact .pngm-contact-form .row {
+  margin: 0 0 14px !important;
+}
+
+body.pngm-contact .pngm-contact-form label {
+  display: block;
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-bottom: 6px;
+  color: #2b3138;
+}
+
+body.pngm-contact .pngm-contact-form label .req {
+  color: #c0392b;
+}
+
+body.pngm-contact .pngm-contact-form input[type="text"],
+body.pngm-contact .pngm-contact-form input[type="email"],
+body.pngm-contact .pngm-contact-form select,
+body.pngm-contact .pngm-contact-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff !important;
+  border: 1px solid #d8dde3 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  font-size: 14px;
+  min-height: 46px;
+  padding: 10px 12px !important;
+}
+
+body.pngm-contact .pngm-contact-form textarea {
+  min-height: 140px !important;
+  height: 140px;
+  resize: vertical;
+}
+
+body.pngm-contact .pngm-contact-consent {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 14px !important;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #3a4650;
+  font-weight: 400 !important;
+}
+
+body.pngm-contact .pngm-contact-consent input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+body.pngm-contact .pngm-contact-consent a {
+  color: #006b24;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+body.pngm-contact .pngm-contact-form .g-recaptcha,
+body.pngm-contact .pngm-contact-form .recaptcha {
+  display: flex;
+  justify-content: flex-start;
+  margin: 4px 0 14px;
+}
+
+body.pngm-contact .pngm-send-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #006b24 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 15px;
+  height: 48px !important;
+  min-height: 48px;
+  padding: 0 16px !important;
+  margin: 0;
+  box-shadow: none;
+  grid-template-columns: none !important;
+}
+
+body.pngm-contact .pngm-send-btn:hover {
+  background: #00551c !important;
+}
+
+@media screen and (max-width: 899px) {
+  body.pngm-contact.pre-account .box.pngm-contact-page {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  body.pngm-contact .pngm-contact-sidebar,
+  body.pngm-contact .pngm-contact-form {
+    padding: 18px 16px;
+  }
+}

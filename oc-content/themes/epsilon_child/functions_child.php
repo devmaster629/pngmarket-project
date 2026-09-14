@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.1.8');
+    define('PNGM_CHILD_VERSION', '2.2.0');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -151,6 +151,13 @@ function pngm_enqueue_assets()
     }
     if ($is_about) {
         osc_enqueue_style('pngm-about', osc_current_web_theme_url('css/about.css' . $version));
+    }
+
+    $is_contact = ($loc === 'contact')
+        || ($page_param === 'contact')
+        || (function_exists('osc_is_contact_page') && osc_is_contact_page());
+    if ($is_contact) {
+        osc_enqueue_style('pngm-contact', osc_current_web_theme_url('css/contact.css' . $version));
     }
 
     $is_ua = false;

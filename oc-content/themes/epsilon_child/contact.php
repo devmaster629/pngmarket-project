@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" dir="<?php echo eps_language_dir(); ?>" lang="<?php echo str_replace('_', '-', osc_current_user_locale()); ?>">
 <head>
-  <?php osc_current_web_theme_path('head.php') ; ?>
+  <?php osc_current_web_theme_path('head.php'); ?>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="googlebot" content="noindex, nofollow" />
-  <script type="text/javascript" src="<?php echo osc_current_web_theme_js_url('jquery.validate.min.js') ; ?>"></script>
+  <script type="text/javascript" src="<?php echo osc_current_web_theme_js_url('jquery.validate.min.js'); ?>"></script>
 </head>
 
 <body id="contact" class="pre-account contact has-footer pngm-contact">
   <?php UserForm::js_validation(); ?>
-  <?php osc_current_web_theme_path('header.php') ; ?>
+  <?php osc_current_web_theme_path('header.php'); ?>
 
   <?php
     $pngm_contact = function_exists('pngm_footer_contact') ? pngm_footer_contact() : array();
-    $pngm_wa_url = function_exists('pngm_site_whatsapp_url') ? pngm_site_whatsapp_url() : '';
     $pngm_email = !empty($pngm_contact['email']) ? $pngm_contact['email'] : '';
+    $pngm_phone = !empty($pngm_contact['phone']) ? $pngm_contact['phone'] : '';
+    $pngm_tel = !empty($pngm_contact['tel']) ? $pngm_contact['tel'] : preg_replace('/[^\d+]/', '', $pngm_phone);
+    $pngm_address = !empty($pngm_contact['address']) ? $pngm_contact['address'] : '';
+    $privacy_url = '#';
+    if (class_exists('Page')) {
+        $privacy = Page::newInstance()->findByInternalName('privacy');
+        if (is_array($privacy) && !empty($privacy['pk_i_id']) && function_exists('osc_static_page_url_from_page')) {
+            $privacy_url = osc_static_page_url_from_page($privacy);
+        }
+    }
   ?>
 
   <div class="pngm-contact-hero">
@@ -48,93 +57,106 @@
     </div>
   </div>
 
-  <section class="container">
+  <section class="container pngm-contact-wrap">
     <div class="box pngm-contact-page">
 
       <aside class="pngm-contact-sidebar">
         <h2 class="pngm-contact-section-title"><?php _e('Get in touch', 'epsilon'); ?></h2>
+        <p class="pngm-contact-section-lead"><?php _e('Reach our team using any of the details below.', 'epsilon'); ?></p>
 
         <?php if ($pngm_email !== '') { ?>
-          <div class="pngm-contact-side-item">
-            <div class="pngm-contact-email-row">
-              <span class="pngm-contact-ico" aria-hidden="true"><i class="far fa-envelope"></i></span>
-              <div>
-                <strong><?php _e('Email us', 'epsilon'); ?></strong>
-                <a href="mailto:<?php echo osc_esc_html($pngm_email); ?>"><?php echo osc_esc_html($pngm_email); ?></a>
-                <em><?php _e('We usually reply within 24 hours.', 'epsilon'); ?></em>
-              </div>
-            </div>
-          </div>
-        <?php } ?>
-
-        <?php if ($pngm_wa_url !== '') { ?>
-          <div class="pngm-contact-side-item">
-            <div class="pngm-contact-wa-block">
-              <div class="pngm-contact-wa-head">
-                <span class="pngm-wa-logo" aria-hidden="true"><i class="fab fa-whatsapp"></i></span>
-                <span class="pngm-wa-copy">
-                  <strong><?php _e('Prefer WhatsApp?', 'epsilon'); ?></strong>
-                  <span><?php _e('Chat with us directly on WhatsApp.', 'epsilon'); ?></span>
-                </span>
-              </div>
-              <a class="pngm-wa-btn" href="<?php echo osc_esc_html($pngm_wa_url); ?>" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-whatsapp" aria-hidden="true"></i>
-                <?php _e('Chat on WhatsApp', 'epsilon'); ?>
-              </a>
-            </div>
-          </div>
-        <?php } ?>
-
-        <div class="pngm-contact-side-item pngm-contact-side-item-last">
-          <div class="pngm-contact-privacy">
-            <span class="pngm-privacy-ico" aria-hidden="true"><i class="fas fa-shield-alt"></i></span>
+          <div class="pngm-contact-method">
+            <span class="pngm-contact-ico" aria-hidden="true"><i class="far fa-envelope"></i></span>
             <div>
-              <strong><?php _e('Your information is safe with us', 'epsilon'); ?></strong>
-              <span><?php _e('We respect your privacy and will never share your details.', 'epsilon'); ?></span>
+              <strong><?php _e('Email', 'epsilon'); ?></strong>
+              <a href="mailto:<?php echo osc_esc_html($pngm_email); ?>"><?php echo osc_esc_html($pngm_email); ?></a>
+              <em><?php _e('We usually reply within 24 hours.', 'epsilon'); ?></em>
             </div>
+          </div>
+        <?php } ?>
+
+        <?php if ($pngm_phone !== '') { ?>
+          <div class="pngm-contact-method">
+            <span class="pngm-contact-ico" aria-hidden="true"><i class="fas fa-phone-alt"></i></span>
+            <div>
+              <strong><?php _e('Phone', 'epsilon'); ?></strong>
+              <a href="tel:<?php echo osc_esc_html($pngm_tel); ?>"><?php echo osc_esc_html($pngm_phone); ?></a>
+              <em><?php _e('Mon–Fri, 9:00am – 5:00pm (PNG time)', 'epsilon'); ?></em>
+            </div>
+          </div>
+        <?php } ?>
+
+        <?php if ($pngm_address !== '') { ?>
+          <div class="pngm-contact-method">
+            <span class="pngm-contact-ico" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></span>
+            <div>
+              <strong><?php _e('Location', 'epsilon'); ?></strong>
+              <span class="pngm-contact-plain"><?php echo osc_esc_html($pngm_address); ?></span>
+            </div>
+          </div>
+        <?php } ?>
+
+        <div class="pngm-contact-method">
+          <span class="pngm-contact-ico" aria-hidden="true"><i class="far fa-clock"></i></span>
+          <div>
+            <strong><?php _e('Business Hours', 'epsilon'); ?></strong>
+            <span class="pngm-contact-plain"><?php _e('Monday – Friday: 9:00am – 5:00pm', 'epsilon'); ?></span>
+            <em><?php _e('Closed weekends and public holidays', 'epsilon'); ?></em>
+          </div>
+        </div>
+
+        <div class="pngm-contact-privacy">
+          <span class="pngm-privacy-ico" aria-hidden="true"><i class="fas fa-shield-alt"></i></span>
+          <div>
+            <strong><?php _e('We value your privacy', 'epsilon'); ?></strong>
+            <span><?php _e('Your information is safe with us. We’ll never share your personal details with third parties.', 'epsilon'); ?></span>
           </div>
         </div>
       </aside>
 
-      <form class="pngm-contact-form" action="<?php echo osc_base_url(true) ; ?>" method="post" name="contact_form" <?php if(osc_contact_attachment()) { ?>enctype="multipart/form-data"<?php } ?>>
+      <form class="pngm-contact-form" action="<?php echo osc_base_url(true); ?>" method="post" name="contact_form" <?php if (osc_contact_attachment()) { ?>enctype="multipart/form-data"<?php } ?>>
         <input type="hidden" name="page" value="contact" />
         <input type="hidden" name="action" value="contact_post" />
 
+        <h2 class="pngm-contact-section-title"><?php _e('Send us a message', 'epsilon'); ?></h2>
+        <p class="pngm-contact-section-lead"><?php _e('Fill out the form and we’ll get back to you as soon as we can.', 'epsilon'); ?></p>
+
         <ul id="error_list"></ul>
 
-        <div class="pngm-contact-form-top">
-          <div class="row r1">
-            <label for="yourName"><i class="far fa-user" aria-hidden="true"></i> <?php _e('Your name', 'epsilon'); ?> <span class="req">*</span></label>
-            <div class="input-box">
-              <input type="text" name="yourName" <?php if(osc_is_web_user_logged_in()) { ?>readonly<?php } ?> required value="<?php echo osc_esc_html( osc_logged_user_name() ); ?>" />
-            </div>
+        <div class="row r1">
+          <label for="yourName"><?php _e('Full Name', 'epsilon'); ?> <span class="req">*</span></label>
+          <div class="input-box">
+            <input type="text" name="yourName" id="yourName" required value="" placeholder="<?php echo osc_esc_html(__('e.g. John Doe', 'epsilon')); ?>" autocomplete="name" />
           </div>
+        </div>
 
-          <div class="row r2">
-            <label for="yourEmail"><i class="far fa-envelope" aria-hidden="true"></i> <?php _e('Email', 'epsilon'); ?> <span class="req">*</span></label>
-            <div class="input-box">
-              <input type="email" name="yourEmail" <?php if(osc_is_web_user_logged_in()) { ?>readonly<?php } ?> required value="<?php echo osc_logged_user_email();?>" />
-            </div>
+        <div class="row r2">
+          <label for="yourEmail"><?php _e('Email Address', 'epsilon'); ?> <span class="req">*</span></label>
+          <div class="input-box">
+            <input type="email" name="yourEmail" id="yourEmail" required value="" placeholder="<?php echo osc_esc_html(__('e.g. name@example.com', 'epsilon')); ?>" autocomplete="email" />
           </div>
         </div>
 
         <div class="row r3">
-          <label for="subject">
-            <svg class="pngm-field-svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
-              <path d="M20.6 13.4 12.7 21.3a2 2 0 0 1-2.8 0l-6.2-6.2a2 2 0 0 1 0-2.8l7.9-7.9H20.6v8.8z"/>
-              <circle cx="16.2" cy="7.8" r="1.3"/>
-            </svg>
-            <?php _e('Subject', 'epsilon'); ?> <span class="req">*</span>
-          </label>
-          <div class="input-box"><?php ContactForm::the_subject(); ?></div>
+          <label for="subject"><?php _e('Subject', 'epsilon'); ?> <span class="req">*</span></label>
+          <div class="input-box">
+            <select name="subject" id="subject" required>
+              <option value=""><?php _e('Select a subject', 'epsilon'); ?></option>
+              <option value="<?php echo osc_esc_html(__('General question', 'epsilon')); ?>"><?php _e('General question', 'epsilon'); ?></option>
+              <option value="<?php echo osc_esc_html(__('Account help', 'epsilon')); ?>"><?php _e('Account help', 'epsilon'); ?></option>
+              <option value="<?php echo osc_esc_html(__('Listing / ads', 'epsilon')); ?>"><?php _e('Listing / ads', 'epsilon'); ?></option>
+              <option value="<?php echo osc_esc_html(__('Report a problem', 'epsilon')); ?>"><?php _e('Report a problem', 'epsilon'); ?></option>
+              <option value="<?php echo osc_esc_html(__('Other', 'epsilon')); ?>"><?php _e('Other', 'epsilon'); ?></option>
+            </select>
+          </div>
         </div>
 
         <div class="row r4">
-          <label for="message"><i class="far fa-comment-alt" aria-hidden="true"></i> <?php _e('Message', 'epsilon'); ?> <span class="req">*</span></label>
+          <label for="message"><?php _e('Message', 'epsilon'); ?> <span class="req">*</span></label>
           <div class="input-box last"><?php ContactForm::your_message(); ?></div>
         </div>
 
-        <?php if(osc_contact_attachment()) { ?>
+        <?php if (osc_contact_attachment()) { ?>
           <div class="row r5">
             <label for="attachment"><?php _e('Attachment', 'epsilon'); ?></label>
             <div class="input-box last2"><?php ContactForm::your_attachment(); ?></div>
@@ -143,14 +165,22 @@
 
         <?php osc_run_hook('contact_form'); ?>
 
+        <label class="pngm-contact-consent">
+          <input type="checkbox" name="pngm_contact_consent" id="pngm_contact_consent" value="1" required />
+          <span>
+            <?php
+              echo sprintf(
+                  __('I agree to be contacted about my message and accept the %s.', 'epsilon'),
+                  '<a href="' . osc_esc_html($privacy_url) . '" target="_blank" rel="noopener">' . osc_esc_html(__('Privacy Policy', 'epsilon')) . '</a>'
+              );
+            ?>
+          </span>
+        </label>
+
         <?php eps_show_recaptcha(); ?>
 
         <button type="submit" class="btn complete-contact pngm-send-btn">
-          <span><?php _e('Send message', 'epsilon'); ?></span>
-          <svg class="pngm-send-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2 11 13"/>
-            <path d="M22 2 15 22l-4-9-9-4 20-7z"/>
-          </svg>
+          <span><?php _e('Send Message', 'epsilon'); ?></span>
         </button>
 
         <?php osc_run_hook('admin_contact_form'); ?>
@@ -159,15 +189,14 @@
     </div>
   </section>
 
-  <?php ContactForm::js_validation() ; ?>
-  <?php osc_current_web_theme_path('footer.php') ; ?>
+  <?php ContactForm::js_validation(); ?>
+  <?php osc_current_web_theme_path('footer.php'); ?>
 
   <script type="text/javascript">
-    $(document).ready(function(){
-      $('input[name="yourName"]').attr('placeholder', '<?php echo osc_esc_js(__('First name, Last name', 'epsilon')); ?>');
-      $('input[name="yourEmail"]').attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>');
-      $('input[name="subject"]').attr('placeholder', '<?php echo osc_esc_js(__('Summarize your question', 'epsilon')); ?>');
-      $('textarea[name="message"]').attr('placeholder', '<?php echo osc_esc_js(__('Your question with all relevant details ...', 'epsilon')); ?>');
+    $(document).ready(function () {
+      $('input[name="yourName"]').attr('placeholder', '<?php echo osc_esc_js(__('e.g. John Doe', 'epsilon')); ?>');
+      $('input[name="yourEmail"]').attr('placeholder', '<?php echo osc_esc_js(__('e.g. name@example.com', 'epsilon')); ?>');
+      $('textarea[name="message"]').attr('placeholder', '<?php echo osc_esc_js(__('How can we help you?', 'epsilon')); ?>');
     });
   </script>
 </body>

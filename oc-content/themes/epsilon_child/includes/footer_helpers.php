@@ -38,6 +38,11 @@ function pngm_footer_contact()
     $phone = function_exists('eps_param') ? trim((string) eps_param('site_phone')) : '';
     $address = function_exists('eps_param') ? trim((string) eps_param('site_address')) : '';
 
+    // Prefer Osclass contact email from admin settings when theme email is empty.
+    if ($email === '' && function_exists('osc_contact_email')) {
+        $email = trim((string) osc_contact_email());
+    }
+
     // Prefer WhatsApp number as phone when site_phone is empty.
     if ($phone === '' && function_exists('eps_param') && (int) eps_param('footer_social_define') === 1) {
         $wa = trim((string) eps_param('footer_social_whatsapp'));
