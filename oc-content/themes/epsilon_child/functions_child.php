@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.8.9');
+    define('PNGM_CHILD_VERSION', '1.9.1');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -20,6 +20,7 @@ require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
 require_once dirname(__FILE__) . '/includes/notification_prefs.php';
+require_once dirname(__FILE__) . '/includes/account_security.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
 
 /**
@@ -127,7 +128,8 @@ function pngm_enqueue_assets()
             || (strpos((string) Params::getParam('route'), 'bpr-') === 0)
             || (strpos((string) Params::getParam('route'), 'favorite') === 0)
             || (strpos((string) Params::getParam('route'), 'osp-') === 0)
-            || (Params::getParam('route') === 'pngm-notif-prefs');
+            || (Params::getParam('route') === 'pngm-notif-prefs')
+            || (Params::getParam('route') === 'pngm-account-security');
     }
     if (Params::getParam('action') === 'pub_profile'
         || (function_exists('osc_get_osclass_section') && osc_get_osclass_section() === 'pub_profile')

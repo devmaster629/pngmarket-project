@@ -229,23 +229,8 @@
               <i class="fas fa-chevron-down" aria-hidden="true"></i>
             </summary>
             <div class="pngm-profile-accord-body">
-              <div class="pngm-profile-sec-block change-mail profile-box">
-                <h3><?php _e('Change your email', 'epsilon'); ?></h3>
-                <p class="pngm-profile-accord-note">
-                  <a href="#" class="change-email"><?php _e('Update email address', 'epsilon'); ?></a>
-                </p>
-              </div>
-              <div class="pngm-profile-sec-block">
-                <h3><?php _e('Password', 'epsilon'); ?></h3>
-                <p class="pngm-profile-accord-note"><?php _e('Use the form below to change your password.', 'epsilon'); ?></p>
-              </div>
-              <?php if (!eps_is_demo()) { ?>
-                <p class="pngm-profile-accord-note is-danger">
-                  <a class="btn-remove-account" href="<?php echo osc_base_url(true) . '?page=user&action=delete&id=' . osc_user_id() . '&secret=' . $user['s_secret']; ?>" onclick="return confirm('<?php echo osc_esc_js(__('Are you sure you want to delete your account? This action cannot be undone', 'epsilon')); ?>?')">
-                    <?php _e('Delete account', 'epsilon'); ?>
-                  </a>
-                </p>
-              <?php } ?>
+              <p><?php _e('Manage your password, sign-in methods, sessions and account access.', 'epsilon'); ?></p>
+              <a class="pngm-ua-btn is-ghost" href="<?php echo osc_esc_html(function_exists('pngm_sec_url') ? pngm_sec_url() : osc_route_url('pngm-account-security')); ?>"><?php _e('Open Account & Security', 'epsilon'); ?></a>
             </div>
           </details>
         </div>
