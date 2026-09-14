@@ -112,15 +112,17 @@
     </section>
 
     <section class="pngm-about-safety">
-      <div class="pngm-about-inner pngm-about-safety-banner">
-        <div class="pngm-about-safety-copy">
-          <span class="pngm-about-safety-ico" aria-hidden="true"><i class="fas fa-users"></i></span>
-          <div>
-            <h2><?php _e('Safety and Community Come First', 'epsilon'); ?></h2>
-            <p><?php echo osc_esc_html(sprintf(__('%s is built for Papua New Guineans, by Papua New Guineans. We encourage respectful communication, honest listings and responsible trading to keep our community strong and trustworthy.', 'epsilon'), $site_name)); ?></p>
+      <div class="pngm-about-safety-banner">
+        <div class="pngm-about-inner pngm-about-safety-row">
+          <div class="pngm-about-safety-copy">
+            <span class="pngm-about-safety-ico" aria-hidden="true"><i class="fas fa-users"></i></span>
+            <div>
+              <h2><?php _e('Safety and Community Come First', 'epsilon'); ?></h2>
+              <p><?php echo osc_esc_html(sprintf(__('%s is built for Papua New Guineans, by Papua New Guineans. We encourage respectful communication, honest listings and responsible trading to keep our community strong and trustworthy.', 'epsilon'), $site_name)); ?></p>
+            </div>
           </div>
+          <a class="pngm-about-btn pngm-about-btn-secondary" href="<?php echo osc_esc_html($safety_url); ?>"><?php _e('Learn Our Safety Tips', 'epsilon'); ?></a>
         </div>
-        <a class="pngm-about-btn pngm-about-btn-secondary" href="<?php echo osc_esc_html($safety_url); ?>"><?php _e('Learn Our Safety Tips', 'epsilon'); ?></a>
       </div>
     </section>
   </main>

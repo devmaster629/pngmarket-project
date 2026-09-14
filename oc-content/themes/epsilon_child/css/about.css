@@ -3,19 +3,26 @@
  * Keep site navbar unchanged; only hide the sticky search strip on this page.
  */
 
-body.pngm-about {
+body.pngm-about,
+body#page.pngm-about,
+body.pngm-about:not(#home) {
   background: #fff;
+  /* Header only — search is hidden; beat body:not(#home) 138/102px offset */
   padding-top: 72px !important;
 }
 
 @media screen and (min-width: 768px) and (max-width: 1080px) {
-  body.pngm-about {
+  body.pngm-about,
+  body#page.pngm-about,
+  body.pngm-about:not(#home) {
     padding-top: 60px !important;
   }
 }
 
 @media screen and (max-width: 767px) {
-  body.pngm-about {
+  body.pngm-about,
+  body#page.pngm-about,
+  body.pngm-about:not(#home) {
     padding-top: 64px !important;
   }
 }
@@ -331,19 +338,26 @@ body.pngm-about .page-text {
 
 /* —— Safety banner (below Helps) —— */
 .pngm-about-safety {
-  padding: 8px 0 56px;
+  padding: 8px 24px 56px;
   background: #fff;
 }
 
 .pngm-about-safety-banner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  background: #eef8f1;
+  border: 0;
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+
+.pngm-about-safety-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 24px 28px;
-  border-radius: 16px;
-  background: #eef8f1;
-  border: 1px solid #d7ebdd;
   box-sizing: border-box;
 }
 
@@ -382,7 +396,7 @@ body.pngm-about .page-text {
   max-width: 46em;
 }
 
-.pngm-about-safety-banner .pngm-about-btn {
+.pngm-about-safety-row .pngm-about-btn {
   flex: 0 0 auto;
   white-space: nowrap;
 }
@@ -423,11 +437,15 @@ body.pngm-about .page-text {
   }
 
   .pngm-about-safety-banner {
+    border-radius: 16px;
+  }
+
+  .pngm-about-safety-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .pngm-about-safety-banner .pngm-about-btn {
+  .pngm-about-safety-row .pngm-about-btn {
     width: 100%;
   }
 }
@@ -439,11 +457,11 @@ body.pngm-about .page-text {
   }
 
   .pngm-about-hero {
-    padding: 24px 0 20px;
+    padding: 12px 0 16px;
   }
 
   .pngm-about-hero-grid {
-    gap: 20px;
+    gap: 16px;
   }
 
   .pngm-about-hero-copy {
@@ -453,7 +471,7 @@ body.pngm-about .page-text {
   .pngm-about-hero-copy h1 {
     order: 1;
     font-size: 28px;
-    margin: 0 0 12px;
+    margin: 0 0 10px;
   }
 
   .pngm-about-hero-copy p {
@@ -464,7 +482,7 @@ body.pngm-about .page-text {
 
   .pngm-about-hero-visual {
     order: 3;
-    margin: 4px 0;
+    margin: 0;
   }
 
   .pngm-about-hero-visual img {
@@ -476,7 +494,7 @@ body.pngm-about .page-text {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   .pngm-about-hero-actions .pngm-about-btn {
@@ -509,11 +527,11 @@ body.pngm-about .page-text {
   }
 
   .pngm-about-helps {
-    padding: 32px 0 24px;
+    padding: 28px 0 12px;
   }
 
   .pngm-about-helps-head {
-    margin: 0 auto 24px;
+    margin: 0 auto 20px;
     text-align: center;
   }
 
@@ -553,17 +571,32 @@ body.pngm-about .page-text {
   }
 
   .pngm-about-safety {
-    padding: 8px 0 40px;
+    padding: 0;
+    margin: 0;
   }
 
   .pngm-about-safety-banner {
-    gap: 18px;
-    padding: 20px 18px;
+    border-radius: 0 !important;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .pngm-about-safety-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    max-width: none;
+    padding: 20px 16px;
   }
 
   .pngm-about-safety-copy {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .pngm-about-safety-row .pngm-about-btn {
+    width: 100%;
   }
 }
