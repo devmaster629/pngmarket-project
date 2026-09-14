@@ -219,35 +219,52 @@ function pngm_facebook_login_url()
  * Render social login buttons for login/register pages.
  *
  * @param string $context 'login'|'register'
+ * @param string $layout  'stack'|'row'
  */
-function pngm_render_social_login($context = 'login')
+function pngm_render_social_login($context = 'login', $layout = 'stack')
 {
-    if (osc_is_web_user_logged_in() || !pngm_has_social_login()) {
+    if (osc_is_web_user_logged_in()) {
         return;
     }
 
-    $google_label = __('Continue with Google', 'epsilon');
-    $fb_label = __('Continue with Facebook', 'epsilon');
-    $google_icon = '<svg class="pngm-soc-svg pngm-soc-google" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>';
-    $fb_icon = '<svg class="pngm-soc-svg pngm-soc-facebook" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#fff"/><path fill="#1877F2" d="M13.28 20v-6.18h2.07l.31-2.4h-2.38V9.9c0-.7.19-1.17 1.2-1.17h1.28V6.58c-.22-.03-.98-.1-1.86-.1-1.84 0-3.1 1.12-3.1 3.18v1.76H8.72v2.4h2.08V20h2.48z"/></svg>';
-    $chevron = '<i class="fas fa-chevron-right pngm-soc-chevron" aria-hidden="true"></i>';
+    // Login/register row always shows Google + Facebook (plugins wire actions).
+    $force_both = ($layout === 'row');
+    if (!$force_both && !pngm_has_social_login()) {
+        return;
+    }
 
-    echo '<div class="social pngm-social-login">';
+    $is_row = ($layout === 'row');
+    $google_label = $is_row ? __('Google', 'epsilon') : __('Continue with Google', 'epsilon');
+    $fb_label = $is_row ? __('Facebook', 'epsilon') : __('Continue with Facebook', 'epsilon');
+    $google_icon = '<svg class="pngm-soc-svg pngm-soc-google" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>';
+    $fb_icon = '<svg class="pngm-soc-svg pngm-soc-facebook" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1877F2"/><path fill="#fff" d="M13.28 18.5v-5.68h1.9l.28-2.21h-2.18V9.18c0-.64.18-1.08 1.1-1.08h1.17V6.12c-.2-.03-.9-.09-1.71-.09-1.69 0-2.85 1.03-2.85 2.93v1.63H9.2v2.21h1.79V18.5h2.29z"/></svg>';
+    $chevron = $is_row ? '' : '<i class="fas fa-chevron-right pngm-soc-chevron" aria-hidden="true"></i>';
+
+    if ($is_row) {
+        echo '<div class="pngm-auth-divider"><span>' . osc_esc_html(__('or continue with', 'epsilon')) . '</span></div>';
+    }
+
+    echo '<div class="social pngm-social-login' . ($is_row ? ' is-row' : '') . '">';
 
     $google = pngm_google_login_url();
+    $google_printed = false;
     if ($google !== false) {
         echo '<a class="google pngm-btn-google" href="' . osc_esc_html($google) . '" title="' . osc_esc_html($google_label) . '">';
         echo $google_icon . '<span class="pngm-soc-label">' . osc_esc_html($google_label) . '</span>' . $chevron . '</a>';
+        $google_printed = true;
     } elseif (function_exists('gc_login_button')) {
         echo '<div class="pngm-btn-google-wrap">';
         gc_login_button();
         echo '</div>';
+        $google_printed = true;
+    } elseif ($force_both) {
+        echo '<a class="google pngm-btn-google" href="' . osc_esc_html(osc_user_login_url()) . '" title="' . osc_esc_html($google_label) . '">';
+        echo $google_icon . '<span class="pngm-soc-label">' . osc_esc_html($google_label) . '</span></a>';
+        $google_printed = true;
     }
 
     $fb_printed = false;
     if (pngm_facebook_login_available()) {
-        // Instant Login is JS-driven (not a redirect URL). Match plugin classes + onclick
-        // so OAuth opens even when the plugin jQuery selector does not attach.
         echo '<a target="_top" href="javascript:void(0);" role="button" class="facebook fl-button fjl-button pngm-btn-facebook" onclick="if(typeof pngmFacebookLogin===\'function\'){pngmFacebookLogin();}return false;" title="' . osc_esc_html($fb_label) . '">';
         echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span>' . $chevron . '</a>';
         $fb_printed = true;
@@ -262,8 +279,18 @@ function pngm_render_social_login($context = 'login')
         }
     }
 
+    if (!$fb_printed && $force_both) {
+        $fb_msg = osc_esc_js(__('Facebook login is not configured yet.', 'epsilon'));
+        echo '<a class="facebook pngm-btn-facebook" href="javascript:void(0);" role="button" onclick="if(typeof pngmFacebookLogin===\'function\'){pngmFacebookLogin();}else{alert(\'' . $fb_msg . '\');}return false;" title="' . osc_esc_html($fb_label) . '">';
+        echo $fb_icon . '<span class="pngm-soc-label">' . osc_esc_html($fb_label) . '</span></a>';
+        $fb_printed = true;
+    }
+
     echo '</div>';
-    echo '<div class="pngm-social-divider"><span>' . osc_esc_html(__('or continue with email', 'epsilon')) . '</span></div>';
+
+    if (!$is_row && ($google_printed || $fb_printed)) {
+        echo '<div class="pngm-social-divider"><span>' . osc_esc_html(__('or continue with email', 'epsilon')) . '</span></div>';
+    }
 }
 
 /**

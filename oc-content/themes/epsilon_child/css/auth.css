@@ -1,0 +1,547 @@
+/**
+ * PNG Market — Login / Register full-bleed auth board.
+ * Specificity beats custom.css .pre-account.pngm-auth gutters.
+ */
+
+/* Search bar is hidden on auth — drop the 138px body offset that reserved it. */
+body.pngm-auth-v2.pre-account.pngm-auth,
+body.pngm-auth-v2.pre-account.pngm-auth:not(#home) {
+  padding-top: 72px !important;
+}
+
+body.pngm-auth-v2.pre-account.pngm-auth > .content > section.container:after,
+body.pngm-auth-v2.pre-account.pngm-auth > .content > section.pngm-auth-wrap:after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+body.pngm-auth-v2 .pngm-global-search {
+  display: none !important;
+}
+
+/* No site footer on login / register */
+body.pngm-auth-v2.pre-account.pngm-auth footer,
+body.pngm-auth-v2.pre-account.pngm-auth footer.pngm-footer,
+body.pngm-auth-v2.pre-account.pngm-auth .pngm-footer {
+  display: none !important;
+}
+
+/* Flush board under header — no gray gutter */
+body.pngm-auth-v2.pre-account.pngm-auth {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  overflow-x: hidden !important;
+  background: #fff !important;
+}
+
+body.pngm-auth-v2.pre-account.pngm-auth .content,
+body.pngm-auth-v2.pre-account.pngm-auth:not(.has-footer) .content {
+  min-height: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  background: #fff !important;
+  overflow-x: hidden !important;
+}
+
+body.pngm-auth-v2.pre-account.pngm-auth > .content > section.pngm-auth-wrap.container,
+body.pngm-auth-v2.pre-account.pngm-auth > .content > section.container,
+body.pngm-auth-v2.pre-account.pngm-auth > .content > section.pngm-auth-wrap,
+body.pngm-auth-v2 section.pngm-auth-wrap {
+  display: block !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box;
+  position: relative;
+  min-height: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+@media screen and (min-width: 768px) {
+  body.pngm-auth-v2.pre-account.pngm-auth > .content > section.container {
+    display: block !important;
+    align-items: stretch !important;
+    min-height: 0 !important;
+  }
+}
+
+.pngm-auth-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+/* Left art: flush to viewport edge, full opacity */
+body.pngm-auth-v2 .pngm-auth-visual,
+.pngm-auth-visual {
+  position: relative;
+  margin: 0 !important;
+  padding: 0 !important;
+  left: 0;
+  min-height: calc(100vh - 72px);
+  height: 100%;
+  overflow: hidden;
+  background: #d7e4db;
+  align-self: stretch;
+  border: 0 !important;
+}
+
+body.pngm-auth-v2 .pngm-auth-visual img,
+.pngm-auth-visual img {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  display: block;
+  object-fit: cover !important;
+  object-position: center center;
+  opacity: 1 !important;
+  filter: contrast(1.05) saturate(1.0) !important;
+  -webkit-filter: contrast(1.05) saturate(1.0) !important;
+  mix-blend-mode: normal !important;
+  /* Overscale slightly so any 1px fringe never shows as a white strip */
+  transform: scale(1.03);
+  transform-origin: center center;
+  image-rendering: auto;
+}
+
+/* Right form column fills half — no floating card margins */
+.pngm-auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  padding: 48px 56px;
+  margin: 0;
+  background: #fff;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.pngm-auth-box {
+  width: 100%;
+  max-width: 420px;
+}
+
+.pngm-auth-box h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.15;
+  color: #16202a;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pngm-auth-lead {
+  margin: 0 0 26px;
+  color: #6b7785;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.pngm-auth-field {
+  margin: 0 0 16px;
+}
+
+.pngm-auth-field label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a4650;
+}
+
+.pngm-auth-control {
+  position: relative;
+}
+
+.pngm-auth-control input,
+body.pngm-auth-v2 .pngm-auth-control input[type="text"],
+body.pngm-auth-v2 .pngm-auth-control input[type="email"],
+body.pngm-auth-v2 .pngm-auth-control input[type="password"] {
+  width: 100%;
+  height: 48px;
+  padding: 0 44px 0 14px;
+  border: 1px solid #d5ddd8 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  font-size: 14px;
+  color: #16202a !important;
+  box-sizing: border-box;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill,
+body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:hover,
+body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #16202a;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  transition: background-color 99999s ease-in-out 0s;
+}
+
+.pngm-auth-control.has-toggle input {
+  padding-right: 74px !important;
+}
+
+.pngm-auth-control input:focus {
+  outline: none;
+  border-color: #1b5e20 !important;
+  box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.12) !important;
+}
+
+.pngm-auth-field.is-ok .pngm-auth-control input {
+  border-color: #1b5e20 !important;
+}
+
+.pngm-auth-field.is-error .pngm-auth-control input {
+  border-color: #d32f2f !important;
+}
+
+.pngm-auth-status {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pngm-auth-control.has-toggle .pngm-auth-status {
+  right: 40px;
+}
+
+.pngm-auth-field.is-ok .pngm-auth-status,
+.pngm-auth-field.is-error .pngm-auth-status {
+  display: inline-flex;
+}
+
+.pngm-auth-field.is-ok .pngm-auth-status {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.pngm-auth-field.is-ok .pngm-auth-status::before {
+  content: "\f00c";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+}
+
+.pngm-auth-field.is-error .pngm-auth-status {
+  background: #fdecea;
+  color: #d32f2f;
+}
+
+.pngm-auth-field.is-error .pngm-auth-status::before {
+  content: "!";
+  font-weight: 800;
+}
+
+.pngm-auth-control .toggle-pass {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a94a0;
+  z-index: 2;
+  line-height: 1;
+}
+
+.pngm-auth-captcha {
+  margin: 4px 0 16px;
+  min-height: 0;
+}
+
+.pngm-auth-captcha .g-recaptcha,
+.pngm-auth-captcha iframe {
+  max-width: 100%;
+}
+
+.pngm-auth-captcha .g-recaptcha {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+  transform-origin: left center;
+}
+
+.pngm-auth-captcha-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f3f7f3;
+  border: 1px dashed #c5d4c7;
+  color: #5b6670;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pngm-auth-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+  flex-wrap: wrap;
+}
+
+.pngm-auth-check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #3a4650;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.pngm-auth-check input {
+  margin-top: 2px;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.pngm-auth-terms {
+  margin: 0 0 18px;
+  width: 100%;
+}
+
+.pngm-auth-terms a {
+  color: #1b5e20 !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pngm-auth-terms a:hover {
+  text-decoration: underline;
+}
+
+.pngm-auth-link {
+  color: #1b5e20 !important;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pngm-auth-link:hover {
+  text-decoration: underline;
+}
+
+.pngm-auth-submit.btn,
+body.pngm-auth-v2 .pngm-auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  margin: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #1b5e20 !important;
+  color: #fff !important;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.pngm-auth-submit.btn:hover,
+body.pngm-auth-v2 .pngm-auth-submit:hover {
+  background: #174e1a !important;
+}
+
+.pngm-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 16px;
+  color: #8a94a0;
+  font-size: 12px;
+}
+
+.pngm-auth-divider::before,
+.pngm-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e6ebe8;
+}
+
+body.pngm-auth-v2 .pngm-social-login.is-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+body.pngm-auth-v2 .pngm-social-login.is-row a,
+body.pngm-auth-v2 .pngm-social-login.is-row .pngm-btn-google-wrap a {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin: 0 !important;
+  padding: 11px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid #d5ddd8 !important;
+  background: #fff !important;
+  color: #16202a !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  text-decoration: none;
+}
+
+body.pngm-auth-v2 .pngm-social-login.is-row a:hover {
+  border-color: #1b5e20 !important;
+  box-shadow: none !important;
+}
+
+body.pngm-auth-v2 .pngm-social-login.is-row .pngm-soc-label {
+  flex: 0 0 auto;
+  text-align: left;
+}
+
+body.pngm-auth-v2 .pngm-social-login.is-row .pngm-soc-facebook {
+  border-radius: 50%;
+}
+
+.pngm-auth-switch {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7785;
+}
+
+.pngm-auth-switch a {
+  color: #1b5e20 !important;
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.pngm-auth-switch a:hover {
+  text-decoration: underline;
+}
+
+.pngm-auth-errors {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  color: #d32f2f;
+  font-size: 13px;
+}
+
+.pngm-auth-errors:empty {
+  display: none;
+}
+
+body.pngm-auth-v2 .alt-action,
+body.pngm-auth-v2 .alt-action2,
+body.pngm-auth-v2 .box > h1 {
+  display: none;
+}
+
+body#user-login.pngm-auth-v2 .input-box.pngm-field-ico input,
+body.pngm-auth-v2 .pngm-auth-control input {
+  background: #fff !important;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+  body.pngm-auth-v2.pre-account.pngm-auth,
+  body.pngm-auth-v2.pre-account.pngm-auth:not(#home) {
+    padding-top: 60px !important;
+  }
+
+  .pngm-auth-card,
+  .pngm-auth-visual,
+  .pngm-auth-panel {
+    min-height: calc(100vh - 60px);
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-auth-v2.pre-account.pngm-auth,
+  body.pngm-auth-v2.pre-account.pngm-auth:not(#home) {
+    padding-top: 64px !important;
+  }
+
+  .pngm-auth-card,
+  .pngm-auth-visual,
+  .pngm-auth-panel {
+    min-height: calc(100vh - 64px);
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .pngm-auth-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .pngm-auth-visual {
+    display: none;
+  }
+
+  .pngm-auth-panel {
+    min-height: 0;
+    padding: 28px 20px 40px;
+  }
+
+  .pngm-auth-box {
+    max-width: 100%;
+  }
+
+  .pngm-auth-box h1 {
+    font-size: 26px;
+  }
+
+  body.pngm-auth-v2 .pngm-social-login.is-row {
+    grid-template-columns: 1fr;
+  }
+}

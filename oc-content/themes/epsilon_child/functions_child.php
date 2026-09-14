@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '1.9.7');
+    define('PNGM_CHILD_VERSION', '2.0.8');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -120,6 +120,14 @@ function pngm_enqueue_assets()
     // Phase 2 design system first, then page overrides in custom.css.
     osc_enqueue_style('pngm-design-system', osc_current_web_theme_url('css/design-system.css' . $version));
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
+
+    $loc = function_exists('osc_get_osclass_location') ? (string) osc_get_osclass_location() : '';
+    $page_param = (string) Params::getParam('page');
+    if (in_array($loc, array('login', 'register'), true)
+        || in_array($page_param, array('login', 'register'), true)
+    ) {
+        osc_enqueue_style('pngm-auth', osc_current_web_theme_url('css/auth.css' . $version));
+    }
 
     $is_ua = false;
     $is_pub_profile = false;
@@ -801,6 +809,48 @@ function pngm_item_title_desc_length_error($flash_error, $aItem)
 
 osc_add_filter('pre_item_add_error', 'pngm_item_title_desc_length_error', 10);
 osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
+
+/**
+ * Show reCAPTCHA on auth pages when a site key exists.
+ * Oc-Admin "enabled" can hide keys from osc_show_recaptcha(); we still paint
+ * the widget from the saved public key so login/register match production.
+ *
+ * @param string $section
+ */
+function pngm_auth_show_recaptcha($section = '')
+{
+    if (function_exists('anr_get_option') && anr_get_option('site_key') !== '') {
+        if (function_exists('eps_show_recaptcha')) {
+            eps_show_recaptcha($section === 'register' ? 'registration' : $section);
+        }
+        return;
+    }
+
+    $key = '';
+    if (function_exists('osc_recaptcha_public_key')) {
+        $key = trim((string) osc_recaptcha_public_key(true));
+    }
+
+    if ($key === '') {
+        if (function_exists('eps_show_recaptcha')) {
+            eps_show_recaptcha($section);
+        }
+        return;
+    }
+
+    if (function_exists('osc_recaptcha_enabled') && osc_recaptcha_enabled()
+        && function_exists('osc_show_recaptcha')
+    ) {
+        osc_show_recaptcha($section);
+        return;
+    }
+
+    // Keys saved but "Enable reCAPTCHA" is off — still show the widget.
+    $lang = function_exists('osc_language') ? substr((string) osc_language(), 0, 2) : 'en';
+    echo '<div class="g-recaptcha" data-sitekey="' . osc_esc_html($key) . '"></div>';
+    echo '<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?hl='
+        . osc_esc_html($lang) . '"></script>';
+}
 
 /**
  * Front-end login/register must verify reCAPTCHA when the widget is configured.

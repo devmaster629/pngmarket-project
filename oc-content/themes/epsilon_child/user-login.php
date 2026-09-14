@@ -7,63 +7,103 @@
   <script type="text/javascript" src="<?php echo osc_current_web_theme_js_url('jquery.validate.min.js'); ?>"></script>
 </head>
 
-<body id="user-login" class="pre-account login pngm-auth">
+<body id="user-login" class="pre-account login pngm-auth pngm-auth-v2">
   <?php UserForm::js_validation(); ?>
   <?php osc_current_web_theme_path('header.php'); ?>
 
-  <section class="container">
-    <div class="box">
-      <h1><?php _e('Sign-in to your account', 'epsilon'); ?></h1>
+  <section class="pngm-auth-wrap">
+    <div class="pngm-auth-card">
+      <aside class="pngm-auth-visual" aria-hidden="true">
+        <img src="<?php echo osc_esc_html(osc_current_web_theme_url('images/auth-hero.png')); ?>?v=<?php echo rawurlencode(PNGM_CHILD_VERSION); ?>" alt="" width="720" height="960" decoding="async" />
+      </aside>
 
-      <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login'); } ?>
+      <div class="pngm-auth-panel">
+        <div class="pngm-auth-box">
+          <h1><?php _e('Welcome back!', 'epsilon'); ?></h1>
+          <p class="pngm-auth-lead"><?php _e('Log in to your PNGMarket account.', 'epsilon'); ?></p>
 
-      <a class="alt-action" href="<?php echo osc_register_account_url(); ?>"><?php _e('No account yet? Register a new account', 'epsilon'); ?> &#8594;</a>
+          <form action="<?php echo osc_base_url(true); ?>" method="post" class="pngm-auth-form" id="pngm-login-form">
+            <input type="hidden" name="page" value="login" />
+            <input type="hidden" name="action" value="login_post" />
 
-      <form action="<?php echo osc_base_url(true); ?>" method="post" >
-        <input type="hidden" name="page" value="login" />
-        <input type="hidden" name="action" value="login_post" />
+            <?php osc_run_hook('user_pre_login_form'); ?>
 
-        <?php osc_run_hook('user_pre_login_form'); ?>
+            <div class="pngm-auth-field row">
+              <label for="email"><?php _e('Email', 'epsilon'); ?></label>
+              <div class="pngm-auth-control">
+                <?php UserForm::email_login_text(); ?>
+                <span class="pngm-auth-status" aria-hidden="true"></span>
+              </div>
+            </div>
 
-        <div class="row">
-          <label for="email"><?php _e('E-mail', 'epsilon'); ?></label>
-          <span class="input-box pngm-field-ico pngm-ico-mail"><?php UserForm::email_login_text(); ?></span>
+            <div class="pngm-auth-field row">
+              <label for="password"><?php _e('Password', 'epsilon'); ?></label>
+              <div class="pngm-auth-control has-toggle">
+                <?php UserForm::password_login_text(); ?>
+                <a href="#" class="toggle-pass" title="<?php echo osc_esc_html(__('Show/hide password', 'epsilon')); ?>"><i class="fa fa-eye-slash"></i></a>
+                <span class="pngm-auth-status" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div class="user-reg-hook"><?php osc_run_hook('user_login_form'); ?></div>
+
+            <div class="pngm-auth-captcha">
+              <?php pngm_auth_show_recaptcha('login'); ?>
+            </div>
+
+            <div class="pngm-auth-meta">
+              <label class="pngm-auth-check">
+                <?php UserForm::rememberme_login_checkbox(); ?>
+                <span><?php _e('Remember me', 'epsilon'); ?></span>
+              </label>
+              <a class="pngm-auth-link" href="<?php echo osc_recover_user_password_url(); ?>"><?php _e('Forgot password?', 'epsilon'); ?></a>
+            </div>
+
+            <button type="submit" class="btn pngm-auth-submit"><?php _e('Log in', 'epsilon'); ?></button>
+          </form>
+
+          <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login', 'row'); } ?>
+
+          <p class="pngm-auth-switch">
+            <?php _e("Don't have an account?", 'epsilon'); ?>
+            <a href="<?php echo osc_register_account_url(); ?>"><?php _e('Register', 'epsilon'); ?></a>
+          </p>
         </div>
-
-        <div class="row">
-          <label for="password"><?php _e('Password', 'epsilon'); ?></label>
-          <span class="input-box">
-            <?php UserForm::password_login_text(); ?>
-            <a href="#" class="toggle-pass" title="<?php echo osc_esc_html(__('Show/hide password', 'epsilon')); ?>"><i class="fa fa-eye-slash"></i></a>
-          </span>
-        </div>
-
-        <div class="input-box-check">
-          <?php UserForm::rememberme_login_checkbox();?>
-          <label for="remember"><?php _e('Remember me', 'epsilon'); ?></label>
-        </div>
-
-        <div class="user-reg-hook"><?php osc_run_hook('user_login_form'); ?></div>
-
-        <div class="row fr">
-        </div>
-
-        <?php eps_show_recaptcha('login'); ?>
-
-        <button type="submit" class="btn"><?php _e('Log in', 'epsilon');?></button>
-
-        <a class="alt-action2" href="<?php echo osc_recover_user_password_url(); ?>"><?php _e('I forgot my password', 'epsilon'); ?></a>
-      </form>
+      </div>
     </div>
   </section>
 
   <?php osc_current_web_theme_path('footer.php'); ?>
 
   <script type="text/javascript">
-    $(document).ready(function(){
-      $('input[name="email"]').attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true);
-      $('input[name="password"]').removeAttr('placeholder').attr('required', true);
+  (function ($) {
+    $(function () {
+      var $email = $('input[name="email"]');
+      var $pass = $('input[name="password"]');
+      $email.attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true).attr('type', 'email');
+      $pass.removeAttr('placeholder').attr('required', true);
+
+      function mark($input) {
+        var $field = $input.closest('.pngm-auth-field');
+        var el = $input.get(0);
+        if (!$field.length || !el) return;
+        $field.removeClass('is-ok is-error');
+        if (!$input.val()) return;
+        if (el.checkValidity && el.checkValidity()) {
+          $field.addClass('is-ok');
+        } else {
+          $field.addClass('is-error');
+        }
+      }
+
+      $email.on('blur input', function () { mark($(this)); });
+      $pass.on('blur input', function () {
+        var $field = $(this).closest('.pngm-auth-field');
+        $field.removeClass('is-ok is-error');
+        if ($(this).val().length >= 1) $field.addClass('is-ok');
+      });
     });
+  })(jQuery);
   </script>
 </body>
 </html>
