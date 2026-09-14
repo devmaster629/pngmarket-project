@@ -459,53 +459,105 @@
     <div class="box location" data-box="location">
       <div class="nav">
         <a href="#" class="back"><i class="fas fa-chevron-left"></i></a>
-        <span><?php _e('Change location', 'epsilon'); ?></span>
+        <span><?php _e('Choose location', 'epsilon'); ?></span>
       </div>
     
-      <div class="section">
-        <div class="head isDesktop isTablet"><?php _e('Default location', 'epsilon'); ?></div>
-        <div class="subhead isDesktop isTablet"><?php _e('Select your preferred location to search and sell faster.', 'epsilon'); ?></div>
+      <div class="section pngm-loc">
+        <div class="pngm-loc-sheet-handle isMobile" aria-hidden="true"></div>
 
-        <?php if(@$location_cookie['s_location'] <> '') { ?>
-          <div class="row current">
-            <strong><?php _e('Your location', 'epsilon'); ?>:</strong> <?php echo $location_cookie['s_location']; ?>
+        <div class="pngm-loc-body">
+        <div class="pngm-loc-head">
+          <div class="head"><?php _e('Choose location', 'epsilon'); ?></div>
+          <div class="subhead"><?php _e('Selecting your location helps us show you nearby listings and connect you with local buyers and sellers.', 'epsilon'); ?></div>
+        </div>
+
+        <?php
+          $pngm_loc_name = '';
+          if (!empty($location_cookie['s_location'])) {
+            $pngm_loc_name = $location_cookie['s_location'];
+          } elseif (!empty($location_cookie['s_name'])) {
+            $pngm_loc_name = $location_cookie['s_name'];
+            if (!empty($location_cookie['s_name_top'])) {
+              $pngm_loc_name .= ', ' . $location_cookie['s_name_top'];
+            }
+          }
+        ?>
+
+        <div class="row current pngm-loc-current<?php echo ($pngm_loc_name === '' ? ' is-empty' : ''); ?>">
+          <div class="pngm-loc-current-card">
+            <span class="pngm-loc-current-ico" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></span>
+            <div class="pngm-loc-current-text">
+              <strong><?php _e('Your location', 'epsilon'); ?></strong>
+              <span class="pngm-loc-current-name"><?php echo $pngm_loc_name !== '' ? osc_esc_html($pngm_loc_name) : osc_esc_html(__('No location selected', 'epsilon')); ?></span>
+            </div>
+            <a href="#" class="pngm-loc-change"><?php _e('Change', 'epsilon'); ?></a>
           </div>
-        <?php } ?>
+        </div>
           
-        <div class="row picker">
+        <div class="row picker pngm-loc-picker">
           <div class="input-box picker location">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M508.5 468.9L387.1 347.5c-2.3-2.3-5.3-3.5-8.5-3.5h-13.2c31.5-36.5 50.6-84 50.6-136C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c52 0 99.5-19.1 136-50.6v13.2c0 3.2 1.3 6.2 3.5 8.5l121.4 121.4c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17zM208 368c-88.4 0-160-71.6-160-160S119.6 48 208 48s160 71.6 160 160-71.6 160-160 160z"/></svg>
-            <input name="location-pick" class="location-pick" type="text" placeholder="<?php echo osc_esc_html(__('Search location...', 'epsilon')); ?>" autocomplete="off"/>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path d="M508.5 468.9L387.1 347.5c-2.3-2.3-5.3-3.5-8.5-3.5h-13.2c31.5-36.5 50.6-84 50.6-136C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c52 0 99.5-19.1 136-50.6v13.2c0 3.2 1.3 6.2 3.5 8.5l121.4 121.4c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17zM208 368c-88.4 0-160-71.6-160-160S119.6 48 208 48s160 71.6 160 160-71.6 160-160 160z"/></svg>
+            <input name="location-pick" class="location-pick" type="text" placeholder="<?php echo osc_esc_html(__('Search for a city, town or region', 'epsilon')); ?>" autocomplete="off"/>
             <i class="clean fas fa-times-circle"></i>
             <div class="results"></div>
           </div>
         </div>
         
-        <div class="row navigator">
+        <div class="row navigator pngm-loc-gps">
           <a href="#" class="locate-me">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 168c-48.6 0-88 39.4-88 88s39.4 88 88 88 88-39.4 88-88-39.4-88-88-88zm0 128c-22.06 0-40-17.94-40-40s17.94-40 40-40 40 17.94 40 40-17.94 40-40 40zm240-64h-49.66C435.49 145.19 366.81 76.51 280 65.66V16c0-8.84-7.16-16-16-16h-16c-8.84 0-16 7.16-16 16v49.66C145.19 76.51 76.51 145.19 65.66 232H16c-8.84 0-16 7.16-16 16v16c0 8.84 7.16 16 16 16h49.66C76.51 366.81 145.19 435.49 232 446.34V496c0 8.84 7.16 16 16 16h16c8.84 0 16-7.16 16-16v-49.66C366.81 435.49 435.49 366.8 446.34 280H496c8.84 0 16-7.16 16-16v-16c0-8.84-7.16-16-16-16zM256 400c-79.4 0-144-64.6-144-144s64.6-144 144-144 144 64.6 144 144-64.6 144-144 144z"/></svg>
-            <strong data-alt-text="<?php echo osc_esc_html(__('Click to refresh', 'epsilon')); ?>"><?php _e('Use current location', 'epsilon'); ?></strong>
-            <span class="status">
-              <span class="init"><?php _e('Click to find closest city to your location', 'epsilon'); ?></span>
-              <span class="not-supported" style="display:none;"><?php _e('Geolocation is not supported by your browser', 'epsilon'); ?></span>
-              <span class="failed" style="display:none;"><?php _e('Could not read GPS. Allow location for this site, or pick a city below.', 'epsilon'); ?></span>
-              <span class="failed-unfound" style="display:none;"><?php _e('Unable to retrieve your location, no close city found', 'epsilon'); ?></span>
-              <span class="loading" style="display:none;"><?php _e('Locating...', 'epsilon'); ?></span>
-              <span class="success" style="display:none;"></span>
-              <span class="refresh" style="display:none;"><?php _e('Refresh page to take effect', 'epsilon'); ?></span>
+            <span class="pngm-loc-gps-ico" aria-hidden="true"><i class="fas fa-crosshairs"></i></span>
+            <span class="pngm-loc-gps-text">
+              <strong data-alt-text="<?php echo osc_esc_html(__('Click to refresh', 'epsilon')); ?>"><?php _e('Use current location', 'epsilon'); ?></strong>
+              <span class="status">
+                <span class="init"><?php _e('Detect your location automatically', 'epsilon'); ?></span>
+                <span class="not-supported" style="display:none;"><?php _e('Geolocation is not supported by your browser', 'epsilon'); ?></span>
+                <span class="failed" style="display:none;"><?php _e('Could not read GPS. Allow location for this site, or pick a city below.', 'epsilon'); ?></span>
+                <span class="failed-unfound" style="display:none;"><?php _e('Unable to retrieve your location, no close city found', 'epsilon'); ?></span>
+                <span class="loading" style="display:none;"><?php _e('Locating...', 'epsilon'); ?></span>
+                <span class="success" style="display:none;"></span>
+                <span class="refresh" style="display:none;"><?php _e('Refresh page to take effect', 'epsilon'); ?></span>
+              </span>
             </span>
           </a>
         </div>
         
-        <?php $recent = array_reverse(eps_get_recent_locations());?>
+        <?php
+          $recent = array_reverse(eps_get_recent_locations());
+          if (!is_array($recent)) {
+            $recent = array();
+          }
+          $recent = array_slice($recent, 0, 5);
+        ?>
         
-        <?php if(is_array($recent) && count($recent) > 0) { ?>
-          <div class="row recent">
-            <div class="lead"><?php _e('Recent locations', 'epsilon'); ?></div>
+        <?php if (count($recent) > 0) { ?>
+          <div class="row recent pngm-loc-recent">
+            <div class="pngm-loc-section-head">
+              <div class="lead"><?php _e('Recent locations', 'epsilon'); ?></div>
+            </div>
 
-            <?php foreach($recent as $p) { ?>
-              <?php $hash = rawurlencode(base64_encode(json_encode(array('fk_i_city_id' => @$p['fk_i_city_id'], 'fk_i_region_id' => @$p['fk_i_region_id'], 'fk_c_country_code' => @$p['fk_c_country_code'], 's_name' => @$p['s_name'], 's_name_native' => @$p['s_name_native'], 's_name_top' => @$p['s_name_top'], 's_name_top_native' => @$p['s_name_top_native'], 'd_coord_lat' => @$p['d_coord_lat'], 'd_coord_long' => @$p['d_coord_long'])))); ?>
-              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem"><?php echo osc_location_native_name_selector($p, 's_name'); ?></a>
+            <?php
+              foreach ($recent as $p) {
+                $hash = rawurlencode(base64_encode(json_encode(array(
+                  'fk_i_city_id' => @$p['fk_i_city_id'],
+                  'fk_i_region_id' => @$p['fk_i_region_id'],
+                  'fk_c_country_code' => @$p['fk_c_country_code'],
+                  's_name' => @$p['s_name'],
+                  's_name_native' => @$p['s_name_native'],
+                  's_name_top' => @$p['s_name_top'],
+                  's_name_top_native' => @$p['s_name_top_native'],
+                  'd_coord_lat' => @$p['d_coord_lat'],
+                  'd_coord_long' => @$p['d_coord_long'],
+                ))));
+                $rname = osc_location_native_name_selector($p, 's_name');
+                if (!empty($p['s_name_top'])) {
+                  $rname .= ', ' . osc_location_native_name_selector($p, 's_name_top');
+                }
+            ?>
+              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem pngm-loc-item">
+                <i class="far fa-clock" aria-hidden="true"></i>
+                <span class="pngm-loc-item-name"><?php echo osc_esc_html($rname); ?></span>
+                <i class="fas fa-chevron-right pngm-loc-item-chevron" aria-hidden="true"></i>
+              </a>
             <?php } ?>
           </div>
         <?php } ?>
@@ -516,19 +568,43 @@
             : ModelEPS::newInstance()->getPopularCities(7, 0);
         ?>
 
-        <?php if(is_array($cities) && count($cities) > 0) { ?>
-          <div class="row popular">
+        <?php if (is_array($cities) && count($cities) > 0) { ?>
+          <div class="row popular pngm-loc-popular">
             <div class="lead"><?php _e('Main cities', 'epsilon'); ?></div>
 
-            <?php foreach($cities as $c) { ?>
-              <?php $hash = rawurlencode(base64_encode(json_encode(array('fk_i_city_id' => $c['fk_i_city_id'], 'fk_i_region_id' => $c['fk_i_region_id'], 'fk_c_country_code' => $c['fk_c_country_code'], 's_name' => $c['s_name'], 's_name_native' => @$c['s_name_native'], 's_name_top' => @$c['s_name_top'], 's_name_top_native' => @$c['s_name_top_native'], 'd_coord_lat' => @$c['d_coord_lat'], 'd_coord_long' => @$c['d_coord_long'])))); ?>
-              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem"><?php echo function_exists('pngm_main_city_label') ? pngm_main_city_label($c) : osc_esc_html(osc_location_native_name_selector($c, 's_name')) . ($c['i_num_items'] > 0 ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>' : ''); ?></a>
+            <?php foreach ($cities as $c) {
+              $hash = rawurlencode(base64_encode(json_encode(array(
+                'fk_i_city_id' => $c['fk_i_city_id'],
+                'fk_i_region_id' => $c['fk_i_region_id'],
+                'fk_c_country_code' => $c['fk_c_country_code'],
+                's_name' => $c['s_name'],
+                's_name_native' => @$c['s_name_native'],
+                's_name_top' => @$c['s_name_top'],
+                's_name_top_native' => @$c['s_name_top_native'],
+                'd_coord_lat' => @$c['d_coord_lat'],
+                'd_coord_long' => @$c['d_coord_long'],
+              ))));
+              $cname = function_exists('pngm_city_only') ? pngm_city_only($c) : osc_location_native_name_selector($c, 's_name');
+              if (!empty($c['s_name_top'])) {
+                $cname .= ', ' . osc_location_native_name_selector($c, 's_name_top');
+              }
+              $ccount = isset($c['i_num_items']) ? (int) $c['i_num_items'] : 0;
+            ?>
+              <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem pngm-loc-item">
+                <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                <span class="pngm-loc-item-name"><?php echo osc_esc_html($cname); ?></span>
+                <?php if ($ccount > 0) { ?>
+                  <em class="pngm-loc-item-count"><?php echo number_format($ccount); ?> <?php echo ($ccount === 1 ? __('listing', 'epsilon') : __('listings', 'epsilon')); ?></em>
+                <?php } ?>
+              </a>
             <?php } ?>
           </div>
         <?php } ?>
+        </div><!-- /.pngm-loc-body -->
         
-        <div class="row buttons">
-          <a class="btn btn-secondary" href="<?php echo eps_create_url(array('cleanCookieLocation' => 1)); ?>"><?php _e('Clean default location', 'epsilon'); ?></a>
+        <div class="row buttons pngm-loc-actions">
+          <a class="pngm-loc-clear" href="<?php echo eps_create_url(array('cleanCookieLocation' => 1)); ?>"><?php _e('Clear location', 'epsilon'); ?></a>
+          <button type="button" class="btn pngm-loc-apply"><?php _e('Apply location', 'epsilon'); ?></button>
         </div>
       </div>
     </div>

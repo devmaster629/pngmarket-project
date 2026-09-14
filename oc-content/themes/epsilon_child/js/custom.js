@@ -1985,10 +1985,13 @@
               if (!elem.closest('.navigator-fill-selects').length) {
                 elem.find('span.refresh').show(0);
                 var link = elem.closest('a');
-                link.attr('href', String(window.location.href).replace('#', '')).addClass('completed');
+                link.attr('href', '#').addClass('completed');
                 var alt = link.find('strong').attr('data-alt-text');
                 if (alt) {
                   link.find('strong').text(alt);
+                }
+                if (typeof window.pngmLocAfterGeoSuccess === 'function') {
+                  window.pngmLocAfterGeoSuccess(data);
                 }
               } else if (typeof window.epsGeoToSelects === 'function') {
                 window.epsGeoToSelects(elem, data);
@@ -2625,6 +2628,385 @@
     });
   }
 
+  function initLocationModalUx() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+    var $ = window.jQuery;
+    var locOpenSel = 'header .links .btn.location, #navi-bar a.location';
+    var toastTimer = null;
+
+    function pngmLocToast(message, isError) {
+      var host = document.getElementById('pngm-loc-toast-host');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'pngm-loc-toast-host';
+        host.className = 'pngm-loc-toast-host';
+        host.setAttribute('aria-live', 'polite');
+        document.body.appendChild(host);
+      }
+
+      var toast = document.createElement('div');
+      toast.className = 'pngm-loc-toast' + (isError ? ' is-error' : '');
+      toast.innerHTML =
+        '<span class="pngm-loc-toast-msg"></span>' +
+        '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
+      toast.querySelector('.pngm-loc-toast-msg').textContent = message || '';
+      host.appendChild(toast);
+
+      function dismiss() {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }
+
+      toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismiss);
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(dismiss, 4200);
+    }
+
+    function pngmCloseLocationModals() {
+      $('.modal-box.location-select').each(function () {
+        var id = $(this).attr('data-modal-id');
+        if (id && typeof epsModalClose === 'function') {
+          epsModalClose(id);
+        } else {
+          $(this).remove();
+          $('.modal-cover[data-modal-id="' + id + '"]').remove();
+        }
+      });
+      $('body').removeClass('pngm-loc-modal-open').css('overflow', '');
+    }
+
+    function pngmHashFromHref(href) {
+      if (!href) {
+        return '';
+      }
+      try {
+        var url = new URL(href, window.location.origin);
+        return url.searchParams.get('hash') || '';
+      } catch (err) {
+        var m = String(href).match(/[?&]hash=([^&]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+      }
+    }
+
+    function pngmApplyLocationUi(data) {
+      var cleared = !!(data && data.cleared);
+      var label = (data && (data.label || data.s_name)) || 'Location';
+      var full = (data && data.s_location) || label;
+
+      var $btn = $('header .links .btn.location');
+      $btn.toggleClass('active', !cleared);
+      $btn.attr('title', cleared ? 'Location' : label);
+      $btn.find('.pngm-loc-label').text(cleared ? 'Location' : label);
+
+      $('.pngm-near-city').text(cleared ? '' : label);
+      $('.pngm-near-meta .change-location, .pngm-change-link').text(cleared ? 'Set location' : 'Change');
+
+      var $cards = $('#def-location .pngm-loc-current, #side-menu .box.location .pngm-loc-current');
+      $cards.toggleClass('is-empty', cleared);
+      $cards.find('.pngm-loc-current-name').text(cleared ? 'No location selected' : full);
+
+      // Keep the hidden side-menu template in sync for the next open.
+      $('#side-menu .box.location .pngm-loc-current').toggleClass('is-empty', cleared);
+      $('#side-menu .box.location .pngm-loc-current-name').text(cleared ? 'No location selected' : full);
+    }
+
+    function pngmTrimRecentLocations($root) {
+      var $items = $root.find('.row.recent a.location-elem, .pngm-loc-recent a.location-elem');
+      if ($items.length > 5) {
+        $items.slice(5).remove();
+      }
+      $root.find('.pngm-loc-view-all, .row.recent .view-all, a.view-all').remove();
+    }
+
+    function pngmIsMobileLoc() {
+      try {
+        if (window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+          return true;
+        }
+      } catch (err) {}
+      var w = $(window).width();
+      if (typeof scrollCompensate === 'function') {
+        w += scrollCompensate();
+      }
+      return w < 768;
+    }
+
+    function pngmForceModalVisible(isMobile) {
+      var $modal = $('.modal-box.location-select').last();
+      if (!$modal.length) {
+        return;
+      }
+      var mid = $modal.attr('data-modal-id');
+      var $cover = $('.modal-cover[data-modal-id="' + mid + '"]');
+
+      // Kill the floating alt-close SVG that shows as a "stranger" outside the dialog.
+      $modal.find('.modal-close-alt').remove();
+
+      $cover.css({
+        display: 'block',
+        opacity: 1,
+        zIndex: 10190
+      });
+
+      if (isMobile) {
+        $modal.addClass('modal-fullscreen pngm-loc-fullscreen');
+        // Clear desktop centering inline styles that beat the mobile CSS.
+        $modal.attr('style', '');
+        $modal.css({
+          display: 'block',
+          opacity: 1,
+          visibility: 'visible',
+          zIndex: 10200,
+          position: 'fixed',
+          width: '100%',
+          height: '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          transform: 'none',
+          borderRadius: '0',
+          margin: '0',
+          boxShadow: 'none'
+        });
+      } else {
+        $modal.removeClass('pngm-loc-fullscreen');
+        $modal.css({
+          display: 'block',
+          opacity: 1,
+          visibility: 'visible',
+          zIndex: 10200,
+          width: '520px',
+          height: '720px',
+          maxWidth: 'calc(100vw - 32px)',
+          maxHeight: 'calc(100vh - 48px)',
+          top: '50%',
+          left: '50%',
+          right: 'auto',
+          bottom: 'auto',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '16px'
+        });
+      }
+
+      pngmTrimRecentLocations($modal);
+    }
+
+    function pngmSetLocationAjax(hash, onDone) {
+      if (!window.baseAjaxUrl || !hash) {
+        if (onDone) {
+          onDone(false);
+        }
+        return;
+      }
+      $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: window.baseAjaxUrl + '&ajaxPngmSetLocation=1&hash=' + encodeURIComponent(hash),
+        success: function (data) {
+          if (data && data.success) {
+            pngmApplyLocationUi(data);
+            pngmCloseLocationModals();
+            pngmLocToast(data.message || 'Location updated');
+            if (onDone) {
+              onDone(true, data);
+            }
+            return;
+          }
+          pngmLocToast((data && data.message) || 'Could not update location', true);
+          if (onDone) {
+            onDone(false);
+          }
+        },
+        error: function () {
+          pngmLocToast('Could not update location', true);
+          if (onDone) {
+            onDone(false);
+          }
+        }
+      });
+    }
+
+    function pngmClearLocationAjax() {
+      if (!window.baseAjaxUrl) {
+        return;
+      }
+      $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: window.baseAjaxUrl + '&ajaxPngmClearLocation=1',
+        success: function (data) {
+          if (data && data.success) {
+            pngmApplyLocationUi(data);
+            pngmCloseLocationModals();
+            pngmLocToast(data.message || 'Location cleared');
+            return;
+          }
+          pngmLocToast((data && data.message) || 'Could not clear location', true);
+        },
+        error: function () {
+          pngmLocToast('Could not clear location', true);
+        }
+      });
+    }
+
+    function pngmOpenLocationModal(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
+      }
+      if (typeof epsModal !== 'function') {
+        return false;
+      }
+
+      $('#side-menu').removeClass('box-open').hide();
+      $('#menu-cover').hide();
+
+      var sectionHtml = $('#side-menu .box.location > .section').html() || '';
+      if (!sectionHtml) {
+        return false;
+      }
+      var isMobile = pngmIsMobileLoc();
+
+      pngmCloseLocationModals();
+
+      epsModal({
+        width: isMobile ? window.innerWidth : 520,
+        height: isMobile ? window.innerHeight : 720,
+        content: '<div id="def-location" class="def-loc-box pngm-loc">' + sectionHtml + '</div>',
+        wrapClass: 'location-select' + (isMobile ? ' pngm-loc-fullscreen' : ''),
+        closeBtn: true,
+        iframe: false,
+        fullscreen: isMobile ? true : false,
+        transition: 200,
+        delay: 0,
+        lockScroll: true
+      });
+
+      $('body').addClass('pngm-loc-modal-open');
+
+      window.setTimeout(function () {
+        pngmForceModalVisible(pngmIsMobileLoc());
+      }, 20);
+      window.setTimeout(function () {
+        pngmForceModalVisible(pngmIsMobileLoc());
+      }, 220);
+
+      return false;
+    }
+
+    function pngmBindLocationOpeners() {
+      $(locOpenSel).off('click');
+      $(document).off('click.pngmLocOpen', locOpenSel);
+      $(locOpenSel).on('click.pngmLocOpen', pngmOpenLocationModal);
+    }
+
+    pngmBindLocationOpeners();
+    window.setTimeout(pngmBindLocationOpeners, 0);
+    window.setTimeout(pngmBindLocationOpeners, 150);
+
+    $(document).on('click.pngmLoc', '.pngm-loc-change', function (e) {
+      e.preventDefault();
+      var $root = $(this).closest('#def-location, .box.location, .pngm-loc');
+      var $input = $root.find('input.location-pick').first();
+      if (!$input.length) {
+        $input = $('#def-location input.location-pick, #side-menu .box.location input.location-pick').first();
+      }
+      if ($input.length) {
+        $input.trigger('focus');
+        try {
+          $input[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {}
+      }
+    });
+
+    // Pick a city / recent / search result — AJAX, no full page reload.
+    $(document).on(
+      'click.pngmLocPick',
+      '#def-location a.location-elem, #side-menu .box.location a.location-elem, #def-location .picker.location .results a.option.direct, #side-menu .box.location .picker.location .results a.option.direct',
+      function (e) {
+        var href = $(this).attr('href') || '';
+        if (href.indexOf('manualCookieLocation') === -1) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        var hash = pngmHashFromHref(href);
+        if (!hash) {
+          return;
+        }
+        pngmSetLocationAjax(hash);
+      }
+    );
+
+    $(document).on('click.pngmLoc', '.pngm-loc-clear', function (e) {
+      e.preventDefault();
+      pngmClearLocationAjax();
+    });
+
+    $(document).on('click.pngmLoc', '.pngm-loc-apply', function (e) {
+      e.preventDefault();
+      pngmCloseLocationModals();
+    });
+
+    // Keep body class in sync when user taps X / cover.
+    $(document).on('click.pngmLocCloseSync', '.modal-box.location-select .modal-close, .modal-cover[data-modal-id]', function () {
+      window.setTimeout(function () {
+        if (!$('.modal-box.location-select:visible').length) {
+          $('body').removeClass('pngm-loc-modal-open');
+        }
+      }, 250);
+    });
+
+    // GPS already sets the cookie via ajaxFindCity — finish without reload.
+    $(document).on('click.pngmLocGps', '#def-location a.locate-me.completed, #side-menu .box.location a.locate-me.completed', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var text = $(this).find('span.success').text() || $(this).find('strong').text() || 'Location';
+      pngmApplyLocationUi({
+        label: text.replace(/^Located in\s+/i, '').split(',')[0],
+        s_location: text,
+        s_name: text
+      });
+      pngmCloseLocationModals();
+      pngmLocToast('Location updated');
+    });
+
+    // Convert leftover full-width flash banners into a top-right toast once.
+    $('#flashbox .flashmessage').each(function () {
+      var text = $.trim($(this).text().replace(/\s+/g, ' '));
+      if (/default location has been (saved|cleaned)/i.test(text)) {
+        $(this).addClass('pngm-loc-flash-hide').remove();
+        pngmLocToast(text.replace(/\s*×\s*$/, '') || 'Location updated');
+      }
+    });
+    if (!$('#flashbox .flashmessage').length) {
+      $('#flashbox').hide();
+    }
+
+    // Expose for GPS success hook.
+    window.pngmLocAfterGeoSuccess = function (data) {
+      if (!data) {
+        return;
+      }
+      pngmApplyLocationUi({
+        label: (data.s_city || data.s_name || '').split(',')[0] || 'Location',
+        s_name: data.s_name || data.s_city || '',
+        s_location: data.s_location || data.s_name || ''
+      });
+      pngmCloseLocationModals();
+      pngmLocToast('Location updated');
+    };
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -2650,6 +3032,7 @@
     initMobileSearchFilters();
     initChatLayout();
     initItemDescriptionClamp();
+    initLocationModalUx();
   }
 
   if (document.readyState === 'loading') {

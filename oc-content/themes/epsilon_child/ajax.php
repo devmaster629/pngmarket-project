@@ -575,18 +575,110 @@ if (@$_GET['ajaxPngmPopularCities'] == 1) {
         'd_coord_long' => @$c['d_coord_long'],
       ))));
 
-      $label = function_exists('pngm_main_city_label')
-        ? pngm_main_city_label($c)
-        : osc_esc_html(osc_location_native_name_selector($c, 's_name'))
-          . ($c['i_num_items'] > 0
-            ? ' <em>' . $c['i_num_items'] . ' ' . ($c['i_num_items'] == 1 ? __('item', 'epsilon') : __('items', 'epsilon')) . '</em>'
-            : '');
+      $cname = function_exists('pngm_city_only')
+        ? pngm_city_only($c)
+        : osc_location_native_name_selector($c, 's_name');
+      if (!empty($c['s_name_top'])) {
+        $cname .= ', ' . osc_location_native_name_selector($c, 's_name_top');
+      }
+      $ccount = isset($c['i_num_items']) ? (int) $c['i_num_items'] : 0;
 
-      $html .= '<a href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '" class="location-elem">' . $label . '</a>';
+      $html .= '<a href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '" class="location-elem pngm-loc-item">';
+      $html .= '<i class="fas fa-map-marker-alt" aria-hidden="true"></i>';
+      $html .= '<span class="pngm-loc-item-name">' . osc_esc_html($cname) . '</span>';
+      if ($ccount > 0) {
+        $html .= '<em class="pngm-loc-item-count">' . number_format($ccount) . ' '
+          . ($ccount === 1 ? __('listing', 'epsilon') : __('listings', 'epsilon'))
+          . '</em>';
+      }
+      $html .= '</a>';
     }
   }
 
   echo $html;
+  exit;
+}
+
+
+// AJAX: set default location cookie (no page redirect / flash banner).
+if (@$_GET['ajaxPngmSetLocation'] == 1) {
+  header('Content-Type: application/json; charset=utf-8');
+
+  $raw = Params::getParam('hash');
+  $data = json_decode(base64_decode(rawurldecode($raw)), true);
+
+  if (!is_array($data)) {
+    echo json_encode(array(
+      'success' => false,
+      'message' => __('Invalid location', 'epsilon'),
+    ));
+    exit;
+  }
+
+  $name = isset($data['s_name']) ? (string) $data['s_name'] : '';
+  $name_top = isset($data['s_name_top']) ? (string) $data['s_name_top'] : '';
+  $label_parts = array_filter(array(
+    osc_location_native_name_selector($data, 's_name'),
+    osc_location_native_name_selector($data, 's_name_top'),
+  ));
+  $loc = implode(', ', $label_parts);
+  if ($loc === '') {
+    $loc = trim($name . ($name_top !== '' ? ', ' . $name_top : ''));
+  }
+  if ($loc === '') {
+    echo json_encode(array(
+      'success' => false,
+      'message' => __('Invalid location', 'epsilon'),
+    ));
+    exit;
+  }
+
+  $short = osc_location_native_name_selector($data, 's_name');
+  if ($short === '' || $short === null) {
+    $short = $name !== '' ? $name : $loc;
+  }
+
+  $location = json_encode(array(
+    'success' => true,
+    'message' => 'MANUAL',
+    's_location' => sprintf(__('Located in %s', 'epsilon'), $loc),
+    's_name' => $name . ($name_top !== '' ? ', ' . $name_top : ''),
+    's_name_native' => @$data['s_name_native'] . (@$data['s_name_top_native'] != '' ? ', ' . $data['s_name_top_native'] : ''),
+    's_region' => @$data['s_region'],
+    's_city' => @$data['s_city'],
+    'fk_i_city_id' => @$data['fk_i_city_id'],
+    'fk_i_region_id' => @$data['fk_i_region_id'],
+    'fk_c_country_code' => @$data['fk_c_country_code'],
+    's_slug' => @$data['s_slug'],
+    'd_coord_lat' => @$data['d_coord_lat'],
+    'd_coord_long' => @$data['d_coord_long'],
+    'dt_date' => date('Y-m-d H:i:s'),
+  ));
+
+  eps_location_to_cookies($location);
+
+  echo json_encode(array(
+    'success' => true,
+    'label' => $short,
+    's_name' => $name . ($name_top !== '' ? ', ' . $name_top : ''),
+    's_location' => sprintf(__('Located in %s', 'epsilon'), $loc),
+    'message' => __('Location updated', 'epsilon'),
+  ));
+  exit;
+}
+
+
+// AJAX: clear default location cookie (no page redirect / flash banner).
+if (@$_GET['ajaxPngmClearLocation'] == 1) {
+  header('Content-Type: application/json; charset=utf-8');
+  eps_location_to_cookies('');
+  echo json_encode(array(
+    'success' => true,
+    'cleared' => true,
+    'label' => __('Location', 'epsilon'),
+    's_location' => '',
+    'message' => __('Location cleared', 'epsilon'),
+  ));
   exit;
 }
 

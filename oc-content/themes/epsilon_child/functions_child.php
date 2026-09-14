@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.3.1');
+    define('PNGM_CHILD_VERSION', '2.3.8');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -162,6 +162,11 @@ function pngm_enqueue_assets()
         || (function_exists('osc_is_contact_page') && osc_is_contact_page());
     if ($is_contact) {
         osc_enqueue_style('pngm-contact', osc_current_web_theme_url('css/contact.css' . $version));
+    }
+
+    // Location chooser modal (header / navi) — always available when feature is on.
+    if (function_exists('eps_param') && (int) eps_param('default_location') === 1) {
+        osc_enqueue_style('pngm-location-modal', osc_current_web_theme_url('css/location-modal.css' . $version));
     }
 
     $is_ua = false;

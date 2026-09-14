@@ -1,0 +1,792 @@
+/**
+ * PNGMarket — Choose location modal (desktop dialog + mobile full page).
+ */
+
+/* —— Desktop modal shell —— */
+#epsModal.location-select,
+.modal-box.location-select {
+  width: 520px !important;
+  height: 720px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 48px) !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 50px rgba(16, 24, 40, 0.22) !important;
+  z-index: 10200 !important;
+  background: #fff !important;
+}
+
+.modal-cover[data-modal-id] {
+  z-index: 10190 !important;
+}
+
+/* Full-page mode (class set by JS — works even if window width ≠ CSS viewport) */
+.modal-box.location-select.pngm-loc-fullscreen,
+#epsModal.location-select.pngm-loc-fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  max-height: 100dvh !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  transform: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.modal-box.location-select.pngm-loc-fullscreen .pngm-loc-actions,
+#epsModal.location-select.pngm-loc-fullscreen .pngm-loc-actions {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  top: auto !important;
+}
+
+#epsModal.location-select .modal-inside,
+.modal-box.location-select .modal-inside {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#epsModal.location-select .modal-body,
+.modal-box.location-select .modal-body {
+  position: relative !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#epsModal.location-select .modal-content,
+.modal-box.location-select .modal-content {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#def-location.def-loc-box,
+#side-menu .box.location .section.pngm-loc {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 24px 22px 0 !important;
+  box-sizing: border-box;
+  min-height: 100%;
+  height: 100%;
+  max-height: 100%;
+}
+
+#def-location .pngm-loc-sheet-handle,
+#side-menu .box.location .pngm-loc-sheet-handle {
+  display: none;
+}
+
+.pngm-loc-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+#epsModal.location-select .modal-close,
+.modal-box.location-select .modal-close {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  top: 14px !important;
+  right: 14px !important;
+  color: #6b7280 !important;
+  background: #f3f4f6 !important;
+  z-index: 5;
+}
+
+#epsModal.location-select .modal-close-alt,
+.modal-box.location-select .modal-close-alt {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* Reset parent location row chrome */
+#def-location .row,
+#side-menu .box.location .row {
+  border-bottom: 0 !important;
+  padding: 0 !important;
+  margin: 0 0 14px !important;
+}
+
+#def-location .row.buttons,
+#side-menu .box.location .row.buttons {
+  margin-bottom: 0 !important;
+}
+
+#def-location a,
+#side-menu .box.location .section a {
+  background: transparent !important;
+}
+
+#def-location a svg,
+#side-menu .box.location .section a svg {
+  background: transparent !important;
+}
+
+/* Head */
+.pngm-loc-head {
+  padding-right: 36px;
+  margin-bottom: 16px;
+}
+
+#def-location .pngm-loc-head .head,
+#side-menu .box.location .pngm-loc-head .head,
+#def-location .head,
+#side-menu .box.location .section .head {
+  display: block !important;
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #111827;
+}
+
+#def-location .pngm-loc-head .subhead,
+#side-menu .box.location .pngm-loc-head .subhead,
+#def-location .subhead,
+#side-menu .box.location .section .subhead {
+  display: block !important;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Current location card */
+.pngm-loc-current-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #eef8f1;
+  border: 1.5px solid #86c99a;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.pngm-loc-current.is-empty .pngm-loc-current-card {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.pngm-loc-current-ico {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+  font-size: 16px;
+}
+
+.pngm-loc-current-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pngm-loc-current-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #15803d;
+  margin: 0 0 2px;
+}
+
+.pngm-loc-current.is-empty .pngm-loc-current-text strong {
+  color: #6b7280;
+}
+
+.pngm-loc-current-name {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.pngm-loc-change {
+  flex: 0 0 auto;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  color: #15803d !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+a.pngm-loc-change:hover {
+  text-decoration: underline !important;
+}
+
+/* Search */
+#def-location .pngm-loc-picker .input-box,
+#side-menu .box.location .pngm-loc-picker .input-box {
+  position: relative;
+  margin: 0;
+}
+
+#def-location .pngm-loc-picker input.location-pick,
+#side-menu .box.location .pngm-loc-picker input.location-pick {
+  width: 100%;
+  height: 46px;
+  padding: 10px 40px 10px 44px !important;
+  border: 1.5px solid #d1d5db !important;
+  border-radius: 10px !important;
+  border-width: 1.5px !important;
+  font-size: 14.5px;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+#def-location .pngm-loc-picker input.location-pick:focus,
+#side-menu .box.location .pngm-loc-picker input.location-pick:focus {
+  border-color: #15803d !important;
+  outline: none;
+  text-decoration: none !important;
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.12);
+}
+
+#def-location .pngm-loc-picker .input-box > svg,
+#side-menu .box.location .pngm-loc-picker .input-box > svg {
+  left: 14px !important;
+  width: 18px !important;
+  height: 18px !important;
+  fill: #9ca3af !important;
+  top: calc(50% - 9px) !important;
+}
+
+/* GPS card */
+#def-location .pngm-loc-gps a.locate-me,
+#side-menu .box.location .pngm-loc-gps a.locate-me,
+.navigator a.locate-me {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px !important;
+  margin: 0 !important;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff !important;
+  color: #15803d !important;
+  box-sizing: border-box;
+  text-decoration: none !important;
+}
+
+#def-location .pngm-loc-gps a.locate-me:hover,
+#side-menu .box.location .pngm-loc-gps a.locate-me:hover {
+  border-color: #86c99a;
+  background: #f7fbf8 !important;
+}
+
+#def-location .pngm-loc-gps a.locate-me svg,
+#side-menu .box.location .pngm-loc-gps a.locate-me svg {
+  display: none !important;
+}
+
+.pngm-loc-gps-ico {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+  font-size: 18px;
+}
+
+.pngm-loc-gps-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#def-location .pngm-loc-gps strong,
+#side-menu .box.location .pngm-loc-gps strong,
+.navigator strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #15803d;
+  margin: 0 0 2px;
+}
+
+#def-location .pngm-loc-gps .status > span,
+#side-menu .box.location .pngm-loc-gps .status > span,
+.navigator .status > span {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.35;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Section heads */
+.pngm-loc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+#def-location .lead,
+#side-menu .box.location .lead,
+.pngm-loc .lead {
+  text-transform: none !important;
+  color: #111827 !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+  padding: 4px 0 8px !important;
+  margin: 0 !important;
+}
+
+.pngm-loc-section-head .lead {
+  padding: 0 !important;
+}
+
+/* List items — kill parent :after / left padding that causes overlap */
+#def-location a.pngm-loc-item,
+#side-menu .box.location a.pngm-loc-item,
+#def-location .recent a.location-elem,
+#def-location .popular a.location-elem,
+#side-menu .box.location .section .recent a.location-elem,
+#side-menu .box.location .section .popular a.location-elem,
+#side-menu .box.location .recent a.location-elem,
+#side-menu .box.location .popular a.location-elem,
+#def-location .recent a,
+#def-location .popular a,
+#side-menu .box.location .section .recent a,
+#side-menu .box.location .section .popular a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 8px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #f0f2f4;
+  color: #111827 !important;
+  font-weight: 500 !important;
+  font-size: 14.5px;
+  line-height: 1.35;
+  text-decoration: none !important;
+  box-sizing: border-box;
+  position: relative !important;
+}
+
+#def-location a.pngm-loc-item:last-child,
+#side-menu .box.location a.pngm-loc-item:last-child,
+#def-location .popular a:last-child,
+#def-location .recent a:last-child,
+#side-menu .box.location .popular a:last-child,
+#side-menu .box.location .recent a:last-child {
+  border-bottom: 0;
+}
+
+#def-location a.pngm-loc-item:hover,
+#side-menu .box.location a.pngm-loc-item:hover,
+#def-location .popular a:hover,
+#def-location .recent a:hover {
+  background: #f7fbf8 !important;
+}
+
+#def-location a.pngm-loc-item:before,
+#def-location a.pngm-loc-item:after,
+#side-menu .box.location a.pngm-loc-item:before,
+#side-menu .box.location a.pngm-loc-item:after,
+#def-location .recent a:before,
+#def-location .recent a:after,
+#def-location .popular a:before,
+#def-location .popular a:after,
+#side-menu .box.location .section .recent a:before,
+#side-menu .box.location .section .recent a:after,
+#side-menu .box.location .section .popular a:before,
+#side-menu .box.location .section .popular a:after,
+#side-menu .box.location .recent a:before,
+#side-menu .box.location .recent a:after,
+#side-menu .box.location .popular a:before,
+#side-menu .box.location .popular a:after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  font-size: 0 !important;
+}
+
+#def-location a.pngm-loc-item > i.far,
+#def-location a.pngm-loc-item > i.fas:not(.pngm-loc-item-chevron),
+#side-menu .box.location a.pngm-loc-item > i.far,
+#side-menu .box.location a.pngm-loc-item > i.fas:not(.pngm-loc-item-chevron),
+#def-location .recent a > i.far,
+#def-location .popular a > i.fas:not(.pngm-loc-item-chevron),
+#side-menu .box.location .recent a > i.far,
+#side-menu .box.location .popular a > i.fas:not(.pngm-loc-item-chevron) {
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  text-align: center;
+  color: #9ca3af !important;
+  font-size: 14px !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.pngm-loc-item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #111827;
+  padding-left: 0 !important;
+}
+
+.pngm-loc-item-count,
+#def-location a.pngm-loc-item em,
+#side-menu .box.location a.pngm-loc-item em {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto !important;
+  font-size: 12.5px !important;
+  color: #9ca3af !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  white-space: nowrap;
+}
+
+.pngm-loc-item-chevron {
+  flex: 0 0 12px;
+  color: #c4c9d0;
+  font-size: 12px;
+  position: static !important;
+}
+
+/* Actions — pinned to bottom of modal */
+.pngm-loc-actions,
+#def-location .row.buttons.pngm-loc-actions,
+#side-menu .box.location .row.buttons.pngm-loc-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto !important;
+  position: relative;
+  z-index: 3;
+  margin: 0 !important;
+  padding: 14px 0 18px !important;
+  border-top: 1px solid #eef0f2 !important;
+  background: #fff !important;
+  box-shadow: 0 -8px 18px rgba(16, 24, 40, 0.04);
+}
+
+a.pngm-loc-clear {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  color: #dc2626 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
+a.pngm-loc-clear:hover {
+  text-decoration: underline !important;
+}
+
+button.pngm-loc-apply,
+.btn.pngm-loc-apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: #15803d !important;
+  color: #fff !important;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+button.pngm-loc-apply:hover,
+.btn.pngm-loc-apply:hover {
+  background: #166534 !important;
+  color: #fff !important;
+}
+
+#def-location .picker.location .results,
+#side-menu .box.location .picker.location .results {
+  border-radius: 10px;
+  border-color: #e5e7eb;
+  box-shadow: 0 10px 28px rgba(16, 24, 40, 0.12);
+}
+
+/* Top-right location toast (replaces full-width flash banner) */
+.pngm-loc-toast-host {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 10350;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(360px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.pngm-loc-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #c8e6ce;
+  border-left: 4px solid #15803d;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.16);
+  color: #14532d;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  animation: pngmLocToastIn 0.22s ease;
+}
+
+.pngm-loc-toast.is-error {
+  border-color: #fecaca;
+  border-left-color: #dc2626;
+  color: #7f1d1d;
+}
+
+.pngm-loc-toast-msg {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pngm-loc-toast-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.pngm-loc-toast-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+@keyframes pngmLocToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hide the old full-width location flash banners */
+#flashbox .flashmessage.pngm-loc-flash-hide {
+  display: none !important;
+}
+
+/* —— Mobile: full-page modal —— */
+@media screen and (max-width: 767px) {
+  body.pngm-loc-modal-open {
+    overflow: hidden !important;
+  }
+
+  body.pngm-loc-modal-open #navi-bar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  #epsModal.location-select,
+  #epsModal.location-select.modal-fullscreen,
+  .modal-box.location-select,
+  .modal-box.location-select.modal-fullscreen,
+  .modal-box.location-select.pngm-loc-fullscreen {
+    width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    max-height: 100dvh !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    transform: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    z-index: 10200 !important;
+    box-shadow: none !important;
+  }
+
+  #epsModal.location-select .pngm-loc-head .head {
+    font-size: 20px;
+  }
+
+  .modal-cover[data-modal-id] {
+    z-index: 10190 !important;
+  }
+
+  #epsModal.location-select .modal-inside,
+  .modal-box.location-select .modal-inside,
+  #epsModal.location-select .modal-body,
+  .modal-box.location-select .modal-body,
+  #epsModal.location-select .modal-content,
+  .modal-box.location-select .modal-content {
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+
+  #def-location.def-loc-box,
+  #side-menu .box.location .section.pngm-loc {
+    padding: 16px 16px 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+
+  /* Dock Clear / Apply to the bottom of the modal (not the viewport) */
+  #def-location .pngm-loc-actions,
+  #def-location .row.buttons.pngm-loc-actions,
+  #side-menu .box.location .pngm-loc-actions,
+  #side-menu .box.location .row.buttons.pngm-loc-actions,
+  .modal-box.location-select.pngm-loc-fullscreen .pngm-loc-actions,
+  .pngm-loc-actions {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    top: auto !important;
+    z-index: 3 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 -16px 0 !important;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid #e5e7eb !important;
+    background: #fff !important;
+    box-shadow: 0 -8px 20px rgba(16, 24, 40, 0.06) !important;
+    box-sizing: border-box !important;
+  }
+
+  #def-location .pngm-loc-body,
+  #side-menu .box.location .pngm-loc-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px !important;
+  }
+
+  a.pngm-loc-clear {
+    flex: 0 0 auto !important;
+    padding: 10px 4px !important;
+    white-space: nowrap;
+  }
+
+  button.pngm-loc-apply,
+  .btn.pngm-loc-apply {
+    /* Do not use flex:1 here — it pulls the button out of the modal footer on mobile. */
+    min-width: 150px !important;
+    width: auto !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+  }
+
+  .pngm-loc-toast-host {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+
+  /* Prefer full-page epsModal; keep side drawer full-bleed if it still opens. */
+  #side-menu.box-open {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #side-menu .box.location {
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  #side-menu .box.location > .nav {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef0f2;
+  }
+
+  #side-menu .box.location .pngm-loc-sheet-handle {
+    display: none;
+  }
+}
