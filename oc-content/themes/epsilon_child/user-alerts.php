@@ -203,10 +203,10 @@
   ?>
 
   <div class="container primary pngm-ua-shell">
-    <?php pngm_ua_render_sidebar('subscriptions'); ?>
+    <?php pngm_ua_render_sidebar('alerts'); ?>
 
     <div id="user-main" class="pngm-ua-main pngm-ua-panel">
-      <h1><?php _e('Subscriptions', 'epsilon'); ?></h1>
+      <h1><?php _e('Saved searches', 'epsilon'); ?></h1>
       <h2><?php _e('Receive email notification when new item, that match your search criteria, is published.', 'epsilon'); ?></h2>
       
       <div class="alerts-box">

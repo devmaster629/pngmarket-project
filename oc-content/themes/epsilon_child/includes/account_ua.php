@@ -32,6 +32,9 @@ function pngm_ua_active_key()
         return 'listings';
     }
     if ($loc === 'user' && $sec === 'alerts') {
+        return 'alerts';
+    }
+    if ($route === 'pngm-subscriptions' || $sec === 'pngm-sub') {
         return 'subscriptions';
     }
     if ($loc === 'user' && $sec === 'profile') {
@@ -434,8 +437,6 @@ function pngm_ua_render_sidebar($active = '')
     $count_expired = function_exists('eps_count_user_items') ? eps_count_user_items($user_id, 'expired') : 0;
     $count_listings = $count_active + $count_pending + $count_expired;
     $count_messages = function_exists('eps_count_messages') ? eps_count_messages($user_id) : 0;
-    $alerts = Alerts::newInstance()->findByUser($user_id);
-    $count_alerts = is_array($alerts) ? count($alerts) : 0;
 
     $has_business = function_exists('bpr_call_after_install');
     $user = User::newInstance()->findByPrimaryKey($user_id);
@@ -468,7 +469,7 @@ function pngm_ua_render_sidebar($active = '')
     if (function_exists('im_messages')) {
         $item('messages', osc_route_url('im-threads'), __('Messages', 'epsilon'), 'fas fa-comment-dots', $count_messages);
     }
-    $item('subscriptions', osc_user_alerts_url(), __('Subscriptions', 'epsilon'), 'fas fa-bell', $count_alerts);
+    $item('subscriptions', function_exists('pngm_sub_url') ? pngm_sub_url() : osc_route_url('pngm-subscriptions'), __('Subscriptions', 'epsilon'), 'fas fa-credit-card');
     echo '</div>';
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Profile', 'epsilon')) . '</div>';
