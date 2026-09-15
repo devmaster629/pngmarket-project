@@ -124,9 +124,14 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
                 <?php // Contact details are allowed on this marketplace — no "unsafe" warning. ?>
                 <div class="pngm-im-bubble-text"><?php echo $m['s_message']; ?></div>
                 <?php if ($m['s_file'] <> '' && $att_enable == 1) { ?>
-                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank">
-                    <?php echo im_get_extension_icon($m['s_file']); ?>
-                    <?php _e('Attachment', 'instant_messenger'); ?>
+                  <?php
+                    $att_label = function_exists('pngm_im_file_label')
+                      ? pngm_im_file_label((int) $m['pk_i_id'], $m['s_file'])
+                      : basename((string) $m['s_file']);
+                  ?>
+                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($att_label); ?>">
+                    <i class="fas fa-paperclip" aria-hidden="true"></i>
+                    <span class="pngm-im-attach-name"><?php echo osc_esc_html($att_label); ?></span>
                   </a>
                 <?php } ?>
                 <div class="pngm-im-bubble-meta">
@@ -173,6 +178,7 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
           </button>
           <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
           <div class="im-file-list" id="im-file-list" hidden></div>
+          <div class="im-send-hint pngm-im-send-hint"><?php _e('Enter to send · Ctrl+Enter for a new line', 'epsilon'); ?></div>
         </form>
       <?php } ?>
     </section>

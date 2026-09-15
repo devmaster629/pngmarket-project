@@ -3889,15 +3889,45 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 }
 
 .pngm-im-convo-av {
+  position: relative;
   flex: 0 0 48px;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
   background: #e8f5e9;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.pngm-im-convo-av img,
+.pngm-im-convo-av .pngm-im-convo-initials {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.pngm-im-convo-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #006b24;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+  z-index: 1;
+}
+
+.pngm-ua-nav-count[hidden],
+.pngm-ua-nav-count[data-pngm-badge][hidden] {
+  display: none !important;
 }
 
 .pngm-im-convo-av img {
@@ -4221,6 +4251,7 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 
 .pngm-im-composer {
   display: flex !important;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
   float: none !important;
@@ -4246,13 +4277,61 @@ body.pngm-ua-messages #im-message-form .im-send-hint {
   display: block !important;
   float: none !important;
   clear: both;
-  width: 100%;
-  margin: 6px 0 0 0 !important;
-  padding: 0 !important;
+  flex: 0 0 100%;
+  order: 20;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 4px 0 0 0 !important;
+  padding: 0 2px !important;
   font-size: 12px;
-  line-height: 16px;
-  color: #8a94a0;
+  line-height: 1.35;
+  color: #6b7785;
   position: static !important;
+  white-space: normal;
+  overflow: visible;
+  height: auto !important;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.pngm-im-attach {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin: 6px 0 2px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  word-break: break-word;
+}
+
+.pngm-im-attach .pngm-im-attach-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.pngm-im-bubble-row.is-mine .pngm-im-attach,
+.im-table-row.im-from .pngm-im-attach,
+.im-table-row.im-from a.im-download {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.pngm-im-bubble-row.is-theirs .pngm-im-attach,
+.im-table-row.im-to .pngm-im-attach,
+.im-table-row.im-to a.im-download {
+  color: #16202a !important;
+  background: #eef2f5 !important;
+}
+
+.pngm-im-convo-badge {
+  display: none !important;
 }
 
 /* Scroll-to-top floats over the composer and looks like a chat control. */

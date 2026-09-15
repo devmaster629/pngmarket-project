@@ -187,8 +187,10 @@ $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']
 $pngm_im_split = false;
 $pngm_im_rows = array();
 $pngm_im_ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
-if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)) {
+if (file_exists($pngm_im_ui)) {
   require_once $pngm_im_ui;
+}
+if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im_prepare_conversations')) {
   $pngm_im_rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 50, 0);
   $pngm_im_split = true;
 }
@@ -347,10 +349,17 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)
           <div class="im-line im-message-extra <?php if($m['s_file'] <> '' && $att_enable == 1) { ?>im-box-gray<?php } else { ?>im-box-empty<?php } ?>">
             <div class="im-col-10" class="im-align-left">
               <?php if($m['s_file'] <> '' && $att_enable == 1) { ?>
-                <a class="im-download" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank">
-                  <?php echo im_get_extension_icon($m['s_file']); ?>
-                  <i class="fa fa-download" style="display:none;"></i>
-                  <?php _e('Attachment', 'instant_messenger'); ?>
+                <?php
+                  $pngm_att_label = (function_exists('pngm_im_file_label')
+                    ? pngm_im_file_label((int) $m['pk_i_id'], $m['s_file'])
+                    : basename((string) $m['s_file']));
+                  if ($pngm_att_label === '') {
+                    $pngm_att_label = __('Attachment', 'instant_messenger');
+                  }
+                ?>
+                <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($pngm_att_label); ?>">
+                  <i class="fa fa-paperclip" aria-hidden="true"></i>
+                  <span class="pngm-im-attach-name"><?php echo osc_esc_html($pngm_att_label); ?></span>
                 </a>
               <?php } ?>
             </div>
@@ -392,7 +401,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)
     <div class="im-empty flashmessage flashmessage-warning"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
 
   <?php } else if($target_is_null === false && $blocked_by_you != 0 && $blocked_you != 0) { ?>
-    <form id="im-message-form" class="im-row im-body im-form-validate" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
+    <form id="im-message-form" class="im-row im-body im-form-validate pngm-im-composer" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
       <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
       <img class="im-logged-user-img im-tooltip" src="<?php echo $logged_user_img; ?>" title="<?php echo osc_esc_html(sprintf(__('You are logged in as %s', 'instant_messenger'), $logged_user_name)); ?>" alt="<?php echo osc_esc_html($logged_user_name); ?>"/>
@@ -412,7 +421,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && file_exists($pngm_im_ui)
         </div>
       <?php } ?>
       <div class="im-file-list" id="im-file-list" hidden></div>
-      <div class="im-send-hint"><?php _e('Ctrl+Enter to send', 'instant_messenger'); ?></div>
+      <div class="im-send-hint pngm-im-send-hint"><?php _e('Enter to send · Ctrl+Enter for a new line', 'epsilon'); ?></div>
     </form>
   <?php } ?>
 </div>

@@ -3933,7 +3933,7 @@
       ? window.baseAjaxUrl
       : (window.location.origin + window.location.pathname + '?ajaxRequest=1');
     var url = base.replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_badge_counts');
-    var INTERVAL = 30000;
+    var INTERVAL = document.querySelector('.pngm-im-convo-list') ? 12000 : 30000;
     var timer = null;
 
     function paint(counts) {
@@ -3953,6 +3953,49 @@
           this.setAttribute('hidden', 'hidden');
         }
       });
+
+      // Conversation-list unread dots (Messages page).
+      if (counts.threads && typeof counts.threads === 'object') {
+        var activeHref = '';
+        var activeCard = document.querySelector('.pngm-im-convo.is-active');
+        if (activeCard) {
+          activeHref = activeCard.getAttribute('href') || '';
+        }
+        document.querySelectorAll('.pngm-im-convo[data-thread-id]').forEach(function (card) {
+          var tid = String(card.getAttribute('data-thread-id') || '');
+          var n = parseInt(counts.threads[tid], 10) || 0;
+          var isActive = card.classList.contains('is-active')
+            || (activeHref !== '' && card.getAttribute('href') === activeHref);
+          if (isActive) {
+            n = 0;
+          }
+          card.setAttribute('data-unread', String(n));
+          card.classList.toggle('is-unread', n > 0);
+
+          var label = n > 99 ? '99+' : String(n);
+          var bottom = card.querySelector('.pngm-im-convo-bottom');
+          var dot = card.querySelector('.pngm-im-unread-dot');
+          // Remove legacy avatar badges — unread count stays on the time side only.
+          var badge = card.querySelector('.pngm-im-convo-badge');
+          if (badge && badge.parentNode) {
+            badge.parentNode.removeChild(badge);
+          }
+
+          if (n > 0) {
+            if (!dot && bottom) {
+              dot = document.createElement('span');
+              dot.className = 'pngm-im-unread-dot';
+              dot.setAttribute('aria-label', 'Unread');
+              bottom.appendChild(dot);
+            }
+            if (dot) {
+              dot.textContent = label;
+            }
+          } else if (dot && dot.parentNode) {
+            dot.parentNode.removeChild(dot);
+          }
+        });
+      }
     }
 
     function poll() {
@@ -3985,6 +4028,8 @@
       }
     });
 
+    // Immediate sync so sidebar/list match the navbar on first paint.
+    poll();
     start();
   }
 

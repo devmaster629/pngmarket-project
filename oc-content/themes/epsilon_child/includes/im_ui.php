@@ -32,6 +32,126 @@ function pngm_im_is_mobile_request()
 }
 
 /**
+ * Remember the original upload name for a stored IM attachment.
+ *
+ * @param int    $message_id
+ * @param string $original_name
+ */
+function pngm_im_set_file_label($message_id, $original_name)
+{
+    $message_id = (int) $message_id;
+    $original_name = basename(trim(strip_tags((string) $original_name)));
+    if ($message_id <= 0 || $original_name === '') {
+        return;
+    }
+    osc_set_preference('file_' . $message_id, $original_name, 'pngm_im_files', 'STRING');
+    if (class_exists('Preference')) {
+        Preference::newInstance()->set('file_' . $message_id, $original_name, 'pngm_im_files');
+    }
+}
+
+/**
+ * Human label for an IM attachment (original name when known).
+ *
+ * @param int    $message_id
+ * @param string $stored_file
+ * @return string
+ */
+function pngm_im_file_label($message_id, $stored_file)
+{
+    $message_id = (int) $message_id;
+    $stored_file = basename((string) $stored_file);
+    if ($message_id > 0) {
+        $saved = osc_get_preference('file_' . $message_id, 'pngm_im_files');
+        if (is_string($saved) && trim($saved) !== '') {
+            return trim($saved);
+        }
+    }
+    if ($stored_file !== '') {
+        return $stored_file;
+    }
+    return __('Attachment', 'epsilon');
+}
+
+/**
+ * Unread inbound message count for one thread.
+ *
+ * @param int $thread_id
+ * @param int $user_id
+ * @return int
+ */
+function pngm_im_thread_unread_count($thread_id, $user_id)
+{
+    $thread_id = (int) $thread_id;
+    $user_id = (int) $user_id;
+    if ($thread_id <= 0 || $user_id <= 0 || !class_exists('ModelIM')) {
+        return 0;
+    }
+
+    $model = ModelIM::newInstance();
+    $thread = $model->getThreadById($thread_id);
+    if (!is_array($thread)) {
+        return 0;
+    }
+
+    // i_type 0 = from initiator; i_type 1 = from recipient.
+    if ((int) $thread['i_from_user_id'] === $user_id) {
+        $type = 1;
+    } elseif ((int) $thread['i_to_user_id'] === $user_id) {
+        $type = 0;
+    } else {
+        return 0;
+    }
+
+    $dao = $model->dao;
+    $dao->select('COUNT(pk_i_id) AS i_count');
+    $dao->from($model->getTable_messages());
+    $dao->where('fk_i_thread_id', $thread_id);
+    $dao->where('i_type', $type);
+    $dao->where('i_read', 0);
+    $result = $dao->get();
+    if (!$result) {
+        return 0;
+    }
+    $row = $result->row();
+    return isset($row['i_count']) ? (int) $row['i_count'] : 0;
+}
+
+/**
+ * Map of thread_id => unread count for the logged-in user (capped).
+ *
+ * @param int $user_id
+ * @param int $limit
+ * @return array
+ */
+function pngm_im_unread_thread_map($user_id, $limit = 50)
+{
+    $user_id = (int) $user_id;
+    $map = array();
+    if ($user_id <= 0 || !class_exists('ModelIM')) {
+        return $map;
+    }
+
+    $threads = ModelIM::newInstance()->getThreadsByUserId($user_id, (int) $limit, 0);
+    if (!is_array($threads)) {
+        return $map;
+    }
+
+    foreach ($threads as $t) {
+        if (!is_array($t) || empty($t['i_thread_id'])) {
+            continue;
+        }
+        $tid = (int) $t['i_thread_id'];
+        $n = pngm_im_thread_unread_count($tid, $user_id);
+        if ($n > 0) {
+            $map[(string) $tid] = $n;
+        }
+    }
+
+    return $map;
+}
+
+/**
  * Build conversation rows for the logged-in user.
  *
  * @param int $user_id
@@ -69,9 +189,8 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             $peer_name = __('User', 'epsilon');
         }
 
-        $is_read_row = ModelIM::newInstance()->getThreadIsRead($thread_id, $user_id);
-        $is_read = (is_array($is_read_row) && isset($is_read_row['i_read'])) ? (int) $is_read_row['i_read'] : 1;
-        $unread = ($is_read === 0);
+        $unread_n = pngm_im_thread_unread_count($thread_id, $user_id);
+        $unread = ($unread_n > 0);
 
         $last = ModelIM::newInstance()->getLastMessageByThreadId($thread_id);
         $snippet = '';
@@ -108,6 +227,7 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             'snippet' => $snippet !== '' ? $snippet : __('No messages yet', 'epsilon'),
             'time' => $time_label,
             'unread' => $unread,
+            'unread_count' => $unread_n,
             'url' => $url,
             'search_hay' => $hay,
             'flagged' => ((int) @$t['i_flag'] === 1),
@@ -210,6 +330,7 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
           <a class="pngm-im-convo<?php echo $row['unread'] ? ' is-unread' : ''; ?><?php echo $is_active ? ' is-active' : ''; ?>"
              href="<?php echo osc_esc_html($row['url']); ?>"
              data-thread-id="<?php echo (int) $row['thread_id']; ?>"
+             data-unread="<?php echo (int) (!empty($row['unread_count']) ? $row['unread_count'] : ($row['unread'] ? 1 : 0)); ?>"
              data-search="<?php echo osc_esc_html($row['search_hay']); ?>">
             <span class="pngm-im-convo-av">
               <?php if ($row['avatar'] !== '') { ?>
@@ -227,8 +348,11 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
               </span>
               <span class="pngm-im-convo-bottom">
                 <em><?php echo osc_esc_html($row['snippet']); ?></em>
-                <?php if ($row['unread']) { ?>
-                  <span class="pngm-im-unread-dot" aria-label="<?php echo osc_esc_html(__('Unread', 'epsilon')); ?>">1</span>
+                <?php
+                  $unread_n = !empty($row['unread_count']) ? (int) $row['unread_count'] : ($row['unread'] ? 1 : 0);
+                  if ($unread_n > 0 && !$is_active) {
+                ?>
+                  <span class="pngm-im-unread-dot" aria-label="<?php echo osc_esc_html(__('Unread', 'epsilon')); ?>"><?php echo $unread_n > 99 ? '99+' : (int) $unread_n; ?></span>
                 <?php } ?>
               </span>
             </span>
@@ -729,12 +853,35 @@ function pngm_im_ui_script()
         $hint.text(hintText).show();
       }
 
+      function enhanceAttachmentLinks($root) {
+        var $scope = ($root && $root.jquery) ? $root : $(document);
+        $scope.find('a.im-download').each(function () {
+          var $a = $(this);
+          $a.addClass('pngm-im-attach');
+          if (!$a.find('.pngm-im-attach-name').length) {
+            var label = $.trim($a.text());
+            if (!label || /^attachment$/i.test(label)) {
+              var href = $a.attr('href') || '';
+              var parts = href.split('/');
+              label = decodeURIComponent(parts[parts.length - 1] || '') || label || 'Attachment';
+            }
+            $a.contents().filter(function () { return this.nodeType === 3; }).remove();
+            if (!$a.find('i.fa-paperclip, i.fas.fa-paperclip').length) {
+              $a.prepend('<i class="fas fa-paperclip" aria-hidden="true"></i> ');
+            }
+            $a.find('img.im-att-icon').remove();
+            $a.append($('<span class="pngm-im-attach-name"></span>').text(label));
+          }
+        });
+      }
+
       function wireComposer($form) {
         if (!$form.length) {
           return;
         }
         relaxMessageRules($form);
         ensureSendHint($form);
+        enhanceAttachmentLinks($(document));
       }
 
       // Replace plugin Ctrl+Enter=send with Enter=send / Ctrl+Enter=newline.
@@ -764,6 +911,7 @@ function pngm_im_ui_script()
           prevAfter();
         }
         wireComposer($('#im-message-form'));
+        enhanceAttachmentLinks($(document));
       };
     });
   }

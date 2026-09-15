@@ -6791,13 +6791,17 @@ body.pngm-filter-open {
     width: calc(100% + 24px) !important;
     max-width: none;
     margin: 8px -12px 0 !important;
-    padding: 10px 12px !important;
+    padding: 10px 12px 14px !important;
     background: #fff;
     border: 0;
     border-top: 1px solid #eef1f4;
     border-radius: 0 0 12px 12px !important;
     box-shadow: none;
     box-sizing: border-box;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
   }
 
   body.im-chat-page #im-message-form img.im-logged-user-img {
@@ -6807,9 +6811,19 @@ body.pngm-filter-open {
   body.im-chat-page #im-message-form .im-send-hint,
   body.im-chat-page #im-message-form .pngm-im-send-hint {
     display: block !important;
-    margin: 6px 0 0 0 !important;
-    font-size: 12px;
-    color: #8a94a0;
+    flex: 0 0 100% !important;
+    order: 20;
+    width: 100% !important;
+    max-width: 100%;
+    margin: 2px 0 0 0 !important;
+    padding: 0 2px !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    color: #6b7785 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 16px;
   }
 
   body.im-chat-page #im-message-form .im-file-list {

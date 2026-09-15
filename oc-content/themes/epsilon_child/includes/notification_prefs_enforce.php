@@ -578,17 +578,41 @@ function pngm_notif_cron_listing_expired()
 osc_add_hook('cron_hourly', 'pngm_notif_cron_listing_expired');
 
 /**
- * Incoming chat must NOT create Activity / bell / browser-push noise.
- * Unread chat stays on the Messages badge only (and optional email via IM).
+ * After a normal (non-AJAX) IM send, keep the original filename for display.
  *
  * @param int $message_id
  */
-function pngm_notif_on_im_insert_message($message_id)
+function pngm_im_on_insert_save_file_label($message_id)
 {
-    return;
+    $message_id = (int) $message_id;
+    if ($message_id <= 0 || !class_exists('ModelIM')) {
+        return;
+    }
+    $msg = ModelIM::newInstance()->getMessageById($message_id);
+    if (!is_array($msg) || empty($msg['s_file'])) {
+        return;
+    }
+
+    $original = '';
+    if (!empty($_FILES['im-file']['name'])) {
+        $name = $_FILES['im-file']['name'];
+        $original = is_array($name) ? (string) reset($name) : (string) $name;
+    } elseif (!empty($_FILES['im-file']['name'][0])) {
+        $original = (string) $_FILES['im-file']['name'][0];
+    }
+    if ($original === '') {
+        return;
+    }
+
+    $ui = dirname(__FILE__) . '/im_ui.php';
+    if (file_exists($ui)) {
+        require_once $ui;
+    }
+    if (function_exists('pngm_im_set_file_label')) {
+        pngm_im_set_file_label($message_id, $original);
+    }
 }
-// Hook kept registered so older caches that expect it stay quiet (no-op).
-osc_add_hook('im_insert_message', 'pngm_notif_on_im_insert_message');
+osc_add_hook('im_insert_message', 'pngm_im_on_insert_save_file_label', 20);
 
 /**
  * Deliver queued browser notifications for the logged-in user.

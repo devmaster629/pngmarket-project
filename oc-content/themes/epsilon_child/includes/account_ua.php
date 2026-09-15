@@ -503,9 +503,9 @@ function pngm_ua_render_sidebar($active = '')
     $item('security', function_exists('pngm_sec_url') ? pngm_sec_url() : osc_route_url('pngm-account-security'), __('Account & Security', 'epsilon'), 'fas fa-shield-alt');
     echo '</div>';
 
-    echo '<div class="pngm-ua-nav-hooks menu-hooks">';
-    osc_run_hook('user_menu_items');
-    osc_run_hook('user_menu');
+    echo '<div class="pngm-ua-nav-hooks menu-hooks" hidden aria-hidden="true">';
+    // Plugin user_menu hooks (IM Messages, Business profile) are already covered
+    // by the curated links above — do not render them again as duplicates.
     echo '</div>';
 
     echo '</nav>';

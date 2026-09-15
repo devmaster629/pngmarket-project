@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.31');
+    define('PNGM_CHILD_VERSION', '2.5.33');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -141,15 +141,27 @@ function pngm_notification_url()
 }
 
 /**
- * Badge counts for the header, refreshed by the front-end poller.
+ * Badge counts for the header/sidebar, refreshed by the front-end poller.
  */
 function pngm_ajax_badge_counts()
 {
     header('Content-Type: application/json; charset=utf-8');
 
+    $threads = array();
+    if (osc_is_web_user_logged_in()) {
+        $ui = dirname(__FILE__) . '/includes/im_ui.php';
+        if (file_exists($ui)) {
+            require_once $ui;
+        }
+        if (function_exists('pngm_im_unread_thread_map')) {
+            $threads = pngm_im_unread_thread_map(osc_logged_user_id(), 50);
+        }
+    }
+
     echo json_encode(array(
         'messages' => pngm_unread_message_count(),
         'notifications' => pngm_notification_count(),
+        'threads' => $threads,
     ));
 }
 
@@ -1563,6 +1575,7 @@ function pngm_ajax_im_send()
     }
 
     $id = 0;
+    $last_file_name = '';
     if (count($files) === 0) {
         $id = (int) im_insert_message($thread_id, $message_text, $type, array(), true, false);
     } else {
@@ -1570,6 +1583,14 @@ function pngm_ajax_im_send()
         foreach ($files as $i => $file) {
             $text = ($i === 0 ? $message_text : '');
             $id = (int) im_insert_message($thread_id, $text, $type, $file, $i === 0, false);
+            if ($id > 0 && !empty($file['name']) && function_exists('pngm_im_set_file_label')) {
+                $ui = dirname(__FILE__) . '/includes/im_ui.php';
+                if (file_exists($ui)) {
+                    require_once $ui;
+                }
+                pngm_im_set_file_label($id, $file['name']);
+                $last_file_name = basename((string) $file['name']);
+            }
         }
     }
 
@@ -1578,11 +1599,15 @@ function pngm_ajax_im_send()
         return;
     }
 
-    echo json_encode(array(
+    $payload = array(
         'ok' => 1,
         'id' => $id,
         'time' => __('Just now', 'epsilon'),
-    ));
+    );
+    if ($last_file_name !== '') {
+        $payload['file'] = $last_file_name;
+    }
+    echo json_encode($payload);
 }
 osc_add_hook('ajax_pngm_im_send', 'pngm_ajax_im_send');
 
