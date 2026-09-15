@@ -3042,35 +3042,9 @@
     }
     var $ = window.jQuery;
     var locOpenSel = 'header .links .btn.location, #navi-bar a.location';
-    var toastTimer = null;
 
     function pngmLocToast(message, isError) {
-      var host = document.getElementById('pngm-loc-toast-host');
-      if (!host) {
-        host = document.createElement('div');
-        host.id = 'pngm-loc-toast-host';
-        host.className = 'pngm-loc-toast-host';
-        host.setAttribute('aria-live', 'polite');
-        document.body.appendChild(host);
-      }
-
-      var toast = document.createElement('div');
-      toast.className = 'pngm-loc-toast' + (isError ? ' is-error' : '');
-      toast.innerHTML =
-        '<span class="pngm-loc-toast-msg"></span>' +
-        '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
-      toast.querySelector('.pngm-loc-toast-msg').textContent = message || '';
-      host.appendChild(toast);
-
-      function dismiss() {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-      }
-
-      toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismiss);
-      window.clearTimeout(toastTimer);
-      toastTimer = window.setTimeout(dismiss, 4200);
+      pngmShowToast(message, isError);
     }
 
     function pngmCloseLocationModals() {
@@ -3690,6 +3664,195 @@
     }
   }
 
+  function pngmShowToast(message, isError) {
+    var host = document.getElementById('pngm-loc-toast-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'pngm-loc-toast-host';
+      host.className = 'pngm-loc-toast-host';
+      host.setAttribute('aria-live', 'polite');
+      document.body.appendChild(host);
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'pngm-loc-toast' + (isError ? ' is-error' : '');
+    toast.innerHTML =
+      '<span class="pngm-loc-toast-msg"></span>' +
+      '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
+    toast.querySelector('.pngm-loc-toast-msg').textContent = message || '';
+    host.appendChild(toast);
+
+    function dismiss() {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }
+
+    toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismiss);
+    window.setTimeout(dismiss, 4800);
+  }
+
+  function initFlashToasts() {
+    var box = document.getElementById('flashbox');
+    if (!box) {
+      return;
+    }
+    var msgs = box.querySelectorAll('.flashmessage');
+    if (!msgs.length) {
+      return;
+    }
+
+    Array.prototype.forEach.call(msgs, function (el) {
+      var clone = el.cloneNode(true);
+      var closer = clone.querySelector('.btn.ico-close, .close, a.ico-close');
+      if (closer && closer.parentNode) {
+        closer.parentNode.removeChild(closer);
+      }
+      var text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) {
+        return;
+      }
+      var isError = el.className.indexOf('flashmessage-error') !== -1;
+      pngmShowToast(text, isError);
+    });
+
+    box.innerHTML = '';
+    box.style.display = 'none';
+  }
+
+  function initItemReport() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var ajaxUrl = (typeof window.baseAjaxUrl === 'string' && window.baseAjaxUrl)
+      ? window.baseAjaxUrl
+      : (window.location.origin + window.location.pathname + '?ajaxRequest=1');
+
+    function setReportModalOpen(open) {
+      document.body.classList.toggle('pngm-report-modal-open', !!open);
+      if (!open) {
+        document.body.style.overflow = '';
+      }
+    }
+
+    function closeExistingReportModals() {
+      $('.modal-box.report-box, .modal-box.pngm-report-box').each(function () {
+        var id = $(this).attr('data-modal-id');
+        if (id && typeof window.epsModalClose === 'function') {
+          window.epsModalClose(id);
+        } else {
+          $(this).remove();
+          if (id) {
+            $('.modal-cover[data-modal-id="' + id + '"]').remove();
+          }
+        }
+      });
+      setReportModalOpen(false);
+    }
+
+    function unbindParentReportHandler() {
+      $('body').off('click', '.report-button');
+    }
+
+    unbindParentReportHandler();
+
+    $('body').off('click.pngmReport', '.report-button, a[data-pngm-report="1"]');
+    $('body').on('click.pngmReport', '.report-button, a[data-pngm-report="1"]', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      unbindParentReportHandler();
+      closeExistingReportModals();
+
+      var $wrap = $(this).siblings('.report-wrap, .pngm-report-wrap').first();
+      if (!$wrap.length) {
+        $wrap = $(this).closest('#item-side').find('.report-wrap, .pngm-report-wrap').first();
+      }
+      if (!$wrap.length) {
+        $wrap = $('.report-wrap, .pngm-report-wrap').first();
+      }
+
+      var html = $.trim($wrap.html() || '');
+      if (!html || typeof window.epsModal !== 'function') {
+        return false;
+      }
+
+      window.epsModal({
+        width: 420,
+        height: 620,
+        content: html,
+        wrapClass: 'report-box pngm-report-box',
+        closeBtn: true,
+        iframe: false,
+        fullscreen: 'mobile',
+        transition: 200,
+        delay: 0,
+        lockScroll: true
+      });
+
+      var $box = $('.modal-box.report-box, .modal-box.pngm-report-box').last();
+      $box.prev('.modal-cover').addClass('pngm-report-cover');
+      setReportModalOpen(true);
+
+      return false;
+    });
+
+    $('body').off('click.pngmReportReason', '.modal-box.pngm-report-box .pngm-report-reason, .modal-box.report-box #report .text a');
+    $('body').on('click.pngmReportReason', '.modal-box.pngm-report-box .pngm-report-reason, .modal-box.report-box #report .text a', function (event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      var $link = $(this);
+      if ($link.data('pngmBusy')) {
+        return false;
+      }
+      $link.data('pngmBusy', true);
+
+      var itemId = $link.attr('data-id') || '';
+      var as = $link.attr('data-as') || '';
+      var href = $link.attr('href') || '';
+
+      $.ajax({
+        url: ajaxUrl.replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_report_item'),
+        method: 'POST',
+        dataType: 'json',
+        data: { id: itemId, as: as }
+      }).done(function (res) {
+        closeExistingReportModals();
+        if (res && res.ok) {
+          pngmShowToast(res.message || 'Thanks! Your report was sent.', false);
+        } else if (href) {
+          window.location.href = href;
+        } else {
+          pngmShowToast((res && res.message) || 'Could not send the report.', true);
+        }
+      }).fail(function () {
+        if (href) {
+          window.location.href = href;
+        } else {
+          closeExistingReportModals();
+          pngmShowToast('Could not send the report.', true);
+        }
+      });
+
+      return false;
+    });
+
+    $('body').on('click.pngmReportClose', '.pngm-report-cover, .modal-box.pngm-report-box .modal-close, .modal-box.pngm-report-box .modal-close-alt', function () {
+      window.setTimeout(function () {
+        if (!$('.modal-box.pngm-report-box, .modal-box.report-box').length) {
+          setReportModalOpen(false);
+        }
+      }, 250);
+    });
+
+    window.setTimeout(unbindParentReportHandler, 0);
+    $(window).on('load.pngmReport', unbindParentReportHandler);
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -3718,6 +3881,8 @@
     initLocationModalUx();
     initSearchSortUi();
     initSearchRecentScroll();
+    initItemReport();
+    initFlashToasts();
   }
 
   if (document.readyState === 'loading') {

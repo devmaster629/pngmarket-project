@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.7');
+    define('PNGM_CHILD_VERSION', '2.5.12');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1396,4 +1396,46 @@ function pngm_im_redirect_threads_to_latest()
 }
 
 osc_add_hook('init', 'pngm_im_redirect_threads_to_latest', 9);
+
+/**
+ * AJAX listing report — always records the mark (core skips some browsers).
+ */
+function pngm_ajax_report_item()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (function_exists('osc_item_mark_disable') && osc_item_mark_disable()) {
+        echo json_encode(array(
+            'ok' => 0,
+            'error' => 'disabled',
+            'message' => __('This feature is disabled, you cannot mark or report listing', 'epsilon'),
+        ));
+        return;
+    }
+
+    $id = (int) Params::getParam('id');
+    $as = (string) Params::getParam('as');
+    $allowed = array('spam', 'badcat', 'repeated', 'expired', 'offensive');
+
+    if ($id <= 0 || !in_array($as, $allowed, true)) {
+        echo json_encode(array('ok' => 0, 'error' => 'invalid'));
+        return;
+    }
+
+    $item = function_exists('osc_get_item_row') ? osc_get_item_row($id) : false;
+    if (!$item) {
+        echo json_encode(array('ok' => 0, 'error' => 'missing'));
+        return;
+    }
+
+    $mItem = new ItemActions(false);
+    $mItem->mark($id, $as);
+
+    echo json_encode(array(
+        'ok' => 1,
+        'message' => __('Thanks! Your report was sent.', 'epsilon'),
+    ));
+}
+
+osc_add_hook('ajax_pngm_report_item', 'pngm_ajax_report_item');
 

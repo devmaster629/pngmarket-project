@@ -611,23 +611,23 @@
           </div>
         </div>
 
-        <a href="#" class="report-button">
-          <i class="fas fa-flag"></i>
+        <a href="#report-listing" class="report-button pngm-report-listing" role="button" data-pngm-report="1">
+          <i class="fas fa-flag" aria-hidden="true"></i>
           <span><?php _e('Report listing', 'epsilon'); ?></span>
         </a>
 
-        <div class="report-wrap" style="display:none;">
-          <div id="report">
-            <img src="<?php echo osc_current_web_theme_url('images/report.png'); ?>" alt="<?php echo osc_esc_html(__('Report', 'epsilon')); ?>" />
+        <div class="report-wrap pngm-report-wrap" hidden>
+          <div id="report" class="pngm-report-panel">
+            <div class="pngm-report-icon" aria-hidden="true"><i class="fas fa-flag"></i></div>
             <div class="header"><?php _e('Report listing', 'epsilon'); ?></div>
             <div class="subheader"><?php _e('If you find this listing as inappropriate, offensive or spammy, please let us know about it. Select one of following reasons:', 'epsilon'); ?></div>
             
             <div class="text">
-              <a href="<?php echo osc_item_link_spam() ; ?>" rel="nofollow"><?php _e('Spam', 'epsilon') ; ?></a>
-              <a href="<?php echo osc_item_link_bad_category() ; ?>" rel="nofollow"><?php _e('Misclassified', 'epsilon') ; ?></a>
-              <a href="<?php echo osc_item_link_repeated() ; ?>" rel="nofollow"><?php _e('Duplicated', 'epsilon') ; ?></a>
-              <a href="<?php echo osc_item_link_expired() ; ?>" rel="nofollow"><?php _e('Expired', 'epsilon') ; ?></a>
-              <a href="<?php echo osc_item_link_offensive() ; ?>" rel="nofollow"><?php _e('Offensive', 'epsilon') ; ?></a>
+              <a href="<?php echo osc_item_link_spam() ; ?>" class="pngm-report-reason" data-as="spam" data-id="<?php echo (int) osc_item_id(); ?>" rel="nofollow"><?php _e('Spam', 'epsilon') ; ?></a>
+              <a href="<?php echo osc_item_link_bad_category() ; ?>" class="pngm-report-reason" data-as="badcat" data-id="<?php echo (int) osc_item_id(); ?>" rel="nofollow"><?php _e('Misclassified', 'epsilon') ; ?></a>
+              <a href="<?php echo osc_item_link_repeated() ; ?>" class="pngm-report-reason" data-as="repeated" data-id="<?php echo (int) osc_item_id(); ?>" rel="nofollow"><?php _e('Duplicated', 'epsilon') ; ?></a>
+              <a href="<?php echo osc_item_link_expired() ; ?>" class="pngm-report-reason" data-as="expired" data-id="<?php echo (int) osc_item_id(); ?>" rel="nofollow"><?php _e('Expired', 'epsilon') ; ?></a>
+              <a href="<?php echo osc_item_link_offensive() ; ?>" class="pngm-report-reason" data-as="offensive" data-id="<?php echo (int) osc_item_id(); ?>" rel="nofollow"><?php _e('Offensive', 'epsilon') ; ?></a>
             </div>
           </div>
         </div>
@@ -640,7 +640,8 @@
   
     <?php 
       if (function_exists('pngm_seller_other_ads') && osc_item_user_id() > 0) {
-        pngm_seller_other_ads(eps_param('related_design'), 8);
+        // Match Recently viewed card size/style (pngm-card carousel).
+        pngm_seller_other_ads('pngm-card', 8);
       }
 
       echo eps_banner('item_bottom');

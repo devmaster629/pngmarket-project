@@ -21,7 +21,10 @@
   background: #fff !important;
 }
 
-.modal-cover[data-modal-id] {
+/* Only raise cover when the location modal is the next sibling — do not
+   blanket all epsModal covers (that greys out Report listing, etc.). */
+.modal-cover[data-modal-id]:has(+ #epsModal.location-select),
+.modal-cover[data-modal-id]:has(+ .modal-box.location-select) {
   z-index: 10190 !important;
 }
 
@@ -574,7 +577,7 @@ button.pngm-loc-apply:hover,
   position: fixed;
   top: 18px;
   right: 18px;
-  z-index: 10350;
+  z-index: 11060;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -685,7 +688,8 @@ button.pngm-loc-apply:hover,
     font-size: 20px;
   }
 
-  .modal-cover[data-modal-id] {
+  .modal-cover[data-modal-id]:has(+ #epsModal.location-select),
+  .modal-cover[data-modal-id]:has(+ .modal-box.location-select) {
     z-index: 10190 !important;
   }
 

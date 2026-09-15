@@ -1506,12 +1506,19 @@ body#home.pngm-sticky-search .pngm-global-search.is-home {
   display: none !important;
 }
 
-/* Flash notices: centered banner in the content column (not a left stub). */
+/* Flash notices: compact toast in the top-right (not a full-width bar). */
 #flashbox {
-  margin: 12px auto 0;
-  padding: 0 16px;
+  position: fixed !important;
+  top: 72px;
+  right: 18px;
+  left: auto !important;
+  width: min(380px, calc(100vw - 24px)) !important;
+  max-width: min(380px, calc(100vw - 24px)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
   min-height: 0;
-  z-index: 6;
+  z-index: 11050 !important;
+  pointer-events: none;
 }
 
 #flashbox .wrap,
@@ -1520,12 +1527,14 @@ body#home.pngm-sticky-search .pngm-global-search.is-home {
   padding: 0;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
 }
 
 #flashbox .wrap2 {
   display: flex !important;
   flex-direction: column;
   align-items: stretch !important;
+  gap: 10px;
 }
 
 #flashbox .wrap2:empty {
@@ -1537,19 +1546,21 @@ body#home.pngm-sticky-search .pngm-global-search.is-home {
 }
 
 #flashbox .flashmessage {
+  pointer-events: auto;
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
-  margin: 0 0 12px 0 !important;
-  padding: 12px 44px 12px 16px !important;
-  border-radius: 10px !important;
-  border: 1px solid transparent !important;
-  border-left: 4px solid #11c55c !important;
-  box-shadow: 0 2px 10px rgba(16, 32, 42, .08) !important;
+  margin: 0 !important;
+  padding: 14px 44px 14px 16px !important;
+  border-radius: 12px !important;
+  border: 1px solid #c8e6ce !important;
+  border-left: 4px solid #15803d !important;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.16) !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
   text-align: left;
+  animation: pngmLocToastIn 0.22s ease;
 }
 
 #flashbox .flashmessage.flashmessage-ok {
@@ -1592,12 +1603,12 @@ body#home #flashbox .flashmessage:last-child {
 
 @media screen and (max-width: 767px) {
   #flashbox {
-    margin-top: 8px;
-    padding: 0 12px;
+    top: 60px;
+    right: 12px;
   }
 
   #flashbox .flashmessage {
-    padding: 11px 40px 11px 14px !important;
+    padding: 12px 40px 12px 14px !important;
     font-size: 13px !important;
   }
 }
@@ -2642,18 +2653,24 @@ body#item #item-image .swiper-thumbs li:hover img {
 }
 
 /* Desktop sticky seller sidebar — stay visible while scrolling the listing.
-   Offset below fixed header + search (~138px). Scroll inside if taller than viewport. */
+   Item pages hide the global search strip, so stick just below the header. */
 @media screen and (min-width: 768px) {
   body#item .data-box {
     align-items: flex-start;
   }
 
+  body#item #item-main,
+  body#item #item-side {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
   body#item #item-side {
     position: sticky !important;
-    top: 148px !important;
+    top: 72px !important;
     align-self: flex-start;
     width: 300px;
-    max-height: calc(100vh - 160px);
+    max-height: calc(100vh - 84px);
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -2666,8 +2683,16 @@ body#item #item-image .swiper-thumbs li:hover img {
     flex-direction: column;
   }
 
+  body.pngm-report-modal-open #item-side {
+    position: relative !important;
+    top: auto !important;
+    z-index: 1 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   body#item #item-side #seller {
-    margin-top: 0;
+    margin-top: 0 !important;
   }
 }
 
@@ -3434,7 +3459,7 @@ body#item #item-main .location .row.address {
 body#item #item-side #seller {
   border-radius: 12px;
   padding: 12px;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {
@@ -5368,7 +5393,9 @@ body#search #search-main #recent-ads.onsearch .nice-scroll-next:not(.disabled):h
 
 /* Item page recently viewed — same dashboard card size */
 body#item #recent-ads.onitem .products.grid,
-body#item #recent-ads.onitem .products.grid.nice-scroll {
+body#item #recent-ads.onitem .products.grid.nice-scroll,
+body#item #rel-user-block.pngm-seller-other .products.grid,
+body#item #rel-user-block.pngm-seller-other .products.grid.nice-scroll {
   display: flex !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
@@ -5378,7 +5405,9 @@ body#item #recent-ads.onitem .products.grid.nice-scroll {
 }
 
 body#item #recent-ads.onitem .products.grid .simple-prod,
-body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod {
+body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod,
+body#item #rel-user-block.pngm-seller-other .products.grid .simple-prod,
+body#item #rel-user-block.pngm-seller-other .products.grid.nice-scroll .simple-prod {
   flex: 0 0 220px !important;
   width: 220px !important;
   max-width: 220px !important;
@@ -5388,7 +5417,9 @@ body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod {
 
 @media screen and (max-width: 767px) {
   body#item #recent-ads.onitem .products.grid .simple-prod,
-  body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod {
+  body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod,
+  body#item #rel-user-block.pngm-seller-other .products.grid .simple-prod,
+  body#item #rel-user-block.pngm-seller-other .products.grid.nice-scroll .simple-prod {
     flex: 0 0 148px !important;
     width: 148px !important;
     max-width: 148px !important;
@@ -5396,9 +5427,215 @@ body#item #recent-ads.onitem .products.grid.nice-scroll .simple-prod {
   }
 
   body#item #recent-ads.onitem .nice-scroll-prev,
-  body#item #recent-ads.onitem .nice-scroll-next {
+  body#item #recent-ads.onitem .nice-scroll-next,
+  body#item #rel-user-block.pngm-seller-other .nice-scroll-prev,
+  body#item #rel-user-block.pngm-seller-other .nice-scroll-next {
     display: none !important;
   }
+}
+
+/* Listing details: no global search strip */
+body#item .pngm-global-search {
+  display: none !important;
+}
+
+body#item {
+  padding-top: 64px !important;
+}
+
+@media screen and (max-width: 767px) {
+  body#item {
+    padding-top: 48px !important;
+  }
+}
+
+/* Careful red outline Report listing control */
+body#item #item-side a.report-button,
+body#item #item-side a.pngm-report-listing {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto !important;
+  max-width: 100%;
+  margin: 12px 0 0 0 !important;
+  padding: 8px 14px !important;
+  border: 1.5px solid #d92d20 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #d92d20 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.2;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+body#item #item-side a.report-button i,
+body#item #item-side a.pngm-report-listing i {
+  margin: 0 !important;
+  color: #d92d20 !important;
+  font-size: 13px;
+}
+
+body#item #item-side a.report-button:hover,
+body#item #item-side a.pngm-report-listing:hover {
+  background: #fff5f4 !important;
+  border-color: #b42318 !important;
+  color: #b42318 !important;
+  text-decoration: none !important;
+}
+
+body#item .pngm-report-wrap,
+body#item .report-wrap {
+  display: none !important;
+}
+
+/* Keep report dialog above overlay + header (location modal raised covers). */
+#epsModal.report-box,
+#epsModal.pngm-report-box,
+.modal-box.report-box.pngm-report-box {
+  z-index: 10200 !important;
+  color: #16202a;
+  height: auto !important;
+  max-height: calc(100vh - 48px) !important;
+  overflow: visible !important;
+}
+
+.modal-cover.pngm-report-cover,
+.modal-cover[data-modal-id]:has(+ #epsModal.report-box),
+.modal-cover[data-modal-id]:has(+ #epsModal.pngm-report-box),
+.modal-cover[data-modal-id]:has(+ .modal-box.report-box) {
+  z-index: 10190 !important;
+}
+
+#epsModal.report-box .modal-inside,
+#epsModal.pngm-report-box .modal-inside,
+#epsModal.report-box .modal-body,
+#epsModal.pngm-report-box .modal-body {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#epsModal.report-box .modal-content,
+#epsModal.pngm-report-box .modal-content,
+.modal-box.pngm-report-box .modal-content {
+  pointer-events: auto !important;
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+#epsModal.report-box #report,
+#epsModal.pngm-report-box #report,
+.modal-box.pngm-report-box #report {
+  margin-bottom: 0 !important;
+  padding: 28px 28px 24px !important;
+}
+
+/* Close lives inside the card — the outside X sat over the sticky sidebar. */
+#epsModal.report-box .modal-close-alt,
+#epsModal.pngm-report-box .modal-close-alt {
+  display: none !important;
+}
+
+#epsModal.report-box .modal-close,
+#epsModal.pngm-report-box .modal-close {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  top: 12px !important;
+  right: 12px !important;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #6b7280 !important;
+  background: #f3f4f6 !important;
+  z-index: 5;
+}
+
+.modal-box.pngm-report-box .pngm-report-icon,
+.modal-box.report-box .pngm-report-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 0 16px 0;
+  border-radius: 50%;
+  background: #fff1f0;
+  color: #d92d20;
+  font-size: 22px;
+}
+
+.modal-box.pngm-report-box #report > img,
+.modal-box.report-box #report > img {
+  display: none;
+}
+
+.modal-box.pngm-report-box #report .header,
+.modal-box.report-box #report .header,
+#epsModal.report-box #report .header,
+#epsModal.pngm-report-box #report .header {
+  color: #16202a !important;
+  font-weight: 700 !important;
+}
+
+.modal-box.pngm-report-box #report .subheader,
+.modal-box.report-box #report .subheader,
+#epsModal.report-box #report .subheader,
+#epsModal.pngm-report-box #report .subheader {
+  color: #4b5563 !important;
+}
+
+.modal-box.pngm-report-box #report .text a,
+.modal-box.report-box #report .text a,
+#epsModal.report-box #report .text a,
+#epsModal.pngm-report-box #report .text a {
+  display: block !important;
+  width: 100%;
+  margin: 0 0 8px 0;
+  padding: 12px 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  color: #16202a !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  line-height: 1.3;
+  background: #fff !important;
+  box-sizing: border-box;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+
+.modal-box.pngm-report-box #report .text a:hover,
+.modal-box.report-box #report .text a:hover,
+#epsModal.report-box #report .text a:hover,
+#epsModal.pngm-report-box #report .text a:hover {
+  border-color: #d92d20 !important;
+  color: #d92d20 !important;
+  background: #fff8f7 !important;
+}
+
+#rel-user-block.pngm-seller-other {
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+
+#rel-user-block.pngm-seller-other h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 body#search .container.primary {
