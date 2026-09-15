@@ -2630,33 +2630,100 @@
     // Header keyword → sidebar pattern → AJAX results (no suggestion dropdown).
     $('body#search').on('keyup input', '.pngm-global-search input.pattern', function (event) {
       var val = $(this).val();
-      var $side = $('form.search-side-form').not('#side-menu form').first().find('input[name="sPattern"]');
-      if (!$side.length) {
-        $side = $('.filter-menu form.search-side-form').first().find('input[name="sPattern"]');
-      }
+      var $side = sidePatternInput();
       if ($side.length) {
         $side.val(val);
         triggerAjax($side, event);
       }
+      $('.pngm-mobile-pattern').val(val);
+      syncMobileClear(val);
+    });
+
+    function sidePatternInput() {
+      var $side = $('form.search-side-form').not('#side-menu form').first().find('input[name="sPattern"]');
+      if (!$side.length) {
+        $side = $('.filter-menu form.search-side-form').first().find('input[name="sPattern"]');
+      }
+      if (!$side.length) {
+        $side = $('#side-menu form.search-side-form input[name="sPattern"]').first();
+      }
+      return $side;
+    }
+
+    function syncMobileClear(val) {
+      var $clear = $('.pngm-mobile-search-clear');
+      if (!$clear.length) {
+        return;
+      }
+      if ($.trim(val || '').length) {
+        $clear.prop('hidden', false).removeAttr('hidden');
+      } else {
+        $clear.prop('hidden', true).attr('hidden', 'hidden');
+      }
+    }
+
+    // Mobile keyword bar (filters drawer is separate on small screens).
+    $('body#search').on('keyup input', '.pngm-mobile-pattern', function (event) {
+      var val = $(this).val();
+      var $side = sidePatternInput();
+      syncMobileClear(val);
+      if ($side.length) {
+        $side.val(val);
+        triggerAjax($side, event);
+      }
+      $('.pngm-global-search input.pattern').val(val);
+    });
+
+    $('body#search').on('keydown', '.pngm-mobile-pattern', function (event) {
+      if (event.key === 'Enter' || event.keyCode === 13) {
+        event.preventDefault();
+        var val = $(this).val();
+        var $side = sidePatternInput();
+        if ($side.length) {
+          $side.val(val);
+          triggerAjax($side, $.Event('keyup'));
+        }
+      }
+    });
+
+    $('body#search').on('click', '.pngm-mobile-search-clear', function (event) {
+      event.preventDefault();
+      var $input = $('.pngm-mobile-pattern');
+      $input.val('');
+      syncMobileClear('');
+      var $side = sidePatternInput();
+      if ($side.length) {
+        $side.val('');
+        triggerAjax($side, $.Event('keyup'));
+      }
+      $('.pngm-global-search input.pattern').val('');
+      $input.trigger('focus');
     });
 
     $('body#search').on('submit', '.global-search-form', function (e) {
       e.preventDefault();
       var $input = $(this).find('input.pattern');
-      var $side = $('.filter-menu form.search-side-form').first().find('input[name="sPattern"]');
+      var $side = sidePatternInput();
       if ($side.length) {
         $side.val($input.val());
         triggerAjax($side, $.Event('keyup'));
       }
+      $('.pngm-mobile-pattern').val($input.val());
+      syncMobileClear($input.val());
     });
 
-    // Keep header keyword in sync after AJAX board refresh.
+    // Keep header / mobile keyword in sync after AJAX board refresh.
     $('body#search').on('keyup input', 'form.search-side-form input[name="sPattern"]', function () {
       if ($(this).closest('#side-menu .box.filter').length) {
         return;
       }
-      $('.pngm-global-search input.pattern').val($(this).val());
+      var val = $(this).val();
+      $('.pngm-global-search input.pattern').val(val);
+      $('.pngm-mobile-pattern').val(val);
+      syncMobileClear(val);
     });
+
+    syncMobileClear($('.pngm-mobile-pattern').val() || '');
 
     function clearSearchLocation($form) {
       if (!$form || !$form.length) {
