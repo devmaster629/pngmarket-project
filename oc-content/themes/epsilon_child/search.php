@@ -331,18 +331,26 @@
     <?php osc_run_hook('search_items_top'); ?>
 
     <?php
-      // CATEGORY-01 — Subcategories before listings (visible on mobile too).
+      // CATEGORY-01 — Always show root-level siblings (e.g. all Vehicles),
+      // not only children of the current mid-level category.
       $pngm_subcats = array();
       $pngm_subcat_parent = null;
+      $pngm_subcat_active = 0;
 
-      if ($search_cat_id > 0 && function_exists('pngm_subcategories_for')) {
+      if ($search_cat_id > 0 && function_exists('pngm_search_subcat_strip')) {
+        $pngm_strip = pngm_search_subcat_strip($search_cat_id, is_array($category) ? $category : null);
+        $pngm_subcats = $pngm_strip['subcats'];
+        $pngm_subcat_parent = $pngm_strip['parent'];
+        $pngm_subcat_active = (int) $pngm_strip['active_id'];
+      } elseif ($search_cat_id > 0 && function_exists('pngm_subcategories_for')) {
         $pngm_subcats = pngm_subcategories_for($search_cat_id);
         $pngm_subcat_parent = is_array($category) ? $category : eps_get_category($search_cat_id);
+        $pngm_subcat_active = $search_cat_id;
 
-        // On a leaf category, show sibling subcategories under the parent.
         if (count($pngm_subcats) === 0 && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['fk_i_parent_id'] > 0) {
           $pngm_subcats = pngm_subcategories_for((int) $pngm_subcat_parent['fk_i_parent_id']);
           $pngm_subcat_parent = eps_get_category((int) $pngm_subcat_parent['fk_i_parent_id']);
+          $pngm_subcat_active = $search_cat_id;
         }
       }
     ?>
@@ -361,7 +369,7 @@
                 $pngm_all_label = sprintf(__('All %s', 'epsilon'), $pngm_subcat_parent['s_name']);
               }
             ?>
-            <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>">
+            <a class="pngm-search-subcat pngm-search-subcat-all<?php if($search_cat_id == @$pngm_subcat_parent['pk_i_id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_all_params); ?>" data-pngm-ajax-search="1">
               <?php if (function_exists('pngm_render_category_visual') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
                 <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_subcat_parent['pk_i_id'], $pngm_subcat_parent, 0); ?></span>
               <?php } elseif (function_exists('pngm_render_category_icon') && is_array($pngm_subcat_parent) && @$pngm_subcat_parent['pk_i_id'] > 0) { ?>
@@ -377,7 +385,7 @@
               $pngm_sc_params['sCategory'] = $pngm_sc['id'];
               $pngm_sc_parent_id = is_array($pngm_subcat_parent) ? (int) @$pngm_subcat_parent['pk_i_id'] : 0;
             ?>
-              <a class="pngm-search-subcat<?php if($search_cat_id == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>">
+              <a class="pngm-search-subcat<?php if($pngm_subcat_active == $pngm_sc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_sc_params); ?>" data-pngm-ajax-search="1">
                 <?php if (function_exists('pngm_render_category_visual')) { ?>
                   <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_sc['id'], array('s_name' => $pngm_sc['name']), $pngm_sc_parent_id); ?></span>
                 <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
@@ -463,6 +471,7 @@
       </div>
     <?php } ?>
 
+    <div id="pngm-search-board">
     <div class="ajax-load-failed flashmessage flashmessage-error" style="display:none;">
       <p><?php _e('There was problem loading your listings, please try to refresh this page', 'epsilon'); ?></p>
       <a class="btn mini" onClick="window.location.reload();"><i class="fas fa-redo"></i> <?php _e('Refresh', 'epsilon'); ?></a>
@@ -550,15 +559,16 @@
       
       <?php /* "Other people searched" removed — listings stay higher. */ ?>
 
-      <?php 
-        if(eps_param('recent_search') == 1) {
-          // Match home dashboard: same count + pngm-card size/design
-          eps_recent_ads('pngm-card', eps_param('recent_count'), 'onsearch');
-        }
-      ?>
-      
       <?php osc_run_hook('search_items_bottom'); ?>
     </div>
+    </div><!-- /#pngm-search-board -->
+
+    <?php 
+      if(eps_param('recent_search') == 1) {
+        // Outside the AJAX board so subcategory/filter refresh does not rebuild it
+        eps_recent_ads('pngm-card', eps_param('recent_count'), 'onsearch');
+      }
+    ?>
   </div>
 </div>
 

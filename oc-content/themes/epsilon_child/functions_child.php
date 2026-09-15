@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.4.3');
+    define('PNGM_CHILD_VERSION', '2.4.6');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -368,6 +368,80 @@ function pngm_subcategories_for($category_id, $limit = 0)
     }
 
     return $out;
+}
+
+
+/**
+ * Search subcategory strip: always list children of the root category.
+ *
+ * Mid-level categories (e.g. Other Vehicles) keep the full Vehicles strip
+ * instead of drilling into their own (often tiny) child set.
+ *
+ * @param int        $search_cat_id
+ * @param array|null $category      Current category row when already loaded
+ *
+ * @return array{parent: ?array, subcats: array, active_id: int}
+ */
+function pngm_search_subcat_strip($search_cat_id, $category = null)
+{
+    $search_cat_id = (int) $search_cat_id;
+    $empty = array(
+        'parent'    => null,
+        'subcats'   => array(),
+        'active_id' => 0,
+    );
+
+    if ($search_cat_id <= 0) {
+        return $empty;
+    }
+
+    $current = is_array($category) ? $category : null;
+    if (!is_array($current) || (int) @$current['pk_i_id'] !== $search_cat_id) {
+        $current = function_exists('eps_get_category') ? eps_get_category($search_cat_id) : null;
+    }
+
+    if (!is_array($current) || (int) @$current['pk_i_id'] <= 0) {
+        return $empty;
+    }
+
+    $root = $current;
+    $guard = 0;
+    while (is_array($root) && (int) @$root['fk_i_parent_id'] > 0 && $guard < 12) {
+        $parent = function_exists('eps_get_category') ? eps_get_category((int) $root['fk_i_parent_id']) : null;
+        if (!is_array($parent) || (int) @$parent['pk_i_id'] <= 0) {
+            break;
+        }
+        $root = $parent;
+        $guard += 1;
+    }
+
+    $root_id = (int) @$root['pk_i_id'];
+    $subcats = pngm_subcategories_for($root_id);
+
+    // Highlight the direct child of root that contains the current category.
+    $active_id = $search_cat_id;
+    if ($search_cat_id !== $root_id) {
+        $walk = $current;
+        $guard = 0;
+        while (is_array($walk) && $guard < 12) {
+            $parent_id = (int) @$walk['fk_i_parent_id'];
+            if ($parent_id === $root_id) {
+                $active_id = (int) @$walk['pk_i_id'];
+                break;
+            }
+            if ($parent_id <= 0) {
+                break;
+            }
+            $walk = function_exists('eps_get_category') ? eps_get_category($parent_id) : null;
+            $guard += 1;
+        }
+    }
+
+    return array(
+        'parent'    => $root,
+        'subcats'   => $subcats,
+        'active_id' => $active_id,
+    );
 }
 
 
