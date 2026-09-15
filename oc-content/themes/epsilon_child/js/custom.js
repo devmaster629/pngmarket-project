@@ -2797,6 +2797,14 @@
       pngmTrimRecentLocations($modal);
     }
 
+    function pngmReloadAfterLocation(message) {
+      try {
+        window.sessionStorage.setItem('pngm_loc_toast', message || 'Location updated');
+      } catch (err) {}
+      // Full reload so Near You listings + recent locations match the new cookie.
+      window.location.reload();
+    }
+
     function pngmSetLocationAjax(hash, onDone) {
       if (!window.baseAjaxUrl || !hash) {
         if (onDone) {
@@ -2812,7 +2820,7 @@
           if (data && data.success) {
             pngmApplyLocationUi(data);
             pngmCloseLocationModals();
-            pngmLocToast(data.message || 'Location updated');
+            pngmReloadAfterLocation(data.message || 'Location updated');
             if (onDone) {
               onDone(true, data);
             }
@@ -2844,7 +2852,7 @@
           if (data && data.success) {
             pngmApplyLocationUi(data);
             pngmCloseLocationModals();
-            pngmLocToast(data.message || 'Location cleared');
+            pngmReloadAfterLocation(data.message || 'Location cleared');
             return;
           }
           pngmLocToast((data && data.message) || 'Could not clear location', true);
@@ -2966,31 +2974,13 @@
       }, 250);
     });
 
-    // GPS already sets the cookie via ajaxFindCity — finish without reload.
+    // GPS already sets the cookie via ajaxFindCity — reload so Near You updates.
     $(document).on('click.pngmLocGps', '#def-location a.locate-me.completed, #side-menu .box.location a.locate-me.completed', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      var text = $(this).find('span.success').text() || $(this).find('strong').text() || 'Location';
-      pngmApplyLocationUi({
-        label: text.replace(/^Located in\s+/i, '').split(',')[0],
-        s_location: text,
-        s_name: text
-      });
       pngmCloseLocationModals();
-      pngmLocToast('Location updated');
+      pngmReloadAfterLocation('Location updated');
     });
-
-    // Convert leftover full-width flash banners into a top-right toast once.
-    $('#flashbox .flashmessage').each(function () {
-      var text = $.trim($(this).text().replace(/\s+/g, ' '));
-      if (/default location has been (saved|cleaned)/i.test(text)) {
-        $(this).addClass('pngm-loc-flash-hide').remove();
-        pngmLocToast(text.replace(/\s*×\s*$/, '') || 'Location updated');
-      }
-    });
-    if (!$('#flashbox .flashmessage').length) {
-      $('#flashbox').hide();
-    }
 
     // Expose for GPS success hook.
     window.pngmLocAfterGeoSuccess = function (data) {
@@ -3003,8 +2993,17 @@
         s_location: data.s_location || data.s_name || ''
       });
       pngmCloseLocationModals();
-      pngmLocToast('Location updated');
+      pngmReloadAfterLocation('Location updated');
     };
+
+    // Toast after reload (Near You / recent list refreshed from server).
+    try {
+      var pendingToast = window.sessionStorage.getItem('pngm_loc_toast');
+      if (pendingToast) {
+        window.sessionStorage.removeItem('pngm_loc_toast');
+        pngmLocToast(pendingToast);
+      }
+    } catch (err) {}
   }
 
   function init() {

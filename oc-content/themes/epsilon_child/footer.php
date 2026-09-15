@@ -537,21 +537,23 @@
 
             <?php
               foreach ($recent as $p) {
+                $rname = function_exists('pngm_recent_location_label')
+                  ? pngm_recent_location_label($p)
+                  : osc_location_native_name_selector($p, 's_name');
+                if ($rname === '') {
+                  continue;
+                }
                 $hash = rawurlencode(base64_encode(json_encode(array(
                   'fk_i_city_id' => @$p['fk_i_city_id'],
                   'fk_i_region_id' => @$p['fk_i_region_id'],
                   'fk_c_country_code' => @$p['fk_c_country_code'],
-                  's_name' => @$p['s_name'],
+                  's_name' => !empty($p['s_city']) ? $p['s_city'] : (function_exists('pngm_city_only') ? pngm_city_only($p) : @$p['s_name']),
                   's_name_native' => @$p['s_name_native'],
                   's_name_top' => @$p['s_name_top'],
                   's_name_top_native' => @$p['s_name_top_native'],
                   'd_coord_lat' => @$p['d_coord_lat'],
                   'd_coord_long' => @$p['d_coord_long'],
                 ))));
-                $rname = osc_location_native_name_selector($p, 's_name');
-                if (!empty($p['s_name_top'])) {
-                  $rname .= ', ' . osc_location_native_name_selector($p, 's_name_top');
-                }
             ?>
               <a href="<?php echo eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)); ?>" class="location-elem pngm-loc-item">
                 <i class="far fa-clock" aria-hidden="true"></i>

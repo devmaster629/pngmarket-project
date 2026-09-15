@@ -1120,6 +1120,100 @@ function pngm_print_location_js_config()
 }
 
 /**
+ * Push a location to the front of the recent-locations cookie (max 10).
+ * Re-selecting an existing place moves it to most-recent.
+ *
+ * @param array $location Decoded location cookie payload.
+ */
+function pngm_touch_recent_location($location)
+{
+    if (!is_array($location) || empty($location['success'])) {
+        return;
+    }
+
+    $recent = array();
+    if (isset($_COOKIE['epsLocationRecent']) && $_COOKIE['epsLocationRecent'] !== '') {
+        $decoded = eps_decode_array(rawurldecode($_COOKIE['epsLocationRecent']));
+        if (is_array($decoded)) {
+            $recent = $decoded;
+        }
+    }
+
+    $key = (string) @$location['fk_i_city_id']
+        . '|' . (string) @$location['fk_i_region_id']
+        . '|' . (string) @$location['fk_c_country_code'];
+
+    $out = array();
+    foreach ($recent as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $row_key = (string) @$row['fk_i_city_id']
+            . '|' . (string) @$row['fk_i_region_id']
+            . '|' . (string) @$row['fk_c_country_code'];
+        if ($row_key === $key) {
+            continue;
+        }
+        $out[] = $row;
+    }
+
+    // Keep display fields useful for the recent list (city + optional province).
+    $entry = $location;
+    if (empty($entry['s_name_top']) && !empty($entry['s_name']) && strpos((string) $entry['s_name'], ',') !== false) {
+        $parts = array_map('trim', explode(',', (string) $entry['s_name'], 2));
+        if (!empty($parts[0])) {
+            $entry['s_name'] = $parts[0];
+        }
+        if (!empty($parts[1])) {
+            $entry['s_name_top'] = $parts[1];
+        }
+    }
+
+    $out[] = $entry;
+    if (count($out) > 10) {
+        $out = array_slice($out, -10, 10, false);
+    }
+
+    eps_set_cookie('epsLocationRecent', rawurlencode(eps_encode_array(array_values($out))));
+}
+
+/**
+ * Build a display label for a recent-location row.
+ *
+ * @param array $row
+ * @return string
+ */
+function pngm_recent_location_label($row)
+{
+    if (!is_array($row)) {
+        return '';
+    }
+
+    $city = function_exists('pngm_city_only')
+        ? pngm_city_only($row)
+        : trim((string) (function_exists('osc_location_native_name_selector')
+            ? osc_location_native_name_selector($row, 's_name')
+            : @$row['s_name']));
+
+    $top = '';
+    if (!empty($row['s_name_top'])) {
+        $top = function_exists('osc_location_native_name_selector')
+            ? trim((string) osc_location_native_name_selector($row, 's_name_top'))
+            : trim((string) $row['s_name_top']);
+    }
+
+    if ($city === '' && !empty($row['s_location'])) {
+        return trim(preg_replace('/^Located in\s+/i', '', (string) $row['s_location']));
+    }
+
+    if ($city !== '' && $top !== '' && stripos($city, $top) === false) {
+        return $city . ', ' . $top;
+    }
+
+    return $city !== '' ? $city : $top;
+}
+
+/**
  * Intercept core ajax cities list — main towns first + tier tags (LOCATION-02).
  */
 function pngm_ajax_cities_capital_first()

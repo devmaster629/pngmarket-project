@@ -470,6 +470,12 @@ if(@$_GET['ajaxFindCity'] == 1) {
   
   echo $location;
   eps_location_to_cookies($location);
+  if (function_exists('pngm_touch_recent_location')) {
+    $decoded = json_decode($location, true);
+    if (is_array($decoded) && !empty($decoded['success'])) {
+      pngm_touch_recent_location($decoded);
+    }
+  }
   exit;
 }
 
@@ -633,19 +639,37 @@ if (@$_GET['ajaxPngmSetLocation'] == 1) {
     exit;
   }
 
-  $short = osc_location_native_name_selector($data, 's_name');
+  $short = function_exists('pngm_city_only') ? pngm_city_only(array('s_name' => $name)) : $name;
+  if ($short === '') {
+    $short = osc_location_native_name_selector($data, 's_name');
+  }
   if ($short === '' || $short === null) {
     $short = $name !== '' ? $name : $loc;
   }
 
-  $location = json_encode(array(
+  // Keep city / province separate so Recent locations can render real picks.
+  $city_only = $short;
+  $province = $name_top;
+  if ($province === '' && strpos($name, ',') !== false) {
+    $parts = array_map('trim', explode(',', $name, 2));
+    if (!empty($parts[0])) {
+      $city_only = $parts[0];
+    }
+    if (!empty($parts[1])) {
+      $province = $parts[1];
+    }
+  }
+
+  $location_arr = array(
     'success' => true,
     'message' => 'MANUAL',
     's_location' => sprintf(__('Located in %s', 'epsilon'), $loc),
-    's_name' => $name . ($name_top !== '' ? ', ' . $name_top : ''),
-    's_name_native' => @$data['s_name_native'] . (@$data['s_name_top_native'] != '' ? ', ' . $data['s_name_top_native'] : ''),
-    's_region' => @$data['s_region'],
-    's_city' => @$data['s_city'],
+    's_name' => $city_only,
+    's_name_top' => $province,
+    's_name_native' => @$data['s_name_native'],
+    's_name_top_native' => @$data['s_name_top_native'],
+    's_region' => @$data['s_region'] !== null && @$data['s_region'] !== '' ? @$data['s_region'] : $province,
+    's_city' => @$data['s_city'] !== null && @$data['s_city'] !== '' ? @$data['s_city'] : $city_only,
     'fk_i_city_id' => @$data['fk_i_city_id'],
     'fk_i_region_id' => @$data['fk_i_region_id'],
     'fk_c_country_code' => @$data['fk_c_country_code'],
@@ -653,16 +677,21 @@ if (@$_GET['ajaxPngmSetLocation'] == 1) {
     'd_coord_lat' => @$data['d_coord_lat'],
     'd_coord_long' => @$data['d_coord_long'],
     'dt_date' => date('Y-m-d H:i:s'),
-  ));
+  );
 
+  $location = json_encode($location_arr);
   eps_location_to_cookies($location);
+  if (function_exists('pngm_touch_recent_location')) {
+    pngm_touch_recent_location($location_arr);
+  }
 
   echo json_encode(array(
     'success' => true,
-    'label' => $short,
-    's_name' => $name . ($name_top !== '' ? ', ' . $name_top : ''),
-    's_location' => sprintf(__('Located in %s', 'epsilon'), $loc),
+    'label' => $city_only,
+    's_name' => $city_only,
+    's_location' => $location_arr['s_location'],
     'message' => __('Location updated', 'epsilon'),
+    'reload' => true,
   ));
   exit;
 }
@@ -678,6 +707,7 @@ if (@$_GET['ajaxPngmClearLocation'] == 1) {
     'label' => __('Location', 'epsilon'),
     's_location' => '',
     'message' => __('Location cleared', 'epsilon'),
+    'reload' => true,
   ));
   exit;
 }
