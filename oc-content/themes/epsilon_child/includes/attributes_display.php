@@ -154,6 +154,15 @@ function pngm_atr_enhance_html($html)
 
     // Drop check/cross images and empty value chips (avoids ", Automatic")
     $html = preg_replace('/<img\b[^>]*class="[^"]*atr-img[^"]*"[^>]*>/i', '', $html);
+
+    // Unselected chips are never displayed; removing them keeps CSS separators
+    // from counting them as siblings (stray leading comma before the value).
+    $html = preg_replace(
+        '/<span class="atr-value-single[^"]*\batr-disabled\b[^"]*"[^>]*>\s*(?:<span[^>]*>.*?<\/span>\s*)?<\/span>/is',
+        '',
+        $html
+    );
+
     $html = preg_replace('/<span class="atr-value-single[^"]*"[^>]*>\s*<\/span>/i', '', $html);
 
     // Inject one SVG icon after each attribute <li ...>

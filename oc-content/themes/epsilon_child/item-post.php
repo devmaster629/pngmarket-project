@@ -170,13 +170,12 @@
 
       <!-- ========== STEP 2: DETAILS ========== -->
       <section class="pngm-post-step-panel" data-step="2" id="pngm-step-details" hidden>
+        <div class="pngm-post-step-head">
+          <h2><?php echo osc_esc_html($steps[2]['title']); ?></h2>
+          <p><?php echo osc_esc_html($steps[2]['sub']); ?></p>
+        </div>
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
-            <div class="pngm-post-step-head">
-              <h2><?php echo osc_esc_html($steps[2]['title']); ?></h2>
-              <p><?php echo osc_esc_html($steps[2]['sub']); ?></p>
-            </div>
-
             <div class="pngm-post-card">
               <h3 class="pngm-post-card-title"><?php _e('Item Details', 'epsilon'); ?></h3>
 
@@ -185,6 +184,7 @@
                 <div class="input-box">
                   <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
                 </div>
+                <p class="pngm-post-field-error is-hidden" data-for="title" hidden><?php _e('Please enter a title.', 'epsilon'); ?></p>
                 <div class="pngm-post-counter" data-counter-for="title"><span>0</span>/100</div>
               </div>
 
@@ -193,6 +193,7 @@
                 <div class="input-box">
                   <?php ItemForm::description_textarea('description', $locale, osc_esc_html(eps_post_item_description())); ?>
                 </div>
+                <p class="pngm-post-field-error is-hidden" data-for="description" hidden><?php _e('Please enter a description.', 'epsilon'); ?></p>
                 <div class="pngm-post-counter" data-counter-for="description"><span>0</span>/5000</div>
               </div>
 
@@ -220,6 +221,7 @@
                     <?php ItemForm::price_input_text(); ?>
                   </div>
                 </div>
+                <p class="pngm-post-field-error is-hidden" data-for="price" hidden><?php _e('Please enter a price, or choose Check with seller.', 'epsilon'); ?></p>
               </div>
               <?php } ?>
 
@@ -267,12 +269,12 @@
 
       <!-- ========== STEP 3: PHOTOS ========== -->
       <section class="pngm-post-step-panel" data-step="3" id="pngm-step-photos" hidden>
+        <div class="pngm-post-step-head">
+          <h2><?php echo osc_esc_html($steps[3]['title']); ?></h2>
+          <p><?php echo osc_esc_html($steps[3]['sub']); ?></p>
+        </div>
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
-            <div class="pngm-post-step-head">
-              <h2><?php echo osc_esc_html($steps[3]['title']); ?></h2>
-              <p><?php echo osc_esc_html($steps[3]['sub']); ?></p>
-            </div>
             <div class="pngm-post-card upload-photos pngm-post-upload-card">
               <h3 class="pngm-post-card-title"><?php _e('Add Photos', 'epsilon'); ?> <span class="req">*</span></h3>
               <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Upload clear photos of your item. First photo is the cover. At least one photo is required.', 'epsilon'); ?></p>
@@ -306,12 +308,12 @@
 
       <!-- ========== STEP 4: LOCATION ========== -->
       <section class="pngm-post-step-panel" data-step="4" id="pngm-step-location" hidden>
+        <div class="pngm-post-step-head">
+          <h2><?php echo osc_esc_html($steps[4]['title']); ?></h2>
+          <p><?php echo osc_esc_html($steps[4]['sub']); ?></p>
+        </div>
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
-            <div class="pngm-post-step-head">
-              <h2><?php echo osc_esc_html($steps[4]['title']); ?></h2>
-              <p><?php echo osc_esc_html($steps[4]['sub']); ?></p>
-            </div>
             <div class="pngm-post-card location">
               <h3 class="pngm-post-card-title"><?php _e('Set Location', 'epsilon'); ?></h3>
               <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Add the location where your item is available.', 'epsilon'); ?></p>
@@ -410,12 +412,12 @@
 
       <!-- ========== STEP 5: CONTACT ========== -->
       <section class="pngm-post-step-panel" data-step="5" id="pngm-step-contact" hidden>
+        <div class="pngm-post-step-head">
+          <h2><?php echo osc_esc_html($steps[5]['title']); ?></h2>
+          <p><?php echo osc_esc_html($steps[5]['sub']); ?></p>
+        </div>
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
-            <div class="pngm-post-step-head">
-              <h2><?php echo osc_esc_html($steps[5]['title']); ?></h2>
-              <p><?php echo osc_esc_html($steps[5]['sub']); ?></p>
-            </div>
             <div class="pngm-post-card about pngm-post-contact-card">
               <h3 class="pngm-post-card-title"><?php _e('Contact Information', 'epsilon'); ?></h3>
               <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Add your contact details so buyers can reach you.', 'epsilon'); ?></p>
@@ -520,12 +522,12 @@
 
       <!-- ========== STEP 6: REVIEW ========== -->
       <section class="pngm-post-step-panel" data-step="6" id="pngm-step-review" hidden>
+        <div class="pngm-post-step-head">
+          <h2><?php echo osc_esc_html($steps[6]['title']); ?></h2>
+          <p><?php echo osc_esc_html($steps[6]['sub']); ?></p>
+        </div>
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
-            <div class="pngm-post-step-head">
-              <h2><?php echo osc_esc_html($steps[6]['title']); ?></h2>
-              <p><?php echo osc_esc_html($steps[6]['sub']); ?></p>
-            </div>
             <div class="pngm-post-card pngm-post-review">
               <h3 class="pngm-post-card-title"><?php _e('Review Your Listing', 'epsilon'); ?></h3>
               <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Please review your details before publishing.', 'epsilon'); ?></p>
@@ -598,6 +600,8 @@
     'priceType' => $price_type,
     'locale' => $locale,
     'homeUrl' => osc_base_url(),
+    'ajaxUrl' => osc_base_url(true),
+    'itemId' => ($edit ? (int) osc_item_id() : 0),
     'labels' => array(
       'category' => __('Category', 'epsilon'),
       'subcategory' => __('Subcategory', 'epsilon'),
@@ -632,6 +636,8 @@
       'message' => __('Message', 'epsilon'),
       'untitled' => __('Untitled listing', 'epsilon'),
       'noContact' => __('No contact options selected', 'epsilon'),
+      'publishing' => __('Publishing…', 'epsilon'),
+      'publishingHint' => __('Publishing your listing, please wait…', 'epsilon'),
     ),
   )); ?></script>
 

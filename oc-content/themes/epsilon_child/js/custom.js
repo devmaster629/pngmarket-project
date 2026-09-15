@@ -1762,6 +1762,12 @@
       setTimeout(softenThirdLevelRequired, 50);
     });
 
+    // Wizard reloads these fields over AJAX when the category changes.
+    $(document).on('pngm:attrs-loaded', function () {
+      syncOtherField();
+      setTimeout(softenThirdLevelRequired, 50);
+    });
+
     $(document).ajaxComplete(function (event, xhr, settings) {
       if (settings && settings.url && String(settings.url).indexOf('atr_select_url') !== -1) {
         syncOtherField();

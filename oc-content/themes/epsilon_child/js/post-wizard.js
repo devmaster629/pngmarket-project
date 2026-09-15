@@ -73,6 +73,63 @@
       }
     }
 
+    /**
+     * Category attributes (Make, Seats, ...) are rendered server-side for the
+     * category known at page load. The wizard picks the category in step 1, so
+     * reload the plugin fields whenever that choice changes.
+     */
+    var attrsLoadedFor = String(cfg.leaf || '');
+    var attrsRequest = null;
+
+    function loadCategoryAttributes(catId) {
+      var $box = $('#post-hooks');
+      catId = String(catId || '');
+
+      if (!$box.length || !catId || catId === attrsLoadedFor) {
+        return;
+      }
+      attrsLoadedFor = catId;
+
+      var base = cfg.ajaxUrl || (window.location.pathname + '?');
+      var data = {
+        page: 'ajax',
+        action: 'runhook',
+        hook: cfg.edit ? 'item_edit' : 'item_form',
+        catId: catId
+      };
+      if (cfg.edit && cfg.itemId) {
+        data.itemId = cfg.itemId;
+      }
+
+      if (attrsRequest && attrsRequest.abort) {
+        attrsRequest.abort();
+      }
+
+      $box.addClass('is-loading');
+      attrsRequest = $.ajax({
+        url: base,
+        type: 'POST',
+        dataType: 'html',
+        data: data
+      }).done(function (html) {
+        var markup = $.trim(html || '');
+        if (markup && markup.charAt(0) === '{') {
+          return; // JSON error payload — keep what we have
+        }
+        $box.html(markup);
+        // Freshly loaded fields start neutral — red only after a failed Next.
+        $box.find('.error').removeClass('error');
+        $box.find('.is-invalid').removeClass('is-invalid');
+        $(document).trigger('pngm:attrs-loaded');
+        if (window.pngmItemValidation && window.pngmItemValidation.forceEnhanceValidator) {
+          window.pngmItemValidation.forceEnhanceValidator();
+        }
+      }).always(function () {
+        $box.removeClass('is-loading');
+        attrsRequest = null;
+      });
+    }
+
     function updateSummary(rootName, leafName) {
       if (rootName !== null && rootName !== undefined) {
         $('[data-sum="root"]').text(rootName || '—');
@@ -185,6 +242,7 @@
         $catId.val(id);
         clearSubcategoryWarning();
         updateSummary(null, $sub.find('option:selected').text() || '');
+        loadCategoryAttributes(id);
       }
       return id;
     }
@@ -228,18 +286,33 @@
       if ($wrap.length) {
         $wrap.addClass('is-invalid');
       }
+      // Never fall back to an error slot in another step — it would stay invisible.
       var $err = $wrap.find('.pngm-post-field-error').first();
-      if (!$err.length) {
-        $err = $form.find('.pngm-post-field-error[data-for="photos"]').first();
-      }
       if (!$err.length && $wrap.length) {
         $err = $('<div class="pngm-post-field-error" role="alert"/>');
         $wrap.append($err);
       }
       if (!$err.length) {
-        $err = $form.find('.pngm-post-field-error[data-for="catId"]').first();
+        $err = $el.closest('.pngm-post-step-panel').find('.pngm-post-field-error').first();
       }
       showFieldError($err, msg);
+    }
+
+    /**
+     * Drop the error state for one field as soon as it holds a valid value.
+     */
+    function clearErrorFor($el) {
+      if (!$el || !$el.length) {
+        return;
+      }
+      $el.removeClass('is-invalid error');
+      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .pngm-post-terms-wrap, .control-group.atr-field, .atr-field');
+      if (!$wrap.length) {
+        return;
+      }
+      $wrap.removeClass('is-invalid');
+      $wrap.find('.is-invalid').removeClass('is-invalid');
+      hideFieldError($wrap.find('.pngm-post-field-error').first());
     }
 
     function focusFirstInvalid() {
@@ -862,6 +935,63 @@
     bindCounter('input[name^="title"]', 100);
     bindCounter('textarea[name^="description"]', 5000);
 
+    // Live error clearing — an error disappears the moment the field is valid.
+    $form.on('input.pngmPostClear', 'input[name^="title"]', function () {
+      if ($.trim($(this).val() || '').length >= 3) {
+        clearErrorFor($(this));
+      }
+    });
+    $form.on('input.pngmPostClear', 'textarea[name^="description"]', function () {
+      if ($.trim($(this).val() || '').length >= 10) {
+        clearErrorFor($(this));
+      }
+    });
+    $form.on('input.pngmPostClear change.pngmPostClear', '#price', function () {
+      var raw = String($(this).val() || '').replace(/,/g, '').trim();
+      var num = parseFloat(raw);
+      if (raw && !isNaN(num) && num > 0) {
+        clearErrorFor($(this));
+      }
+    });
+    $form.on('change.pngmPostClear', 'input[name="pngm_price_mode"]', function () {
+      if (String($(this).val()) !== 'PAID') {
+        clearErrorFor($form.find('.pngm-post-price-field').first());
+      }
+    });
+    $form.on(
+      'input.pngmPostClear change.pngmPostClear',
+      '#post-hooks input, #post-hooks select, #post-hooks textarea, .atr-form input, .atr-form select, .atr-form textarea',
+      function () {
+        var $el = $(this);
+        var $group = $el.closest('.control-group.atr-field, .atr-field');
+        if (!$group.length) {
+          clearErrorFor($el);
+          return;
+        }
+        var filled = false;
+        if ($el.is(':checkbox, :radio')) {
+          filled = $group.find('input:checked').length > 0;
+        } else {
+          var v = String($el.val() || '');
+          filled = v !== '' && v !== '0';
+        }
+        if (filled) {
+          clearErrorFor($el);
+        }
+      }
+    );
+    $form.on(
+      'change.pngmPostClear',
+      '#regionId, #cityId, #region, #city, input[name="contactName"], input[name="contactPhone"], input[name="contactEmail"], #pngm_call_availability, #pngm_terms',
+      function () {
+        var $el = $(this);
+        var filled = $el.is(':checkbox') ? $el.is(':checked') : $.trim(String($el.val() || '')) !== '';
+        if (filled) {
+          clearErrorFor($el);
+        }
+      }
+    );
+
     // Category cards
     $form.on('click', '.pngm-post-cat-card', function () {
       setRoot($(this).data('root-id'), $(this).data('root-name'), false);
@@ -954,6 +1084,65 @@
       } else if (mode === 'CHECK') {
         $('#price').val('');
       }
+
+      startPublishing();
+    });
+
+    /**
+     * Publishing can take a few seconds (photos, plugins) — show progress and
+     * block a second submit.
+     */
+    function startPublishing() {
+      if ($form.data('pngmPublishing')) {
+        return;
+      }
+      $form.data('pngmPublishing', true);
+
+      if (!$publish.data('pngmLabel')) {
+        $publish.data('pngmLabel', $publish.text());
+      }
+      $publish.addClass('is-loading').text(labels.publishing || 'Publishing…');
+      $preview.prop('disabled', true);
+      $back.prop('disabled', true);
+
+      // Disable after the browser has started the POST, so the button is never
+      // disabled while the submit is still being dispatched.
+      window.setTimeout(function () {
+        $publish.prop('disabled', true);
+      }, 0);
+
+      $('body').addClass('pngm-post-publishing');
+      if (!$('#pngm-post-publishing').length) {
+        $('body').append(
+          '<div id="pngm-post-publishing" class="pngm-post-publishing-overlay" role="status" aria-live="polite">' +
+          '<div class="pngm-post-publishing-card">' +
+          '<span class="pngm-post-spinner" aria-hidden="true"></span>' +
+          '<span class="pngm-post-publishing-text"></span>' +
+          '</div></div>'
+        );
+        $('#pngm-post-publishing .pngm-post-publishing-text')
+          .text(labels.publishingHint || 'Publishing your listing, please wait…');
+      }
+    }
+
+    function stopPublishing() {
+      $form.removeData('pngmPublishing');
+      $publish.removeClass('is-loading').prop('disabled', false);
+      var label = $publish.data('pngmLabel');
+      if (label) {
+        $publish.text(label);
+      }
+      $preview.prop('disabled', false);
+      $back.prop('disabled', false);
+      $('body').removeClass('pngm-post-publishing');
+      $('#pngm-post-publishing').remove();
+    }
+
+    // Back/forward cache restore must not leave the form stuck in "Publishing…".
+    $(window).on('pageshow', function (event) {
+      if (event.originalEvent && event.originalEvent.persisted) {
+        stopPublishing();
+      }
     });
 
     // Map follows region / city / address
@@ -968,6 +1157,12 @@
       if (url.indexOf('city') !== -1 || url.indexOf('region') !== -1 || url.indexOf('ajaxLoc') !== -1) {
         setTimeout(updateMapPreview, 80);
       }
+      // A finished upload should clear the "photo required" error.
+      setTimeout(function () {
+        if (countUploadedPhotos() > 0) {
+          clearErrorFor($form.find('#pngm-step-photos .pngm-post-upload-card').first());
+        }
+      }, 120);
     });
 
     // Geolocation — pin map to current coordinates

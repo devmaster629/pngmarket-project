@@ -3,7 +3,31 @@
    ========================================================================== */
 
 body.pngm-post-wizard {
-  background: #f5f7f8;
+  background: #fff;
+}
+
+body.pngm-post-wizard,
+body.pngm-post-wizard > .content,
+body.pngm-post-wizard .pngm-post-wrap,
+body.pngm-post-wizard footer,
+body.pngm-post-wizard .pngm-footer,
+body.pngm-post-wizard footer.pngm-footer {
+  background: #fff !important;
+}
+
+/* Posting flow: no global search strip */
+body.pngm-post-wizard .pngm-global-search {
+  display: none !important;
+}
+
+body.pngm-post-wizard {
+  padding-top: 64px !important;
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-post-wizard {
+    padding-top: 48px !important;
+  }
 }
 
 /* One step per screen — never stack panels */
@@ -127,7 +151,8 @@ body.pngm-post-wizard .pngm-post-page-title {
 
   .pngm-post-side {
     position: sticky;
-    top: 148px;
+    top: 80px;
+    align-self: start;
   }
 }
 
@@ -1583,7 +1608,7 @@ body.pngm-post-wizard #atr-make_other:not(.pngm-other-visible) {
   margin-top: 8px;
   margin-bottom: 0;
   padding: 12px 0 8px;
-  background: linear-gradient(180deg, rgba(245, 247, 248, 0), #f5f7f8 28%);
+  background: #fff;
 }
 
 body.pngm-post-wizard footer,
@@ -1632,6 +1657,83 @@ body.pngm-post-wizard .container.primary {
   border-color: #d7dee5;
 }
 
+.pngm-post-btn[disabled],
+.pngm-post-btn.is-loading {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+/* Publishing state — takes a moment while photos and plugins are saved */
+.pngm-post-btn.is-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pngm-post-btn.is-loading:before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  animation: pngmPostSpin 0.7s linear infinite;
+}
+
+body.pngm-post-publishing {
+  overflow: hidden;
+}
+
+.pngm-post-publishing-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(16, 24, 40, 0.45);
+}
+
+.pngm-post-publishing-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 340px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(16, 24, 40, 0.22);
+  color: #16202a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.pngm-post-spinner {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid #dfe6ec;
+  border-top-color: #2e7d32;
+  animation: pngmPostSpin 0.7s linear infinite;
+}
+
+@keyframes pngmPostSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pngm-post-spinner,
+  .pngm-post-btn.is-loading:before {
+    animation-duration: 2s;
+  }
+}
+
 body.pngm-post-wizard #error_list {
   max-width: 1080px;
   margin: 0 auto 12px;
@@ -1673,6 +1775,17 @@ body.pngm-post-wizard #plugin-hook {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #eef1f4;
+}
+
+body.pngm-post-wizard #post-hooks:empty {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+body.pngm-post-wizard #post-hooks.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 body.pngm-post-wizard .zip.is-optional {

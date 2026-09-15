@@ -2852,11 +2852,19 @@ body#item #atr-item .atr-value-select .atr-value-single:empty {
   display: none !important;
 }
 
-body#item #atr-item .atr-value-check .atr-value-single + .atr-value-single::before {
+/* Separator only between values that are actually rendered — unselected chips
+   are display:none but still match sibling combinators, which used to leave a
+   stray leading comma before the first visible value. */
+body#item #atr-item .atr-value-check .atr-value-single + .atr-value-single::before,
+body#item #atr-item .atr-value-select .atr-value-single + .atr-value-single::before {
+  content: none;
+}
+
+body#item #atr-item .atr-value-check .atr-value-single:not(.atr-disabled):not(:empty) ~ .atr-value-single:not(.atr-disabled):not(:empty)::before {
   content: ", ";
 }
 
-body#item #atr-item .atr-value-select .atr-value-single + .atr-value-single::before {
+body#item #atr-item .atr-value-select .atr-value-single:not(.atr-disabled):not(:empty) ~ .atr-value-single:not(.atr-disabled):not(:empty)::before {
   content: " / ";
 }
 
