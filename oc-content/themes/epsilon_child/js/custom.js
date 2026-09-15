@@ -3186,6 +3186,102 @@
     }
   }
 
+  function initSearchRecentScroll() {
+    function refreshButtons() {
+      if (typeof window.epsShowUsefulScrollButtons === 'function') {
+        window.epsShowUsefulScrollButtons();
+      }
+      if (typeof window.epsManageScroll === 'function') {
+        window.epsManageScroll();
+      }
+    }
+
+    function bindDrag(scroller) {
+      if (!scroller || scroller.getAttribute('data-pngm-drag') === '1') {
+        return;
+      }
+      scroller.setAttribute('data-pngm-drag', '1');
+
+      var active = false;
+      var startX = 0;
+      var startLeft = 0;
+      var moved = false;
+
+      scroller.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'touch') {
+          return;
+        }
+        if (e.button !== 0) {
+          return;
+        }
+        active = true;
+        moved = false;
+        startX = e.clientX;
+        startLeft = scroller.scrollLeft;
+        scroller.classList.add('is-dragging');
+        try {
+          scroller.setPointerCapture(e.pointerId);
+        } catch (err) {}
+      });
+
+      scroller.addEventListener('pointermove', function (e) {
+        if (!active) {
+          return;
+        }
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 3) {
+          moved = true;
+        }
+        scroller.scrollLeft = startLeft - dx;
+      });
+
+      function endDrag(e) {
+        if (!active) {
+          return;
+        }
+        active = false;
+        scroller.classList.remove('is-dragging');
+        if (moved) {
+          scroller.setAttribute('data-pngm-suppress-click', '1');
+          window.setTimeout(function () {
+            scroller.removeAttribute('data-pngm-suppress-click');
+          }, 80);
+        }
+        try {
+          scroller.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+      }
+
+      scroller.addEventListener('pointerup', endDrag);
+      scroller.addEventListener('pointercancel', endDrag);
+
+      scroller.addEventListener('click', function (e) {
+        if (scroller.getAttribute('data-pngm-suppress-click') === '1') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+    }
+
+    function enhance() {
+      var scrollers = document.querySelectorAll('#recent-ads.onsearch .products.grid.nice-scroll');
+      var i;
+      for (i = 0; i < scrollers.length; i += 1) {
+        bindDrag(scrollers[i]);
+      }
+      refreshButtons();
+    }
+
+    enhance();
+    window.addEventListener('resize', refreshButtons);
+
+    if (window.jQuery) {
+      window.jQuery(document).ajaxComplete(function () {
+        window.setTimeout(enhance, 40);
+      });
+    }
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -3213,6 +3309,7 @@
     initItemDescriptionClamp();
     initLocationModalUx();
     initSearchSortUi();
+    initSearchRecentScroll();
   }
 
   if (document.readyState === 'loading') {
