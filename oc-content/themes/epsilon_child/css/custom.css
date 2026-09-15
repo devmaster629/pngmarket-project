@@ -6800,9 +6800,16 @@ body.pngm-filter-open {
     box-sizing: border-box;
   }
 
-  body.im-chat-page #im-message-form .im-send-hint,
   body.im-chat-page #im-message-form img.im-logged-user-img {
     display: none !important;
+  }
+
+  body.im-chat-page #im-message-form .im-send-hint,
+  body.im-chat-page #im-message-form .pngm-im-send-hint {
+    display: block !important;
+    margin: 6px 0 0 0 !important;
+    font-size: 12px;
+    color: #8a94a0;
   }
 
   body.im-chat-page #im-message-form .im-file-list {

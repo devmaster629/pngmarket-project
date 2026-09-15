@@ -365,6 +365,9 @@ function pngm_im_ui_script()
         board.scrollTop = board.scrollHeight;
       }
     }
+    if (typeof window.pngmImAfterBoardSwap === 'function') {
+      window.pngmImAfterBoardSwap();
+    }
   }
 
   function loadBoard(url, push) {
@@ -691,6 +694,77 @@ function pngm_im_ui_script()
         doSend($(this));
         return false;
       });
+
+      // Enter = send; Ctrl/Cmd+Enter = new line. Allow 1-character messages.
+      function relaxMessageRules($form) {
+        if (!$form.length || typeof $form.validate !== 'function') {
+          return;
+        }
+        try {
+          if ($form.data('validator')) {
+            $form.find('[name="im-message"]').rules('remove', 'minlength');
+            $form.find('[name="im-message"]').rules('add', {
+              required: {
+                depends: function () {
+                  var fileInput = document.getElementById('im-file');
+                  return !(fileInput && fileInput.files && fileInput.files.length);
+                }
+              },
+              messages: {
+                required: '<?php echo osc_esc_js(__('Message: please enter your message.', 'epsilon')); ?>'
+              }
+            });
+          }
+        } catch (err) {}
+        $('#im-error-list').empty().hide();
+      }
+
+      function ensureSendHint($form) {
+        var hintText = '<?php echo osc_esc_js(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?>';
+        var $hint = $form.find('.im-send-hint, .pngm-im-send-hint').first();
+        if (!$hint.length) {
+          $hint = $('<div class="im-send-hint pngm-im-send-hint"></div>');
+          $form.append($hint);
+        }
+        $hint.text(hintText).show();
+      }
+
+      function wireComposer($form) {
+        if (!$form.length) {
+          return;
+        }
+        relaxMessageRules($form);
+        ensureSendHint($form);
+      }
+
+      // Replace plugin Ctrl+Enter=send with Enter=send / Ctrl+Enter=newline.
+      $('body').off('keydown', 'textarea#im-message');
+      $('body').off('keydown.pngmImKeys', 'textarea#im-message');
+      $('body').on('keydown.pngmImKeys', 'textarea#im-message', function (e) {
+        var isEnter = (e.key === 'Enter' || e.keyCode === 13);
+        if (!isEnter) {
+          return;
+        }
+        if (e.ctrlKey || e.metaKey) {
+          // New line — let the browser insert it.
+          return;
+        }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        doSend($(this).closest('form'));
+        return false;
+      });
+
+      wireComposer($('#im-message-form'));
+
+      // Re-apply after AJAX board swaps.
+      var prevAfter = window.pngmImAfterBoardSwap;
+      window.pngmImAfterBoardSwap = function () {
+        if (typeof prevAfter === 'function') {
+          prevAfter();
+        }
+        wireComposer($('#im-message-form'));
+      };
     });
   }
 

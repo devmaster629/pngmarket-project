@@ -3003,10 +3003,10 @@
 
       var $ = window.jQuery;
       if ($) {
-        $('body').off('change.keypngmIm keyup.keypngmIm keydown.keypngmIm paste.keypngmIm cut.keypngmIm input.keypngmIm', 'textarea#im-message');
-        // Steal the plugin handlers by rebinding after them.
+        // Do not blanket-unbind keydown — Enter-to-send lives on that event.
         window.setTimeout(function () {
-          $('body').off('change keyup keydown paste cut input', 'textarea#im-message');
+          $('body').off('change.imFit keyup.imFit keydown.imFit paste.imFit cut.imFit input.imFit', 'textarea#im-message');
+          $('body').off('input.pngmImHeight keyup.pngmImHeight paste.pngmImHeight cut.pngmImHeight', 'textarea#im-message');
           $('body').on('input.pngmImHeight keyup.pngmImHeight paste.pngmImHeight cut.pngmImHeight', 'textarea#im-message', fit);
           reset();
         }, 0);
