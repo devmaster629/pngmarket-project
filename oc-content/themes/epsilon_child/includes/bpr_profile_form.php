@@ -24,7 +24,7 @@ $website = is_array($user_row) && isset($user_row['s_website']) ? (string) $user
 $address = is_array($user_row) && isset($user_row['s_address']) ? (string) $user_row['s_address'] : '';
 $zip = is_array($user_row) && isset($user_row['s_zip']) ? (string) $user_row['s_zip'] : '';
 $email = (string) osc_user_email();
-$email_verified = is_array($user_row) && !empty($user_row['b_active']);
+$email_verified = function_exists('pngm_email_is_verified') && pngm_email_is_verified($user_row);
 
 $bank_raw = osc_get_preference('bank_' . $user_id, 'plugin-business_profile');
 $bank = array('bank_name' => '', 'account_name' => '', 'account_number' => '');

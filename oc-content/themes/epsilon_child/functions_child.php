@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.20');
+    define('PNGM_CHILD_VERSION', '2.5.21');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -23,6 +23,7 @@ require_once dirname(__FILE__) . '/includes/notification_prefs.php';
 require_once dirname(__FILE__) . '/includes/account_security.php';
 require_once dirname(__FILE__) . '/includes/subscriptions.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
+require_once dirname(__FILE__) . '/includes/verification.php';
 
 /**
  * Total active listings matching a default-location cookie (no result limit).

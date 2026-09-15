@@ -244,7 +244,9 @@ if ($show_pass && $show_email) {
           <div class="pngm-sec-row-copy">
             <strong><?php _e('Email', 'epsilon'); ?></strong>
             <em><?php echo osc_esc_html($email); ?></em>
-            <span class="pngm-sec-badge is-ok"><?php _e('Verified', 'epsilon'); ?></span>
+            <?php if (function_exists('pngm_email_is_verified') && pngm_email_is_verified($user)) { ?>
+              <span class="pngm-sec-badge is-ok"><?php _e('Verified', 'epsilon'); ?></span>
+            <?php } ?>
           </div>
           <button type="button" class="pngm-ua-btn is-ghost pngm-sec-btn" data-pngm-sec-open="email"><?php _e('Change email', 'epsilon'); ?></button>
         </div>

@@ -16,9 +16,9 @@
   $initials = function_exists('pngm_ua_user_initials') ? pngm_ua_user_initials($contact_name) : strtoupper(substr($contact_name, 0, 2));
   $has_photo = function_exists('eps_has_profile_picture') && eps_has_profile_picture($user_id);
 
-  $email_verified = is_array($user) && !empty($user['b_active']);
-  $phone_verified = is_array($user) && (trim((string) @$user['s_phone_mobile']) !== '' || trim((string) @$user['s_phone_land']) !== '');
-  $id_verified = is_array($user) && !empty($user['b_company']); // Pro/company treated as stronger identity signal
+  $email_verified = function_exists('pngm_email_is_verified') && pngm_email_is_verified($user);
+  $phone_verified = function_exists('pngm_phone_is_verified') && pngm_phone_is_verified($user);
+  $id_verified = function_exists('pngm_id_is_verified') && pngm_id_is_verified($user);
   $is_verified_seller = $email_verified && ($phone_verified || $id_verified);
 
   $member_since = '';

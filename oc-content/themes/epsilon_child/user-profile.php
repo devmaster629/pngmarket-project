@@ -14,9 +14,9 @@
     $location_text = @array_values($loc_parts)[0];
   }
 
-  $email_verified = is_array($user) && !empty($user['b_active']);
+  $email_verified = function_exists('pngm_email_is_verified') && pngm_email_is_verified($user);
   $phone_val = is_array($user) && !empty($user['s_phone_mobile']) ? (string) $user['s_phone_mobile'] : '';
-  $phone_verified = ($phone_val !== '');
+  $phone_verified = function_exists('pngm_phone_is_verified') && pngm_phone_is_verified($user);
   $phone_parts = function_exists('pngm_ua_phone_split') ? pngm_ua_phone_split($phone_val) : array('dial' => '675', 'local' => preg_replace('/\D+/', '', $phone_val), 'iso' => 'PG');
   $phone_codes = function_exists('pngm_ua_phone_dial_codes') ? pngm_ua_phone_dial_codes() : array();
 
