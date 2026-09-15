@@ -2667,10 +2667,10 @@ body#item #item-image .swiper-thumbs li:hover img {
 
   body#item #item-side {
     position: sticky !important;
-    top: 72px !important;
+    top: 84px !important;
     align-self: flex-start;
     width: 300px;
-    max-height: calc(100vh - 84px);
+    max-height: calc(100vh - 96px);
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -5449,6 +5449,14 @@ body#item .pngm-global-search {
 
 body#item {
   padding-top: 64px !important;
+}
+
+/* Header is 72px here — clear it plus a small breathing gap so the seller card
+   does not sit flush against the header edge. */
+@media screen and (min-width: 1081px) {
+  body#item {
+    padding-top: 84px !important;
+  }
 }
 
 @media screen and (max-width: 767px) {
