@@ -2965,6 +2965,55 @@
     window.setTimeout(function () {
       layout({ pinBottom: true });
     }, 250);
+
+    // Plugin autosize uses a 50px floor, so one keystroke already grows the field.
+    // Keep a single-line height until the content actually wraps.
+    (function initComposerAutosize() {
+      var BASE = 44;
+      var MAX = 120;
+
+      function fit() {
+        var ta = document.getElementById('im-message');
+        if (!ta) {
+          return;
+        }
+        ta.style.height = BASE + 'px';
+        ta.style.overflowY = 'hidden';
+        var needed = ta.scrollHeight;
+        if (needed > BASE + 2) {
+          var next = Math.min(MAX, needed);
+          ta.style.height = next + 'px';
+          ta.style.overflowY = needed > MAX ? 'auto' : 'hidden';
+        }
+        layout();
+      }
+
+      function reset() {
+        var ta = document.getElementById('im-message');
+        if (!ta) {
+          return;
+        }
+        ta.style.height = BASE + 'px';
+        ta.style.overflowY = 'hidden';
+        layout();
+      }
+
+      window.imFitComposerHeight = fit;
+      window.imResetComposerHeight = reset;
+
+      var $ = window.jQuery;
+      if ($) {
+        $('body').off('change.keypngmIm keyup.keypngmIm keydown.keypngmIm paste.keypngmIm cut.keypngmIm input.keypngmIm', 'textarea#im-message');
+        // Steal the plugin handlers by rebinding after them.
+        window.setTimeout(function () {
+          $('body').off('change keyup keydown paste cut input', 'textarea#im-message');
+          $('body').on('input.pngmImHeight keyup.pngmImHeight paste.pngmImHeight cut.pngmImHeight', 'textarea#im-message', fit);
+          reset();
+        }, 0);
+      } else {
+        reset();
+      }
+    }());
   }
 
   /**

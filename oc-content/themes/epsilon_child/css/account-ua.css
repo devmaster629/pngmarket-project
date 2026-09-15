@@ -4252,8 +4252,11 @@ body.im-chat-page #im-message-form img.im-logged-user-img {
 }
 
 .pngm-im-composer .im-textarea,
-.pngm-im-composer #im-message {
+.pngm-im-composer #im-message,
+body.im-chat-page #im-message,
+body.im-chat-page #im-message-form .im-textarea {
   flex: 1 1 auto;
+  height: 44px;
   min-height: 44px;
   max-height: 120px;
   margin: 0 !important;
@@ -4263,7 +4266,9 @@ body.im-chat-page #im-message-form img.im-logged-user-img {
   resize: none;
   box-sizing: border-box;
   font-size: 14px;
+  line-height: 20px;
   width: auto !important;
+  overflow-y: hidden;
 }
 
 .pngm-im-send.im-button-green {
