@@ -2059,32 +2059,23 @@
     }
 
     function syncSubcatActiveFromResponse($doc) {
-      var $list = $('#pngm-search-subcats .pngm-search-subcats-list');
-      if (!$list.length) {
-        return;
-      }
+      var $remote = $doc.find('#pngm-search-subcats');
+      var $local = $('#pngm-search-subcats');
 
-      var $remote = $doc.find('#pngm-search-subcats .pngm-search-subcats-list');
-      if (!$remote.length) {
-        return;
-      }
-
-      $list.find('a.pngm-search-subcat').removeClass('is-active');
-      var $remoteActive = $remote.find('a.pngm-search-subcat.is-active').first();
-      var remoteHref = $remoteActive.attr('href') || '';
-      if (remoteHref) {
-        $list.find('a.pngm-search-subcat').each(function () {
-          if ($(this).attr('href') === remoteHref) {
-            $(this).addClass('is-active');
+      // Root ↔ subcategory strip can change shape; replace whole block.
+      if ($remote.length) {
+        if ($local.length) {
+          $local.replaceWith($remote.first().clone());
+        } else {
+          var $board = $('#pngm-search-board');
+          if ($board.length) {
+            $board.before($remote.first().clone());
+          } else {
+            $('#search-main').prepend($remote.first().clone());
           }
-        });
-      }
-
-      if (!$list.find('a.pngm-search-subcat.is-active').length) {
-        var idx = $remote.find('a.pngm-search-subcat').index($remoteActive);
-        if (idx >= 0) {
-          $list.find('a.pngm-search-subcat').eq(idx).addClass('is-active');
         }
+      } else if ($local.length) {
+        $local.remove();
       }
 
       scrollActiveIntoView();
