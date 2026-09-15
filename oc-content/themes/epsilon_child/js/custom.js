@@ -3006,6 +3006,186 @@
     } catch (err) {}
   }
 
+  function initSearchSortUi() {
+    var SORT_LABEL = 'Sort by';
+
+    function optionMeta(option) {
+      var type = (option.getAttribute('data-type') || '').toLowerCase();
+      var order = String(option.getAttribute('data-order') || '').toLowerCase();
+      var label = (option.textContent || '').replace(/\s+/g, ' ').trim();
+      var icon = 'fas fa-sort';
+      var hint = '';
+
+      if (type.indexOf('price') !== -1) {
+        if (order === 'asc' || order === '0') {
+          icon = 'fas fa-arrow-down';
+          hint = 'Lowest price first';
+        } else {
+          icon = 'fas fa-arrow-up';
+          hint = 'Highest price first';
+        }
+      } else {
+        icon = 'fas fa-clock';
+        hint = 'Most recent first';
+      }
+
+      return { icon: icon, hint: hint, label: label };
+    }
+
+    function closeAll(except) {
+      var open = document.querySelectorAll('.pngm-sort-control.is-open');
+      var i;
+      for (i = 0; i < open.length; i += 1) {
+        if (except && open[i] === except) {
+          continue;
+        }
+        open[i].classList.remove('is-open');
+        var trigger = open[i].querySelector('.pngm-sort-trigger');
+        if (trigger) {
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      }
+    }
+
+    function syncActive(wrap) {
+      var select = wrap.querySelector('select.orderSelect');
+      var valueNode = wrap.querySelector('.pngm-sort-trigger-value');
+      var options = wrap.querySelectorAll('.pngm-sort-option');
+      if (!select || !valueNode) {
+        return;
+      }
+
+      var selected = select.options[select.selectedIndex];
+      var meta = selected ? optionMeta(selected) : { label: '', icon: 'fas fa-sort' };
+      valueNode.textContent = meta.label || '';
+
+      var i;
+      for (i = 0; i < options.length; i += 1) {
+        var isActive = options[i].getAttribute('data-value') === select.value;
+        options[i].classList.toggle('is-active', isActive);
+        options[i].setAttribute('aria-selected', isActive ? 'true' : 'false');
+      }
+    }
+
+    function enhance(wrap) {
+      if (!wrap || wrap.getAttribute('data-pngm-sort-ready') === '1') {
+        return;
+      }
+
+      var select = wrap.querySelector('select.orderSelect');
+      if (!select || !select.options.length) {
+        return;
+      }
+
+      wrap.setAttribute('data-pngm-sort-ready', '1');
+
+      var trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'pngm-sort-trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.innerHTML =
+        '<span class="pngm-sort-trigger-ico" aria-hidden="true"><i class="fas fa-sliders-h"></i></span>' +
+        '<span class="pngm-sort-trigger-copy">' +
+          '<span class="pngm-sort-trigger-eyebrow">' + SORT_LABEL + '</span>' +
+          '<span class="pngm-sort-trigger-value"></span>' +
+        '</span>' +
+        '<span class="pngm-sort-trigger-chevron" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>';
+
+      var menu = document.createElement('div');
+      menu.className = 'pngm-sort-menu';
+      menu.setAttribute('role', 'listbox');
+
+      var i;
+      for (i = 0; i < select.options.length; i += 1) {
+        var opt = select.options[i];
+        var meta = optionMeta(opt);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pngm-sort-option';
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('data-value', opt.value);
+        btn.innerHTML =
+          '<span class="pngm-sort-option-ico" aria-hidden="true"><i class="' + meta.icon + '"></i></span>' +
+          '<span class="pngm-sort-option-text">' +
+            '<span class="pngm-sort-option-label"></span>' +
+            '<span class="pngm-sort-option-hint"></span>' +
+          '</span>' +
+          '<span class="pngm-sort-option-check" aria-hidden="true"><i class="fas fa-check"></i></span>';
+        btn.querySelector('.pngm-sort-option-label').textContent = meta.label;
+        btn.querySelector('.pngm-sort-option-hint').textContent = meta.hint;
+        menu.appendChild(btn);
+      }
+
+      wrap.appendChild(trigger);
+      wrap.appendChild(menu);
+      syncActive(wrap);
+
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var willOpen = !wrap.classList.contains('is-open');
+        closeAll(wrap);
+        wrap.classList.toggle('is-open', willOpen);
+        trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+
+      menu.addEventListener('click', function (e) {
+        var option = e.target.closest('.pngm-sort-option');
+        if (!option || !menu.contains(option)) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+
+        var value = option.getAttribute('data-value');
+        if (!value || select.value === value) {
+          closeAll();
+          return;
+        }
+
+        select.value = value;
+        syncActive(wrap);
+        closeAll();
+
+        if (window.jQuery) {
+          window.jQuery(select).trigger('change');
+        } else {
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    }
+
+    function enhanceAll() {
+      var nodes = document.querySelectorAll('.pngm-sort-control[data-pngm-sort="1"]');
+      var i;
+      for (i = 0; i < nodes.length; i += 1) {
+        enhance(nodes[i]);
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.pngm-sort-control')) {
+        return;
+      }
+      closeAll();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeAll();
+      }
+    });
+
+    enhanceAll();
+
+    if (window.jQuery) {
+      window.jQuery(document).ajaxComplete(function () {
+        window.setTimeout(enhanceAll, 30);
+      });
+    }
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -3032,6 +3212,7 @@
     initChatLayout();
     initItemDescriptionClamp();
     initLocationModalUx();
+    initSearchSortUi();
   }
 
   if (document.readyState === 'loading') {
