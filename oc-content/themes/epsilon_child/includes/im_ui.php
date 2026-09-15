@@ -465,6 +465,236 @@ function pngm_im_ui_script()
       loadBoard(window.location.href, false);
     });
   }
+
+  /**
+   * Optimistic send: paint the bubble + clear the input immediately, then POST
+   * to a light AJAX endpoint. The plugin path waits on a full-page POST (and
+   * often sync SMTP), which feels like a 1–2s stall.
+   */
+  function initOptimisticSend() {
+    if (!window.jQuery) {
+      return;
+    }
+    var $ = window.jQuery;
+    var sendUrl = (typeof window.baseAjaxUrl === 'string' && window.baseAjaxUrl)
+      ? String(window.baseAjaxUrl).replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_im_send')
+      : (window.location.origin + window.location.pathname + '?page=ajax&action=runhook&hook=pngm_im_send');
+    var sending = false;
+
+    function escapeHtml(text) {
+      var d = document.createElement('div');
+      d.textContent = text == null ? '' : String(text);
+      return d.innerHTML;
+    }
+
+    function threadMeta($form) {
+      var action = $form.attr('action') || window.location.href;
+      var threadId = 0;
+      var secret = 'n';
+      var m = String(action).match(/thread-id[=\/](\d+)/i) || String(window.location.href).match(/thread-id[=\/](\d+)/i);
+      if (m) {
+        threadId = parseInt(m[1], 10) || 0;
+      }
+      var s = String(action).match(/secret[=\/]([^\/&#?]+)/i) || String(window.location.href).match(/secret[=\/]([^\/&#?]+)/i);
+      if (s) {
+        secret = decodeURIComponent(s[1]);
+      }
+      var hiddenSecret = $form.find('input[name="secret"]').val();
+      if (hiddenSecret) {
+        secret = hiddenSecret;
+      }
+      return { threadId: threadId, secret: secret };
+    }
+
+    function pinBoard($board) {
+      var $b = ($board && $board.jquery) ? $board : $('.im-table.im-messages').first();
+      if (typeof window.pngmLayoutChat === 'function') {
+        window.pngmLayoutChat({ pinBottom: true });
+      } else if (typeof window.imStickChatToBottom === 'function') {
+        window.imStickChatToBottom($b);
+      } else if ($b[0]) {
+        $b[0].scrollTop = $b[0].scrollHeight;
+      }
+    }
+
+    /**
+     * Clone a real outgoing row so plugin CSS (blue bubble + avatar) applies
+     * immediately — our pngm-im-bubble markup was fighting .im-from styles.
+     */
+    function appendOptimistic(text) {
+      var $board = $('.im-table.im-messages').first();
+      if (!$board.length) {
+        return $();
+      }
+      $board.find('.pngm-im-board-empty, .im-empty').remove();
+
+      var id = 'pending-' + Date.now();
+      var bodyHtml = escapeHtml(text).replace(/\n/g, '<br>');
+      var $tpl = $board.find('.im-table-row.im-from').last();
+      var $row;
+
+      if ($tpl.length) {
+        $row = $tpl.clone(false);
+        $row.attr('data-message-id', id);
+        $row.removeClass('hidden is-failed').addClass('is-pending');
+        $row.find('.im-message-content .im-align-left, .im-message-content .im-col-24').first().html(bodyHtml);
+        $row.find('.im-message-content .im-unsafe-info').remove();
+        $row.find('.im-message-extra').removeClass('im-box-gray').addClass('im-box-empty')
+          .find('.im-download, a.im-download').remove();
+        $row.find('.im-date span, .im-date > span, .pngm-im-bubble-meta time').first()
+          .text('<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
+        $row.find('.im-date .fa-check, .im-date .fa-check-double, .pngm-im-bubble-meta .fa-check-double').remove();
+        $row.find('.pngm-im-bubble-text').html(bodyHtml);
+        $row.find('.im-del-mes-box, .pngm-im-del').remove();
+      } else {
+        // First message in the thread — match plugin outgoing markup.
+        var avatar = '';
+        var $formImg = $('#im-message-form img.im-logged-user-img').first();
+        if ($formImg.length) {
+          avatar = '<img src="' + escapeHtml($formImg.attr('src') || '') + '" alt="" />';
+        }
+        $row = $(
+          '<div class="im-table-row im-from is-pending" data-message-id="' + id + '">'
+          +   '<div class="im-horizontal"><span class="left"></span><span class="right">' + avatar + '</span></div>'
+          +   '<div class="im-line im-name-top">'
+          +     '<div class="im-col-12 im-name im-align-left"><strong></strong></div>'
+          +     '<div class="im-col-12 im-date im-align-right im-i im-gray">'
+          +       '<span><?php echo osc_esc_js(__('Just now', 'epsilon')); ?></span>'
+          +     '</div>'
+          +   '</div>'
+          +   '<div class="im-line im-message-content"><div class="im-col-24 im-align-left">' + bodyHtml + '</div></div>'
+          +   '<div class="im-line im-message-extra im-box-empty"></div>'
+          + '</div>'
+        );
+      }
+
+      $board.append($row);
+      pinBoard($board);
+      return $row;
+    }
+
+    function markRowTime($row, label) {
+      if (!$row || !$row.length) {
+        return;
+      }
+      var $t = $row.find('.im-date span, .pngm-im-bubble-meta time').first();
+      if ($t.length) {
+        $t.text(label);
+      }
+    }
+
+    function doSend($form) {
+      if (sending || !$form.length) {
+        return;
+      }
+      var $ta = $form.find('textarea[name="im-message"], #im-message');
+      var text = String($ta.val() || '').replace(/^\s+|\s+$/g, '');
+      var fileInput = $form.find('input[type="file"]')[0];
+      var hasFile = !!(fileInput && fileInput.files && fileInput.files.length);
+      if (!text && !hasFile) {
+        return;
+      }
+
+      var meta = threadMeta($form);
+      if (!meta.threadId) {
+        return;
+      }
+
+      sending = true;
+      var $btn = $form.find('button[type="submit"]').prop('disabled', true);
+      var $row = $();
+
+      try {
+        if (text) {
+          $row = appendOptimistic(text);
+        }
+
+        // Clear the composer immediately so the next message can be typed.
+        $ta.val('');
+        if (typeof window.imResetComposerHeight === 'function') {
+          window.imResetComposerHeight();
+        }
+
+        var data = new FormData();
+        data.append('thread-id', String(meta.threadId));
+        data.append('secret', meta.secret);
+        data.append('im-message', text);
+        data.append('im-action', 'send_message');
+        if (hasFile) {
+          var i;
+          for (i = 0; i < fileInput.files.length; i += 1) {
+            data.append('im-file[]', fileInput.files[i]);
+          }
+          $form.find('input[type="file"]').val('');
+          if (typeof window.imResetComposerFiles === 'function') {
+            window.imResetComposerFiles();
+          }
+        }
+
+        $.ajax({
+          url: sendUrl,
+          type: 'POST',
+          data: data,
+          processData: false,
+          contentType: false,
+          dataType: 'json'
+        }).done(function (res) {
+          if (res && res.ok) {
+            if ($row.length) {
+              $row.attr('data-message-id', res.id || $row.attr('data-message-id'));
+              $row.removeClass('is-pending');
+              markRowTime($row, res.time || '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
+            }
+            // Only re-pull the board when an attachment needs server HTML.
+            if (hasFile && typeof window.imRefreshMessages === 'function') {
+              window.setTimeout(function () {
+                window.imRefreshMessages(true);
+              }, 300);
+            }
+          } else if ($row.length) {
+            $row.addClass('is-failed');
+            markRowTime($row, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+          }
+        }).fail(function () {
+          if ($row.length) {
+            $row.addClass('is-failed');
+            markRowTime($row, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+          }
+        }).always(function () {
+          sending = false;
+          $btn.prop('disabled', false);
+        });
+      } catch (err) {
+        sending = false;
+        $btn.prop('disabled', false);
+        if (window.console && console.error) {
+          console.error('pngm im send', err);
+        }
+      }
+    }
+
+    // Drop the plugin's blocking click handler, then take over send.
+    $(function () {
+      $('body').off('click', '#im-message-form button');
+      $('body').on('click.pngmImSend', '#im-message-form button[type="submit"]', function (e) {
+        if ($(this).closest('.im-file-list, .im-file-chip').length) {
+          return;
+        }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        doSend($(this).closest('form'));
+        return false;
+      });
+      $('body').on('submit.pngmImSend', '#im-message-form', function (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        doSend($(this));
+        return false;
+      });
+    });
+  }
+
+  initOptimisticSend();
 })();
 </script>
     <?php

@@ -4197,8 +4197,20 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   color: #8a94a0;
 }
 
-.pngm-im-bubble-meta .fa-check-double {
-  color: #2e7d32;
+.pngm-im-bubble-row.is-pending .pngm-im-bubble,
+.im-table-row.im-from.is-pending {
+  opacity: 0.85;
+}
+
+.pngm-im-bubble-row.is-failed .pngm-im-bubble,
+.im-table-row.im-from.is-failed {
+  opacity: 0.9;
+  box-shadow: inset 0 0 0 1px #fca5a5;
+}
+
+.pngm-im-bubble-row.is-failed .pngm-im-bubble-meta time,
+.im-table-row.im-from.is-failed .im-date {
+  color: #b91c1c;
 }
 
 /* Sharing contact details is allowed here, so drop the plugin's warning chip. */
@@ -4224,6 +4236,18 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 .pngm-im-composer .im-logged-user-img,
 .pngm-im-composer .im-send-hint,
 .pngm-im-composer .im-button-alt {
+  display: none !important;
+}
+
+/* Scroll-to-top floats over the composer and looks like a chat control. */
+body.pngm-ua-messages a#scroll-to-top,
+body.im-chat-page a#scroll-to-top {
+  display: none !important;
+}
+
+/* Composer already has send/attach controls — hide the leftover profile chip. */
+body.pngm-ua-messages #im-message-form img.im-logged-user-img,
+body.im-chat-page #im-message-form img.im-logged-user-img {
   display: none !important;
 }
 

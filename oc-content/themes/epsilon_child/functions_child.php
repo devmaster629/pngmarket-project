@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.24');
+    define('PNGM_CHILD_VERSION', '2.5.28');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1499,4 +1499,95 @@ function pngm_ajax_report_item()
 }
 
 osc_add_hook('ajax_pngm_report_item', 'pngm_ajax_report_item');
+
+/**
+ * Prefer deferred IM emails so SMTP does not block the chat send request.
+ * The plugin cron still delivers the mail a few minutes later.
+ */
+function pngm_im_enable_deferred_email()
+{
+    if (!function_exists('im_param')) {
+        return;
+    }
+    if ((int) im_param('email_deferred') === 1) {
+        return;
+    }
+    osc_set_preference('email_deferred', '1', 'plugin-instant_messenger', 'INTEGER');
+    if (class_exists('Preference')) {
+        Preference::newInstance()->set('email_deferred', '1', 'plugin-instant_messenger');
+    }
+}
+osc_add_hook('init', 'pngm_im_enable_deferred_email', 8);
+
+/**
+ * Lightweight AJAX send — inserts the message without a full page redirect.
+ */
+function pngm_ajax_im_send()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (!osc_is_web_user_logged_in() || !class_exists('ModelIM') || !function_exists('im_insert_message')) {
+        echo json_encode(array('ok' => 0, 'error' => 'auth'));
+        return;
+    }
+
+    $thread_id = (int) Params::getParam('thread-id');
+    $secret = (string) Params::getParam('secret');
+    $message_raw = Params::getParam('im-message', false, false);
+
+    $thread = ModelIM::newInstance()->getThreadById($thread_id);
+    if (!function_exists('im_is_valid_thread') || !im_is_valid_thread($thread)) {
+        echo json_encode(array('ok' => 0, 'error' => 'thread'));
+        return;
+    }
+
+    $ctx = function_exists('im_thread_context') ? im_thread_context($thread, $secret) : null;
+    if (!is_array($ctx) || !isset($ctx['send_type'])) {
+        echo json_encode(array('ok' => 0, 'error' => 'denied'));
+        return;
+    }
+    if (array_key_exists('can_view', $ctx) && empty($ctx['can_view'])) {
+        echo json_encode(array('ok' => 0, 'error' => 'denied'));
+        return;
+    }
+
+    $type = (int) $ctx['send_type'];
+    $message_text = nl2br(htmlspecialchars(function_exists('im_str') ? im_str($message_raw) : (string) $message_raw, ENT_QUOTES, 'UTF-8'));
+
+    $files = array();
+    if (function_exists('im_uploaded_file_list')) {
+        $files = im_uploaded_file_list(Params::getFiles('im-file'));
+        if (count($files) === 0) {
+            $files = im_uploaded_file_list(Params::getFiles('im-file[]'));
+        }
+    }
+
+    if (trim(strip_tags($message_text)) === '' && count($files) === 0) {
+        echo json_encode(array('ok' => 0, 'error' => 'empty'));
+        return;
+    }
+
+    $id = 0;
+    if (count($files) === 0) {
+        $id = (int) im_insert_message($thread_id, $message_text, $type, array(), true, false);
+    } else {
+        $n = count($files);
+        foreach ($files as $i => $file) {
+            $text = ($i === 0 ? $message_text : '');
+            $id = (int) im_insert_message($thread_id, $text, $type, $file, $i === 0, false);
+        }
+    }
+
+    if ($id <= 0) {
+        echo json_encode(array('ok' => 0, 'error' => 'insert'));
+        return;
+    }
+
+    echo json_encode(array(
+        'ok' => 1,
+        'id' => $id,
+        'time' => __('Just now', 'epsilon'),
+    ));
+}
+osc_add_hook('ajax_pngm_im_send', 'pngm_ajax_im_send');
 
