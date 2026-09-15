@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.30');
+    define('PNGM_CHILD_VERSION', '2.5.31');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -20,6 +20,7 @@ require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
 require_once dirname(__FILE__) . '/includes/notification_prefs.php';
+require_once dirname(__FILE__) . '/includes/activity.php';
 require_once dirname(__FILE__) . '/includes/account_security.php';
 require_once dirname(__FILE__) . '/includes/subscriptions.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
@@ -87,11 +88,6 @@ function pngm_total_active_items()
 }
 
 /**
- * Notification (search alerts) count for the logged-in user.
- *
- * @return int
- */
-/**
  * Unread conversations / messages waiting for the logged user.
  *
  * @return int
@@ -106,11 +102,7 @@ function pngm_unread_message_count()
 }
 
 /**
- * Bell badge: activity the user has not seen yet.
- *
- * Previously this counted saved searches, which never changes when something
- * actually happens. Today the only tracked unread event is an incoming
- * message; add further sources here as they gain a read/seen marker.
+ * Bell badge: unread Activity items (not chat — messages use their own badge).
  *
  * @return int
  */
@@ -127,19 +119,22 @@ function pngm_notification_count()
         }
     }
 
-    return pngm_unread_message_count();
+    if (function_exists('pngm_activity_unread_count')) {
+        return pngm_activity_unread_count(osc_logged_user_id());
+    }
+
+    return 0;
 }
 
 /**
- * Where the bell points. Falls back to saved searches when the messenger
- * plugin is not active.
+ * Bell opens the Activity feed (listing / account updates).
  *
  * @return string
  */
 function pngm_notification_url()
 {
-    if (function_exists('im_messages')) {
-        return osc_route_url('im-threads');
+    if (function_exists('pngm_activity_url')) {
+        return pngm_activity_url();
     }
 
     return osc_user_alerts_url();

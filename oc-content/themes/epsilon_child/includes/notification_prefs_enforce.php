@@ -266,6 +266,11 @@ osc_add_filter('pre_send_mail_filter', 'pngm_notif_pre_send_mail_filter', 10);
 function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '')
 {
     $user_id = (int) $user_id;
+    $pref_key = (string) $pref_key;
+    // Chat stays on Messages — never toast / push for incoming messages.
+    if ($pref_key === 'msg_new' || $pref_key === 'msg_reply') {
+        return;
+    }
     if ($user_id <= 0 || !pngm_notif_user_allows($user_id, $pref_key, 'push')) {
         return;
     }
@@ -383,6 +388,11 @@ function pngm_notif_notify_user($user_id, $pref_key, $to_email, $to_name, $subje
             'alt_body' => strip_tags($body),
         );
         osc_sendMail($emailParams, $mail_type);
+    }
+
+    // Activity bell (never for chat — filtered inside pngm_activity_add).
+    if (function_exists('pngm_activity_add')) {
+        pngm_activity_add($user_id, $pref_key, $subject, strip_tags($body), $url);
     }
 
     pngm_notif_queue_push($user_id, $pref_key, $subject, strip_tags($body), $url);
@@ -568,55 +578,16 @@ function pngm_notif_cron_listing_expired()
 osc_add_hook('cron_hourly', 'pngm_notif_cron_listing_expired');
 
 /**
- * After IM message insert — queue push even when email was skipped.
+ * Incoming chat must NOT create Activity / bell / browser-push noise.
+ * Unread chat stays on the Messages badge only (and optional email via IM).
  *
  * @param int $message_id
  */
 function pngm_notif_on_im_insert_message($message_id)
 {
-    $message_id = (int) $message_id;
-    if ($message_id <= 0 || !class_exists('ModelIM')) {
-        return;
-    }
-    $msg = ModelIM::newInstance()->getMessageById($message_id);
-    if (!is_array($msg) || empty($msg['fk_i_thread_id'])) {
-        return;
-    }
-    $thread = ModelIM::newInstance()->getThreadById((int) $msg['fk_i_thread_id']);
-    if (!is_array($thread)) {
-        return;
-    }
-
-    $type = isset($msg['i_type']) ? (int) $msg['i_type'] : 0;
-    if ($type === 0) {
-        $to_user_id = (int) $thread['i_to_user_id'];
-        $from_name = (string) $thread['s_from_user_name'];
-        $secret = (string) $thread['s_to_secret'];
-    } else {
-        $to_user_id = (int) $thread['i_from_user_id'];
-        $from_name = (string) $thread['s_to_user_name'];
-        $secret = (string) $thread['s_from_secret'];
-    }
-
-    if ($to_user_id <= 0) {
-        return;
-    }
-
-    $msgs = ModelIM::newInstance()->getMessagesByThreadId((int) $thread['i_thread_id']);
-    $count = is_array($msgs) ? count($msgs) : 0;
-    $pref_key = ($count <= 1) ? 'msg_new' : 'msg_reply';
-
-    $url = function_exists('osc_route_url')
-        ? osc_route_url('im-messages', array('thread-id' => (int) $thread['i_thread_id'], 'secret' => $secret))
-        : osc_base_url();
-
-    $title = ($pref_key === 'msg_new')
-        ? __('New message', 'epsilon')
-        : __('Message reply', 'epsilon');
-    $body = sprintf(__('From %s', 'epsilon'), $from_name);
-
-    pngm_notif_queue_push($to_user_id, $pref_key, $title, $body, $url);
+    return;
 }
+// Hook kept registered so older caches that expect it stay quiet (no-op).
 osc_add_hook('im_insert_message', 'pngm_notif_on_im_insert_message');
 
 /**

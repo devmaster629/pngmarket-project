@@ -1909,6 +1909,15 @@
       });
 
     $(document)
+      .off('click.pngmUaMenuBtn')
+      .on('click.pngmUaMenuBtn', '[data-pngm-ua-menu="1"]', function (e) {
+        if (!isMobileUa()) {
+          return;
+        }
+        openUaNav(e);
+      });
+
+    $(document)
       .off('keydown.pngmUaNav')
       .on('keydown.pngmUaNav', function (e) {
         if (e.key === 'Escape') {

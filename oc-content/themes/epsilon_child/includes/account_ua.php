@@ -46,6 +46,9 @@ function pngm_ua_active_key()
     if ($route === 'im-threads' || $route === 'im-messages' || strpos((string) $route, 'im-') === 0) {
         return 'messages';
     }
+    if ($route === 'pngm-activity' || $sec === 'pngm-activity') {
+        return 'activity';
+    }
     if ($route === 'pngm-notif-prefs' || $sec === 'pngm-notif') {
         return 'notifications';
     }
@@ -474,8 +477,16 @@ function pngm_ua_render_sidebar($active = '')
     if (function_exists('im_messages')) {
         $item('messages', osc_route_url('im-threads'), __('Messages', 'epsilon'), 'fas fa-comment-dots', $count_messages, 'messages');
     }
+    $count_activity = function_exists('pngm_activity_unread_count') ? pngm_activity_unread_count($user_id) : 0;
+    $item(
+        'activity',
+        function_exists('pngm_activity_url') ? pngm_activity_url() : osc_route_url('pngm-activity'),
+        __('Activity', 'epsilon'),
+        'fas fa-bell',
+        $count_activity,
+        'notifications'
+    );
     $item('subscriptions', function_exists('pngm_sub_url') ? pngm_sub_url() : osc_route_url('pngm-subscriptions'), __('Subscriptions', 'epsilon'), 'fas fa-credit-card');
-    // The bell now opens Messages, so saved searches need their own entry.
     $item('alerts', osc_user_alerts_url(), __('Saved Searches', 'epsilon'), 'fas fa-bookmark');
     echo '</div>';
 
