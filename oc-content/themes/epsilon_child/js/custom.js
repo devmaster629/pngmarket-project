@@ -2072,11 +2072,16 @@
         if ($local.length) {
           $local.replaceWith($remote.first().clone());
         } else {
-          var $board = $('#pngm-search-board');
-          if ($board.length) {
-            $board.before($remote.first().clone());
+          var $anchor = $('.pngm-mobile-search-bar').first();
+          if ($anchor.length) {
+            $anchor.after($remote.first().clone());
           } else {
-            $('#search-main').prepend($remote.first().clone());
+            var $board = $('#pngm-search-board');
+            if ($board.length) {
+              $board.before($remote.first().clone());
+            } else {
+              $('#search-main').prepend($remote.first().clone());
+            }
           }
         }
       } else if ($local.length) {
@@ -2275,6 +2280,15 @@
 
             if (bread) {
               $('ul.breadcrumb').html(bread);
+            }
+
+            if (typeof window.pngmSyncFilterDrawerFromPage === 'function') {
+              window.pngmSyncFilterDrawerFromPage();
+            }
+
+            var mobilePh = $doc.find('#sPattern').attr('placeholder');
+            if (mobilePh) {
+              $('.pngm-mobile-pattern').attr('placeholder', mobilePh);
             }
 
             if (typeof window.epsLazyLoadImages === 'function') {
@@ -2784,8 +2798,12 @@
 
         // While the mobile filter drawer is open, don't live-refresh on every
         // keystroke/change — Apply ("Show results") submits instead.
+        // Exception: Category must refresh so Make / Brand (and other hooks) appear.
         if (inDrawer && event && event.type !== 'click') {
-          return;
+          var name = $elem.attr('name') || '';
+          if (name !== 'sCategory') {
+            return;
+          }
         }
 
         return originalAjax.apply(this, arguments);
@@ -2819,13 +2837,46 @@
       if ($cat.length) {
         $cat.remove();
       }
+      $section.find('#search-category-box, [id$="search-category-box"]').remove();
       $form.prepend($scroll);
       if ($btn.length) {
         $form.append($btn);
       }
       $form.addClass('pngm-filter-laid-out');
       $form.find('input[name="sPattern"]').addClass('pattern');
+      $form.find('.picker .results').each(function () {
+        if (!$.trim($(this).html() || '')) {
+          $(this).hide();
+        }
+      });
     }
+
+    /** Re-clone #search-menu into the open drawer after category/AJAX refresh. */
+    function syncFilterDrawerFromPage() {
+      if (!$('body').hasClass('pngm-filter-open')) {
+        return;
+      }
+
+      var $panel = $('#side-menu .box.filter');
+      var $section = $panel.find('.section.filter-menu, .section').first();
+      var $src = $('#search-menu.filter-menu');
+      if (!$panel.length || !$section.length || !$src.length) {
+        return;
+      }
+
+      $section.html($src.html());
+      uniqueIds($section);
+      $panel.find('input[name="sPattern"]').attr('autocomplete', 'off');
+      layoutFilterDrawer($panel);
+
+      var $scroll = $panel.find('.pngm-filter-scroll');
+      if ($scroll.length) {
+        $scroll.scrollTop($scroll[0].scrollHeight);
+      }
+    }
+
+    // Expose so board AJAX can refresh Make / Brand hooks in the open drawer.
+    window.pngmSyncFilterDrawerFromPage = syncFilterDrawerFromPage;
 
     $('body').on('click', '#open-search-filters, .action.open-filters', function () {
       $('body').addClass('pngm-filter-open');

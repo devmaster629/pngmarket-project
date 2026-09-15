@@ -203,7 +203,7 @@
         </div>
 
         <!-- COMPANY --> 
-        <div class="row company isMobile">
+        <div class="row company pngm-filter-seller">
           <label for="sCompany"><?php _e('Seller type', 'epsilon'); ?></label>
           <div class="input-box"><?php echo eps_simple_seller(); ?></div>
         </div>
@@ -335,6 +335,15 @@
 
   <div id="search-main" class="<?php echo $view; ?><?php if($search_cat_id > 0) { ?> pngm-has-category<?php } ?>">
     <?php osc_run_hook('search_items_top'); ?>
+
+    <div class="pngm-mobile-search-bar isMobile">
+      <label class="pngm-sr-only" for="pngmMobilePattern"><?php _e('Keyword', 'epsilon'); ?></label>
+      <div class="pngm-mobile-search-field">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input type="search" id="pngmMobilePattern" name="pngmMobilePattern" class="pngm-mobile-pattern" placeholder="<?php echo osc_esc_html($pngm_keyword_ph); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off" enterkeyhint="search" />
+        <button type="button" class="pngm-mobile-search-clear" aria-label="<?php echo osc_esc_html(__('Clear', 'epsilon')); ?>"<?php if (trim((string) Params::getParam('sPattern')) === '') { ?> hidden<?php } ?>>&times;</button>
+      </div>
+    </div>
 
     <?php
       // Keyword / global search → root categories (home-style).
@@ -595,15 +604,6 @@
     <div class="ajax-load-failed flashmessage flashmessage-error" style="display:none;">
       <p><?php _e('There was problem loading your listings, please try to refresh this page', 'epsilon'); ?></p>
       <a class="btn mini" onClick="window.location.reload();"><i class="fas fa-redo"></i> <?php _e('Refresh', 'epsilon'); ?></a>
-    </div>
-
-    <div class="pngm-mobile-search-bar isMobile">
-      <label class="pngm-sr-only" for="pngmMobilePattern"><?php _e('Keyword', 'epsilon'); ?></label>
-      <div class="pngm-mobile-search-field">
-        <i class="fas fa-search" aria-hidden="true"></i>
-        <input type="search" id="pngmMobilePattern" name="pngmMobilePattern" class="pngm-mobile-pattern" placeholder="<?php echo osc_esc_html($pngm_keyword_ph); ?>" value="<?php echo osc_esc_html(Params::getParam('sPattern')); ?>" autocomplete="off" enterkeyhint="search" />
-        <button type="button" class="pngm-mobile-search-clear" aria-label="<?php echo osc_esc_html(__('Clear', 'epsilon')); ?>"<?php if (trim((string) Params::getParam('sPattern')) === '') { ?> hidden<?php } ?>>&times;</button>
-      </div>
     </div>
     
     <div id="search-quick-bar" class="pngm-search-toolbar">
