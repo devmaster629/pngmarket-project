@@ -4027,7 +4027,7 @@ body.body-ua .profile-box .right-block {
    ========================================================================== */
 
 footer.pngm-footer {
-  background: #f3f4f6;
+  background: #fff;
   border-top: 1px solid #e5e7eb;
   padding: 28px 0 24px;
   color: #1f2937;
@@ -4234,7 +4234,7 @@ a#scroll-to-top svg {
 
 @media screen and (min-width: 768px) {
   footer.pngm-footer {
-    background: #f3f4f6;
+    background: #fff;
     padding: 32px 0 28px;
   }
 
@@ -4244,10 +4244,10 @@ a#scroll-to-top svg {
   }
 }
 
-/* Mobile — full width, light gray, logo → about → follow → links → copy */
+/* Mobile — full width, logo → about → follow → links → copy */
 @media screen and (max-width: 767px) {
   footer.pngm-footer {
-    background: #f3f4f6;
+    background: #fff;
     border-top: 1px solid #e5e7eb;
     padding: 20px 0 calc(20px + env(safe-area-inset-bottom, 0px));
   }
