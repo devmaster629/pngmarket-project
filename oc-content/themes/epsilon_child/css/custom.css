@@ -7748,6 +7748,77 @@ body#search #search-menu .search-side-form .row.buttons.srch .btn {
   font-weight: 700;
 }
 
+/* Make / Brand + attribute filters — clearer spacing */
+body#search #search-menu .search-side-form .row.sidebar-hooks {
+  margin: 16px 0 6px 0;
+  padding: 16px 0 6px 0;
+  border-top: 1px solid #e8edf1;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search .control-group,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search .control-group {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px 0;
+  clear: both;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search .control-group:last-child,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search .control-group:last-child {
+  margin-bottom: 2px;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search .control-label,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search .control-label {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px 0;
+  padding: 0;
+  text-align: left;
+  color: #16202a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search .controls,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search .controls {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search select,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 42px;
+  margin: 0 0 10px 0;
+  padding: 0 12px;
+  border: 1px solid #d7dee5;
+  border-radius: 8px;
+  background: #fff;
+  color: #16202a;
+  font-size: 13px;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+body#search #search-menu .search-side-form .row.sidebar-hooks #atr-search select:last-child,
+body#search #search-menu .search-side-form .row.sidebar-hooks .atr-search select:last-child {
+  margin-bottom: 0;
+}
+
 body#search #search-menu .pngm-desktop-hide,
 body#search #search-category-box.pngm-desktop-hide {
   display: none !important;

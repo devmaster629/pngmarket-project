@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.4.6');
+    define('PNGM_CHILD_VERSION', '2.4.7');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -487,9 +487,59 @@ function pngm_fix_vehicle_attribute_categories()
             $cars_id = (int) $row['pk_i_id'];
         }
 
-        $ids = array('make', 'make_other', 'accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
+        $vehicles_root = 1;
+        $vehicles = $m->query(
+            "SELECT c.pk_i_id FROM {$prefix}t_category c
+             INNER JOIN {$prefix}t_category_description d ON d.fk_i_category_id = c.pk_i_id
+             WHERE (c.fk_i_parent_id IS NULL OR c.fk_i_parent_id = 0 OR c.fk_i_parent_id = '')
+               AND d.s_name = 'Vehicles'
+             LIMIT 1"
+        );
+        if ($vehicles && $vrow = $vehicles->fetch_assoc()) {
+            $vehicles_root = (int) $vrow['pk_i_id'];
+        }
+
+        // Make / Brand must filter under any Vehicles branch (Cars, Motorbikes, Parts…).
+        $vehicle_ids = array($vehicles_root);
+        $pending = array($vehicles_root);
+        $guard = 0;
+        while (count($pending) > 0 && $guard < 40) {
+            $parent = (int) array_shift($pending);
+            $kids = $m->query(
+                "SELECT pk_i_id FROM {$prefix}t_category
+                 WHERE fk_i_parent_id = {$parent} AND b_enabled = 1"
+            );
+            if ($kids) {
+                while ($kid = $kids->fetch_assoc()) {
+                    $id = (int) $kid['pk_i_id'];
+                    if ($id > 0 && !in_array($id, $vehicle_ids, true)) {
+                        $vehicle_ids[] = $id;
+                        $pending[] = $id;
+                    }
+                }
+            }
+            $guard += 1;
+        }
+        $vehicle_cat_csv = implode(',', $vehicle_ids);
+
+        $make_ids = array('make', 'make_other');
+        $make_escaped = array();
+        foreach ($make_ids as $id) {
+            $make_escaped[] = "'" . $m->real_escape_string($id) . "'";
+        }
+        $m->query(sprintf(
+            "UPDATE %st_attribute
+             SET s_category_id = '%s'
+             WHERE s_identifier IN (%s)",
+            $prefix,
+            $m->real_escape_string($vehicle_cat_csv),
+            implode(',', $make_escaped)
+        ));
+
+        // Car-specific attributes stay on Cars only.
+        $car_only = array('accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
         $escaped = array();
-        foreach ($ids as $id) {
+        foreach ($car_only as $id) {
             $escaped[] = "'" . $m->real_escape_string($id) . "'";
         }
 

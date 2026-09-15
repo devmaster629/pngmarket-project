@@ -2115,12 +2115,16 @@
         clearTimeout(window.epsAjaxSearchTimeout);
       }
 
+      var $elem = $(elem);
       var delay = event && event.type === 'keyup' ? 200 : 50;
+      if ($elem.closest('.atr-search, #atr-search').length && event && event.type === 'change') {
+        // Let Attributes plugin write atr_* hidden + spawn child selects first.
+        delay = 120;
+      }
       var scrollToTop = false;
       var ajaxStop = false;
       var ajaxSearchUrl = '';
       var sidebarReload = true;
-      var $elem = $(elem);
 
       var sidebar;
       if ($elem.closest('form.search-side-form').length) {
@@ -2155,17 +2159,39 @@
         scrollToTop = true;
       }
 
+      var rebuildFromForm =
+        (event && (event.type === 'change' || event.type === 'keyup')) || $elem.is('input:radio');
+
       if (event && event.type === 'click' && !$elem.is('input:radio')) {
         if (typeof $elem.attr('href') !== 'undefined' && $elem.attr('href') !== false && $elem.attr('href') !== '') {
           ajaxSearchUrl = $elem.attr('href');
         }
-      } else if (
-        (event && (event.type === 'change' || event.type === 'keyup')) ||
-        $elem.is('input:radio')
-      ) {
-        if ($elem.hasClass('orderSelect')) {
-          ajaxSearchUrl = $elem.find(':selected').attr('data-link');
+        rebuildFromForm = false;
+      } else if ($elem.hasClass('orderSelect')) {
+        ajaxSearchUrl = $elem.find(':selected').attr('data-link');
+        rebuildFromForm = false;
+      }
+
+      window.epsAjaxSearchTimeout = setTimeout(function () {
+        // Attributes cascade selects have no name=; they write into a hidden atr_* input.
+        // Sync after the plugin's own change handler so Make / Brand actually filters.
+        if (typeof window.pngmSyncAtrSearchValues === 'function') {
+          window.pngmSyncAtrSearchValues(sidebar);
         } else {
+          sidebar.find('.atr-search .controls, #atr-search .controls').each(function () {
+            var $block = $(this);
+            var $hidden = $block.find('input[type="hidden"][name^="atr_"]').first();
+            if (!$hidden.length) {
+              return;
+            }
+            var $filled = $block.find('select[data-atr-id]').filter(function () {
+              return $.trim($(this).val() || '').length > 0;
+            }).last();
+            $hidden.val($filled.length ? $filled.val() : '');
+          });
+        }
+
+        if (rebuildFromForm) {
           ajaxSearchUrl =
             window.baseDir +
             'index.php?' +
@@ -2176,9 +2202,7 @@
               })
               .serialize();
         }
-      }
 
-      window.epsAjaxSearchTimeout = setTimeout(function () {
         if (
           String(window.ajaxSearch) !== '1' ||
           $('input.ajaxRun').val() === '1' ||
