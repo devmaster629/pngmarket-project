@@ -7839,6 +7839,18 @@ body#search #search-filters {
   display: none !important;
 }
 
+body#search .pngm-search-cat-strips {
+  margin: 0 0 16px 0;
+}
+
+body#search .pngm-search-cat-strips > .pngm-search-subcats {
+  margin-bottom: 0;
+}
+
+body#search .pngm-search-cat-strips > .pngm-search-nested-subcats {
+  margin-top: 10px;
+}
+
 /* --- Category icon-card strip --- */
 body#search .pngm-search-subcats {
   margin: 0 0 16px 0;

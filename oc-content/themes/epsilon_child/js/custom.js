@@ -2047,22 +2047,27 @@
 
   function initSearchSubcats() {
     function scrollActiveIntoView() {
-      var list = document.querySelector('.pngm-search-subcats-list');
-      if (!list) {
-        return;
-      }
-
-      var active = list.querySelector('.is-active');
-      if (active && typeof active.scrollIntoView === 'function') {
-        active.scrollIntoView({ inline: 'center', block: 'nearest' });
-      }
+      document.querySelectorAll('.pngm-search-subcats-list').forEach(function (list) {
+        var active = list.querySelector('.is-active');
+        if (active && typeof active.scrollIntoView === 'function') {
+          active.scrollIntoView({ inline: 'center', block: 'nearest' });
+        }
+      });
     }
 
     function syncSubcatActiveFromResponse($doc) {
-      var $remote = $doc.find('#pngm-search-subcats');
-      var $local = $('#pngm-search-subcats');
+      var $remote = $doc.find('#pngm-search-cat-strips');
+      var $local = $('#pngm-search-cat-strips');
 
-      // Root ↔ subcategory strip can change shape; replace whole block.
+      // Fallback for older markup without the wrapper.
+      if (!$remote.length) {
+        $remote = $doc.find('#pngm-search-subcats');
+      }
+      if (!$local.length) {
+        $local = $('#pngm-search-subcats');
+      }
+
+      // Root ↔ subcategory / nested strips can change shape; replace whole block.
       if ($remote.length) {
         if ($local.length) {
           $local.replaceWith($remote.first().clone());
@@ -2082,10 +2087,11 @@
     }
 
     function markClickedSubcat($link) {
-      if (!$link.closest('#pngm-search-subcats').length) {
+      var $strip = $link.closest('.pngm-search-subcats');
+      if (!$strip.length) {
         return;
       }
-      $('#pngm-search-subcats a.pngm-search-subcat').removeClass('is-active');
+      $strip.find('a.pngm-search-subcat').removeClass('is-active');
       $link.addClass('is-active');
     }
 
@@ -2318,7 +2324,7 @@
 
     $('body#search').off('click.pngmSubcatAjax').on(
       'click.pngmSubcatAjax',
-      '#pngm-search-subcats a.pngm-search-subcat, a[data-pngm-ajax-search="1"]',
+      '#pngm-search-cat-strips a.pngm-search-subcat, #pngm-search-subcats a.pngm-search-subcat, a[data-pngm-ajax-search="1"]',
       function (event) {
         var href = $(this).attr('href');
         if (!href || href === '#' || href.indexOf('javascript:') === 0) {

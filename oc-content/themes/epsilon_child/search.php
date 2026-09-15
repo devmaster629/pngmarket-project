@@ -127,7 +127,13 @@
           <label for="sCategory"><?php _e('Category', 'epsilon'); ?></label>
 
           <div class="input-box">
-            <?php osc_categories_select('sCategory', $category, __('Category...', 'epsilon')) ; ?>
+            <?php
+              if (function_exists('pngm_search_root_category_select')) {
+                pngm_search_root_category_select('sCategory', $category, __('Category...', 'epsilon'));
+              } else {
+                osc_categories_select('sCategory', $category, __('Category...', 'epsilon'));
+              }
+            ?>
           </div>
         </div>
 
@@ -332,10 +338,13 @@
 
     <?php
       // Keyword / global search → root categories (home-style).
-      // Category browse → root-level siblings (e.g. all Vehicles).
+      // Category browse → root-level siblings, plus nested children when present.
       $pngm_subcats = array();
       $pngm_subcat_parent = null;
       $pngm_subcat_active = 0;
+      $pngm_nested_subcats = array();
+      $pngm_nested_parent = null;
+      $pngm_nested_active = 0;
       $pngm_root_cats = array();
       $pngm_show_root_cats = ((int) $search_cat_id <= 0);
 
@@ -349,6 +358,17 @@
         $pngm_subcats = $pngm_strip['subcats'];
         $pngm_subcat_parent = $pngm_strip['parent'];
         $pngm_subcat_active = (int) $pngm_strip['active_id'];
+
+        if (function_exists('pngm_search_nested_subcat_strip') && $pngm_subcat_active > 0) {
+          $pngm_nested = pngm_search_nested_subcat_strip(
+            $search_cat_id,
+            $pngm_subcat_active,
+            is_array($category) ? $category : null
+          );
+          $pngm_nested_subcats = $pngm_nested['subcats'];
+          $pngm_nested_parent = $pngm_nested['parent'];
+          $pngm_nested_active = (int) $pngm_nested['active_id'];
+        }
       } elseif (function_exists('pngm_subcategories_for')) {
         $pngm_subcats = pngm_subcategories_for($search_cat_id);
         $pngm_subcat_parent = is_array($category) ? $category : eps_get_category($search_cat_id);
@@ -363,6 +383,7 @@
     ?>
 
     <?php if ($pngm_show_root_cats && count($pngm_root_cats) > 0) { ?>
+      <div id="pngm-search-cat-strips" class="pngm-search-cat-strips">
       <div id="pngm-search-subcats" class="pngm-search-subcats pngm-search-rootcats">
         <h2 class="pngm-search-cats-heading"><?php _e('Categories', 'epsilon'); ?></h2>
         <div class="pngm-search-subcats-scroll">
@@ -404,7 +425,9 @@
           </div>
         </div>
       </div>
+      </div>
     <?php } elseif (is_array($pngm_subcats) && count($pngm_subcats) > 0) { ?>
+      <div id="pngm-search-cat-strips" class="pngm-search-cat-strips">
       <div id="pngm-search-subcats" class="pngm-search-subcats">
         <div class="pngm-search-subcats-scroll">
           <div class="pngm-search-subcats-list">
@@ -448,6 +471,54 @@
             <?php } ?>
           </div>
         </div>
+      </div>
+
+      <?php if (is_array($pngm_nested_subcats) && count($pngm_nested_subcats) > 0) { ?>
+        <div id="pngm-search-nested-subcats" class="pngm-search-subcats pngm-search-nested-subcats">
+          <div class="pngm-search-subcats-scroll">
+            <div class="pngm-search-subcats-list">
+              <?php
+                $pngm_nest_all_params = $params_spec;
+                if (is_array($pngm_nested_parent) && @$pngm_nested_parent['pk_i_id'] > 0) {
+                  $pngm_nest_all_params['sCategory'] = $pngm_nested_parent['pk_i_id'];
+                }
+                $pngm_nest_all_label = __('All', 'epsilon');
+                if (is_array($pngm_nested_parent) && @$pngm_nested_parent['s_name'] <> '') {
+                  $pngm_nest_all_label = sprintf(__('All %s', 'epsilon'), $pngm_nested_parent['s_name']);
+                }
+                $pngm_nest_parent_id = is_array($pngm_nested_parent) ? (int) @$pngm_nested_parent['pk_i_id'] : 0;
+              ?>
+              <a class="pngm-search-subcat pngm-search-subcat-all<?php if($pngm_nested_active == $pngm_nest_parent_id) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_nest_all_params); ?>" data-pngm-ajax-search="1">
+                <?php if (function_exists('pngm_render_category_visual') && $pngm_nest_parent_id > 0) { ?>
+                  <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_nest_parent_id, $pngm_nested_parent, is_array($pngm_subcat_parent) ? (int) @$pngm_subcat_parent['pk_i_id'] : 0); ?></span>
+                <?php } elseif (function_exists('pngm_render_category_icon') && $pngm_nest_parent_id > 0) { ?>
+                  <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_nest_parent_id, $pngm_nested_parent, false); ?></span>
+                <?php } ?>
+                <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_nest_all_label); ?></span>
+                <?php if (is_array($pngm_nested_parent) && @$pngm_nested_parent['i_num_items'] > 0) { ?>
+                  <em><?php echo (int) $pngm_nested_parent['i_num_items']; ?></em>
+                <?php } ?>
+              </a>
+              <?php foreach ($pngm_nested_subcats as $pngm_nc) {
+                $pngm_nc_params = $params_spec;
+                $pngm_nc_params['sCategory'] = $pngm_nc['id'];
+              ?>
+                <a class="pngm-search-subcat<?php if($pngm_nested_active == $pngm_nc['id']) { ?> is-active<?php } ?>" href="<?php echo osc_search_url($pngm_nc_params); ?>" data-pngm-ajax-search="1">
+                  <?php if (function_exists('pngm_render_category_visual')) { ?>
+                    <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_visual($pngm_nc['id'], array('s_name' => $pngm_nc['name']), $pngm_nest_parent_id); ?></span>
+                  <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
+                    <span class="pngm-search-subcat-ico"><?php echo pngm_render_category_icon($pngm_nc['id'], array('s_name' => $pngm_nc['name']), false); ?></span>
+                  <?php } ?>
+                  <span class="pngm-search-subcat-name"><?php echo osc_esc_html($pngm_nc['name']); ?></span>
+                  <?php if ($pngm_nc['count'] > 0) { ?>
+                    <em><?php echo (int) $pngm_nc['count']; ?></em>
+                  <?php } ?>
+                </a>
+              <?php } ?>
+            </div>
+          </div>
+        </div>
+      <?php } ?>
       </div>
     <?php } ?>
     

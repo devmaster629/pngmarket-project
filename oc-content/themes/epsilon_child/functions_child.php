@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.1');
+    define('PNGM_CHILD_VERSION', '2.5.3');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -368,6 +368,144 @@ function pngm_subcategories_for($category_id, $limit = 0)
     }
 
     return $out;
+}
+
+
+/**
+ * Walk up to the enabled root category id for a category row/id.
+ *
+ * @param int|array|null $category
+ *
+ * @return int
+ */
+function pngm_category_root_id($category)
+{
+    if (is_numeric($category)) {
+        $category = function_exists('eps_get_category') ? eps_get_category((int) $category) : null;
+    }
+
+    if (!is_array($category) || (int) @$category['pk_i_id'] <= 0) {
+        return 0;
+    }
+
+    $root = $category;
+    $guard = 0;
+    while (is_array($root) && (int) @$root['fk_i_parent_id'] > 0 && $guard < 12) {
+        $parent = function_exists('eps_get_category') ? eps_get_category((int) $root['fk_i_parent_id']) : null;
+        if (!is_array($parent) || (int) @$parent['pk_i_id'] <= 0) {
+            break;
+        }
+        $root = $parent;
+        $guard += 1;
+    }
+
+    return (int) @$root['pk_i_id'];
+}
+
+
+/**
+ * Search filter Category dropdown: root categories only.
+ * Nested browsing stays in the icon strips above results.
+ *
+ * @param string     $name
+ * @param array|null $category Current category row
+ * @param string     $default_str
+ */
+function pngm_search_root_category_select($name = 'sCategory', $category = null, $default_str = '')
+{
+    if ($default_str === '') {
+        $default_str = __('Category...', 'epsilon');
+    }
+
+    $roots = class_exists('Category') ? Category::newInstance()->findRootCategoriesEnabled() : array();
+    if (!is_array($roots)) {
+        $roots = array();
+    }
+
+    $selected = pngm_category_root_id($category);
+
+    echo '<select name="' . osc_esc_html($name) . '" id="' . osc_esc_html($name) . '">';
+    echo '<option value="">' . osc_esc_html($default_str) . '</option>';
+    foreach ($roots as $root) {
+        $id = (int) @$root['pk_i_id'];
+        if ($id <= 0 || empty($root['s_name'])) {
+            continue;
+        }
+        echo '<option value="' . $id . '"' . ($selected === $id ? ' selected="selected"' : '') . '>';
+        echo osc_esc_html($root['s_name']);
+        echo '</option>';
+    }
+    echo '</select>';
+}
+
+
+/**
+ * Second strip: children of the active level-1 subcategory (when they exist).
+ *
+ * @param int        $search_cat_id
+ * @param int        $level1_id      Active item from the root children strip
+ * @param array|null $category
+ *
+ * @return array{parent: ?array, subcats: array, active_id: int}
+ */
+function pngm_search_nested_subcat_strip($search_cat_id, $level1_id, $category = null)
+{
+    $search_cat_id = (int) $search_cat_id;
+    $level1_id = (int) $level1_id;
+    $empty = array(
+        'parent'    => null,
+        'subcats'   => array(),
+        'active_id' => 0,
+    );
+
+    if ($level1_id <= 0) {
+        return $empty;
+    }
+
+    $root_id = pngm_category_root_id($level1_id);
+    // Browsing the root itself — no nested row.
+    if ($level1_id === $root_id) {
+        return $empty;
+    }
+
+    $parent = function_exists('eps_get_category') ? eps_get_category($level1_id) : null;
+    if (!is_array($parent) || (int) @$parent['pk_i_id'] <= 0) {
+        return $empty;
+    }
+
+    $subcats = pngm_subcategories_for($level1_id);
+    if (count($subcats) === 0) {
+        return $empty;
+    }
+
+    $current = is_array($category) ? $category : null;
+    if (!is_array($current) || (int) @$current['pk_i_id'] !== $search_cat_id) {
+        $current = function_exists('eps_get_category') ? eps_get_category($search_cat_id) : null;
+    }
+
+    $active_id = $level1_id;
+    if ($search_cat_id !== $level1_id && is_array($current)) {
+        $walk = $current;
+        $guard = 0;
+        while (is_array($walk) && $guard < 12) {
+            $parent_id = (int) @$walk['fk_i_parent_id'];
+            if ($parent_id === $level1_id) {
+                $active_id = (int) @$walk['pk_i_id'];
+                break;
+            }
+            if ($parent_id <= 0) {
+                break;
+            }
+            $walk = function_exists('eps_get_category') ? eps_get_category($parent_id) : null;
+            $guard += 1;
+        }
+    }
+
+    return array(
+        'parent'    => $parent,
+        'subcats'   => $subcats,
+        'active_id' => $active_id,
+    );
 }
 
 

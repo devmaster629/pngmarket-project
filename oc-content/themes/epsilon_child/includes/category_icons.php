@@ -265,6 +265,11 @@ function pngm_category_theme_photo_url($category_name)
         ? mb_strtolower(trim((string) $category_name), 'UTF-8')
         : strtolower(trim((string) $category_name));
 
+    // Placeholder / untitled admin stubs must not match short needles like "cat" inside "category".
+    if ($n === '' || preg_match('/\bnew\s*categor|\bedit\s*me\b|\buntitled\b|\bplaceholder\b|\bto\s*do\b/i', $n)) {
+        return false;
+    }
+
     $map = array(
         // Vehicles
         'motorcycle parts' => 'moto-parts',
@@ -350,7 +355,9 @@ function pngm_category_theme_photo_url($category_name)
         'other hobby' => 'other-hobbies',
         // Pets
         'dog' => 'dogs',
-        'cat' => 'cats',
+        'cats' => 'cats',
+        'cat ' => 'cats',
+        'birds' => 'birds',
         'bird' => 'birds',
         'fish' => 'fish',
         'livestock' => 'livestock',
@@ -448,6 +455,15 @@ function pngm_category_theme_photo_url($category_name)
     });
 
     foreach ($map as $needle => $slug) {
+        // Short animal/vehicle tokens must be whole words so "category" ≠ cats.
+        if (strlen($needle) <= 4) {
+            $pattern = '/\b' . preg_quote(rtrim($needle), '/') . '\b/u';
+            if (!preg_match($pattern, $n)) {
+                continue;
+            }
+            $key = $slug;
+            break;
+        }
         if (strpos($n, $needle) !== false) {
             $key = $slug;
             break;
@@ -723,6 +739,25 @@ function pngm_get_cat_image($category_id, $category_name = '', $parent_id = 0)
             if ($parent_id <= 0 && !empty($row['fk_i_parent_id'])) {
                 $parent_id = (int) $row['fk_i_parent_id'];
             }
+        }
+    }
+
+    $name_l = function_exists('mb_strtolower')
+        ? mb_strtolower(trim((string) $category_name), 'UTF-8')
+        : strtolower(trim((string) $category_name));
+    $is_placeholder = ($name_l === '' || preg_match('/\bnew\s*categor|\bedit\s*me\b|\buntitled\b|\bplaceholder\b|\bto\s*do\b/i', $name_l));
+
+    // Placeholder children inherit the parent subcategory image (Cameras → camera, etc.).
+    if ($is_placeholder && $parent_id > 0) {
+        $parent_file = pngm_category_cover_file($parent_id);
+        if ($parent_file !== false) {
+            return $parent_file['url'];
+        }
+        $parent_row = class_exists('Category') ? Category::newInstance()->findByPrimaryKey($parent_id) : null;
+        $parent_name = is_array($parent_row) && !empty($parent_row['s_name']) ? $parent_row['s_name'] : '';
+        $parent_theme = pngm_category_theme_photo_url($parent_name);
+        if ($parent_theme !== false) {
+            return $parent_theme;
         }
     }
 
