@@ -117,14 +117,11 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
                 } else {
                     $logged_is_owner = false;
                 }
-                $is_safe = function_exists('im_text_contains_contact_info') ? im_text_contains_contact_info($m['s_message']) : 0;
                 $hidden = (count($messages) - $i >= $show_last) ? ' hidden' : '';
                 ?>
             <div class="im-table-row pngm-im-bubble-row<?php echo $logged_is_owner ? ' im-from is-mine' : ' im-to is-theirs'; ?><?php echo $hidden; ?>" data-message-id="<?php echo (int) $m['pk_i_id']; ?>">
               <div class="pngm-im-bubble">
-                <?php if ($is_safe != 0 && !$logged_is_owner) { ?>
-                  <div class="im-unsafe-info"><?php _e('This message may contain contact info. Be careful!', 'instant_messenger'); ?></div>
-                <?php } ?>
+                <?php // Contact details are allowed on this marketplace — no "unsafe" warning. ?>
                 <div class="pngm-im-bubble-text"><?php echo $m['s_message']; ?></div>
                 <?php if ($m['s_file'] <> '' && $att_enable == 1) { ?>
                   <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank">

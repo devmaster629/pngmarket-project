@@ -4191,6 +4191,12 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   color: #2e7d32;
 }
 
+/* Sharing contact details is allowed here, so drop the plugin's warning chip. */
+.im-unsafe-info,
+.pngm-im-bubble .im-unsafe-info {
+  display: none !important;
+}
+
 .pngm-im-composer {
   display: flex !important;
   align-items: flex-end;
