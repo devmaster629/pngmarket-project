@@ -3859,6 +3859,77 @@
     $(window).on('load.pngmReport', unbindParentReportHandler);
   }
 
+  /**
+   * Header/sidebar unread badges only reflected the state at page render, so a
+   * message arriving while the tab sat open went unnoticed. Poll for the counts
+   * and update the badges in place.
+   */
+  function initBadgePoller() {
+    var badges = document.querySelectorAll('[data-pngm-badge]');
+    if (!badges.length || !window.jQuery) {
+      return;
+    }
+
+    var $ = window.jQuery;
+    var base = (typeof window.baseAjaxUrl === 'string' && window.baseAjaxUrl)
+      ? window.baseAjaxUrl
+      : (window.location.origin + window.location.pathname + '?ajaxRequest=1');
+    var url = base.replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_badge_counts');
+    var INTERVAL = 30000;
+    var timer = null;
+
+    function paint(counts) {
+      if (!counts) {
+        return;
+      }
+      $('[data-pngm-badge]').each(function () {
+        var key = this.getAttribute('data-pngm-badge');
+        if (!Object.prototype.hasOwnProperty.call(counts, key)) {
+          return;
+        }
+        var n = parseInt(counts[key], 10) || 0;
+        this.textContent = n > 99 ? '99+' : String(n);
+        if (n > 0) {
+          this.removeAttribute('hidden');
+        } else {
+          this.setAttribute('hidden', 'hidden');
+        }
+      });
+    }
+
+    function poll() {
+      // Skip while the tab is in the background; refresh on the way back.
+      if (document.hidden) {
+        return;
+      }
+      $.ajax({ url: url, method: 'GET', dataType: 'json', cache: false }).done(paint);
+    }
+
+    function start() {
+      if (timer === null) {
+        timer = window.setInterval(poll, INTERVAL);
+      }
+    }
+
+    function stop() {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        stop();
+      } else {
+        poll();
+        start();
+      }
+    });
+
+    start();
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -3889,6 +3960,7 @@
     initSearchRecentScroll();
     initItemReport();
     initFlashToasts();
+    initBadgePoller();
   }
 
   if (document.readyState === 'loading') {

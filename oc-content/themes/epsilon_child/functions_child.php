@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.23');
+    define('PNGM_CHILD_VERSION', '2.5.24');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -91,14 +91,74 @@ function pngm_total_active_items()
  *
  * @return int
  */
-function pngm_notification_count()
+/**
+ * Unread conversations / messages waiting for the logged user.
+ *
+ * @return int
+ */
+function pngm_unread_message_count()
 {
-    if (!osc_is_web_user_logged_in() || !class_exists('Alerts')) {
+    if (!osc_is_web_user_logged_in() || !function_exists('eps_count_messages')) {
         return 0;
     }
-    $alerts = Alerts::newInstance()->findByUser(osc_logged_user_id());
-    return is_array($alerts) ? count($alerts) : 0;
+
+    return (int) eps_count_messages(osc_logged_user_id());
 }
+
+/**
+ * Bell badge: activity the user has not seen yet.
+ *
+ * Previously this counted saved searches, which never changes when something
+ * actually happens. Today the only tracked unread event is an incoming
+ * message; add further sources here as they gain a read/seen marker.
+ *
+ * @return int
+ */
+function pngm_notification_count()
+{
+    if (!osc_is_web_user_logged_in()) {
+        return 0;
+    }
+
+    if (function_exists('pngm_notif_prefs_get')) {
+        $prefs = pngm_notif_prefs_get(osc_logged_user_id());
+        if (empty($prefs['allow'])) {
+            return 0;
+        }
+    }
+
+    return pngm_unread_message_count();
+}
+
+/**
+ * Where the bell points. Falls back to saved searches when the messenger
+ * plugin is not active.
+ *
+ * @return string
+ */
+function pngm_notification_url()
+{
+    if (function_exists('im_messages')) {
+        return osc_route_url('im-threads');
+    }
+
+    return osc_user_alerts_url();
+}
+
+/**
+ * Badge counts for the header, refreshed by the front-end poller.
+ */
+function pngm_ajax_badge_counts()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    echo json_encode(array(
+        'messages' => pngm_unread_message_count(),
+        'notifications' => pngm_notification_count(),
+    ));
+}
+
+osc_add_hook('ajax_pngm_badge_counts', 'pngm_ajax_badge_counts');
 
 
 /**

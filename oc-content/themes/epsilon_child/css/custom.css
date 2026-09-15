@@ -7660,6 +7660,12 @@ header .links .pngm-notify:hover svg {
   fill: #006b24;
 }
 
+/* Poller-managed badges render at zero and toggle [hidden]; the badge classes
+   set their own display, which would otherwise win over the UA default. */
+[data-pngm-badge][hidden] {
+  display: none !important;
+}
+
 header .links .pngm-notify .counter {
   position: absolute;
   top: 6px;

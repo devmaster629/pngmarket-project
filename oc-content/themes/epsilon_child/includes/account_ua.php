@@ -442,12 +442,17 @@ function pngm_ua_render_sidebar($active = '')
     $user = User::newInstance()->findByPrimaryKey($user_id);
     $is_company = is_array($user) && (int) @$user['b_company'] === 1;
 
-    $item = function ($key, $url, $label, $icon, $counter = null) use ($active) {
+    // $badge marks a counter the front-end poller keeps in sync, so it is
+    // rendered even at zero (hidden) instead of being left out of the markup.
+    $item = function ($key, $url, $label, $icon, $counter = null, $badge = '') use ($active) {
         $cls = 'pngm-ua-nav-link' . ($active === $key ? ' is-active' : '');
         echo '<a class="' . $cls . '" href="' . osc_esc_html($url) . '">';
         echo '<i class="' . osc_esc_html($icon) . '" aria-hidden="true"></i>';
         echo '<span>' . osc_esc_html($label) . '</span>';
-        if ($counter !== null && (int) $counter > 0) {
+        if ($badge !== '') {
+            echo '<em class="pngm-ua-nav-count" data-pngm-badge="' . osc_esc_html($badge) . '"'
+                . ((int) $counter > 0 ? '' : ' hidden') . '>' . (int) $counter . '</em>';
+        } elseif ($counter !== null && (int) $counter > 0) {
             echo '<em class="pngm-ua-nav-count">' . (int) $counter . '</em>';
         }
         echo '</a>';
@@ -467,9 +472,11 @@ function pngm_ua_render_sidebar($active = '')
     $item('active', eps_user_items_url('active'), __('Active Listings', 'epsilon'), 'fas fa-check-circle', $count_all_active);
     $item('listings', eps_user_items_url('all'), __('My Listings', 'epsilon'), 'fas fa-list', $count_listings);
     if (function_exists('im_messages')) {
-        $item('messages', osc_route_url('im-threads'), __('Messages', 'epsilon'), 'fas fa-comment-dots', $count_messages);
+        $item('messages', osc_route_url('im-threads'), __('Messages', 'epsilon'), 'fas fa-comment-dots', $count_messages, 'messages');
     }
     $item('subscriptions', function_exists('pngm_sub_url') ? pngm_sub_url() : osc_route_url('pngm-subscriptions'), __('Subscriptions', 'epsilon'), 'fas fa-credit-card');
+    // The bell now opens Messages, so saved searches need their own entry.
+    $item('alerts', osc_user_alerts_url(), __('Saved Searches', 'epsilon'), 'fas fa-bookmark');
     echo '</div>';
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Profile', 'epsilon')) . '</div>';

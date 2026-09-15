@@ -34,11 +34,9 @@
 
       <?php if (osc_is_web_user_logged_in()) { ?>
         <?php $pngm_notif_count = function_exists('pngm_notification_count') ? pngm_notification_count() : 0; ?>
-        <a class="pngm-notify btn btn-white isMobile isTablet isDesktop" href="<?php echo osc_user_alerts_url(); ?>" title="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>">
+        <a class="pngm-notify btn btn-white isMobile isTablet isDesktop" href="<?php echo function_exists('pngm_notification_url') ? pngm_notification_url() : osc_user_alerts_url(); ?>" title="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V51.2C119 66 64 130.6 64 208v18.8c0 47-17.3 92.4-48.5 127.6l-7.4 8.3c-8.4 9.4-10.4 22.9-5.3 34.4S19.3 416 32 416H416c12.7 0 24.2-7.7 29.2-19.3s3.1-25-5.3-34.4l-7.4-8.3C401.3 319.2 384 273.9 384 226.8V208c0-77.4-55-142-128-156.8V32c0-17.7-14.3-32-32-32zm45.3 493.3c12-12 18.7-28.3 18.7-45.3H160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7z"/></svg>
-          <?php if ($pngm_notif_count > 0) { ?>
-            <span class="counter"><?php echo (int) $pngm_notif_count; ?></span>
-          <?php } ?>
+          <span class="counter" data-pngm-badge="notifications"<?php echo $pngm_notif_count > 0 ? '' : ' hidden'; ?>><?php echo (int) $pngm_notif_count; ?></span>
         </a>
       <?php } ?>
       
@@ -86,9 +84,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18"><path d="M448 0H64C28.7 0 0 28.7 0 64v288c0 35.3 28.7 64 64 64h96v84c0 7.1 5.8 12 12 12 2.4 0 4.9-.7 7.1-2.4L304 416h144c35.3 0 64-28.7 64-64V64c0-35.3-28.7-64-64-64zm16 352c0 8.8-7.2 16-16 16H288l-12.8 9.6L208 428v-60H64c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h384c8.8 0 16 7.2 16 16v288zm-96-216H144c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h224c8.8 0 16-7.2 16-16v-16c0-8.8-7.2-16-16-16zm-96 96H144c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h128c8.8 0 16-7.2 16-16v-16c0-8.8-7.2-16-16-16z"/></svg>
           <?php _e('Messages', 'epsilon'); ?>
 
-          <?php if($mes_counter > 0) { ?>
-            <span class="counter"><?php echo $mes_counter; ?></span>
-          <?php } ?>        
+          <span class="counter" data-pngm-badge="messages"<?php echo $mes_counter > 0 ? '' : ' hidden'; ?>><?php echo (int) $mes_counter; ?></span>
         </a>
       <?php } ?>
 
