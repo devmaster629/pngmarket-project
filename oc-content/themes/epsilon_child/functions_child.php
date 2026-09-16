@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.41');
+    define('PNGM_CHILD_VERSION', '2.5.42');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1182,8 +1182,8 @@ osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
 
 /**
  * Show reCAPTCHA on auth pages when a site key exists.
- * Oc-Admin "enabled" can hide keys from osc_show_recaptcha(); we still paint
- * the widget from the saved public key so login/register match production.
+ * Always paint our own widget markup and load the API from recaptcha.net
+ * (mobile Safari / Android WebViews often block or mishandle google.com).
  *
  * @param string $section
  */
@@ -1208,18 +1208,11 @@ function pngm_auth_show_recaptcha($section = '')
         return;
     }
 
-    if (function_exists('osc_recaptcha_enabled') && osc_recaptcha_enabled()
-        && function_exists('osc_show_recaptcha')
-    ) {
-        osc_show_recaptcha($section);
-        return;
-    }
-
-    // Keys saved but "Enable reCAPTCHA" is off — still show the widget.
-    $lang = function_exists('osc_language') ? substr((string) osc_language(), 0, 2) : 'en';
-    echo '<div class="g-recaptcha" data-sitekey="' . osc_esc_html($key) . '"></div>';
-    echo '<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?hl='
-        . osc_esc_html($lang) . '"></script>';
+    // Placeholder only — pngm_recaptcha_incognito_fix() loads api.js + renders
+    // (compact on narrow phones). Avoid dual google.com + recaptcha.net scripts.
+    echo '<div class="g-recaptcha pngm-g-recaptcha" data-sitekey="'
+        . osc_esc_html($key)
+        . '" data-pngm-recaptcha="1"></div>';
 }
 
 /**
@@ -1316,9 +1309,10 @@ osc_add_hook('before_user_register', 'pngm_require_recaptcha_on_register');
 osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
 
 /**
- * reCAPTCHA often fails to paint in private/incognito windows because
- * www.google.com/recaptcha is treated as a tracker. Reload from recaptcha.net
- * and render explicitly if the widget stayed empty.
+ * Mobile-safe reCAPTCHA loader (Android + iPhone).
+ * - Prefer recaptcha.net (works when google.com is treated as a tracker)
+ * - Use compact widget under ~420px so taps hit the checkbox
+ * - Undo empty widgets and guard auth form submit without a token
  */
 function pngm_recaptcha_incognito_fix()
 {
@@ -1326,7 +1320,7 @@ function pngm_recaptcha_incognito_fix()
         return;
     }
 
-    $site_key = osc_recaptcha_public_key();
+    $site_key = osc_recaptcha_public_key(true);
     if ($site_key === '' || $site_key === false || $site_key === null) {
         return;
     }
@@ -1335,48 +1329,86 @@ function pngm_recaptcha_incognito_fix()
     if ($lang === '') {
         $lang = 'en';
     }
+
+    $required = function_exists('pngm_recaptcha_is_required') && pngm_recaptcha_is_required();
+    $msg = __('Please complete the reCAPTCHA before continuing.', 'epsilon');
     ?>
 <script>
 (function () {
-  var siteKey = <?php echo json_encode($site_key); ?>;
+  var siteKey = <?php echo json_encode((string) $site_key); ?>;
   var lang = <?php echo json_encode($lang); ?>;
+  var authRequired = <?php echo $required ? 'true' : 'false'; ?>;
+  var missingMsg = <?php echo json_encode($msg); ?>;
   var loading = false;
+  var scriptReady = false;
 
   function widgets() {
-    return Array.prototype.slice.call(document.querySelectorAll('.g-recaptcha, [id^="anr_captcha_field_"]'));
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.g-recaptcha, [id^="anr_captcha_field_"], [data-pngm-recaptcha]')
+    );
   }
 
   function isRendered(el) {
     if (!el) {
       return true;
     }
+    if (el.getAttribute('data-pngm-rendered') === '1') {
+      return true;
+    }
     return !!el.querySelector('iframe, textarea[name="g-recaptcha-response"]');
   }
 
-  function loadAndRender() {
-    var pending = widgets().filter(function (el) { return !isRendered(el); });
-    if (!pending.length) {
+  function widgetSize() {
+    // Compact fits narrow Android/iPhone widths without parent CSS scale hacks.
+    try {
+      if (window.matchMedia && window.matchMedia('(max-width: 420px)').matches) {
+        return 'compact';
+      }
+    } catch (e) {}
+    return (window.innerWidth && window.innerWidth <= 420) ? 'compact' : 'normal';
+  }
+
+  function renderOne(el) {
+    if (!el || isRendered(el)) {
       return;
     }
-
-    function renderAll() {
-      pending.forEach(function (el) {
-        if (isRendered(el) || typeof window.grecaptcha === 'undefined' || typeof window.grecaptcha.render !== 'function') {
-          return;
-        }
-        try {
-          if (!el.getAttribute('data-sitekey')) {
-            el.setAttribute('data-sitekey', siteKey);
-          }
-          window.grecaptcha.render(el, { sitekey: siteKey });
-        } catch (e) {
-          // Already rendered or API not ready.
-        }
-      });
+    if (typeof window.grecaptcha === 'undefined' || typeof window.grecaptcha.render !== 'function') {
+      return;
     }
+    try {
+      if (!el.getAttribute('data-sitekey')) {
+        el.setAttribute('data-sitekey', siteKey);
+      }
+      // Clear leftover empty nodes from a failed google.com auto-render.
+      while (el.firstChild) {
+        el.removeChild(el.firstChild);
+      }
+      window.grecaptcha.render(el, {
+        sitekey: siteKey,
+        size: widgetSize(),
+        theme: 'light'
+      });
+      el.setAttribute('data-pngm-rendered', '1');
+    } catch (err) {
+      // Already rendered by another script — mark done if iframe appeared.
+      if (el.querySelector('iframe')) {
+        el.setAttribute('data-pngm-rendered', '1');
+      }
+    }
+  }
 
+  function renderAll() {
+    widgets().forEach(renderOne);
+  }
+
+  function loadApi(cb) {
     if (typeof window.grecaptcha !== 'undefined' && typeof window.grecaptcha.render === 'function') {
-      renderAll();
+      scriptReady = true;
+      if (typeof window.grecaptcha.ready === 'function') {
+        window.grecaptcha.ready(function () { cb(); });
+      } else {
+        cb();
+      }
       return;
     }
 
@@ -1386,23 +1418,111 @@ function pngm_recaptcha_incognito_fix()
     loading = true;
 
     window.pngmRecaptchaOnload = function () {
-      renderAll();
+      scriptReady = true;
+      if (typeof window.grecaptcha !== 'undefined' && typeof window.grecaptcha.ready === 'function') {
+        window.grecaptcha.ready(function () { cb(); });
+      } else {
+        cb();
+      }
     };
 
     var script = document.createElement('script');
-    script.src = 'https://www.recaptcha.net/recaptcha/api.js?hl=' + encodeURIComponent(lang) + '&onload=pngmRecaptchaOnload&render=explicit';
+    // recaptcha.net mirrors google.com and survives tracker-blocking mobile browsers.
+    script.src = 'https://www.recaptcha.net/recaptcha/api.js?hl='
+      + encodeURIComponent(lang)
+      + '&onload=pngmRecaptchaOnload&render=explicit';
     script.async = true;
     script.defer = true;
+    script.onerror = function () {
+      loading = false;
+      // Fallback if recaptcha.net is blocked.
+      var fallback = document.createElement('script');
+      fallback.src = 'https://www.google.com/recaptcha/api.js?hl='
+        + encodeURIComponent(lang)
+        + '&onload=pngmRecaptchaOnload&render=explicit';
+      fallback.async = true;
+      fallback.defer = true;
+      document.head.appendChild(fallback);
+    };
     document.head.appendChild(script);
+  }
+
+  function ensure() {
+    if (!widgets().length) {
+      return;
+    }
+    loadApi(renderAll);
+  }
+
+  function tokenFor(form) {
+    if (!form) {
+      return '';
+    }
+    var field = form.querySelector('textarea[name="g-recaptcha-response"]');
+    if (field && field.value) {
+      return String(field.value).trim();
+    }
+    // Some WebViews keep the response on a sibling widget outside the form briefly.
+    var any = document.querySelector('textarea[name="g-recaptcha-response"]');
+    return any && any.value ? String(any.value).trim() : '';
+  }
+
+  function guardAuthForms() {
+    if (!authRequired) {
+      return;
+    }
+    var forms = document.querySelectorAll(
+      'form.pngm-auth-form, form#pngm-login-form, form#register, body.pngm-auth form[action]'
+    );
+    Array.prototype.forEach.call(forms, function (form) {
+      if (form.getAttribute('data-pngm-recaptcha-guard') === '1') {
+        return;
+      }
+      form.setAttribute('data-pngm-recaptcha-guard', '1');
+      form.addEventListener('submit', function (e) {
+        if (!widgets().length) {
+          return;
+        }
+        // Give a late-rendered widget one more chance before blocking.
+        renderAll();
+        var token = tokenFor(form);
+        if (token) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        ensure();
+        var note = form.querySelector('.pngm-auth-captcha-error');
+        if (!note) {
+          note = document.createElement('p');
+          note.className = 'pngm-auth-captcha-error';
+          note.setAttribute('role', 'alert');
+          note.style.cssText = 'color:#d32f2f;font-size:13px;margin:0 0 12px;';
+          var wrap = form.querySelector('.pngm-auth-captcha') || form;
+          wrap.appendChild(note);
+        }
+        note.textContent = missingMsg;
+        try {
+          var box = form.querySelector('.pngm-auth-captcha, .g-recaptcha');
+          if (box && box.scrollIntoView) {
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (err2) {}
+        return false;
+      }, true);
+    });
   }
 
   function boot() {
     if (!widgets().length) {
       return;
     }
-    setTimeout(loadAndRender, 600);
-    setTimeout(loadAndRender, 1800);
-    setTimeout(loadAndRender, 4000);
+    ensure();
+    guardAuthForms();
+    setTimeout(ensure, 400);
+    setTimeout(ensure, 1200);
+    setTimeout(ensure, 3000);
+    setTimeout(ensure, 6000);
   }
 
   if (document.readyState === 'loading') {
@@ -1410,6 +1530,20 @@ function pngm_recaptcha_incognito_fix()
   } else {
     boot();
   }
+
+  window.addEventListener('pageshow', function () {
+    // iOS Safari back-forward cache can leave an empty widget.
+    widgets().forEach(function (el) {
+      if (!el.querySelector('iframe')) {
+        el.removeAttribute('data-pngm-rendered');
+      }
+    });
+    ensure();
+  });
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(ensure, 350);
+  });
 })();
 </script>
     <?php

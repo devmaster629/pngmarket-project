@@ -6397,10 +6397,50 @@ header .cresults .data strong {
   display: none !important;
 }
 
+/* Beat parent epsilon/css/responsive.css (max-width:360px) which sets
+   height:60px + transform:scale(0.75) and breaks taps on Android/iPhone. */
 .g-recaptcha,
-[id^="anr_captcha_field_"] {
-  min-height: 78px;
+[id^="anr_captcha_field_"],
+body.pre-account.pngm-auth .g-recaptcha,
+body.pngm-auth-v2 .g-recaptcha,
+div.g-recaptcha,
+div[id^="anr_captcha_field_"],
+#item-forms div.g-recaptcha {
+  min-height: 78px !important;
+  height: auto !important;
+  max-width: 100% !important;
   overflow: visible !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+}
+
+.g-recaptcha > div,
+[id^="anr_captcha_field_"] > div,
+div.g-recaptcha > div,
+div[id^="anr_captcha_field_"] > div {
+  transform: none !important;
+  -webkit-transform: none !important;
+  height: auto !important;
+}
+
+/* Google challenge overlay must sit above auth chrome on iOS/Android */
+.grecaptcha-badge,
+body > div[style*="z-index"] > div > iframe,
+body > div > div > iframe[src*="recaptcha"] {
+  z-index: 2147483646 !important;
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-auth-v2.pre-account.pngm-auth,
+  body.pngm-auth-v2.pre-account.pngm-auth .content {
+    overflow-x: visible !important;
+  }
+
+  body.pngm-auth-v2 .pngm-auth-captcha {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+  }
 }
 
 body.pngm-filter-open {
