@@ -4273,25 +4273,59 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 .pngm-im-composer .pngm-im-send-hint,
 body.im-chat-page #im-message-form .im-send-hint,
 body.im-chat-page #im-message-form .pngm-im-send-hint,
-body.pngm-ua-messages #im-message-form .im-send-hint {
+body.pngm-ua-messages #im-message-form .im-send-hint,
+body.pngm-ua-messages #im-message-form .pngm-im-send-hint {
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   float: none !important;
   clear: both;
   flex: 0 0 100%;
-  order: 20;
+  order: 30;
   width: 100% !important;
   max-width: 100%;
   margin: 4px 0 0 0 !important;
-  padding: 0 2px !important;
+  padding: 0 !important;
   font-size: 12px;
   line-height: 1.35;
-  color: #6b7785;
+  color: #5a6570;
   position: static !important;
   white-space: normal;
   overflow: visible;
   height: auto !important;
-  min-height: 0;
+  min-height: 16px;
   box-sizing: border-box;
+}
+
+/* File chips: no leftover avatar gutter on the left */
+body.pngm-ua-messages #im-message-form .im-file-list,
+body.im-chat-page #im-message-form .im-file-list,
+body #im-message-form .im-file-list {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 100%;
+  order: 15;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+}
+
+body.pngm-ua-messages #im-message-form .im-file-list[hidden],
+body.im-chat-page #im-message-form .im-file-list[hidden],
+body #im-message-form .im-file-list[hidden] {
+  display: none !important;
+}
+
+body #im-message-form .im-file-chip {
+  margin: 0 !important;
+}
+
+body #im-message-form .im-file-remove {
+  border: 0;
+  cursor: pointer;
 }
 
 .pngm-im-attach {
@@ -4313,7 +4347,17 @@ body.pngm-ua-messages #im-message-form .im-send-hint {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 220px;
+  max-width: min(220px, 55vw);
+}
+
+@media (max-width: 767px) {
+  .pngm-im-attach .pngm-im-attach-name {
+    max-width: 58vw;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-all;
+  }
 }
 
 .pngm-im-bubble-row.is-mine .pngm-im-attach,

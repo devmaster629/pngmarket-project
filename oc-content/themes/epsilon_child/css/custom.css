@@ -6768,9 +6768,13 @@ body.pngm-filter-open {
 
   body.im-chat-page .pngm-im-board-pane {
     margin: 0 0 10px !important;
-    padding: 12px 12px 0 !important;
+    padding: 12px 12px 8px !important;
     border-radius: 12px !important;
     overflow: hidden;
+  }
+
+  body.im-chat-page .pngm-im-board-pane > .im-file-messages {
+    overflow: hidden !important;
   }
 
   body.im-chat-page .pngm-im-mobile-back,
@@ -6791,7 +6795,7 @@ body.pngm-filter-open {
     width: calc(100% + 24px) !important;
     max-width: none;
     margin: 8px -12px 0 !important;
-    padding: 10px 12px 14px !important;
+    padding: 10px 12px 12px !important;
     background: #fff;
     border: 0;
     border-top: 1px solid #eef1f4;
@@ -6799,36 +6803,61 @@ body.pngm-filter-open {
     box-shadow: none;
     box-sizing: border-box;
     display: flex !important;
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
     align-items: flex-end;
     gap: 8px;
+    overflow: visible !important;
   }
 
   body.im-chat-page #im-message-form img.im-logged-user-img {
     display: none !important;
   }
 
+  body.im-chat-page #im-message-form .im-file-list,
+  body.im-chat-page #im-message-form #im-file-list {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 0 0 100% !important;
+    order: 15 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+  }
+
+  body.im-chat-page #im-message-form .im-file-list[hidden],
+  body.im-chat-page #im-message-form #im-file-list[hidden] {
+    display: none !important;
+  }
+
   body.im-chat-page #im-message-form .im-send-hint,
   body.im-chat-page #im-message-form .pngm-im-send-hint {
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     flex: 0 0 100% !important;
-    order: 20;
+    order: 30 !important;
     width: 100% !important;
-    max-width: 100%;
-    margin: 2px 0 0 0 !important;
-    padding: 0 2px !important;
-    font-size: 12px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 2px 0 0 0 !important;
+    font-size: 11px !important;
     line-height: 1.4 !important;
-    color: #6b7785 !important;
+    color: #5a6570 !important;
     white-space: normal !important;
     overflow: visible !important;
     height: auto !important;
-    min-height: 16px;
-  }
-
-  body.im-chat-page #im-message-form .im-file-list {
-    margin: 0 0 8px 0 !important;
-    width: 100% !important;
+    min-height: 16px !important;
+    max-height: none !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    float: none !important;
+    z-index: 3 !important;
   }
 
   body.im-chat-page #im-message,

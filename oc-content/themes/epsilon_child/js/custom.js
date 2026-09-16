@@ -2946,8 +2946,12 @@
       }
 
       var formH = form ? form.offsetHeight : 0;
+      // Keep room for the send-hint line even if it was clipped on a prior paint.
+      if (formH < 72) {
+        formH = 72;
+      }
       var top = board.getBoundingClientRect().top;
-      var available = Math.floor(window.innerHeight - top - formH - naviH - 4);
+      var available = Math.floor(window.innerHeight - top - formH - naviH - 8);
       if (available < 80) {
         available = 80;
       }
@@ -2975,8 +2979,8 @@
       layout({ pinBottom: true });
     }, 250);
 
-    // Plugin autosize uses a 50px floor, so one keystroke already grows the field.
-    // Keep a single-line height until the content actually wraps.
+    // Plugin autosize uses a 50–85px floor, so one keystroke already grows the field
+    // and can push the send-hint under the overflow clip on mobile.
     (function initComposerAutosize() {
       var BASE = 44;
       var MAX = 120;
@@ -2988,41 +2992,34 @@
         }
         ta.style.height = BASE + 'px';
         ta.style.overflowY = 'hidden';
-        var needed = ta.scrollHeight;
-        if (needed > BASE + 2) {
-          var next = Math.min(MAX, needed);
-          ta.style.height = next + 'px';
-          ta.style.overflowY = needed > MAX ? 'auto' : 'hidden';
+        var needed = Math.max(BASE, Math.min(MAX, ta.scrollHeight));
+        ta.style.height = needed + 'px';
+        ta.style.overflowY = needed >= MAX ? 'auto' : 'hidden';
+        if (typeof window.pngmLayoutChat === 'function') {
+          window.pngmLayoutChat();
         }
-        layout();
       }
 
-      function reset() {
+      window.imResetComposerHeight = function () {
         var ta = document.getElementById('im-message');
         if (!ta) {
           return;
         }
         ta.style.height = BASE + 'px';
         ta.style.overflowY = 'hidden';
-        layout();
-      }
+        if (typeof window.pngmLayoutChat === 'function') {
+          window.pngmLayoutChat();
+        }
+      };
 
-      window.imFitComposerHeight = fit;
-      window.imResetComposerHeight = reset;
-
-      var $ = window.jQuery;
-      if ($) {
-        // Do not blanket-unbind keydown — Enter-to-send lives on that event.
-        window.setTimeout(function () {
-          $('body').off('change.imFit keyup.imFit keydown.imFit paste.imFit cut.imFit input.imFit', 'textarea#im-message');
-          $('body').off('input.pngmImHeight keyup.pngmImHeight paste.pngmImHeight cut.pngmImHeight', 'textarea#im-message');
-          $('body').on('input.pngmImHeight keyup.pngmImHeight paste.pngmImHeight cut.pngmImHeight', 'textarea#im-message', fit);
-          reset();
-        }, 0);
-      } else {
-        reset();
+      // Beat the plugin's taller min-height handler.
+      if (window.jQuery) {
+        window.jQuery('body')
+          .off('change keyup keydown paste cut input', 'textarea#im-message')
+          .on('change.pngmImFit keyup.pngmImFit keydown.pngmImFit paste.pngmImFit cut.pngmImFit input.pngmImFit', 'textarea#im-message', fit);
       }
-    }());
+      fit();
+    })();
   }
 
   /**

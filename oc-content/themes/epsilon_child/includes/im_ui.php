@@ -716,8 +716,16 @@ function pngm_im_ui_script()
       }
       var $ta = $form.find('textarea[name="im-message"], #im-message');
       var text = String($ta.val() || '').replace(/^\s+|\s+$/g, '');
-      var fileInput = $form.find('input[type="file"]')[0];
-      var hasFile = !!(fileInput && fileInput.files && fileInput.files.length);
+      var files = (typeof window.imGetComposerFiles === 'function')
+        ? window.imGetComposerFiles()
+        : [];
+      if (!files.length) {
+        var fileInput = $form.find('input[type="file"]')[0];
+        if (fileInput && fileInput.files && fileInput.files.length) {
+          files = Array.prototype.slice.call(fileInput.files);
+        }
+      }
+      var hasFile = files.length > 0;
       if (!text && !hasFile) {
         return;
       }
@@ -749,13 +757,15 @@ function pngm_im_ui_script()
         data.append('im-action', 'send_message');
         if (hasFile) {
           var i;
-          for (i = 0; i < fileInput.files.length; i += 1) {
-            data.append('im-file[]', fileInput.files[i]);
+          for (i = 0; i < files.length; i += 1) {
+            data.append('im-file[]', files[i]);
           }
+        }
+        // Always clear pending after capture — X-removed files must not linger.
+        if (typeof window.imResetComposerFiles === 'function') {
+          window.imResetComposerFiles();
+        } else {
           $form.find('input[type="file"]').val('');
-          if (typeof window.imResetComposerFiles === 'function') {
-            window.imResetComposerFiles();
-          }
         }
 
         $.ajax({

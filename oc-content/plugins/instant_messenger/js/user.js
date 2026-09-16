@@ -91,10 +91,16 @@ $(document).ready(function(){
         return;
       }
 
+      // Always wipe first — otherwise removed files can linger in the native FileList.
+      try {
+        input.value = '';
+      } catch (errClear) {}
+
+      if(!pending.length) {
+        return;
+      }
+
       if(typeof DataTransfer === 'undefined') {
-        if(!pending.length) {
-          input.value = '';
-        }
         return;
       }
 
@@ -106,6 +112,11 @@ $(document).ready(function(){
         syncing = true;
         input.files = dt.files;
       } catch (e) {
+        // If rebuild fails, drop pending so UI and payload stay consistent.
+        pending = [];
+        try {
+          input.value = '';
+        } catch (err2) {}
       }
       syncing = false;
     }
@@ -119,46 +130,63 @@ $(document).ready(function(){
       list.innerHTML = '';
       if(!pending.length) {
         list.hidden = true;
+        list.setAttribute('hidden', 'hidden');
         return;
       }
 
       list.hidden = false;
+      list.removeAttribute('hidden');
       pending.forEach(function(file, index) {
         var chip = document.createElement('span');
         chip.className = 'im-file-chip';
+        chip.setAttribute('data-file-index', String(index));
 
         var name = document.createElement('em');
         name.textContent = file.name;
         chip.appendChild(name);
 
-        var remove = document.createElement('span');
+        var remove = document.createElement('button');
+        remove.type = 'button';
         remove.className = 'im-file-remove';
-        remove.setAttribute('role', 'button');
-        remove.setAttribute('tabindex', '0');
         remove.setAttribute('aria-label', 'Remove file');
         remove.innerHTML = '&times;';
         remove.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          pending.splice(index, 1);
+          var idx = parseInt(chip.getAttribute('data-file-index'), 10);
+          if(isNaN(idx)) {
+            idx = index;
+          }
+          if(idx >= 0 && idx < pending.length) {
+            pending.splice(idx, 1);
+          }
           syncInput();
           renderList();
+          if(typeof window.pngmLayoutChat === 'function') {
+            window.pngmLayoutChat();
+          }
         });
         chip.appendChild(remove);
         list.appendChild(chip);
       });
     }
 
+    window.imGetComposerFiles = function() {
+      return pending.slice();
+    };
+
     window.imResetComposerFiles = function() {
       pending = [];
       var input = fileInput();
       if(input) {
-        input.value = '';
+        try {
+          input.value = '';
+        } catch (err) {}
       }
       renderList();
     };
 
-    $('body').on('change', '#im-file', function() {
+    $('body').off('change.imFiles', '#im-file').on('change.imFiles', '#im-file', function() {
       if(syncing) {
         return;
       }
@@ -172,9 +200,13 @@ $(document).ready(function(){
           pending.push(file);
         }
       });
+      // Re-sync native input from pending only (source of truth).
       syncInput();
       renderList();
       $('#im-message').removeAttr('required').removeClass('error');
+      if(typeof window.pngmLayoutChat === 'function') {
+        window.pngmLayoutChat();
+      }
     });
   })();
 
