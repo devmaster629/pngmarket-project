@@ -401,28 +401,30 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
     <div class="im-empty flashmessage flashmessage-warning"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
 
   <?php } else if($target_is_null === false && $blocked_by_you != 0 && $blocked_you != 0) { ?>
-    <form id="im-message-form" class="im-row im-body im-form-validate pngm-im-composer" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
-      <input type="hidden" name="im-action" id="im-action" value="send_message" />
+    <div class="pngm-composer-dock">
+      <form id="im-message-form" class="im-row im-body im-form-validate pngm-im-composer" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
-      <img class="im-logged-user-img im-tooltip" src="<?php echo $logged_user_img; ?>" title="<?php echo osc_esc_html(sprintf(__('You are logged in as %s', 'instant_messenger'), $logged_user_name)); ?>" alt="<?php echo osc_esc_html($logged_user_name); ?>"/>
-      <textarea name="im-message" id="im-message" class="im-textarea" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
+        <img class="im-logged-user-img im-tooltip" src="<?php echo $logged_user_img; ?>" title="<?php echo osc_esc_html(sprintf(__('You are logged in as %s', 'instant_messenger'), $logged_user_name)); ?>" alt="<?php echo osc_esc_html($logged_user_name); ?>"/>
+        <textarea name="im-message" id="im-message" class="im-textarea" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
 
-      <button type="submit" class="im-button-green"><?php _e('Send message', 'instant_messenger'); ?></button>
-      <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
+        <button type="submit" class="im-button-green"><?php _e('Send message', 'instant_messenger'); ?></button>
+        <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
 
-      <?php if($att_enable == 1) { ?>
-        <div class="im-attachment">
-          <div class="im-att-box">
-            <label class="im-status">
-              <span class="im-wrap"><i class="fa fa-paperclip"></i> <span><span class="im-def-text"><?php _e('Upload file', 'instant_messenger'); ?></span></span></span>
-              <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
-            </label>
+        <?php if($att_enable == 1) { ?>
+          <div class="im-attachment">
+            <div class="im-att-box">
+              <label class="im-status">
+                <span class="im-wrap"><i class="fa fa-paperclip"></i> <span><span class="im-def-text"><?php _e('Upload file', 'instant_messenger'); ?></span></span></span>
+                <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
+              </label>
+            </div>
           </div>
-        </div>
-      <?php } ?>
-      <div class="im-file-list" id="im-file-list" hidden></div>
-      <div class="im-send-hint pngm-im-send-hint"><?php _e('Enter to send · Ctrl+Enter for a new line', 'epsilon'); ?></div>
-    </form>
+        <?php } ?>
+        <div class="im-file-list" id="im-file-list" hidden></div>
+      </form>
+      <p id="pngm-composer-tip" class="pngm-composer-tip"><?php echo osc_esc_html(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?></p>
+    </div>
   <?php } ?>
 </div>
 

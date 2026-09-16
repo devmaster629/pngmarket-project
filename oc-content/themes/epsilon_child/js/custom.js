@@ -2928,15 +2928,46 @@
       var pinBottom = !!(opts && opts.pinBottom);
       var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
 
-      // Desktop: CSS handles board max-height; only pin scroll position.
-      // Mobile: fill remaining viewport under header/composer (telegram-style).
+      // Desktop: CSS handles sizing; only pin scroll.
       if (window.innerWidth > 767) {
         board.style.maxHeight = '';
+        board.style.height = '';
         board.style.overflowY = '';
         if (pinBottom || nearBottom) {
           board.scrollTop = board.scrollHeight;
         }
         return;
+      }
+
+      // Mobile: give the message list an explicit height so it scrolls, and keep
+      // the composer dock (tip + input) pinned below it above the bottom nav.
+      if (form) {
+        form.style.display = 'flex';
+        form.style.visibility = 'visible';
+        form.style.flex = '0 0 auto';
+        form.style.flexShrink = '0';
+        form.style.height = 'auto';
+        form.style.maxHeight = 'none';
+        form.style.overflow = 'visible';
+      }
+
+      var dock = document.querySelector('.pngm-composer-dock');
+      var tip = document.getElementById('pngm-composer-tip');
+      if (dock) {
+        dock.style.display = 'flex';
+        dock.style.flexDirection = 'column';
+        dock.style.flex = '0 0 auto';
+        dock.style.overflow = 'visible';
+      }
+      if (tip) {
+        tip.style.setProperty('display', 'block', 'important');
+        tip.style.setProperty('visibility', 'visible', 'important');
+        tip.style.setProperty('opacity', '1', 'important');
+        tip.style.setProperty('color', '#6b7785', 'important');
+        tip.style.setProperty('-webkit-text-fill-color', '#6b7785', 'important');
+        tip.style.setProperty('background', 'transparent', 'important');
+        tip.style.setProperty('font-size', '12px', 'important');
+        tip.style.setProperty('min-height', '0', 'important');
       }
 
       var navi = document.getElementById('navi-bar');
@@ -2945,17 +2976,29 @@
         naviH = navi.offsetHeight;
       }
 
-      var formH = form ? form.offsetHeight : 0;
-      // Keep room for the send-hint line even if it was clipped on a prior paint.
-      if (formH < 72) {
-        formH = 72;
+      // Reserve the whole dock (tip above input + form), not just the form.
+      var formH = 0;
+      if (dock) {
+        formH = dock.offsetHeight;
+      } else if (form) {
+        formH = form.offsetHeight;
+        if (tip) {
+          formH += tip.offsetHeight;
+        }
       }
-      var top = board.getBoundingClientRect().top;
-      var available = Math.floor(window.innerHeight - top - formH - naviH - 8);
-      if (available < 80) {
-        available = 80;
+      if (formH < 110) {
+        formH = 110;
       }
 
+      var top = board.getBoundingClientRect().top;
+      var available = Math.floor(window.innerHeight - top - formH - naviH - 12);
+      if (available < 140) {
+        available = 140;
+      }
+
+      board.style.flex = '1 1 auto';
+      board.style.minHeight = '120px';
+      board.style.height = available + 'px';
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
 

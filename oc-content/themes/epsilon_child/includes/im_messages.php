@@ -163,23 +163,25 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
       <?php if (im_param('only_logged') == 1 && !osc_is_web_user_logged_in()) { ?>
         <div class="pngm-im-notice"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
       <?php } elseif ($can_send) { ?>
-        <form id="im-message-form" class="pngm-im-composer im-row im-body im-form-validate" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
-          <input type="hidden" name="im-action" id="im-action" value="send_message" />
-          <?php if ($att_enable == 1) { ?>
-            <label class="pngm-im-attach-btn im-attachment" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
-              <i class="fas fa-paperclip" aria-hidden="true"></i>
-              <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
-            </label>
-          <?php } ?>
-          <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_html(__('Type a message…', 'epsilon')); ?>"></textarea>
-          <button type="submit" class="im-button-green pngm-im-send">
-            <i class="fas fa-paper-plane" aria-hidden="true"></i>
-            <span><?php _e('Send', 'epsilon'); ?></span>
-          </button>
-          <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
-          <div class="im-file-list" id="im-file-list" hidden></div>
-          <div class="im-send-hint pngm-im-send-hint"><?php _e('Enter to send · Ctrl+Enter for a new line', 'epsilon'); ?></div>
-        </form>
+        <div class="pngm-composer-dock">
+          <form id="im-message-form" class="pngm-im-composer im-row im-body im-form-validate" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="im-action" id="im-action" value="send_message" />
+            <?php if ($att_enable == 1) { ?>
+              <label class="pngm-im-attach-btn im-attachment" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
+                <i class="fas fa-paperclip" aria-hidden="true"></i>
+                <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
+              </label>
+            <?php } ?>
+            <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_html(__('Type a message…', 'epsilon')); ?>"></textarea>
+            <button type="submit" class="im-button-green pngm-im-send">
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
+              <span><?php _e('Send', 'epsilon'); ?></span>
+            </button>
+            <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
+            <div class="im-file-list" id="im-file-list" hidden></div>
+          </form>
+          <p id="pngm-composer-tip" class="pngm-composer-tip"><?php echo osc_esc_html(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?></p>
+        </div>
       <?php } ?>
     </section>
   </div>

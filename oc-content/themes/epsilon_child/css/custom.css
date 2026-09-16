@@ -6691,7 +6691,7 @@ body.pngm-filter-open {
     padding: 8px 12px 16px;
   }
 
-  /* Telegram-style chat: only the message board scrolls; composer stays on screen. */
+  /* Telegram-style chat: message list scrolls; composer stays pinned above bottom nav. */
   body.im-chat-page {
     overflow: hidden !important;
     height: 100dvh;
@@ -6719,14 +6719,11 @@ body.pngm-filter-open {
   }
 
   body.im-chat-page #user-main,
-  body.im-chat-page #user-main .user-custom-box,
-  body.im-chat-page .im-file-messages {
+  body.im-chat-page #user-main .user-custom-box {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    height: auto;
-    max-height: none;
     overflow: hidden;
     width: 100%;
     float: none;
@@ -6738,6 +6735,42 @@ body.pngm-filter-open {
     padding: 8px 12px 0;
   }
 
+  body.im-chat-page .pngm-im-split {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    gap: 0 !important;
+  }
+
+  body.im-chat-page .pngm-im-board-pane {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 0 8px !important;
+    padding: 12px 12px 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  body.im-chat-page .pngm-im-board-pane > .im-file-messages {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    background: transparent !important;
+  }
+
+  body.im-chat-page .pngm-composer-dock,
+  body.im-chat-page .pngm-im-mobile-back,
   body.im-chat-page .im-alt-head,
   body.im-chat-page .im-row.im-item-context,
   body.im-chat-page .im-error-list {
@@ -6746,42 +6779,12 @@ body.pngm-filter-open {
 
   body.im-chat-page .im-table.im-messages {
     float: none !important;
-    flex: 1 1 auto;
-    min-height: 80px;
+    flex: 1 1 auto !important;
+    min-height: 120px !important;
     overflow-x: hidden;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     margin: 0 !important;
-  }
-
-  /* Mobile composer: one slim bar inside the white board (no empty card gap) */
-  body.im-chat-page .pngm-im-split,
-  body.im-chat-page .pngm-im-board-pane,
-  body.im-chat-page .pngm-im-board-pane > .im-file-messages {
-    display: flex !important;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0 !important;
-    height: 100%;
-    max-height: none;
-  }
-
-  body.im-chat-page .pngm-im-board-pane {
-    margin: 0 0 10px !important;
-    padding: 12px 12px 8px !important;
-    border-radius: 12px !important;
-    overflow: hidden;
-  }
-
-  body.im-chat-page .pngm-im-board-pane > .im-file-messages {
-    overflow: hidden !important;
-  }
-
-  body.im-chat-page .pngm-im-mobile-back,
-  body.im-chat-page .im-alt-head,
-  body.im-chat-page .im-row.im-item-context,
-  body.im-chat-page .im-error-list {
-    flex: 0 0 auto;
   }
 
   body.im-chat-page #im-message-form {
@@ -6789,24 +6792,28 @@ body.pngm-filter-open {
     left: auto !important;
     right: auto !important;
     bottom: auto !important;
-    z-index: 2;
+    z-index: 5;
     flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
     float: none !important;
-    width: calc(100% + 24px) !important;
+    width: 100% !important;
     max-width: none;
-    margin: 8px -12px 0 !important;
-    padding: 10px 12px 12px !important;
+    margin: 0 !important;
+    padding: 10px 12px 8px !important;
     background: #fff;
     border: 0;
-    border-top: 1px solid #eef1f4;
-    border-radius: 0 0 12px 12px !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
     box-shadow: none;
     box-sizing: border-box;
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: flex-end;
-    gap: 8px;
+    align-content: flex-start;
+    gap: 4px 8px;
     overflow: visible !important;
+    height: auto !important;
+    min-height: 70px !important;
   }
 
   body.im-chat-page #im-message-form img.im-logged-user-img {
@@ -6833,38 +6840,74 @@ body.pngm-filter-open {
   }
 
   body.im-chat-page #im-message-form .im-send-hint,
-  body.im-chat-page #im-message-form .pngm-im-send-hint {
+  body.im-chat-page #im-message-form .pngm-im-send-hint,
+  body.im-chat-page #im-message-form > .im-send-hint {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+  }
+
+  body.im-chat-page .pngm-composer-dock {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 auto !important;
+    width: calc(100% + 24px) !important;
+    max-width: none;
+    margin: 0 -12px 0 !important;
+    padding: 0 !important;
+    background: #fff;
+    border-top: 1px solid #eef1f4;
+    border-radius: 0 0 12px 12px !important;
+    box-sizing: border-box;
+    overflow: visible !important;
+    z-index: 5;
+  }
+
+  body.im-chat-page #pngm-composer-tip.pngm-composer-tip,
+  body.im-chat-page .pngm-composer-dock > #pngm-composer-tip {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    flex: 0 0 100% !important;
-    order: 30 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    color: #6b7785 !important;
+    -webkit-text-fill-color: #6b7785 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+    padding: 4px 12px 10px !important;
     margin: 0 !important;
-    padding: 2px 0 0 0 !important;
-    font-size: 11px !important;
-    line-height: 1.4 !important;
-    color: #5a6570 !important;
-    white-space: normal !important;
-    overflow: visible !important;
+    width: 100% !important;
+    min-height: 0 !important;
     height: auto !important;
-    min-height: 16px !important;
-    max-height: none !important;
+    overflow: visible !important;
     position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
-    float: none !important;
-    z-index: 3 !important;
+    z-index: 6 !important;
+    order: 20;
+    flex: 0 0 auto !important;
+  }
+
+  body.im-chat-page .pngm-composer-dock > #im-message-form {
+    width: 100% !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
+    order: 10;
   }
 
   body.im-chat-page #im-message,
   body.im-chat-page #im-message-form .im-textarea {
-    height: 44px;
+    flex: 1 1 auto;
+    order: 1;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 44px !important;
     min-height: 44px !important;
-    max-height: 120px !important;
+    max-height: 100px !important;
     padding: 11px 96px 11px 14px !important;
     border-radius: 22px !important;
     background: #f4f6f8 !important;
@@ -6874,6 +6917,7 @@ body.pngm-filter-open {
     line-height: 20px !important;
   }
 
+  /* Match desktop send control: primary circular plane button */
   body.im-chat-page #im-message-form button.im-button-alt {
     top: 12px !important;
     right: 18px !important;
@@ -6885,7 +6929,9 @@ body.pngm-filter-open {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    background: #2e7d32 !important;
+    background: var(--mb-color-primary, #0d9ecc) !important;
+    background-color: var(--mb-color-primary, #0d9ecc) !important;
+    border-color: var(--mb-color-primary, #0d9ecc) !important;
     color: #fff !important;
     box-shadow: none !important;
   }
@@ -6893,6 +6939,11 @@ body.pngm-filter-open {
   body.im-chat-page #im-message-form button.im-button-alt i {
     line-height: 1 !important;
     font-size: 15px !important;
+    color: #fff !important;
+  }
+
+  body.im-chat-page #im-message-form .pngm-im-send {
+    display: none !important;
   }
 
   body.im-chat-page #im-message-form .im-attachment {
@@ -6907,10 +6958,6 @@ body.pngm-filter-open {
     padding: 8px !important;
     height: auto !important;
     color: #6b7785 !important;
-  }
-
-  body.im-chat-page #user-main {
-    padding: 8px 12px 0;
   }
 
   body.im-chat-page .im-alt-head {

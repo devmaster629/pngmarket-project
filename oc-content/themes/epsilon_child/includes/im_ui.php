@@ -854,13 +854,71 @@ function pngm_im_ui_script()
       }
 
       function ensureSendHint($form) {
-        var hintText = '<?php echo osc_esc_js(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?>';
-        var $hint = $form.find('.im-send-hint, .pngm-im-send-hint').first();
-        if (!$hint.length) {
-          $hint = $('<div class="im-send-hint pngm-im-send-hint"></div>');
-          $form.append($hint);
+        var tipText = '<?php echo osc_esc_js(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?>';
+        var formEl = $form[0];
+        if (!formEl) {
+          return;
         }
-        $hint.text(hintText).show();
+
+        // Legacy in-form hint fights too many !important rules — remove it.
+        $form.find('.im-send-hint, .pngm-im-send-hint').remove();
+
+        var dock = formEl.closest('.pngm-composer-dock');
+        if (!dock) {
+          dock = document.createElement('div');
+          dock.className = 'pngm-composer-dock';
+          if (formEl.parentNode) {
+            formEl.parentNode.insertBefore(dock, formEl);
+            dock.appendChild(formEl);
+          }
+        } else if (formEl.parentNode !== dock) {
+          dock.appendChild(formEl);
+        }
+
+        var tip = document.getElementById('pngm-composer-tip');
+        if (!tip) {
+          tip = document.createElement('p');
+          tip.id = 'pngm-composer-tip';
+          tip.className = 'pngm-composer-tip';
+        }
+        // Keep tip BELOW the input (after the form), same on desktop + mobile.
+        if (tip.parentNode !== dock || formEl.nextSibling !== tip) {
+          if (formEl.nextSibling) {
+            dock.insertBefore(tip, formEl.nextSibling);
+          } else {
+            dock.appendChild(tip);
+          }
+        }
+        tip.textContent = tipText;
+        tip.removeAttribute('hidden');
+        tip.setAttribute('aria-hidden', 'false');
+
+        tip.style.setProperty('display', 'block', 'important');
+        tip.style.setProperty('visibility', 'visible', 'important');
+        tip.style.setProperty('opacity', '1', 'important');
+        tip.style.setProperty('color', '#6b7785', 'important');
+        tip.style.setProperty('-webkit-text-fill-color', '#6b7785', 'important');
+        tip.style.setProperty('background', 'transparent', 'important');
+        tip.style.setProperty('background-color', 'transparent', 'important');
+        tip.style.setProperty('font-size', '12px', 'important');
+        tip.style.setProperty('line-height', '16px', 'important');
+        tip.style.setProperty('font-weight', '500', 'important');
+        tip.style.setProperty('margin', '0', 'important');
+        tip.style.setProperty('padding', '6px 14px 8px', 'important');
+        tip.style.setProperty('width', '100%', 'important');
+        tip.style.setProperty('max-width', '100%', 'important');
+        tip.style.setProperty('box-sizing', 'border-box', 'important');
+        tip.style.setProperty('position', 'relative', 'important');
+        tip.style.setProperty('height', 'auto', 'important');
+        tip.style.setProperty('min-height', '0', 'important');
+        tip.style.setProperty('overflow', 'visible', 'important');
+        tip.style.setProperty('z-index', '6', 'important');
+        tip.style.setProperty('flex', '0 0 auto', 'important');
+        tip.style.setProperty('float', 'none', 'important');
+        tip.style.setProperty('clear', 'both', 'important');
+        tip.style.setProperty('text-indent', '0', 'important');
+        tip.style.setProperty('transform', 'none', 'important');
+        tip.style.setProperty('clip-path', 'none', 'important');
       }
 
       function enhanceAttachmentLinks($root) {
@@ -892,6 +950,9 @@ function pngm_im_ui_script()
         relaxMessageRules($form);
         ensureSendHint($form);
         enhanceAttachmentLinks($(document));
+        if (typeof window.pngmLayoutChat === 'function') {
+          window.pngmLayoutChat({ pinBottom: true });
+        }
       }
 
       // Replace plugin Ctrl+Enter=send with Enter=send / Ctrl+Enter=newline.

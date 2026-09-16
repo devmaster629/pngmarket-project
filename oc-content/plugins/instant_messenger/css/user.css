@@ -161,7 +161,7 @@ body #im-message-form .im-file-chip {display:inline-flex;align-items:center;max-
 body #im-message-form .im-file-chip em {max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;}
 body #im-message-form .im-file-remove {display:inline-flex !important;align-items:center;justify-content:center;flex:none;margin-left:6px;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#5f6770;color:#fff;font-size:16px;line-height:1;cursor:pointer;}
 body #im-message-form .im-file-remove:hover {background:#3d444c;color:#fff;}
-body #im-message-form .im-send-hint {margin:6px 0 0 0;font-size:12px;line-height:16px;color:#8a8d91;}
+body #im-message-form .im-send-hint {display:none!important;height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;}
 body .im-attachment .im-att-box .im-status .im-wrap span {max-width: 100px; overflow: hidden; display: inline-block; white-space: nowrap; text-overflow: ellipsis;}
 body .im-attachment .im-att-box .im-status .im-wrap span .im-def-text {display:none;}
 body .im-attachment .im-att-box .im-wrap {padding:9px 10px;background:#e8eaed;border-radius:8px;color:#444;transition:0.1s;height:34px;}
