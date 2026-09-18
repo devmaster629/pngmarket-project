@@ -29,7 +29,25 @@
     }
   }
 
-  $about_raw = trim(strip_tags((string) osc_user_info()));
+  $about_raw = '';
+  $locale_code = function_exists('osc_current_user_locale') ? (string) osc_current_user_locale() : '';
+  if (is_array($user) && $locale_code !== '' && isset($user['locale'][$locale_code]['s_info'])) {
+    $about_raw = trim(strip_tags((string) $user['locale'][$locale_code]['s_info']));
+  }
+  if ($about_raw === '' && is_array($user) && !empty($user['locale']) && is_array($user['locale'])) {
+    foreach ($user['locale'] as $loc_row) {
+      if (!is_array($loc_row) || empty($loc_row['s_info'])) {
+        continue;
+      }
+      $about_raw = trim(strip_tags((string) $loc_row['s_info']));
+      if ($about_raw !== '') {
+        break;
+      }
+    }
+  }
+  if ($about_raw === '' && function_exists('osc_user_info')) {
+    $about_raw = trim(strip_tags((string) osc_user_info()));
+  }
   $about_len = function_exists('mb_strlen') ? mb_strlen($about_raw) : strlen($about_raw);
   if ($about_len > 250) {
     $about_display = function_exists('mb_substr') ? mb_substr($about_raw, 0, 250) : substr($about_raw, 0, 250);
@@ -40,9 +58,16 @@
 
   $msg_url = '';
   $msg_title = '';
-  $show_message = !$is_own;
-  if ($show_message) {
-    if (function_exists('im_create_thread_url')) {
+  $msg_own = false;
+  $show_message = false;
+  if (function_exists('im_create_thread_url') || (function_exists('eps_item_fancy_url') && getBoolPreference('item_contact_form_disabled') != 1)) {
+    $show_message = true;
+    if ($is_own) {
+      // Same layout as buyers see — preview only (cannot message yourself).
+      $msg_url = '#';
+      $msg_title = __('This is your public profile. Buyers use this button to message you.', 'epsilon');
+      $msg_own = true;
+    } elseif (function_exists('im_create_thread_url')) {
       if (!osc_is_web_user_logged_in()) {
         $msg_url = osc_user_login_url();
         $msg_title = __('Sign in to message this seller', 'epsilon');
@@ -74,7 +99,7 @@
     'i_price|ASC' => __('Sort: Price low–high', 'epsilon'),
   );
 
-  $msg_classes = 'pngm-seller-msg';
+  $msg_classes = 'pngm-seller-msg pngm-seller-msg-top';
   if (strpos((string) $msg_url, 'contact_public') !== false || strpos((string) $msg_url, 'fancy') !== false) {
     $msg_classes .= ' open-form public-contact';
   }
@@ -102,26 +127,35 @@
 
       <div class="pngm-seller-panel">
         <section class="pngm-seller-hero">
-          <div class="pngm-seller-identity">
-            <div class="pngm-seller-avatar" aria-hidden="true">
-              <?php if ($has_photo) { ?>
-                <img src="<?php echo eps_profile_picture($user_id, 'medium'); ?>" alt="" width="88" height="88" />
-              <?php } else { ?>
-                <span><?php echo osc_esc_html($initials); ?></span>
-              <?php } ?>
+          <div class="pngm-seller-hero-top">
+            <div class="pngm-seller-identity">
+              <div class="pngm-seller-avatar" aria-hidden="true">
+                <?php if ($has_photo) { ?>
+                  <img src="<?php echo eps_profile_picture($user_id, 'medium'); ?>" alt="" width="88" height="88" />
+                <?php } else { ?>
+                  <span><?php echo osc_esc_html($initials); ?></span>
+                <?php } ?>
+              </div>
+              <div class="pngm-seller-id-copy">
+                <h1 class="pngm-seller-name"><?php echo osc_esc_html($contact_name); ?></h1>
+                <?php if ($is_verified_seller) { ?>
+                  <div class="pngm-seller-verified">
+                    <i class="fas fa-check" aria-hidden="true"></i>
+                    <span><?php _e('Verified Seller', 'epsilon'); ?></span>
+                  </div>
+                <?php } ?>
+                <?php if ($member_since !== '') { ?>
+                  <div class="pngm-seller-since"><?php echo sprintf(__('Member since %s', 'epsilon'), osc_esc_html($member_since)); ?></div>
+                <?php } ?>
+              </div>
             </div>
-            <div class="pngm-seller-id-copy">
-              <h1 class="pngm-seller-name"><?php echo osc_esc_html($contact_name); ?></h1>
-              <?php if ($is_verified_seller) { ?>
-                <div class="pngm-seller-verified">
-                  <i class="fas fa-check" aria-hidden="true"></i>
-                  <span><?php _e('Verified Seller', 'epsilon'); ?></span>
-                </div>
-              <?php } ?>
-              <?php if ($member_since !== '') { ?>
-                <div class="pngm-seller-since"><?php echo sprintf(__('Member since %s', 'epsilon'), osc_esc_html($member_since)); ?></div>
-              <?php } ?>
-            </div>
+
+            <?php if ($show_message && $msg_url !== '') { ?>
+              <a class="<?php echo osc_esc_html($msg_classes); ?>" href="<?php echo osc_esc_html($msg_url); ?>"<?php echo $msg_title !== '' ? ' title="' . osc_esc_html($msg_title) . '"' : ''; ?><?php echo $msg_own ? ' data-pngm-chat-own="1" role="button"' : ''; ?><?php echo (strpos($msg_classes, 'open-form') !== false) ? ' data-type="contact_public"' : ''; ?>>
+                <i class="fas fa-comment" aria-hidden="true"></i>
+                <span><?php _e('Message Seller', 'epsilon'); ?></span>
+              </a>
+            <?php } ?>
           </div>
 
           <ul class="pngm-seller-badges">
@@ -140,9 +174,8 @@
             <p class="pngm-seller-loc"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span><?php echo osc_esc_html($user_location); ?></span></p>
           <?php } ?>
 
-          <hr class="pngm-seller-rule" />
-
           <?php if ($about_display !== '') { ?>
+            <hr class="pngm-seller-rule" />
             <div class="pngm-seller-about">
               <h2><?php _e('About Me', 'epsilon'); ?></h2>
               <div class="pngm-seller-about-box">
@@ -150,13 +183,6 @@
                 <span class="pngm-seller-about-count"><?php echo (int) $about_len; ?>/250</span>
               </div>
             </div>
-          <?php } ?>
-
-          <?php if ($show_message && $msg_url !== '') { ?>
-            <a class="<?php echo osc_esc_html($msg_classes); ?>" href="<?php echo osc_esc_html($msg_url); ?>"<?php echo $msg_title !== '' ? ' title="' . osc_esc_html($msg_title) . '"' : ''; ?><?php echo (strpos($msg_classes, 'open-form') !== false) ? ' data-type="contact_public"' : ''; ?>>
-              <i class="fas fa-comment" aria-hidden="true"></i>
-              <span><?php _e('Message Seller', 'epsilon'); ?></span>
-            </a>
           <?php } ?>
         </section>
 
