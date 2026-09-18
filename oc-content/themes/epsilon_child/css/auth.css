@@ -332,28 +332,6 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   -webkit-transform: none !important;
 }
 
-.pngm-auth-captcha.is-error .g-recaptcha {
-  outline: 2px solid #d32f2f;
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-
-.pngm-auth-captcha-error {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #fdecea;
-  border: 1px solid #f5c2c0;
-  color: #b71c1c;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: center;
-}
-
 .pngm-auth-captcha-note {
   margin: 0 0 14px;
   padding: 10px 12px;

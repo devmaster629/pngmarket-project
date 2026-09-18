@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.57');
+    define('PNGM_CHILD_VERSION', '2.5.58');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1512,6 +1512,41 @@ function pngm_recaptcha_incognito_fix()
     return any && any.value ? String(any.value).trim() : '';
   }
 
+  function showAuthToast(message) {
+    var host = document.getElementById('pngm-loc-toast-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'pngm-loc-toast-host';
+      host.className = 'pngm-loc-toast-host';
+      host.setAttribute('aria-live', 'assertive');
+      document.body.appendChild(host);
+    }
+
+    // One captcha toast at a time.
+    var existing = host.querySelector('.pngm-loc-toast.pngm-auth-recaptcha-toast');
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'pngm-loc-toast is-error pngm-auth-recaptcha-toast';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML =
+      '<span class="pngm-loc-toast-msg"></span>' +
+      '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
+    toast.querySelector('.pngm-loc-toast-msg').textContent = message || '';
+    host.appendChild(toast);
+
+    function dismiss() {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }
+
+    toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismiss);
+    window.setTimeout(dismiss, 4800);
+  }
+
   function guardAuthForms() {
     if (!authRequired) {
       return;
@@ -1537,24 +1572,18 @@ function pngm_recaptcha_incognito_fix()
         e.preventDefault();
         e.stopPropagation();
         ensure();
-        var wrap = form.querySelector('.pngm-auth-captcha') || form;
-        var note = form.querySelector('.pngm-auth-captcha-error');
-        if (!note) {
-          note = document.createElement('p');
-          note.className = 'pngm-auth-captcha-error';
-          note.setAttribute('role', 'alert');
-          wrap.appendChild(note);
+
+        // Remove any leftover inline captcha error from older builds.
+        var oldNote = form.querySelector('.pngm-auth-captcha-error');
+        if (oldNote && oldNote.parentNode) {
+          oldNote.parentNode.removeChild(oldNote);
         }
-        note.textContent = missingMsg;
-        note.hidden = false;
-        if (wrap.classList) {
-          wrap.classList.add('is-error');
+        var wrap = form.querySelector('.pngm-auth-captcha');
+        if (wrap && wrap.classList) {
+          wrap.classList.remove('is-error');
         }
-        try {
-          if (wrap.scrollIntoView) {
-            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        } catch (err2) {}
+
+        showAuthToast(missingMsg);
         return false;
       }, true);
     });
