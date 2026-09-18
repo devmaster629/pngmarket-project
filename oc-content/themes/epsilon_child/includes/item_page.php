@@ -495,18 +495,17 @@ function pngm_render_seller_contact_buttons()
 
     if (function_exists('im_contact_button')) {
         if ($is_own_listing) {
-            // Owner cannot start a chat with themselves — explain instead of a dead "#".
+            // Owner preview: same look as for buyers; click explains they can't self-message.
             $chat = array(
                 'key'   => 'message',
                 'url'   => '#',
                 'label' => __('Chat', 'epsilon'),
-                'class' => 'pngm-action-chat is-own-listing',
+                'class' => 'pngm-action-chat',
                 'icon'  => 'fas fa-comment-dots',
                 'attrs' => array(
                     'title' => __('This is your listing. You cannot message yourself.', 'epsilon'),
                     'role' => 'button',
                     'data-pngm-chat-own' => '1',
-                    'aria-disabled' => 'true',
                 ),
             );
         } else {
