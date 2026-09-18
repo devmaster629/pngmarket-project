@@ -68,10 +68,13 @@
       fillSubcats(rootId, keepLeaf ? $catId.val() : '');
       if (!keepLeaf) {
         $catId.val('');
+        $sub.val('');
       }
       clearErrorFor($form.find('.pngm-post-cat-grid'));
       $form.find('.pngm-post-cat-grid').removeClass('is-invalid');
-      updateSummary(rootName || ($card.data('root-name') || ''), '');
+      hideFieldError($form.find('.pngm-post-field-error[data-for="category"]'));
+      clearSubcategoryWarning();
+      updateSummary(rootName || ($card.data('root-name') || ''), keepLeaf && $sub.val() ? ($sub.find('option:selected').text() || '') : '—');
       if (keepLeaf && $sub.val()) {
         updateSummary(null, $sub.find('option:selected').text());
       }
@@ -208,7 +211,7 @@
       $form.find('.pngm-post-field-error').each(function () {
         hideFieldError($(this));
       });
-      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, .pngm-post-upload-card.is-invalid, .pngm-post-price-field.is-invalid, .pngm-post-cat-grid.is-invalid, .control-group.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
+      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, .pngm-post-upload-card.is-invalid, .pngm-post-price-field.is-invalid, .pngm-post-cat-grid.is-invalid, .pngm-post-phone-row.is-invalid, .control-group.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
     }
 
     function clearErrorSummary() {
@@ -273,12 +276,16 @@
     }
 
     function syncCatFromSubcategory() {
-      var id = String($sub.val() || '');
+      var id = String($sub.val() || '').trim();
       if (id) {
         $catId.val(id);
         clearSubcategoryWarning();
         updateSummary(null, $sub.find('option:selected').text() || '');
         loadCategoryAttributes(id);
+      } else {
+        // Clearing the placeholder must wipe the previous leaf (e.g. Cars).
+        $catId.val('');
+        updateSummary(null, '—');
       }
       return id;
     }
@@ -328,9 +335,24 @@
       if ($wrap.length) {
         $wrap.addClass('is-invalid');
       }
+      // Phone: red border is on the composite row, not the borderless input.
+      if ($el.is('input[name="contactPhone"], input[name="sPhone"], #sPhone, #contactPhone')
+          || $wrap.hasClass('phone')) {
+        $wrap.find('.pngm-post-phone-row').addClass('is-invalid');
+      }
+      // Category grid: dedicated error slot under the cards (not the subcategory).
+      if ($el.hasClass('pngm-post-cat-grid') || $wrap.hasClass('pngm-post-cat-grid')) {
+        var $catErr = $form.find('.pngm-post-field-error[data-for="category"]');
+        if (!$catErr.length) {
+          $catErr = $('<p class="pngm-post-field-error" data-for="category" role="alert"/>');
+          $form.find('.pngm-post-cat-grid').after($catErr);
+        }
+        showFieldError($catErr, msg);
+        return;
+      }
       // Never fall back to an error slot in another step — it would stay invisible.
       var $err = $wrap.find('.pngm-post-field-error').first();
-      if (!$err.length && $wrap.length && !$wrap.hasClass('pngm-post-cat-grid')) {
+      if (!$err.length && $wrap.length) {
         $err = $('<div class="pngm-post-field-error" role="alert"/>');
         $wrap.append($err);
       }
@@ -354,6 +376,7 @@
       }
       $wrap.removeClass('is-invalid');
       $wrap.find('.is-invalid').removeClass('is-invalid');
+      $wrap.find('.pngm-post-phone-row').removeClass('is-invalid');
       hideFieldError($wrap.find('.pngm-post-field-error').first());
     }
 
@@ -523,23 +546,39 @@
       clearFieldErrors();
       $form.find('.control-group.is-invalid, .atr-field.is-invalid, .pngm-post-price-field.is-invalid').removeClass('is-invalid');
       if (n === 1) {
-        syncCatFromSubcategory();
-        if (!$catId.val()) {
-          var rootId = String($root.val() || '');
-          var $catGrid = $form.find('.pngm-post-cat-grid');
-          if (!rootId) {
-            showError($catGrid, labels.selectCategory || labels.selectSub || 'Please select a category.');
-            // Ensure subcategory area can receive the same message once a root is picked.
-            hideFieldError($form.find('.pngm-post-field-error[data-for="catId"]'));
-          } else {
-            $subWrap.removeClass('is-hidden');
-            showError($sub, labels.selectSub);
-            $sub.addClass('is-invalid');
-          }
+        var rootId = String($root.val() || '').trim();
+        var leafId = String($sub.val() || '').trim();
+        var $catGrid = $form.find('.pngm-post-cat-grid');
+
+        // No category chosen — clear leaf state and only flag the category grid.
+        if (!rootId || !$catGrid.find('.pngm-post-cat-card.is-selected').length) {
+          $root.val('');
+          $catId.val('');
+          $sub.val('');
+          $subWrap.addClass('is-hidden');
+          clearSubcategoryWarning();
+          updateSummary('—', '—');
+          showError($catGrid, labels.selectCategory || 'Please select a category.');
           focusFirstInvalid();
           return false;
         }
+
+        $subWrap.removeClass('is-hidden');
+        // Placeholder / cleared subcategory must not keep a previous leaf id.
+        if (!leafId) {
+          $catId.val('');
+          updateSummary(null, '—');
+          showError($sub, labels.selectSub || 'Please select a subcategory.');
+          $sub.addClass('is-invalid');
+          focusFirstInvalid();
+          return false;
+        }
+
+        $catId.val(leafId);
         clearSubcategoryWarning();
+        $catGrid.removeClass('is-invalid');
+        hideFieldError($form.find('.pngm-post-field-error[data-for="category"]'));
+        updateSummary(null, $sub.find('option:selected').text() || '');
         return true;
       }
       if (n === 2) {
@@ -723,6 +762,10 @@
         txLabel = $.trim($('#sTransaction option:selected').text() || '') || '—';
       }
       meta.push([labels.transaction || 'Transaction', txLabel]);
+      var attrRows = collectAttributeRows();
+      attrRows.forEach(function (row) {
+        meta.push(row);
+      });
       var locParts = [];
       var city = $('#cityId option:selected').text() || $('#city').val() || '';
       var region = $('#regionId option:selected').text() || $('#region').val() || '';
@@ -862,6 +905,70 @@
       $placeholder.hide();
     }
 
+    function collectAttributeRows() {
+      var rows = [];
+      var seen = {};
+      var $groups = $form.find('#post-hooks .control-group.atr-field, #post-hooks .atr-field.control-group, .atr-form .control-group.atr-field');
+      $groups.each(function () {
+        var $group = $(this);
+        // Do not require :visible — Details step is hidden on Review/Preview.
+        var name = attrGroupLabel($group);
+        if (!name || seen[name]) {
+          return;
+        }
+        var value = '';
+        var typeClass = String($group.attr('class') || '');
+
+        if (typeClass.indexOf('atr-type-radio') !== -1) {
+          var $checked = $group.find('input[type="radio"]:checked');
+          if ($checked.length) {
+            var $lab = $group.find('label[for="' + $checked.attr('id') + '"]');
+            value = $.trim($lab.text() || $checked.val() || '');
+          }
+        } else if (typeClass.indexOf('atr-type-checkbox') !== -1) {
+          var parts = [];
+          $group.find('input[type="checkbox"]:checked').each(function () {
+            var $c = $(this);
+            var $l = $group.find('label[for="' + $c.attr('id') + '"]');
+            var t = $.trim($l.text() || $c.val() || '');
+            if (t) {
+              parts.push(t);
+            }
+          });
+          value = parts.join(', ');
+        } else if ($group.find('select').length) {
+          var $sel = $group.find('select').first();
+          var sv = String($sel.val() || '');
+          var st = $.trim($sel.find('option:selected').text() || '');
+          if (sv && sv !== '0' && st && !/^select/i.test(st)) {
+            value = st;
+          }
+        } else {
+          var $inp = $group.find('input[type="text"], input[type="number"], input[type="tel"], textarea').first();
+          if ($inp.length) {
+            value = $.trim(String($inp.val() || ''));
+          }
+        }
+
+        if (!value) {
+          return;
+        }
+        seen[name] = true;
+        rows.push([name, value]);
+      });
+
+      // Custom make / model "Other" text box
+      var $other = $form.find('#atr-make_other input, input[name*="make_other"], #make_other').first();
+      if ($other.length) {
+        var otherVal = $.trim(String($other.val() || ''));
+        if (otherVal) {
+          rows.push([labels.makeOther || 'Make / Model', otherVal]);
+        }
+      }
+
+      return rows;
+    }
+
     function collectPreviewData() {
       var title = $.trim($form.find('input[name^="title"]').val() || '');
       var desc = $.trim($form.find('textarea[name^="description"]').val() || '');
@@ -919,7 +1026,8 @@
         whatsapp: $('#pngm_whatsapp').is(':checked'),
         allowMessages: $('#pngm_allow_messages').is(':checked'),
         contactPref: $('#pngm_contact_pref').val() || 'message',
-        imgs: imgs
+        imgs: imgs,
+        attributes: collectAttributeRows()
       };
     }
 
@@ -958,6 +1066,18 @@
         actions.push('<span class="pngm-public-action is-muted">' + esc(labels.noContact || 'No contact options') + '</span>');
       }
 
+      var detailRows = ''
+        + '<div><dt>' + esc(labels.category || 'Category') + '</dt><dd>' + esc(data.category) + '</dd></div>'
+        + '<div><dt>' + esc(labels.subcategory || 'Subcategory') + '</dt><dd>' + esc(data.subcategory) + '</dd></div>'
+        + '<div><dt>' + esc(labels.condition || 'Condition') + '</dt><dd>' + esc(data.condition) + '</dd></div>'
+        + '<div><dt>' + esc(labels.transaction || 'Transaction') + '</dt><dd>' + esc(data.transaction) + '</dd></div>';
+      if (data.attributes && data.attributes.length) {
+        data.attributes.forEach(function (row) {
+          detailRows += '<div><dt>' + esc(row[0]) + '</dt><dd>' + esc(row[1]) + '</dd></div>';
+        });
+      }
+      detailRows += '<div><dt>' + esc(labels.whatsapp || 'WhatsApp') + '</dt><dd>' + esc(data.whatsapp ? (labels.yes || 'Yes') : (labels.no || 'No')) + '</dd></div>';
+
       var html = ''
         + '<div class="pngm-public-preview">'
         +   '<div class="pngm-public-main">'
@@ -981,11 +1101,7 @@
         +     '<p class="pngm-public-seller-loc">' + esc(data.location) + '</p>'
         +     '<div class="pngm-public-actions">' + actions.join('') + '</div>'
         +     '<dl class="pngm-public-detail-list">'
-        +       '<div><dt>' + esc(labels.category || 'Category') + '</dt><dd>' + esc(data.category) + '</dd></div>'
-        +       '<div><dt>' + esc(labels.subcategory || 'Subcategory') + '</dt><dd>' + esc(data.subcategory) + '</dd></div>'
-        +       '<div><dt>' + esc(labels.condition || 'Condition') + '</dt><dd>' + esc(data.condition) + '</dd></div>'
-        +       '<div><dt>' + esc(labels.transaction || 'Transaction') + '</dt><dd>' + esc(data.transaction) + '</dd></div>'
-        +       '<div><dt>' + esc(labels.whatsapp || 'WhatsApp') + '</dt><dd>' + esc(data.whatsapp ? (labels.yes || 'Yes') : (labels.no || 'No')) + '</dd></div>'
+        +       detailRows
         +     '</dl>'
         +   '</aside>'
         + '</div>';
@@ -1308,12 +1424,18 @@
 
     // Boot state
     if (cfg.root) {
-      setRoot(cfg.root, null, true);
+      setRoot(cfg.root, null, !!cfg.leaf);
       if (cfg.leaf) {
         $catId.val(String(cfg.leaf));
         $sub.val(String(cfg.leaf));
         updateSummary($('.pngm-post-cat-card.is-selected').data('root-name') || '', $sub.find('option:selected').text());
+      } else {
+        // Root alone is not enough — require an explicit subcategory before Next.
+        $catId.val('');
+        $sub.val('');
       }
+    } else {
+      $catId.val('');
     }
     if (cfg.priceType === 'CHECK' || cfg.priceType === 'FREE') {
       applyPriceMode(cfg.priceType);

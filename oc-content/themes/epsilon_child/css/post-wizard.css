@@ -397,9 +397,35 @@ select.is-invalid,
 .control-group.is-invalid input[type="text"],
 .control-group.is-invalid input[type="number"],
 .control-group.is-invalid input[type="tel"],
-.control-group.is-invalid textarea {
+.control-group.is-invalid textarea,
+body.pngm-post-wizard .pngm-post-field.is-invalid input[type="text"],
+body.pngm-post-wizard .pngm-post-field.is-invalid input[type="tel"],
+body.pngm-post-wizard .pngm-post-field.is-invalid input[type="email"],
+body.pngm-post-wizard .pngm-post-field.is-invalid input[type="number"],
+body.pngm-post-wizard .pngm-post-field.is-invalid textarea,
+body.pngm-post-wizard .pngm-post-field.is-invalid select,
+body.pngm-post-wizard .item-publish .pngm-post-field.is-invalid input[type="text"],
+body.pngm-post-wizard .item-publish .pngm-post-field.is-invalid input[type="tel"],
+body.pngm-post-wizard .item-publish .pngm-post-field.is-invalid input[type="email"],
+body.pngm-post-wizard .item-publish .pngm-post-field.is-invalid textarea,
+body.pngm-post-wizard .item-publish .pngm-post-field.is-invalid select,
+body.pngm-post-wizard .item-publish input.is-invalid,
+body.pngm-post-wizard .item-publish textarea.is-invalid,
+body.pngm-post-wizard .item-publish select.is-invalid {
   border-color: #dc2626 !important;
-  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15) !important;
+}
+
+/* Phone uses a composite row border (inner input has border:0). */
+body.pngm-post-wizard .pngm-post-field.is-invalid .pngm-post-phone-row,
+body.pngm-post-wizard .pngm-post-phone-row.is-invalid {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15) !important;
+}
+
+body.pngm-post-wizard .pngm-post-field.is-invalid .pngm-post-phone-row:focus-within {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
 }
 
 .control-group.is-invalid > .control-label,
@@ -1778,6 +1804,10 @@ body.pngm-post-wizard .pngm-post-cat-grid.is-invalid {
   outline: 2px solid #dc3545;
   outline-offset: 4px;
   border-radius: 12px;
+}
+
+body.pngm-post-wizard .pngm-post-field-error[data-for="category"].is-visible {
+  margin: 10px 0 0;
 }
 
 /* Hide parent single-page chrome leftovers */

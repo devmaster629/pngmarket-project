@@ -156,6 +156,7 @@
               </button>
             <?php } ?>
           </div>
+          <p class="pngm-post-field-error is-hidden" data-for="category" hidden><?php _e('Please select a category.', 'epsilon'); ?></p>
 
           <div class="pngm-post-field pngm-post-subcat-wrap<?php echo $cat_path['root'] ? '' : ' is-hidden'; ?>">
             <label for="pngm_subcategory"><?php _e('Subcategory', 'epsilon'); ?> <span class="req">*</span></label>
