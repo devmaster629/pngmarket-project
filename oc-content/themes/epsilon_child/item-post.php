@@ -628,6 +628,8 @@
       'checkSeller' => __('Check with seller', 'epsilon'),
       'free' => __('Free', 'epsilon'),
       'selectSub' => __('Please select a subcategory.', 'epsilon'),
+      'selectCategory' => __('Please select a category.', 'epsilon'),
+      'fixErrors' => __('Please fix the following:', 'epsilon'),
       'needTitle' => __('Please enter a title (at least 3 characters).', 'epsilon'),
       'needDesc' => __('Please enter a description.', 'epsilon'),
       'needDescShort' => __('Please enter at least 10 characters in the description.', 'epsilon'),
@@ -671,6 +673,29 @@
         onkeyup: false,
         onclick: false,
         onfocusout: false,
+        invalidHandler: function (event, validator) {
+          if (!validator || !validator.errorList || !validator.errorList.length) {
+            return;
+          }
+          var $first = $(validator.errorList[0].element);
+          var $panel = $first.closest('.pngm-post-step-panel');
+          if ($panel.length && !$panel.hasClass('is-active')) {
+            var stepNum = parseInt($panel.data('step'), 10) || 1;
+            var $go = $('#pngm-post-stepper [data-step="' + stepNum + '"], .pngm-post-step[data-step="' + stepNum + '"]').first();
+            // Reveal the step that owns the first error.
+            $panel.prop('hidden', false).removeAttr('hidden').addClass('is-active').show();
+            $panel.siblings('.pngm-post-step-panel').removeClass('is-active').prop('hidden', true).attr('hidden', 'hidden').hide();
+            document.body.className = document.body.className.replace(/\bpngm-wizard-step-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+            document.body.classList.add('pngm-wizard-step-' + stepNum);
+          }
+          window.setTimeout(function () {
+            var el = $first.get(0);
+            if (el && typeof el.scrollIntoView === 'function') {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            try { $first.trigger('focus'); } catch (e) { /* ignore */ }
+          }, 80);
+        },
         rules: {
           "title[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": { required: true, minlength: 3 },
           "description[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": { required: true, minlength: 10 },

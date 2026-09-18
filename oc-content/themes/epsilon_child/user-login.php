@@ -55,7 +55,7 @@
 
             <div class="pngm-auth-meta">
               <label class="pngm-auth-check">
-                <?php UserForm::rememberme_login_checkbox(); ?>
+                <?php UserForm::rememberme_login_checkbox(null, false); ?>
                 <span><?php _e('Remember me', 'epsilon'); ?></span>
               </label>
               <a class="pngm-auth-link" href="<?php echo osc_recover_user_password_url(); ?>"><?php _e('Forgot password?', 'epsilon'); ?></a>

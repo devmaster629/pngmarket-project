@@ -1754,6 +1754,32 @@ body.pngm-post-wizard #error_list {
   margin: 0 auto 12px;
 }
 
+body.pngm-post-wizard #error_list.is-visible,
+body.pngm-post-wizard #error_list:not(:empty) {
+  display: block;
+  padding: 12px 16px;
+  border: 1px solid #f5c2c7;
+  border-radius: 10px;
+  background: #fff5f5;
+  color: #842029;
+  list-style: disc;
+  list-style-position: inside;
+}
+
+body.pngm-post-wizard #error_list .pngm-post-errors-heading {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  font-weight: 700;
+  color: #842029;
+}
+
+body.pngm-post-wizard .pngm-post-cat-grid.is-invalid {
+  outline: 2px solid #dc3545;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
 /* Hide parent single-page chrome leftovers */
 body.pngm-post-wizard > .content > .container > .box > h1 {
   display: none;

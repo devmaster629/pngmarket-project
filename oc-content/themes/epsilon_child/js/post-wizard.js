@@ -44,6 +44,8 @@
     var $sub = $('#pngm_subcategory');
     var $subWrap = $('.pngm-post-subcat-wrap');
     var $txNative = $('#sTransaction');
+    var $errorList = $('#error_list');
+    var summaryMessages = [];
 
     function fillSubcats(rootId, selectedLeaf) {
       var list = map[String(rootId)] || map[rootId] || [];
@@ -67,6 +69,8 @@
       if (!keepLeaf) {
         $catId.val('');
       }
+      clearErrorFor($form.find('.pngm-post-cat-grid'));
+      $form.find('.pngm-post-cat-grid').removeClass('is-invalid');
       updateSummary(rootName || ($card.data('root-name') || ''), '');
       if (keepLeaf && $sub.val()) {
         updateSummary(null, $sub.find('option:selected').text());
@@ -199,10 +203,42 @@
     }
 
     function clearFieldErrors() {
+      summaryMessages = [];
+      clearErrorSummary();
       $form.find('.pngm-post-field-error').each(function () {
         hideFieldError($(this));
       });
-      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, .pngm-post-upload-card.is-invalid, .pngm-post-price-field.is-invalid, .control-group.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
+      $form.find('.pngm-post-field.is-invalid, .pngm-post-select.is-invalid, .pngm-post-upload-card.is-invalid, .pngm-post-price-field.is-invalid, .pngm-post-cat-grid.is-invalid, .control-group.is-invalid, input.is-invalid, textarea.is-invalid, select.is-invalid').removeClass('is-invalid');
+    }
+
+    function clearErrorSummary() {
+      if (!$errorList.length) {
+        return;
+      }
+      $errorList.empty().removeClass('is-visible').removeAttr('role').hide();
+    }
+
+    function renderErrorSummary(messages) {
+      if (!$errorList.length) {
+        return;
+      }
+      $errorList.empty();
+      if (!messages || !messages.length) {
+        $errorList.removeClass('is-visible').removeAttr('role').hide();
+        return;
+      }
+      var heading = labels.fixErrors || 'Please fix the following:';
+      $errorList.append($('<li class="pngm-post-errors-heading"/>').text(heading));
+      var seen = {};
+      messages.forEach(function (msg) {
+        msg = String(msg || '').trim();
+        if (!msg || seen[msg]) {
+          return;
+        }
+        seen[msg] = true;
+        $errorList.append($('<li/>').text(msg));
+      });
+      $errorList.addClass('is-visible').attr('role', 'alert').show();
     }
 
     function hideFieldError($err) {
@@ -278,9 +314,15 @@
       if (!$el || !$el.length) {
         return;
       }
+      if (msg) {
+        summaryMessages.push(String(msg));
+      }
       $el.addClass('is-invalid');
-      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .control-group.atr-field, .atr-field');
+      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .control-group.atr-field, .atr-field, .pngm-post-cat-grid');
       if (!$wrap.length && $el.hasClass('pngm-post-upload-card')) {
+        $wrap = $el;
+      }
+      if (!$wrap.length && $el.hasClass('pngm-post-cat-grid')) {
         $wrap = $el;
       }
       if ($wrap.length) {
@@ -288,7 +330,7 @@
       }
       // Never fall back to an error slot in another step — it would stay invisible.
       var $err = $wrap.find('.pngm-post-field-error').first();
-      if (!$err.length && $wrap.length) {
+      if (!$err.length && $wrap.length && !$wrap.hasClass('pngm-post-cat-grid')) {
         $err = $('<div class="pngm-post-field-error" role="alert"/>');
         $wrap.append($err);
       }
@@ -306,7 +348,7 @@
         return;
       }
       $el.removeClass('is-invalid error');
-      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .pngm-post-terms-wrap, .control-group.atr-field, .atr-field');
+      var $wrap = $el.closest('.pngm-post-field, .pngm-post-subcat-wrap, .pngm-post-price-field, .pngm-post-upload-card, .pngm-post-terms-wrap, .control-group.atr-field, .atr-field, .pngm-post-cat-grid');
       if (!$wrap.length) {
         return;
       }
@@ -315,20 +357,65 @@
       hideFieldError($wrap.find('.pngm-post-field-error').first());
     }
 
+    /**
+     * Scroll first invalid control into view and focus it (desktop + mobile).
+     */
     function focusFirstInvalid() {
-      var $bad = $form.find('.is-invalid:visible').first();
+      renderErrorSummary(summaryMessages);
+
+      var $bad = $form.find('.pngm-post-step-panel.is-active .is-invalid').filter(function () {
+        var $el = $(this);
+        if ($el.hasClass('is-hidden') || $el.attr('hidden') || !$el.is(':visible')) {
+          return false;
+        }
+        return true;
+      }).first();
+
       if (!$bad.length) {
+        $bad = $form.find('.is-invalid:visible').first();
+      }
+
+      var $focus = $();
+      if ($bad.length) {
+        if ($bad.is('input, textarea, select, button')) {
+          $focus = $bad;
+        } else {
+          $focus = $bad.find('input:visible, textarea:visible, select:visible, button:visible').not('[type="hidden"]').first();
+        }
+      }
+
+      var $scrollTarget = $focus.length ? $focus : ($bad.length ? $bad : $errorList);
+      if (!$scrollTarget.length) {
         return;
       }
-      var top = $bad.offset();
-      if (top) {
-        $('html, body').stop(true).animate({ scrollTop: Math.max(0, top.top - 110) }, 220);
-      }
-      if ($bad.is('input, textarea, select')) {
+
+      window.setTimeout(function () {
+        var el = $scrollTarget.get(0);
+        if (!el) {
+          return;
+        }
         try {
-          $bad.trigger('focus');
-        } catch (e) { /* ignore */ }
-      }
+          if (typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          } else {
+            var top = $scrollTarget.offset();
+            if (top) {
+              $('html, body').stop(true).animate({ scrollTop: Math.max(0, top.top - 110) }, 220);
+            }
+          }
+        } catch (err) {
+          var top2 = $scrollTarget.offset();
+          if (top2) {
+            window.scrollTo(0, Math.max(0, top2.top - 110));
+          }
+        }
+
+        if ($focus.length) {
+          try {
+            $focus.trigger('focus');
+          } catch (e2) { /* ignore */ }
+        }
+      }, 50);
     }
 
     function attrGroupLabel($group) {
@@ -438,8 +525,17 @@
       if (n === 1) {
         syncCatFromSubcategory();
         if (!$catId.val()) {
-          showError($sub, labels.selectSub);
-          $sub.addClass('is-invalid');
+          var rootId = String($root.val() || '');
+          var $catGrid = $form.find('.pngm-post-cat-grid');
+          if (!rootId) {
+            showError($catGrid, labels.selectCategory || labels.selectSub || 'Please select a category.');
+            // Ensure subcategory area can receive the same message once a root is picked.
+            hideFieldError($form.find('.pngm-post-field-error[data-for="catId"]'));
+          } else {
+            $subWrap.removeClass('is-hidden');
+            showError($sub, labels.selectSub);
+            $sub.addClass('is-invalid');
+          }
           focusFirstInvalid();
           return false;
         }
@@ -1060,6 +1156,7 @@
       if (!validateStep(step)) {
         return;
       }
+      clearErrorSummary();
       showStep(step + 1);
     });
     $back.on('click', function () {
