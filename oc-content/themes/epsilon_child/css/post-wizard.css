@@ -1385,8 +1385,8 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
 }
 
 .pngm-post-preview-dialog--public {
-  width: min(980px, 100%);
-  max-height: min(92vh, 920px);
+  width: min(1120px, 100%);
+  max-height: min(94vh, 960px);
 }
 
 .pngm-post-preview-dialog-head {
@@ -1424,15 +1424,15 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
   padding: 14px 16px 18px;
 }
 
-/* Public listing-style preview */
+/* Public listing-style preview (matches item detail page) */
 .pngm-public-preview {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
-@media screen and (min-width: 800px) {
+@media screen and (min-width: 900px) {
   .pngm-public-preview {
-    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-columns: minmax(0, 1fr) 300px;
     align-items: start;
   }
 }
@@ -1506,64 +1506,217 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
 
 .pngm-public-basic h1 {
   margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   color: #16202a;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .pngm-public-price {
   font-size: 22px;
   font-weight: 800;
   color: #2e7d32;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
-.pngm-public-meta {
+.pngm-public-posted {
+  font-size: 13px;
+  color: #6b7785;
+  margin: 0 0 4px;
+}
+
+.pngm-public-contact {
+  margin: 16px 0 0;
+}
+
+.pngm-public-contact h2,
+.pngm-public-block h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pngm-public-contact h2 i,
+.pngm-public-block h2 i {
+  color: #6b7785;
+  font-size: 15px;
+}
+
+.pngm-public-contact-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
+  gap: 10px;
 }
 
-.pngm-public-chip {
+.pngm-public-contact-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f3f5f7;
-  color: #4b5563;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 140px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.pngm-public-contact-btn.is-chat {
+  background: #2563eb;
+  color: #fff;
+}
+
+.pngm-public-contact-btn.is-call {
+  background: #166534;
+  color: #fff;
+}
+
+.pngm-public-contact-btn.is-wa {
+  background: #25d366;
+  color: #fff;
+}
+
+.pngm-public-pref {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #16a34a;
+  color: #fff;
+}
+
+.pngm-public-block {
+  margin-top: 22px;
+  padding-top: 4px;
 }
 
 .pngm-public-desc {
   margin: 0;
   color: #374151;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre-wrap;
 }
 
+.pngm-public-attrs ul.pngm-atr-visual,
+#pngm-preview-atr.pngm-atr-visual {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 36px;
+  row-gap: 0;
+}
+
+#pngm-preview-atr > li.atr-line {
+  display: grid !important;
+  grid-template-columns: 28px minmax(100px, 40%) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  border-bottom: 1px solid #e8ebef !important;
+  font-size: 14px;
+  min-width: 0;
+}
+
+#pngm-preview-atr .pngm-atr-ico {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+}
+
+#pngm-preview-atr .pngm-atr-ico svg {
+  width: 20px;
+  height: 20px;
+}
+
+#pngm-preview-atr .atr-name {
+  color: #6b7785;
+  font-weight: 500;
+}
+
+#pngm-preview-atr .atr-value {
+  color: #16202a;
+  font-weight: 700;
+  text-align: left;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.pngm-public-map {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e3e8ed;
+  background: #eef1f4;
+  margin: 0 0 10px;
+}
+
+.pngm-public-map-frame {
+  display: block;
+  width: 100%;
+  height: 220px;
+  border: 0;
+}
+
+.pngm-public-address {
+  font-size: 14px;
+  color: #374151;
+  margin: 0 0 6px;
+}
+
+.pngm-public-map-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.pngm-public-muted {
+  color: #6b7785;
+  font-size: 14px;
+}
+
 .pngm-public-side {
+  position: sticky;
+  top: 0;
+}
+
+.pngm-public-seller-card {
   border: 1px solid #e3e8ed;
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
   background: #fff;
 }
 
 .pngm-public-seller-name {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
   color: #16202a;
 }
 
 .pngm-public-seller-loc {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 13px;
   color: #6b7785;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .pngm-public-actions {
@@ -1584,49 +1737,24 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
   font-weight: 700;
   font-size: 13px;
   color: #16202a;
-  text-decoration: none;
   pointer-events: none;
 }
 
-.pngm-public-action.is-primary {
-  background: #2e7d32;
+.pngm-public-action.is-phone {
   border-color: #2e7d32;
-  color: #fff;
+  color: #166534;
 }
 
-.pngm-public-action.is-whatsapp {
-  background: #25d366;
-  border-color: #25d366;
-  color: #fff;
-}
+@media screen and (max-width: 767px) {
+  .pngm-public-attrs ul.pngm-atr-visual,
+  #pngm-preview-atr.pngm-atr-visual {
+    grid-template-columns: 1fr;
+  }
 
-.pngm-public-action.is-muted {
-  opacity: 0.55;
-}
-
-.pngm-public-detail-list {
-  margin: 14px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px solid #f0f2f4;
-}
-
-.pngm-public-detail-list > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 0;
-  font-size: 13px;
-}
-
-.pngm-public-detail-list dt {
-  color: #6b7785;
-}
-
-.pngm-public-detail-list dd {
-  margin: 0;
-  font-weight: 600;
-  text-align: right;
-  color: #16202a;
+  .pngm-public-contact-btn {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 0;
+  }
 }
 
 body.pngm-post-wizard.pngm-preview-open {

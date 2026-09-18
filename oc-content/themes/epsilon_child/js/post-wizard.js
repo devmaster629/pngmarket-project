@@ -916,6 +916,10 @@
         if (!name || seen[name]) {
           return;
         }
+        // Contact phone is shown in the seller/contact area on the live listing.
+        if (/contact\s*phone/i.test(name)) {
+          return;
+        }
         var value = '';
         var typeClass = String($group.attr('class') || '');
 
@@ -982,12 +986,16 @@
         priceText = priceVal + (cur ? ' ' + cur : '');
       }
 
+      var $txPill = $('.pngm-post-pills[data-pills="transaction"] .pngm-post-pill.is-selected');
+      var txLabel = $.trim($txPill.text() || '') || $.trim($('#sTransaction option:selected').text() || '') || '—';
+      if (!txLabel || /^select/i.test(txLabel)) {
+        txLabel = '—';
+      }
+
       var condText = $.trim($('#sCondition option:selected').text() || '');
       if (!condText || /select/i.test(condText)) {
         condText = '—';
       }
-      var $txPill = $('.pngm-post-pills[data-pills="transaction"] .pngm-post-pill.is-selected');
-      var txLabel = $.trim($txPill.text() || '') || $.trim($('#sTransaction option:selected').text() || '') || '—';
 
       var city = $.trim($('#cityId option:selected').text() || $('#city').val() || '');
       var region = $.trim($('#regionId option:selected').text() || $('#region').val() || '');
@@ -1031,6 +1039,37 @@
       };
     }
 
+    function previewAttrIcon(name) {
+      var hay = String(name || '').toLowerCase();
+      var svgs = {
+        car: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M5 16l1.5-6h11L19 16"/><path d="M3 16h18v2a1 1 0 0 1-1 1h-1a2 2 0 0 1-4 0H9a2 2 0 0 1-4 0H4a1 1 0 0 1-1-1v-2z"/><circle cx="7.5" cy="16" r="1.2"/><circle cx="16.5" cy="16" r="1.2"/></svg>',
+        fuel: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="10" height="16" rx="1.5"/><path d="M14 8h2.5a2 2 0 0 1 2 2v5.5a1.5 1.5 0 0 0 3 0V9.5L19 7"/></svg>',
+        seats: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="8" cy="7" r="2"/><circle cx="16" cy="7" r="2"/><path d="M4.5 19v-1.2A3.3 3.3 0 0 1 7.8 14.5h.4A3.3 3.3 0 0 1 11.5 17.8V19"/><path d="M12.5 19v-1.2A3.3 3.3 0 0 1 15.8 14.5h.4A3.3 3.3 0 0 1 19.5 17.8V19"/></svg>',
+        cog: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M4.9 6.5l1.6 1.6M17.5 15.9l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 17.5l1.6-1.6M17.5 8.1l1.6-1.6"/></svg>',
+        plus: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>',
+        clock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5l3 1.5"/></svg>',
+        phone: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 3.5h3.2l1.1 3.3-2 1.4a12 12 0 0 0 5.5 5.5l1.4-2 3.3 1.1V16a2 2 0 0 1-2.2 2A15 15 0 0 1 5 5.7 2 2 0 0 1 7 3.5z"/></svg>',
+        tag: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3.5 12.5V5.8A2.3 2.3 0 0 1 5.8 3.5h6.7L20.5 11.5l-7.8 7.8L3.5 12.5z"/><circle cx="8.2" cy="8.2" r="1.1"/></svg>'
+      };
+      var key = 'tag';
+      if (/make|brand|body|model/.test(hay)) {
+        key = 'car';
+      } else if (/fuel/.test(hay)) {
+        key = 'fuel';
+      } else if (/seat/.test(hay)) {
+        key = 'seats';
+      } else if (/transmission|gear/.test(hay)) {
+        key = 'cog';
+      } else if (/accessor|feature/.test(hay)) {
+        key = 'plus';
+      } else if (/condition/.test(hay)) {
+        key = 'clock';
+      } else if (/phone/.test(hay)) {
+        key = 'phone';
+      }
+      return svgs[key] || svgs.tag;
+    }
+
     function openPreviewModal() {
       buildReview();
       var data = collectPreviewData();
@@ -1052,31 +1091,66 @@
         return '<button type="button" class="pngm-public-thumb' + (idx === 0 ? ' is-active' : '') + '" data-src="' + esc(src) + '"><img src="' + esc(src) + '" alt="" /></button>';
       }).join('');
 
-      var actions = [];
+      var pref = String(data.contactPref || 'message');
+      var contactBtns = '';
       if (data.allowMessages) {
-        actions.push('<span class="pngm-public-action is-primary"><i class="fas fa-comment"></i> ' + esc(labels.message || 'Message') + '</span>');
+        contactBtns += '<span class="pngm-public-contact-btn is-chat' + (pref === 'message' ? ' is-preferred' : '') + '">'
+          + '<i class="fas fa-comment" aria-hidden="true"></i> ' + esc(labels.message || 'Chat')
+          + (pref === 'message' ? '<em class="pngm-public-pref">' + esc(labels.preferred || 'PREFERRED') + '</em>' : '')
+          + '</span>';
       }
       if (data.phone) {
-        actions.push('<span class="pngm-public-action"><i class="fas fa-phone"></i> +675 ' + esc(data.phone) + '</span>');
+        contactBtns += '<span class="pngm-public-contact-btn is-call' + (pref === 'call' ? ' is-preferred' : '') + '">'
+          + '<i class="fas fa-phone" aria-hidden="true"></i> ' + esc(labels.call || 'Call')
+          + (pref === 'call' ? '<em class="pngm-public-pref">' + esc(labels.preferred || 'PREFERRED') + '</em>' : '')
+          + '</span>';
       }
       if (data.whatsapp && data.phone) {
-        actions.push('<span class="pngm-public-action is-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</span>');
-      }
-      if (!actions.length) {
-        actions.push('<span class="pngm-public-action is-muted">' + esc(labels.noContact || 'No contact options') + '</span>');
+        contactBtns += '<span class="pngm-public-contact-btn is-wa' + (pref === 'whatsapp' ? ' is-preferred' : '') + '">'
+          + '<i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp'
+          + (pref === 'whatsapp' ? '<em class="pngm-public-pref">' + esc(labels.preferred || 'PREFERRED') + '</em>' : '')
+          + '</span>';
       }
 
-      var detailRows = ''
-        + '<div><dt>' + esc(labels.category || 'Category') + '</dt><dd>' + esc(data.category) + '</dd></div>'
-        + '<div><dt>' + esc(labels.subcategory || 'Subcategory') + '</dt><dd>' + esc(data.subcategory) + '</dd></div>'
-        + '<div><dt>' + esc(labels.condition || 'Condition') + '</dt><dd>' + esc(data.condition) + '</dd></div>'
-        + '<div><dt>' + esc(labels.transaction || 'Transaction') + '</dt><dd>' + esc(data.transaction) + '</dd></div>';
+      var attrItems = '';
+      var attrList = [];
+      if (data.category && data.category !== '—') {
+        attrList.push([labels.category || 'Category', data.category]);
+      }
+      if (data.subcategory && data.subcategory !== '—') {
+        attrList.push([labels.subcategory || 'Subcategory', data.subcategory]);
+      }
       if (data.attributes && data.attributes.length) {
         data.attributes.forEach(function (row) {
-          detailRows += '<div><dt>' + esc(row[0]) + '</dt><dd>' + esc(row[1]) + '</dd></div>';
+          attrList.push(row);
         });
       }
-      detailRows += '<div><dt>' + esc(labels.whatsapp || 'WhatsApp') + '</dt><dd>' + esc(data.whatsapp ? (labels.yes || 'Yes') : (labels.no || 'No')) + '</dd></div>';
+      attrList.forEach(function (row) {
+        attrItems += '<li class="atr-line">'
+          + '<span class="pngm-atr-ico" aria-hidden="true">' + previewAttrIcon(row[0]) + '</span>'
+          + '<span class="atr-name">' + esc(row[0]) + '</span>'
+          + '<span class="atr-value">' + esc(row[1]) + '</span>'
+          + '</li>';
+      });
+
+      var mapQ = data.location && data.location !== '—' ? data.location : '';
+      var mapHtml = '';
+      if (mapQ) {
+        mapHtml = '<div class="pngm-public-map">'
+          + '<iframe class="pngm-public-map-frame" title="Map" src="https://maps.google.com/maps?q='
+          + encodeURIComponent(mapQ) + '&amp;z=13&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>'
+          + '</div>'
+          + '<div class="pngm-public-address">' + esc(mapQ) + '</div>'
+          + '<span class="pngm-public-map-link">' + esc(labels.viewOnMap || 'View on map') + ' →</span>';
+      } else {
+        mapHtml = '<p class="pngm-public-muted">' + esc(labels.unknownLocation || 'Unknown location') + '</p>';
+      }
+
+      var sideActions = '';
+      sideActions += '<span class="pngm-public-action">' + esc(labels.sellerProfile || "Seller's profile") + '</span>';
+      if (data.phone) {
+        sideActions += '<span class="pngm-public-action is-phone"><i class="fas fa-phone" aria-hidden="true"></i> +675 ' + esc(data.phone) + '</span>';
+      }
 
       var html = ''
         + '<div class="pngm-public-preview">'
@@ -1088,21 +1162,34 @@
         +     '<div class="pngm-public-basic">'
         +       '<h1>' + esc(data.title) + '</h1>'
         +       '<div class="pngm-public-price">' + esc(data.priceText) + '</div>'
-        +       '<div class="pngm-public-meta">'
-        +         '<span class="pngm-public-chip"><i class="fas fa-map-marker-alt"></i> ' + esc(data.location) + '</span>'
-        +         '<span class="pngm-public-chip">' + esc(data.condition) + '</span>'
-        +         '<span class="pngm-public-chip">' + esc(data.transaction) + '</span>'
-        +       '</div>'
-        +       (data.desc ? '<p class="pngm-public-desc">' + esc(data.desc.substring(0, 600)) + (data.desc.length > 600 ? '…' : '') + '</p>' : '')
+        +       '<div class="pngm-public-posted">' + esc(labels.previewMeta || 'Listing preview') + '</div>'
+        +     '</div>'
+        +     (contactBtns
+          ? '<div class="pngm-public-contact">'
+            + '<h2>' + esc(labels.contactSeller || 'Contact Seller') + '</h2>'
+            + '<div class="pngm-public-contact-row">' + contactBtns + '</div>'
+            + '</div>'
+          : '')
+        +     '<div class="pngm-public-block">'
+        +       '<h2><i class="fas fa-align-left" aria-hidden="true"></i> ' + esc(labels.description || 'Description') + '</h2>'
+        +       '<div class="pngm-public-desc">' + (data.desc ? esc(data.desc) : '—') + '</div>'
+        +     '</div>'
+        +     (attrItems
+          ? '<div class="pngm-public-block pngm-public-attrs">'
+            + '<ul class="pngm-atr-visual" id="pngm-preview-atr">' + attrItems + '</ul>'
+            + '</div>'
+          : '')
+        +     '<div class="pngm-public-block">'
+        +       '<h2><i class="fas fa-map-marker-alt" aria-hidden="true"></i> ' + esc(labels.location || 'Location') + '</h2>'
+        +       mapHtml
         +     '</div>'
         +   '</div>'
         +   '<aside class="pngm-public-side">'
-        +     '<p class="pngm-public-seller-name">' + esc(data.name) + '</p>'
-        +     '<p class="pngm-public-seller-loc">' + esc(data.location) + '</p>'
-        +     '<div class="pngm-public-actions">' + actions.join('') + '</div>'
-        +     '<dl class="pngm-public-detail-list">'
-        +       detailRows
-        +     '</dl>'
+        +     '<div class="pngm-public-seller-card">'
+        +       '<p class="pngm-public-seller-name">' + esc(data.name) + '</p>'
+        +       '<p class="pngm-public-seller-loc"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> ' + esc(data.location) + '</p>'
+        +       '<div class="pngm-public-actions">' + sideActions + '</div>'
+        +     '</div>'
         +   '</aside>'
         + '</div>';
 
