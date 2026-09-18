@@ -55,7 +55,7 @@ function pngm_public_profile_is_enabled_gate($enabled, $user)
 
     return true;
 }
-osc_add_filter('user_public_profile_is_enabled', 'pngm_public_profile_is_enabled_gate', 20);
+osc_add_filter('user_public_profile_is_enabled', 'pngm_public_profile_is_enabled_gate', 8);
 
 /**
  * Never return a public-profile URL for gated (non-seller) users — stops empty/eps fallbacks.
@@ -85,4 +85,4 @@ function pngm_public_profile_url_gate($url, $id, $user = false, $params = array(
 
     return (string) $url;
 }
-osc_add_filter('user_public_profile_url', 'pngm_public_profile_url_gate', 20);
+osc_add_filter('user_public_profile_url', 'pngm_public_profile_url_gate', 8);

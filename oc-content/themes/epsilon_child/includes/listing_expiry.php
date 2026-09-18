@@ -164,7 +164,7 @@ function pngm_listing_expiry_warn_email_body($body, $aItem)
 
     return $body . $extra;
 }
-osc_add_filter('email_warn_expiration_description_after', 'pngm_listing_expiry_warn_email_body', 20);
+osc_add_filter('email_warn_expiration_description_after', 'pngm_listing_expiry_warn_email_body', 8);
 
 /**
  * In-app Activity + browser push for the 7-day expiry reminder (email is sent by core).
@@ -221,7 +221,7 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
         pngm_notif_queue_push($user_id, 'listing_expiring', $subject, $body, $listings_url);
     }
 }
-osc_add_hook('hook_email_warn_expiration', 'pngm_listing_expiry_warn_notify_inapp', 20);
+osc_add_hook('hook_email_warn_expiration', 'pngm_listing_expiry_warn_notify_inapp', 8);
 
 /**
  * Hourly: notify owners of listings that expired in the last hour (with Renew CTA).
@@ -317,4 +317,4 @@ function pngm_listing_expiry_cron_expired()
 }
 
 osc_add_hook('init', 'pngm_listing_expiry_apply_policy', 4);
-osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_expired', 15);
+osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_expired', 8);
