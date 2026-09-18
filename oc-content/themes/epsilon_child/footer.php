@@ -36,11 +36,13 @@
       'facebook'  => __('Facebook', 'epsilon'),
       'instagram' => __('Instagram', 'epsilon'),
       'tiktok'    => __('TikTok', 'epsilon'),
+      'whatsapp'  => __('WhatsApp', 'epsilon'),
     );
     $pngm_social_icons = array(
       'facebook'  => 'fab fa-facebook-f',
       'instagram' => 'fab fa-instagram',
       'tiktok'    => 'fab fa-tiktok',
+      'whatsapp'  => 'fab fa-whatsapp',
     );
     $pngm_brand = trim((string) $pngm_contact['name']);
     if ($pngm_brand === '') {
@@ -77,68 +79,70 @@
     );
   ?>
 
-  <div class="pngm-footer-inner">
-      <div class="pngm-footer-top">
-        <div class="pngm-footer-brand">
-          <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
-            <?php if (function_exists('eps_logo')) { ?>
-              <?php echo eps_logo(); ?>
-            <?php } else { ?>
-              <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
-            <?php } ?>
-          </a>
-          <p class="pngm-footer-desc"><?php echo osc_esc_html($pngm_desc); ?></p>
-        </div>
-
-        <?php if (count($pngm_nav) > 0) { ?>
-          <nav class="pngm-footer-nav" aria-label="<?php echo osc_esc_html(__('Footer', 'epsilon')); ?>">
-            <?php
-              $pngm_link_i = 0;
-              foreach ($pngm_nav as $item) {
-                if ($pngm_link_i > 0) {
-                  echo '<span class="pngm-footer-sep" aria-hidden="true">|</span>';
-                }
-            ?>
-              <a href="<?php echo osc_esc_html($item['url']); ?>">
-                <span><?php echo osc_esc_html($item['title']); ?></span>
-                <i class="fas fa-chevron-right pngm-footer-chevron" aria-hidden="true"></i>
-              </a>
-            <?php
-                $pngm_link_i += 1;
-              }
-            ?>
-          </nav>
+  <div class="container pngm-footer-inner">
+    <section class="pngm-footer-cols">
+      <div class="pngm-footer-col pngm-footer-about">
+        <h4><?php _e('About us', 'epsilon'); ?></h4>
+        <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
+          <?php if (function_exists('eps_logo')) { echo eps_logo(); } else { ?>
+            <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
+          <?php } ?>
+        </a>
+        <?php if (!empty($pngm_contact['name'])) { ?>
+          <p class="company"><strong><?php echo osc_esc_html($pngm_contact['name']); ?></strong></p>
         <?php } ?>
+        <?php if (!empty($pngm_contact['phone'])) { ?>
+          <p><?php echo osc_esc_html(__('Phone', 'epsilon') . ': ' . $pngm_contact['phone']); ?></p>
+        <?php } ?>
+        <?php if (!empty($pngm_contact['email'])) { ?>
+          <p><?php echo osc_esc_html(__('Email', 'epsilon') . ': ' . $pngm_contact['email']); ?></p>
+        <?php } ?>
+        <?php if (!empty($pngm_contact['address'])) { ?>
+          <p><?php echo osc_esc_html($pngm_contact['address']); ?></p>
+        <?php } ?>
+        <p class="pngm-footer-desc"><?php echo osc_esc_html($pngm_desc); ?></p>
       </div>
 
-      <div class="pngm-footer-bottom">
+      <div class="pngm-footer-col pngm-footer-socialx">
+        <h4><?php _e('Social media', 'epsilon'); ?></h4>
         <?php if (count($pngm_socials) > 0) { ?>
-          <div class="pngm-footer-follow">
-            <span class="pngm-footer-follow-label"><?php _e('Follow us', 'epsilon'); ?></span>
-            <div class="pngm-footer-socials">
-              <?php foreach ($pngm_socials as $type => $url) {
-                if ($type === 'whatsapp') {
-                  continue;
-                }
-                $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
-                $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
-              ?>
-                <a class="pngm-footer-social pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo osc_esc_html($label); ?>" title="<?php echo osc_esc_html($label); ?>">
-                  <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
-                </a>
-              <?php } ?>
-            </div>
-          </div>
+          <?php foreach ($pngm_socials as $type => $url) {
+            $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
+            $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
+          ?>
+            <a class="pngm-footer-social-link pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
+              <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
+              <span><?php echo osc_esc_html($label); ?></span>
+            </a>
+          <?php } ?>
+        <?php } else { ?>
+          <p class="pngm-footer-muted"><?php _e('Follow us on social media.', 'epsilon'); ?></p>
         <?php } ?>
-
-        <div class="pngm-footer-copy">
-          <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?>. <?php _e('All rights reserved.', 'epsilon'); ?></span>
-        </div>
       </div>
 
-      <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
-      <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
+      <div class="pngm-footer-col pngm-footer-pages">
+        <h4><?php _e('Information', 'epsilon'); ?></h4>
+        <?php if (count($pngm_nav) > 0) { ?>
+          <?php foreach ($pngm_nav as $item) { ?>
+            <a href="<?php echo osc_esc_html($item['url']); ?>"><?php echo osc_esc_html($item['title']); ?></a>
+          <?php } ?>
+        <?php } ?>
+        <?php if (function_exists('im_messages')) { ?>
+          <a href="<?php echo osc_route_url('im-threads'); ?>"><?php _e('Messages', 'epsilon'); ?></a>
+        <?php } ?>
+        <?php if (function_exists('fi_make_favorite')) { ?>
+          <a href="<?php echo osc_route_url('favorite-lists'); ?>"><?php _e('Favorite', 'epsilon'); ?></a>
+        <?php } ?>
+      </div>
+    </section>
+
+    <div class="pngm-footer-copy">
+      <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?>. <?php _e('All rights reserved.', 'epsilon'); ?></span>
     </div>
+
+    <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
+    <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
+  </div>
 </footer>
 
 <?php osc_run_hook('footer_after'); ?>

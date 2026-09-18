@@ -77,17 +77,22 @@
                   <?php } ?>
                   
                   <?php
-                    // Prefer photographic covers (PNG), then SVG, then FA fallback.
+                    // Prefer green SVG / FA icons on the home strip.
+                    // Photographic covers often look partially black/dark in the small circle.
+                    $pngm_cat_svg = function_exists('pngm_category_svg_url') ? pngm_category_svg_url(osc_category_id()) : '';
+                    if ($pngm_cat_svg === false || $pngm_cat_svg === null) {
+                      $pngm_cat_svg = '';
+                    }
                     $pngm_cat_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image(osc_category_id()) : '';
-                    $pngm_is_svg = ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false);
-                    $pngm_is_photo = ($pngm_cat_img !== '' && !$pngm_is_svg);
+                    $pngm_is_svg = ($pngm_cat_svg !== '' || ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false));
+                    $pngm_svg_src = $pngm_cat_svg !== '' ? $pngm_cat_svg : $pngm_cat_img;
                   ?>
-                  <?php if ($pngm_is_photo) { ?>
-                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-cover<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
-                  <?php } elseif ($pngm_is_svg) { ?>
-                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
+                  <?php if ($pngm_is_svg && $pngm_svg_src !== '') { ?>
+                    <img src="<?php echo $pngm_svg_src; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
                   <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
                     <?php echo pngm_render_category_icon(osc_category_id(), osc_category()); ?>
+                  <?php } elseif ($pngm_cat_img !== '') { ?>
+                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-cover<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
                   <?php } elseif (eps_param('cat_icons') == 1) { ?>
                     <?php
                       $icon = eps_get_cat_icon(osc_category_id(), osc_category(), true);
@@ -192,19 +197,14 @@
 
               <div class="nice-scroll-next"><i class="fas fa-caret-right"></i></div>
             </div>
-          <?php } else { ?>
+          <?php } elseif ($pngm_near_has_loc) { ?>
             <div class="empty-alt pngm-empty-near">
-              <?php if ($pngm_near_has_loc) { ?>
-                <strong><?php _e('No exact results found', 'epsilon'); ?></strong>
-                <span><?php _e('Try another area, or browse the newest listings below.', 'epsilon'); ?></span>
-                <a href="#" class="change-location btn btn-secondary mini"><?php _e('Change location', 'epsilon'); ?></a>
-              <?php } else { ?>
-                <strong><?php _e('Choose your location', 'epsilon'); ?></strong>
-                <span><?php _e('Set your area to see listings near you.', 'epsilon'); ?></span>
-                <a href="#" class="change-location btn btn-secondary mini"><?php _e('Set location', 'epsilon'); ?></a>
-              <?php } ?>
+              <strong><?php _e('No exact results found', 'epsilon'); ?></strong>
+              <span><?php _e('Try another area, or browse the newest listings below.', 'epsilon'); ?></span>
+              <a href="#" class="change-location btn btn-secondary mini"><?php _e('Change location', 'epsilon'); ?></a>
             </div>
           <?php } ?>
+          <?php /* No location yet: keep only the Near You header + Set location link (no second “Choose your location” box). */ ?>
         </div>
       </div>
     </section>

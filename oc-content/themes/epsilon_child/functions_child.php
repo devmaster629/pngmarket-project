@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.42');
+    define('PNGM_CHILD_VERSION', '2.5.43');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1260,12 +1260,27 @@ function pngm_require_recaptcha_on_login()
         return;
     }
 
-    if (pngm_recaptcha_token_valid()) {
+    $token = '';
+    if (isset($_POST['g-recaptcha-response'])) {
+        $token = trim((string) $_POST['g-recaptcha-response']);
+    } else {
+        $token = trim((string) Params::getParam('g-recaptcha-response', false, false));
+    }
+
+    if ($token === '') {
+        osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+        osc_redirect_to(osc_user_login_url());
         return;
     }
 
-    osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
-    osc_redirect_to(osc_user_login_url());
+    // Google tokens are single-use. Core login.php already calls osc_check_recaptcha().
+    // Only verify here when Oc-Admin is logged in (core skips the check in that case).
+    if (function_exists('osc_is_admin_user_logged_in') && osc_is_admin_user_logged_in()) {
+        if (!function_exists('osc_check_recaptcha') || !osc_check_recaptcha()) {
+            osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+            osc_redirect_to(osc_user_login_url());
+        }
+    }
 }
 
 function pngm_require_recaptcha_on_register()
@@ -1274,12 +1289,26 @@ function pngm_require_recaptcha_on_register()
         return;
     }
 
-    if (pngm_recaptcha_token_valid()) {
+    $token = '';
+    if (isset($_POST['g-recaptcha-response'])) {
+        $token = trim((string) $_POST['g-recaptcha-response']);
+    } else {
+        $token = trim((string) Params::getParam('g-recaptcha-response', false, false));
+    }
+
+    if ($token === '') {
+        osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+        osc_redirect_to(osc_register_account_url());
         return;
     }
 
-    osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
-    osc_redirect_to(osc_register_account_url());
+    // Same single-use rule — UserActions::add() verifies once.
+    if (function_exists('osc_is_admin_user_logged_in') && osc_is_admin_user_logged_in()) {
+        if (!function_exists('osc_check_recaptcha') || !osc_check_recaptcha()) {
+            osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
+            osc_redirect_to(osc_register_account_url());
+        }
+    }
 }
 
 function pngm_require_recaptcha_on_contact()
@@ -1292,16 +1321,24 @@ function pngm_require_recaptcha_on_contact()
         return;
     }
 
-    if (pngm_recaptcha_token_valid()) {
+    $token = '';
+    if (isset($_POST['g-recaptcha-response'])) {
+        $token = trim((string) $_POST['g-recaptcha-response']);
+    } else {
+        $token = trim((string) Params::getParam('g-recaptcha-response', false, false));
+    }
+
+    if ($token === '') {
+        osc_add_flash_error_message(_m('Recaptcha validation has failed'));
+        Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
+        Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
+        Session::newInstance()->_setForm('subject', Params::getParam('subject'));
+        Session::newInstance()->_setForm('message_body', Params::getParam('message'));
+        osc_redirect_to(osc_contact_url());
         return;
     }
 
-    osc_add_flash_error_message(_m('Recaptcha validation has failed'));
-    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-    Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
-    Session::newInstance()->_setForm('subject', Params::getParam('subject'));
-    Session::newInstance()->_setForm('message_body', Params::getParam('message'));
-    osc_redirect_to(osc_contact_url());
+    // Contact controller verifies once — do not consume the token here.
 }
 
 osc_add_hook('before_validating_login', 'pngm_require_recaptcha_on_login');

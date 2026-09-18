@@ -430,7 +430,11 @@ body.pngm-auth-v2 .pngm-social-login.is-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin: 0 0 22px;
+  margin: 0 0 18px;
+}
+
+body.pngm-auth-v2 .pngm-auth-form {
+  margin-top: 0;
 }
 
 body.pngm-auth-v2 .pngm-social-login.is-row a,

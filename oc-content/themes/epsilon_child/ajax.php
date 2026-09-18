@@ -481,42 +481,77 @@ if(@$_GET['ajaxFindCity'] == 1) {
 
 
 // GET LOCATIONS FOR LOCATION PICKER VIA AJAX
-if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
-  $term = trim(osc_esc_js(Params::getParam('term')));
+// Allow empty term so filters/modals can show the main-cities list on focus.
+if (@$_GET['ajaxLoc'] == 1) {
+  $term = trim((string) Params::getParam('term'));
+  $term = trim(osc_esc_js($term));
   $type = trim(osc_esc_html(Params::getParam('dataType')));
   $max = 20;
 
+  // Empty / very short term → main cities list (Port Moresby, Lae, Mt Hagen, …).
+  if ($term === '' || (function_exists('mb_strlen') ? mb_strlen($term, 'UTF-8') : strlen($term)) < 1) {
+    $cities = function_exists('pngm_get_popular_cities')
+      ? pngm_get_popular_cities(12)
+      : array();
+    $output = '';
+    if (is_array($cities) && count($cities) > 0) {
+      $output .= '<div class="lead pngm-loc-ajax-lead">' . osc_esc_html(__('Main cities', 'epsilon')) . '</div>';
+      foreach ($cities as $c) {
+        $name = isset($c['s_name']) ? $c['s_name'] : '';
+        $name_top = isset($c['s_name_top']) ? $c['s_name_top'] : '';
+        if ($type == 'COOKIE') {
+          $hash = rawurlencode(base64_encode(json_encode(array(
+            'fk_i_city_id' => @$c['fk_i_city_id'],
+            'fk_i_region_id' => @$c['fk_i_region_id'],
+            'fk_c_country_code' => @$c['fk_c_country_code'],
+            's_name' => $name,
+            's_name_native' => @$c['s_name_native'],
+            's_name_top' => $name_top,
+            's_name_top_native' => @$c['s_name_top_native'],
+            's_slug' => @$c['s_slug'],
+            'd_coord_lat' => @$c['d_coord_lat'],
+            'd_coord_long' => @$c['d_coord_long'],
+          ))));
+          $output .= '<a class="option city direct" href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '">';
+        } else {
+          $output .= '<div class="option city" data-country="' . osc_esc_html(@$c['fk_c_country_code']) . '" data-region="' . (int) @$c['fk_i_region_id'] . '" data-city="' . (int) @$c['fk_i_city_id'] . '">';
+        }
+        $output .= '<span>' . osc_esc_html($name) . '</span>';
+        if (trim($name_top) !== '') {
+          $output .= '<em>' . osc_esc_html($name_top) . '</em>';
+        }
+        $output .= ($type == 'COOKIE') ? '</a>' : '</div>';
+      }
+    }
+    echo $output;
+    exit;
+  }
+
+  // Contains match (not prefix-only) so "Moresby" / "Hagen" / "Mt" still find cities.
+  $like = '%' . $term . '%';
+  $like_esc = City::newInstance()->dao->escapeStr($like);
+
   if(osc_get_current_user_locations_native() == 1) {
-    /*
     $sql = '
-      (SELECT "country" as type, coalesce(s_name_native, s_name) as name, "' . $allregs . '" as name_top, null as city_id, null as region_id, pk_c_code as country_code  FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name like "' . $term . '%" OR s_name_native like "' . $term . '%")
+      (SELECT "country" as type, s_name as name, s_name_native as name_native, "" as name_top, "" as name_top_native, null as city_id, null as region_id, pk_c_code as country_code, s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name like "' . $like_esc . '" OR s_name_native like "' . $like_esc . '")
       UNION ALL
-      (SELECT "region" as type, coalesce(r.s_name_native, r.s_name) as name, coalesce(c.s_name_native, c.s_name) as name_top, null as city_id, r.pk_i_id  as region_id, r.fk_c_country_code as country_code  FROM ' . DB_TABLE_PREFIX . 't_region r, ' . DB_TABLE_PREFIX . 't_country c WHERE r.fk_c_country_code = c.pk_c_code AND (r.s_name like "' . $term . '%" OR r.s_name_native like "' . $term . '%"))
+      (SELECT "region" as type, r.s_name as name, r.s_name_native as name_native, c.s_name as name_top, c.s_name_native as name_top_native, null as city_id, r.pk_i_id  as region_id, r.fk_c_country_code as country_code, r.s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_region r, ' . DB_TABLE_PREFIX . 't_country c WHERE r.fk_c_country_code = c.pk_c_code AND (r.s_name like "' . $like_esc . '" OR r.s_name_native like "' . $like_esc . '"))
       UNION ALL
-      (SELECT "city" as type, coalesce(c.s_name_native, c.s_name) as name, coalesce(r.s_name_native, r.s_name) as name_top, c.pk_i_id as city_id, c.fk_i_region_id as region_id, c.fk_c_country_code as country_code  FROM ' . DB_TABLE_PREFIX . 't_city c, ' . DB_TABLE_PREFIX . 't_region r WHERE (c.s_name like "' . $term . '%" OR c.s_name_native like "' . $term . '%") AND c.fk_i_region_id = r.pk_i_id limit ' . $max . ')
+      (SELECT "city" as type, c.s_name as name, c.s_name_native as name_native, r.s_name as name_top, r.s_name_native as name_top_native, c.pk_i_id as city_id, c.fk_i_region_id as region_id, c.fk_c_country_code as country_code, c.s_slug, d_coord_lat, d_coord_long FROM ' . DB_TABLE_PREFIX . 't_city c, ' . DB_TABLE_PREFIX . 't_region r WHERE (c.s_name like "' . $like_esc . '" OR c.s_name_native like "' . $like_esc . '") AND c.fk_i_region_id = r.pk_i_id limit ' . $max . ')
     ';
-    */
-    
-    $sql = '
-      (SELECT "country" as type, s_name as name, s_name_native as name_native, "" as name_top, "" as name_top_native, null as city_id, null as region_id, pk_c_code as country_code, s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name like "' . $term . '%" OR s_name_native like "' . $term . '%")
-      UNION ALL
-      (SELECT "region" as type, r.s_name as name, r.s_name_native as name_native, c.s_name as name_top, c.s_name_native as name_top_native, null as city_id, r.pk_i_id  as region_id, r.fk_c_country_code as country_code, r.s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_region r, ' . DB_TABLE_PREFIX . 't_country c WHERE r.fk_c_country_code = c.pk_c_code AND (r.s_name like "' . $term . '%" OR r.s_name_native like "' . $term . '%"))
-      UNION ALL
-      (SELECT "city" as type, c.s_name as name, c.s_name_native as name_native, r.s_name as name_top, r.s_name_native as name_top_native, c.pk_i_id as city_id, c.fk_i_region_id as region_id, c.fk_c_country_code as country_code, c.s_slug, d_coord_lat, d_coord_long FROM ' . DB_TABLE_PREFIX . 't_city c, ' . DB_TABLE_PREFIX . 't_region r WHERE (c.s_name like "' . $term . '%" OR c.s_name_native like "' . $term . '%") AND c.fk_i_region_id = r.pk_i_id limit ' . $max . ')
-    ';  
   } else {
     $sql = '
-      (SELECT "country" as type, s_name as name, "" as name_top, null as city_id, null as region_id, pk_c_code as country_code, s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name like "' . $term . '%")
+      (SELECT "country" as type, s_name as name, "" as name_top, null as city_id, null as region_id, pk_c_code as country_code, s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name like "' . $like_esc . '")
       UNION ALL
-      (SELECT "region" as type, r.s_name as name, c.s_name as name_top, null as city_id, r.pk_i_id  as region_id, r.fk_c_country_code as country_code, r.s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_region r, ' . DB_TABLE_PREFIX . 't_country c WHERE r.fk_c_country_code = c.pk_c_code AND r.s_name like "' . $term . '%")
+      (SELECT "region" as type, r.s_name as name, c.s_name as name_top, null as city_id, r.pk_i_id  as region_id, r.fk_c_country_code as country_code, r.s_slug, NULL as d_coord_lat, NULL as d_coord_long FROM ' . DB_TABLE_PREFIX . 't_region r, ' . DB_TABLE_PREFIX . 't_country c WHERE r.fk_c_country_code = c.pk_c_code AND r.s_name like "' . $like_esc . '")
       UNION ALL
-      (SELECT "city" as type, c.s_name as name, r.s_name as name_top, c.pk_i_id as city_id, c.fk_i_region_id as region_id, c.fk_c_country_code as country_code, c.s_slug, c.d_coord_lat, c.d_coord_long FROM ' . DB_TABLE_PREFIX . 't_city c, ' . DB_TABLE_PREFIX . 't_region r WHERE c.s_name like "' . $term . '%" AND c.fk_i_region_id = r.pk_i_id limit ' . $max . ')
-    ';  
+      (SELECT "city" as type, c.s_name as name, r.s_name as name_top, c.pk_i_id as city_id, c.fk_i_region_id as region_id, c.fk_c_country_code as country_code, c.s_slug, c.d_coord_lat, c.d_coord_long FROM ' . DB_TABLE_PREFIX . 't_city c, ' . DB_TABLE_PREFIX . 't_region r WHERE c.s_name like "' . $like_esc . '" AND c.fk_i_region_id = r.pk_i_id limit ' . $max . ')
+    ';
   }
 
   $result = City::newInstance()->dao->query($sql);
-  if(!$result) { 
-    $data = array(); 
+  if(!$result) {
+    $data = array();
   } else {
     $data = $result->result();
   }
@@ -526,6 +561,57 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
     $data = pngm_sort_ajax_loc_results($data);
   }
 
+  // Always surface matching main cities first (even if DB order was wrong).
+  if (function_exists('pngm_get_popular_cities') && $term !== '') {
+    $term_key = function_exists('pngm_location_key') ? pngm_location_key($term) : strtolower($term);
+    $aliases = array(
+      'mt hagen' => 'mount hagen',
+      'mt. hagen' => 'mount hagen',
+      'pom' => 'port moresby',
+      'moresby' => 'port moresby',
+    );
+    if (isset($aliases[$term_key])) {
+      $term_key = $aliases[$term_key];
+    }
+    $popular = pngm_get_popular_cities(20);
+    $extra = array();
+    if (is_array($popular)) {
+      foreach ($popular as $c) {
+        $cname = isset($c['s_name']) ? $c['s_name'] : '';
+        $ckey = function_exists('pngm_location_key') ? pngm_location_key($cname) : strtolower($cname);
+        if ($term_key !== '' && (strpos($ckey, $term_key) !== false || strpos($term_key, $ckey) !== false
+            || stripos($cname, $term) !== false)) {
+          $extra[] = array(
+            'type' => 'city',
+            'name' => $cname,
+            'name_native' => @$c['s_name_native'],
+            'name_top' => @$c['s_name_top'],
+            'name_top_native' => @$c['s_name_top_native'],
+            'city_id' => @$c['fk_i_city_id'],
+            'region_id' => @$c['fk_i_region_id'],
+            'country_code' => @$c['fk_c_country_code'],
+            's_slug' => @$c['s_slug'],
+            'd_coord_lat' => @$c['d_coord_lat'],
+            'd_coord_long' => @$c['d_coord_long'],
+          );
+        }
+      }
+    }
+    if (count($extra) > 0) {
+      $seen = array();
+      $merged = array();
+      foreach (array_merge($extra, $data) as $row) {
+        $sid = ($row['type'] === 'city' ? 'c' . $row['city_id'] : $row['type'] . $row['name']);
+        if (isset($seen[$sid])) {
+          continue;
+        }
+        $seen[$sid] = true;
+        $merged[] = $row;
+      }
+      $data = $merged;
+    }
+  }
+
   $output = '';
   if(is_array($data) && count($data) > 0) {
     foreach($data as $d) {
@@ -533,17 +619,17 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
         $d['name_top'] = osc_esc_html(__('All regions', 'epsilon'));
         $d['name_top_native'] = $d['name_top'];
       }
-      
+
       if($type == 'COOKIE') {
         $hash = rawurlencode(base64_encode(json_encode(array('fk_i_city_id' => $d['city_id'], 'fk_i_region_id' => $d['region_id'], 'fk_c_country_code' => $d['country_code'], 's_name' => $d['name'], 's_name_native' => @$d['name_native'], 's_name_top' => $d['name_top'], 's_name_top_native' => @$d['name_top_native'], 's_slug' => @$d['s_slug'], 'd_coord_lat' => @$d['d_coord_lat'], 'd_coord_long' => @$d['d_coord_long']))));
         $output .= '<a class="option ' . $d['type'] . ' direct" href="' . eps_create_url(array('manualCookieLocation' => 1, 'hash' => $hash)) . '">';
       } else {
         $output .= '<div class="option ' . $d['type'] . '" data-country="' . $d['country_code'] . '" data-region="' . $d['region_id'] . '" data-city="' . $d['city_id'] . '">';
       }
-      
+
       $output .= '<span>' . osc_location_native_name_selector($d, 'name') . '</span>';
       $output .= (trim(osc_location_native_name_selector($d, 'name_top')) != '' ? '<em>' . osc_location_native_name_selector($d, 'name_top') . '</em>' : '');
-      
+
       if($type == 'COOKIE') {
         $output .= '</a>';
       } else {
@@ -551,7 +637,7 @@ if(@$_GET['ajaxLoc'] == 1 && @$_GET['term'] <> '') {
       }
     }
   }
-  
+
   echo $output;
   exit;
 }

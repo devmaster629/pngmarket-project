@@ -37,6 +37,8 @@
           <h1><?php _e('Create your account', 'epsilon'); ?></h1>
           <p class="pngm-auth-lead"><?php _e('Join PNGMarket and start your journey.', 'epsilon'); ?></p>
 
+          <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('register', 'row'); } ?>
+
           <form name="register" id="register" action="<?php echo osc_base_url(true); ?>" method="post" class="pngm-auth-form">
             <input type="hidden" name="page" value="register" />
             <input type="hidden" name="action" value="register_post" />
@@ -100,8 +102,6 @@
 
             <button type="submit" class="btn pngm-auth-submit"><?php _e('Create account', 'epsilon'); ?></button>
           </form>
-
-          <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('register', 'row'); } ?>
 
           <p class="pngm-auth-switch">
             <?php _e('Already have an account?', 'epsilon'); ?>

@@ -534,10 +534,14 @@
 
         if (window.epsLoadPatternSimpleValue == term) {
           box.show(0);
-          boxLoaded.show(0);
-          boxDefault.hide(0);
-          boxLoaded.find('.row.defloc').remove();
-          hideEmptyResults(box);
+          if (rawTerm.length === 0) {
+            boxDefault.show(0);
+            boxLoaded.hide(0);
+          } else {
+            boxLoaded.show(0);
+            boxDefault.hide(0);
+            hideEmptyResults(box);
+          }
           return false;
         }
 
@@ -553,28 +557,41 @@
           elem.siblings('.clean').hide(0);
         }
 
+        // Empty focus: show default suggestions (recent / popular), not a blank hide.
+        if (rawTerm.length === 0) {
+          elem.closest('.picker').removeClass('loading');
+          boxLoaded.html('').hide(0);
+          if (boxDefault.length && boxDefault.children().length) {
+            box.show(0);
+            boxDefault.show(0);
+          } else {
+            box.hide(0);
+          }
+          return false;
+        }
+
         elem.closest('.picker').addClass('loading');
 
         window.epsLoadPatternSimpleTimeout = setTimeout(function () {
-          if (term.length === 0 || term.length >= min) {
+          if (term.length >= min) {
             $.ajax({
               type: 'GET',
               // Always global — do not append sCity / sRegion from default location.
               url: window.baseAjaxUrl + '&ajaxPatternSearch=1&term=' + term,
               success: function (data) {
                 elem.closest('.picker').removeClass('loading');
-                box.show(0);
-                boxLoaded.html(data).show(0);
-                boxLoaded.find('fieldset').remove();
-                boxLoaded.find('.row.defloc').remove();
+                var html = $.trim(data || '');
                 boxDefault.hide(0);
-
-                hideEmptyResults(box);
-
-                if (boxLoaded.find('a, div').length <= 0) {
+                if (!html) {
                   box.hide(0);
                   boxLoaded.html('').hide(0);
+                  return;
                 }
+                box.show(0);
+                boxLoaded.html(html).show(0);
+                boxLoaded.find('fieldset').remove();
+                boxLoaded.find('.row.defloc').remove();
+                hideEmptyResults(box);
               },
               error: function () {
                 elem.closest('.picker').removeClass('loading');
@@ -590,6 +607,57 @@
             boxLoaded.html('').hide(0);
           }
         }, 300);
+      };
+    }
+
+    // Also restore parent location loader so empty focus can request main cities.
+    if (typeof window.epsLoadLocationsSimple === 'function') {
+      window.epsLoadLocationsSimple = function (elem, event, type) {
+        type = typeof type === 'undefined' ? '' : type;
+        var min = 0;
+        var box = elem.closest('.picker').find('.results');
+        var raw = $.trim($(elem).val() || '');
+        var term = raw;
+        term = term.indexOf(',') > 1 ? term.substr(0, term.indexOf(',')) : term;
+        term = term.indexOf('-') > 1 ? term.substr(0, term.indexOf('-')) : term;
+        term = encodeURIComponent(term).trim();
+
+        if (window.epsLoadLocationsSimpleValue == term && box.find('a, div, .option').length) {
+          box.show(0);
+          return false;
+        }
+        window.epsLoadLocationsSimpleValue = term;
+
+        if (typeof window.epsLoadLocationsSimpleTimeout !== 'undefined') {
+          clearTimeout(window.epsLoadLocationsSimpleTimeout);
+        }
+        if (raw.length > 0) {
+          elem.siblings('.clean').show(0);
+        } else {
+          elem.siblings('.clean').hide(0);
+        }
+
+        elem.closest('.picker').addClass('loading');
+        window.epsLoadLocationsSimpleTimeout = setTimeout(function () {
+          $.ajax({
+            type: 'GET',
+            url: window.baseAjaxUrl + '&ajaxLoc=1&dataType=' + type + '&term=' + term,
+            success: function (data) {
+              elem.closest('.picker').removeClass('loading');
+              var html = $.trim(data || '');
+              if (!html) {
+                box.html('').hide(0);
+                return;
+              }
+              box.html(html).show(0);
+              box.find('fieldset').remove();
+            },
+            error: function () {
+              elem.closest('.picker').removeClass('loading');
+              box.html('').hide(0);
+            }
+          });
+        }, 220);
       };
     }
   }

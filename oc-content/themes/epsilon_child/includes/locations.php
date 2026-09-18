@@ -936,8 +936,16 @@ function pngm_get_popular_cities($limit = 12)
                             continue;
                         }
 
-                        if ($key === 'port moresby' && stripos($row['s_name_top'], 'National Capital') === false
-                            && stripos($row['s_name_top'], 'Central') === false) {
+                        if ($key === 'port moresby') {
+                            // Prefer National Capital District, but never drop the only match.
+                            $is_ncd = (stripos($row['s_name_top'], 'National Capital') !== false);
+                            $is_central = (stripos($row['s_name_top'], 'Central') !== false);
+                            if (!$is_ncd && !$is_central && isset($by_name[$key])) {
+                                continue;
+                            }
+                            if ($is_ncd || !isset($by_name[$key])) {
+                                $by_name[$key] = $row;
+                            }
                             continue;
                         }
 

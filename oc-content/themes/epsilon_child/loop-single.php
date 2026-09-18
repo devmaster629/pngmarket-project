@@ -57,14 +57,14 @@
     </div>
 
     <div class="data">
-      <?php // Card: title → green price → location · date → Category • Condition • Transaction ?>
-      <div class="pngm-card-title-row">
-        <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
-      </div>
-
+      <?php // Card: green price → title → location · date → Category • Condition • Transaction ?>
       <?php if(eps_check_category_price(osc_item_category_id())) { ?>
         <div class="price standalone pngm-card-price"><span><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></span></div>
       <?php } ?>
+
+      <div class="pngm-card-title-row">
+        <a class="title" href="<?php echo osc_item_url(); ?>"><?php echo osc_highlight(osc_item_title(), 100); ?></a>
+      </div>
 
       <div class="info pngm-card-loc">
         <?php if(isset($item_extra['i_sold']) && $item_extra['i_sold'] == 1) { ?>

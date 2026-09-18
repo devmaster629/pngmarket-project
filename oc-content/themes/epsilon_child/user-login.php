@@ -22,6 +22,8 @@
           <h1><?php _e('Welcome back!', 'epsilon'); ?></h1>
           <p class="pngm-auth-lead"><?php _e('Log in to your PNGMarket account.', 'epsilon'); ?></p>
 
+          <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login', 'row'); } ?>
+
           <form action="<?php echo osc_base_url(true); ?>" method="post" class="pngm-auth-form" id="pngm-login-form">
             <input type="hidden" name="page" value="login" />
             <input type="hidden" name="action" value="login_post" />
@@ -61,8 +63,6 @@
 
             <button type="submit" class="btn pngm-auth-submit"><?php _e('Log in', 'epsilon'); ?></button>
           </form>
-
-          <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login', 'row'); } ?>
 
           <p class="pngm-auth-switch">
             <?php _e("Don't have an account?", 'epsilon'); ?>
