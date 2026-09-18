@@ -230,7 +230,7 @@
               <?php } else if((int)$t['fk_i_item_id'] > 0) { ?>
                 <?php echo __('Listing removed', 'instant_messenger'); ?>
               <?php } else { ?>
-                <?php echo __('Direct message', 'instant_messenger'); ?>
+                <?php echo __('General seller inquiry', 'epsilon'); ?>
               <?php } ?>
               
               <div class="im-recipient im-only-mobile"><?php echo $recipient; ?></div>

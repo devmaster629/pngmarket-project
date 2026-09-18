@@ -233,7 +233,18 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
     </a>
   <?php } ?>
   
-  <?php if($item_details !== false && isset($item['pk_i_id'])) { echo im_render_item_context($thread['fk_i_item_id'], $item, $item_details); } ?>
+  <?php
+    $thread_item_id = isset($thread['fk_i_item_id']) ? (int) $thread['fk_i_item_id'] : 0;
+    if ($item_details !== false && isset($item['pk_i_id'])) {
+      echo im_render_item_context($thread['fk_i_item_id'], $item, $item_details);
+    } elseif ($thread_item_id <= 0) {
+      if (function_exists('pngm_im_render_general_inquiry')) {
+        echo pngm_im_render_general_inquiry();
+      } else {
+        echo '<div class="im-row im-item-context im-body pngm-im-general-inquiry" role="status"><div class="im-col-24"><div class="im-line im-item-title">' . osc_esc_html(__('General seller inquiry', 'epsilon')) . '</div></div></div>';
+      }
+    }
+  ?>
   <div class="im-row im-item-related im-body" style="display:none !important;">
     <?php if(false) { ?>
       <div class="im-col-3 im-item-resource"><a target="_blank" href="<?php echo osc_item_url_ns($item['pk_i_id']); ?>"><img src="<?php echo $item_details['resource']; ?>" /></a></div>
