@@ -292,26 +292,31 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
 }
 
 .pngm-auth-captcha {
-  margin: 8px 0 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 8px 0;
   min-height: 0;
   overflow: visible !important;
   position: relative;
   z-index: 4;
+  text-align: center;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
 
 .pngm-auth-captcha .g-recaptcha {
-  display: block !important;
-  width: 100%;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  width: auto !important;
   max-width: 100%;
-  margin: 0 !important;
+  margin: 0 auto !important;
   min-height: 78px !important;
   height: auto !important;
   overflow: visible !important;
   transform: none !important;
   -webkit-transform: none !important;
-  transform-origin: left top;
 }
 
 /* Do not constrain challenge iframes — only the checkbox widget is in-flow */
@@ -319,6 +324,8 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   width: auto !important;
   height: auto !important;
   max-width: 100%;
+  margin-left: auto !important;
+  margin-right: auto !important;
   transform: none !important;
   -webkit-transform: none !important;
 }
