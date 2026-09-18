@@ -486,19 +486,54 @@ function pngm_render_seller_contact_buttons()
     }
 
     $chat = null;
+    $item_row = function_exists('osc_item') ? osc_item() : array();
+    $seller_id = is_array($item_row) && isset($item_row['fk_i_user_id']) ? (int) $item_row['fk_i_user_id'] : (int) osc_item_user_id();
+    $is_own_listing = function_exists('osc_is_web_user_logged_in')
+        && osc_is_web_user_logged_in()
+        && $seller_id > 0
+        && $seller_id === (int) osc_logged_user_id();
+
     if (function_exists('im_contact_button')) {
-        $im_url = im_contact_button(osc_item(), true);
-        if ($im_url !== false && $im_url !== null && $im_url !== '') {
+        if ($is_own_listing) {
+            // Owner cannot start a chat with themselves — explain instead of a dead "#".
             $chat = array(
                 'key'   => 'message',
-                'url'   => $im_url,
+                'url'   => '#',
                 'label' => __('Chat', 'epsilon'),
-                'class' => 'pngm-action-chat',
+                'class' => 'pngm-action-chat is-own-listing',
                 'icon'  => 'fas fa-comment-dots',
                 'attrs' => array(
-                    'title' => __('Chat with seller', 'epsilon'),
+                    'title' => __('This is your listing. You cannot message yourself.', 'epsilon'),
+                    'role' => 'button',
+                    'data-pngm-chat-own' => '1',
+                    'aria-disabled' => 'true',
                 ),
             );
+        } else {
+            $im_url = im_contact_button($item_row, true);
+            if ($im_url !== false && $im_url !== null && trim((string) $im_url) !== '' && trim((string) $im_url) !== '#') {
+                $chat = array(
+                    'key'   => 'message',
+                    'url'   => $im_url,
+                    'label' => __('Chat', 'epsilon'),
+                    'class' => 'pngm-action-chat',
+                    'icon'  => 'fas fa-comment-dots',
+                    'attrs' => array(
+                        'title' => __('Chat with seller', 'epsilon'),
+                    ),
+                );
+            } elseif (!osc_is_web_user_logged_in()) {
+                $chat = array(
+                    'key'   => 'message',
+                    'url'   => osc_user_login_url(),
+                    'label' => __('Chat', 'epsilon'),
+                    'class' => 'pngm-action-chat',
+                    'icon'  => 'fas fa-comment-dots',
+                    'attrs' => array(
+                        'title' => __('Log in to chat with the seller', 'epsilon'),
+                    ),
+                );
+            }
         }
     }
 

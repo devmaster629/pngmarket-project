@@ -3341,6 +3341,11 @@ body#home .categories .pngm-cat-item i.fas {
   background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
 }
 
+.pngm-contact-action.pngm-action-chat.is-own-listing {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
 .pngm-contact-note {
   display: none !important;
 }

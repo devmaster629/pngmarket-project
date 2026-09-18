@@ -3872,6 +3872,21 @@
     window.setTimeout(dismiss, 4800);
   }
 
+  window.pngmShowToast = pngmShowToast;
+
+  function initOwnListingChat() {
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a[data-pngm-chat-own="1"]') : null;
+      if (!link) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      var msg = link.getAttribute('title') || 'This is your listing. You cannot message yourself.';
+      pngmShowToast(msg, true);
+    }, true);
+  }
+
   function initFlashToasts() {
     var box = document.getElementById('flashbox');
     if (!box) {
@@ -4180,6 +4195,7 @@
     initItemReport();
     initFlashToasts();
     initBadgePoller();
+    initOwnListingChat();
   }
 
   if (document.readyState === 'loading') {
