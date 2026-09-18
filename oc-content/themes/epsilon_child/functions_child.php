@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.56');
+    define('PNGM_CHILD_VERSION', '2.5.57');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1537,20 +1537,22 @@ function pngm_recaptcha_incognito_fix()
         e.preventDefault();
         e.stopPropagation();
         ensure();
+        var wrap = form.querySelector('.pngm-auth-captcha') || form;
         var note = form.querySelector('.pngm-auth-captcha-error');
         if (!note) {
           note = document.createElement('p');
           note.className = 'pngm-auth-captcha-error';
           note.setAttribute('role', 'alert');
-          note.style.cssText = 'color:#d32f2f;font-size:13px;margin:0 0 12px;';
-          var wrap = form.querySelector('.pngm-auth-captcha') || form;
           wrap.appendChild(note);
         }
         note.textContent = missingMsg;
+        note.hidden = false;
+        if (wrap.classList) {
+          wrap.classList.add('is-error');
+        }
         try {
-          var box = form.querySelector('.pngm-auth-captcha, .g-recaptcha');
-          if (box && box.scrollIntoView) {
-            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (wrap.scrollIntoView) {
+            wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } catch (err2) {}
         return false;

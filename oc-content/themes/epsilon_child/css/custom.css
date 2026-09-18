@@ -6355,6 +6355,7 @@ body > div > div > iframe[src*="recaptcha"] {
 
   body.pngm-auth-v2 .pngm-auth-captcha {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     margin-left: 0;

@@ -293,8 +293,10 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
 
 .pngm-auth-captcha {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 10px;
   margin: 8px 0;
   min-height: 0;
   overflow: visible !important;
@@ -328,6 +330,28 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   margin-right: auto !important;
   transform: none !important;
   -webkit-transform: none !important;
+}
+
+.pngm-auth-captcha.is-error .g-recaptcha {
+  outline: 2px solid #d32f2f;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.pngm-auth-captcha-error {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fdecea;
+  border: 1px solid #f5c2c0;
+  color: #b71c1c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .pngm-auth-captcha-note {
