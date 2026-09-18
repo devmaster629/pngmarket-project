@@ -77,22 +77,17 @@
                   <?php } ?>
                   
                   <?php
-                    // Prefer green SVG / FA icons on the home strip.
-                    // Photographic covers often look partially black/dark in the small circle.
-                    $pngm_cat_svg = function_exists('pngm_category_svg_url') ? pngm_category_svg_url(osc_category_id()) : '';
-                    if ($pngm_cat_svg === false || $pngm_cat_svg === null) {
-                      $pngm_cat_svg = '';
-                    }
+                    // Prefer photographic covers (PNG), then SVG, then FA fallback.
                     $pngm_cat_img = function_exists('pngm_get_cat_image') ? pngm_get_cat_image(osc_category_id()) : '';
-                    $pngm_is_svg = ($pngm_cat_svg !== '' || ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false));
-                    $pngm_svg_src = $pngm_cat_svg !== '' ? $pngm_cat_svg : $pngm_cat_img;
+                    $pngm_is_svg = ($pngm_cat_img !== '' && stripos($pngm_cat_img, '.svg') !== false);
+                    $pngm_is_photo = ($pngm_cat_img !== '' && !$pngm_is_svg);
                   ?>
-                  <?php if ($pngm_is_svg && $pngm_svg_src !== '') { ?>
-                    <img src="<?php echo $pngm_svg_src; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
+                  <?php if ($pngm_is_photo) { ?>
+                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-cover<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
+                  <?php } elseif ($pngm_is_svg) { ?>
+                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-svg<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
                   <?php } elseif (function_exists('pngm_render_category_icon')) { ?>
                     <?php echo pngm_render_category_icon(osc_category_id(), osc_category()); ?>
-                  <?php } elseif ($pngm_cat_img !== '') { ?>
-                    <img src="<?php echo $pngm_cat_img; ?>" alt="<?php echo osc_esc_html(osc_category_name()); ?>" class="pngm-cat-cover<?php echo (eps_is_lazy() ? ' lazy' : ''); ?>"/>
                   <?php } elseif (eps_param('cat_icons') == 1) { ?>
                     <?php
                       $icon = eps_get_cat_icon(osc_category_id(), osc_category(), true);
@@ -170,7 +165,9 @@
               <span class="pngm-near-meta">
                 <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
                 <span class="pngm-near-city"><?php echo osc_esc_html($pngm_near_city); ?></span>
-                <a href="#" class="change-location pngm-change-link"><?php echo $pngm_near_has_loc ? __('Change', 'epsilon') : __('Set location', 'epsilon'); ?></a>
+                <?php if (!$pngm_near_has_loc) { ?>
+                  <a href="#" class="change-location pngm-change-link"><?php _e('Set location', 'epsilon'); ?></a>
+                <?php } ?>
               </span>
             </h2>
             <?php if ($pngm_near_see_all) { ?>

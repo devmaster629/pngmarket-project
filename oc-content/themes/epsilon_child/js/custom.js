@@ -3256,7 +3256,15 @@
       $btn.find('.pngm-loc-label').text(cleared ? 'Location' : label);
 
       $('.pngm-near-city').text(cleared ? '' : label);
-      $('.pngm-near-meta .change-location, .pngm-change-link').text(cleared ? 'Set location' : 'Change');
+      // Near You: only show "Set location" when empty — never a "Change" link beside the city.
+      var $nearChange = $('.pngm-near-meta .change-location, .pngm-near-meta .pngm-change-link');
+      if (cleared) {
+        if ($nearChange.length) {
+          $nearChange.text('Set location').show();
+        }
+      } else {
+        $nearChange.remove();
+      }
 
       var $cards = $('#def-location .pngm-loc-current, #side-menu .box.location .pngm-loc-current');
       $cards.toggleClass('is-empty', cleared);

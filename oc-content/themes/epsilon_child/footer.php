@@ -36,108 +36,162 @@
       'facebook'  => __('Facebook', 'epsilon'),
       'instagram' => __('Instagram', 'epsilon'),
       'tiktok'    => __('TikTok', 'epsilon'),
-      'whatsapp'  => __('WhatsApp', 'epsilon'),
     );
     $pngm_social_icons = array(
       'facebook'  => 'fab fa-facebook-f',
       'instagram' => 'fab fa-instagram',
       'tiktok'    => 'fab fa-tiktok',
-      'whatsapp'  => 'fab fa-whatsapp',
     );
-    $pngm_brand = trim((string) $pngm_contact['name']);
-    if ($pngm_brand === '') {
-      $pngm_brand = 'PNGMarket';
+
+    $pngm_tagline = trim((string) @$pngm_contact['tagline']);
+    if ($pngm_tagline === '') {
+      $pngm_tagline = __('Buy and sell across Papua New Guinea.', 'epsilon');
     }
 
-    $pngm_nav = array();
+    $pngm_about = null;
+    $pngm_terms = null;
+    $pngm_privacy = null;
     if (function_exists('pngm_ensure_footer_pages')) {
       pngm_ensure_footer_pages();
     }
     if (class_exists('Page')) {
-      $pngm_nav_map = array(
-        'about'   => __('About PNGMarket', 'epsilon'),
-        'terms'   => __('Terms of Service', 'epsilon'),
-        'privacy' => __('Privacy Policy', 'epsilon'),
-      );
-      foreach ($pngm_nav_map as $slug => $label) {
+      foreach (array('about', 'terms', 'privacy') as $slug) {
         $page = Page::newInstance()->findByInternalName($slug);
         if (is_array($page) && !empty($page['pk_i_id']) && function_exists('osc_static_page_url_from_page')) {
-          $pngm_nav[] = array('title' => $label, 'url' => osc_static_page_url_from_page($page));
+          ${'pngm_' . $slug} = osc_static_page_url_from_page($page);
         }
       }
     }
-    if (getBoolPreference('web_contact_form_disabled') != 1) {
-      $pngm_nav[] = array('title' => __('Contact Us', 'epsilon'), 'url' => osc_contact_url());
+    $pngm_contact_url = (getBoolPreference('web_contact_form_disabled') != 1) ? osc_contact_url() : '';
+    $pngm_company_url = function_exists('bpr_companies_url') ? bpr_companies_url() : '';
+
+    // Information links — desktop is 2 cols: (About/Terms/Privacy) | (Contact Us/Company)
+    $pngm_info_left = array();
+    $pngm_info_right = array();
+    if ($pngm_about) {
+      $pngm_info_left[] = array('title' => __('About', 'epsilon'), 'url' => $pngm_about);
     }
-    if (function_exists('bpr_companies_url')) {
-      $pngm_nav[] = array('title' => __('Companies', 'epsilon'), 'url' => bpr_companies_url());
+    if ($pngm_terms) {
+      $pngm_info_left[] = array('title' => __('Terms', 'epsilon'), 'url' => $pngm_terms);
+    }
+    if ($pngm_privacy) {
+      $pngm_info_left[] = array('title' => __('Privacy', 'epsilon'), 'url' => $pngm_privacy);
+    }
+    if ($pngm_contact_url !== '') {
+      $pngm_info_right[] = array('title' => __('Contact Us', 'epsilon'), 'url' => $pngm_contact_url);
+    }
+    if ($pngm_company_url !== '') {
+      $pngm_info_right[] = array('title' => __('Company', 'epsilon'), 'url' => $pngm_company_url);
+    }
+    $pngm_info = array_merge($pngm_info_left, $pngm_info_right);
+
+    $pngm_follow = array();
+    foreach (array('facebook', 'instagram', 'tiktok') as $pngm_soc_key) {
+      if (!empty($pngm_socials[$pngm_soc_key])) {
+        $pngm_follow[$pngm_soc_key] = $pngm_socials[$pngm_soc_key];
+      }
     }
 
-    $pngm_desc = sprintf(
-        __('%s is Papua New Guinea’s trusted online marketplace to buy, sell and find anything.', 'epsilon'),
-        $pngm_brand
-    );
+    $pngm_render_pipe_row = function ($items, $is_social = false) use ($pngm_social_labels, $pngm_social_icons) {
+      $i = 0;
+      foreach ($items as $key => $item) {
+        if ($i > 0) {
+          echo '<span class="pngm-footer-sep" aria-hidden="true"></span>';
+        }
+        if ($is_social) {
+          $type = $key;
+          $url = $item;
+          $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
+          $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
+          echo '<a class="pngm-footer-social pngm-footer-social-' . osc_esc_html($type) . '" href="' . osc_esc_html($url) . '" target="_blank" rel="noopener noreferrer">';
+          echo '<i class="' . osc_esc_html($icon) . '" aria-hidden="true"></i>';
+          echo '<span>' . osc_esc_html($label) . '</span></a>';
+        } else {
+          echo '<a href="' . osc_esc_html($item['url']) . '">' . osc_esc_html($item['title']) . '</a>';
+        }
+        $i++;
+      }
+    };
   ?>
 
-  <div class="container pngm-footer-inner">
-    <section class="pngm-footer-cols">
-      <div class="pngm-footer-col pngm-footer-about">
-        <h4><?php _e('About us', 'epsilon'); ?></h4>
+  <div class="pngm-footer-inner">
+    <?php /* Desktop: logo | Follow us | Information */ ?>
+    <div class="pngm-footer-desktop">
+      <div class="pngm-footer-col pngm-footer-brand">
         <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
           <?php if (function_exists('eps_logo')) { echo eps_logo(); } else { ?>
             <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
           <?php } ?>
         </a>
-        <?php if (!empty($pngm_contact['name'])) { ?>
-          <p class="company"><strong><?php echo osc_esc_html($pngm_contact['name']); ?></strong></p>
-        <?php } ?>
-        <?php if (!empty($pngm_contact['phone'])) { ?>
-          <p><?php echo osc_esc_html(__('Phone', 'epsilon') . ': ' . $pngm_contact['phone']); ?></p>
-        <?php } ?>
-        <?php if (!empty($pngm_contact['email'])) { ?>
-          <p><?php echo osc_esc_html(__('Email', 'epsilon') . ': ' . $pngm_contact['email']); ?></p>
-        <?php } ?>
-        <?php if (!empty($pngm_contact['address'])) { ?>
-          <p><?php echo osc_esc_html($pngm_contact['address']); ?></p>
-        <?php } ?>
-        <p class="pngm-footer-desc"><?php echo osc_esc_html($pngm_desc); ?></p>
+        <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_tagline); ?></p>
       </div>
 
-      <div class="pngm-footer-col pngm-footer-socialx">
-        <h4><?php _e('Social media', 'epsilon'); ?></h4>
-        <?php if (count($pngm_socials) > 0) { ?>
-          <?php foreach ($pngm_socials as $type => $url) {
+      <?php if (count($pngm_follow) > 0) { ?>
+        <div class="pngm-footer-col pngm-footer-follow">
+          <h4><?php _e('Follow us', 'epsilon'); ?></h4>
+          <?php foreach ($pngm_follow as $type => $url) {
             $label = isset($pngm_social_labels[$type]) ? $pngm_social_labels[$type] : ucfirst($type);
             $icon = isset($pngm_social_icons[$type]) ? $pngm_social_icons[$type] : 'fas fa-link';
           ?>
-            <a class="pngm-footer-social-link pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
+            <a class="pngm-footer-social pngm-footer-social-<?php echo osc_esc_html($type); ?>" href="<?php echo osc_esc_html($url); ?>" target="_blank" rel="noopener noreferrer">
               <i class="<?php echo osc_esc_html($icon); ?>" aria-hidden="true"></i>
               <span><?php echo osc_esc_html($label); ?></span>
             </a>
           <?php } ?>
-        <?php } else { ?>
-          <p class="pngm-footer-muted"><?php _e('Follow us on social media.', 'epsilon'); ?></p>
-        <?php } ?>
-      </div>
+        </div>
+      <?php } ?>
 
-      <div class="pngm-footer-col pngm-footer-pages">
-        <h4><?php _e('Information', 'epsilon'); ?></h4>
-        <?php if (count($pngm_nav) > 0) { ?>
-          <?php foreach ($pngm_nav as $item) { ?>
-            <a href="<?php echo osc_esc_html($item['url']); ?>"><?php echo osc_esc_html($item['title']); ?></a>
+      <?php if (count($pngm_info) > 0) { ?>
+        <div class="pngm-footer-col pngm-footer-info">
+          <h4><?php _e('Information', 'epsilon'); ?></h4>
+          <div class="pngm-footer-info-grid">
+            <?php if (count($pngm_info_left) > 0) { ?>
+              <div class="pngm-footer-info-col">
+                <?php foreach ($pngm_info_left as $item) { ?>
+                  <a href="<?php echo osc_esc_html($item['url']); ?>"><?php echo osc_esc_html($item['title']); ?></a>
+                <?php } ?>
+              </div>
+            <?php } ?>
+            <?php if (count($pngm_info_right) > 0) { ?>
+              <div class="pngm-footer-info-col">
+                <?php foreach ($pngm_info_right as $item) { ?>
+                  <a href="<?php echo osc_esc_html($item['url']); ?>"><?php echo osc_esc_html($item['title']); ?></a>
+                <?php } ?>
+              </div>
+            <?php } ?>
+          </div>
+        </div>
+      <?php } ?>
+    </div>
+
+    <?php /* Mobile: logo, Follow us, Information (About | Terms | Privacy | Contact Us | Company) */ ?>
+    <div class="pngm-footer-mobile">
+      <div class="pngm-footer-brand">
+        <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
+          <?php if (function_exists('eps_logo')) { echo eps_logo(); } else { ?>
+            <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
           <?php } ?>
-        <?php } ?>
-        <?php if (function_exists('im_messages')) { ?>
-          <a href="<?php echo osc_route_url('im-threads'); ?>"><?php _e('Messages', 'epsilon'); ?></a>
-        <?php } ?>
-        <?php if (function_exists('fi_make_favorite')) { ?>
-          <a href="<?php echo osc_route_url('favorite-lists'); ?>"><?php _e('Favorite', 'epsilon'); ?></a>
-        <?php } ?>
+        </a>
+        <p class="pngm-footer-tagline"><?php echo osc_esc_html($pngm_tagline); ?></p>
       </div>
-    </section>
 
-    <div class="pngm-footer-copy">
-      <span>&copy; <?php echo date('Y'); ?> <?php echo osc_esc_html($pngm_brand); ?>. <?php _e('All rights reserved.', 'epsilon'); ?></span>
+      <?php if (count($pngm_follow) > 0) { ?>
+        <div class="pngm-footer-block pngm-footer-follow">
+          <h4><?php _e('Follow us', 'epsilon'); ?></h4>
+          <div class="pngm-footer-row">
+            <?php $pngm_render_pipe_row($pngm_follow, true); ?>
+          </div>
+        </div>
+      <?php } ?>
+
+      <?php if (count($pngm_info) > 0) { ?>
+        <div class="pngm-footer-block pngm-footer-info">
+          <h4><?php _e('Information', 'epsilon'); ?></h4>
+          <nav class="pngm-footer-row" aria-label="<?php echo osc_esc_html(__('Information', 'epsilon')); ?>">
+            <?php $pngm_render_pipe_row($pngm_info); ?>
+          </nav>
+        </div>
+      <?php } ?>
     </div>
 
     <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
