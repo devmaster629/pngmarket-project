@@ -2135,6 +2135,21 @@ body.pngm-ua-seller-guest .pngm-seller {
   box-shadow: none;
 }
 
+/* Guest / other-seller public profile: parent #user-main reserves ~200px for a sidebar that is not shown. */
+body.pngm-ua-seller-guest .container.primary.pngm-seller-shell {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+body.pngm-ua-seller-guest #user-main,
+body.pngm-ua-seller-guest #user-main.pngm-seller {
+  float: none;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 0;
+}
+
 .pngm-seller-shell {
   max-width: 920px;
   margin: 0 auto;
@@ -2306,7 +2321,7 @@ body.pngm-ua-seller-guest .pngm-seller {
 
 .pngm-seller-about-box {
   position: relative;
-  padding: 0 0 22px;
+  padding: 0;
 }
 
 .pngm-seller-about-box p {
@@ -2316,12 +2331,13 @@ body.pngm-ua-seller-guest .pngm-seller {
   color: #4b5563;
 }
 
-.pngm-seller-about-count {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  font-size: 12px;
+.pngm-seller-about-box p.pngm-seller-about-empty {
   color: #9aa3af;
+  font-style: italic;
+}
+
+.pngm-seller-about-count {
+  display: none;
 }
 
 a.pngm-seller-msg {

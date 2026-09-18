@@ -6,7 +6,8 @@
   $user = osc_user();
   $user_id = (int) osc_user_id();
   $is_own = osc_is_web_user_logged_in() && ((int) osc_logged_user_id() === $user_id);
-  $show_sidebar = osc_is_web_user_logged_in();
+  // Account sidebar only when previewing your own public profile.
+  $show_sidebar = $is_own;
 
   $city = trim((string) osc_user_city());
   $region = trim((string) osc_user_region());
@@ -174,16 +175,17 @@
             <p class="pngm-seller-loc"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span><?php echo osc_esc_html($user_location); ?></span></p>
           <?php } ?>
 
-          <?php if ($about_display !== '') { ?>
-            <hr class="pngm-seller-rule" />
-            <div class="pngm-seller-about">
-              <h2><?php _e('About Me', 'epsilon'); ?></h2>
-              <div class="pngm-seller-about-box">
+          <hr class="pngm-seller-rule" />
+          <div class="pngm-seller-about">
+            <h2><?php _e('About Me', 'epsilon'); ?></h2>
+            <div class="pngm-seller-about-box">
+              <?php if ($about_display !== '') { ?>
                 <p><?php echo nl2br(osc_esc_html($about_display)); ?></p>
-                <span class="pngm-seller-about-count"><?php echo (int) $about_len; ?>/250</span>
-              </div>
+              <?php } else { ?>
+                <p class="pngm-seller-about-empty"><?php _e('No about info yet.', 'epsilon'); ?></p>
+              <?php } ?>
             </div>
-          <?php } ?>
+          </div>
         </section>
 
         <hr class="pngm-seller-rule" />
