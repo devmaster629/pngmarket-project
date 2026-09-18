@@ -4035,8 +4035,7 @@ body.body-ua .profile-box .right-block {
 
 
 /* ==========================================================================
-   FOOTER — desktop: logo | Follow us | Information (+ column lines)
-            mobile: stacked; Information = About|Terms|Privacy|Contact Us|Company
+   FOOTER — logo | Follow us | Information (desktop cols + mobile stacked)
    ========================================================================== */
 
 footer.pngm-footer {
@@ -4056,13 +4055,8 @@ footer.pngm-footer .pngm-footer-inner {
   box-sizing: border-box;
 }
 
-footer.pngm-footer .pngm-footer-desktop {
-  display: none;
-}
-
-footer.pngm-footer .pngm-footer-mobile {
-  display: block;
-}
+footer.pngm-footer .pngm-footer-desktop { display: none; }
+footer.pngm-footer .pngm-footer-mobile { display: block; }
 
 footer.pngm-footer .pngm-footer-brand {
   padding: 0 0 18px;
@@ -4090,20 +4084,12 @@ footer.pngm-footer .pngm-footer-logo img {
 }
 
 footer.pngm-footer .pngm-footer-name {
-  display: inline-block;
   font-size: 26px;
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
 }
-
-footer.pngm-footer .pngm-footer-name-png {
-  color: #111827;
-}
-
-footer.pngm-footer .pngm-footer-name-market {
-  color: #15803d;
-}
+footer.pngm-footer .pngm-footer-name-png { color: #111827; }
+footer.pngm-footer .pngm-footer-name-market { color: #15803d; }
 
 footer.pngm-footer .pngm-footer-tagline {
   margin: 0;
@@ -4113,20 +4099,17 @@ footer.pngm-footer .pngm-footer-tagline {
 }
 
 footer.pngm-footer .pngm-footer-block {
-  margin: 0 0 20px;
-  padding: 0 0 18px;
-  border-bottom: 1px solid #e5e7eb;
+  margin: 0 0 14px;
+  padding: 0;
+  border-bottom: 0;
 }
 
 footer.pngm-footer .pngm-footer-block:last-of-type {
   margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: 0;
 }
 
-footer.pngm-footer .pngm-footer-block h4,
-footer.pngm-footer .pngm-footer-col h4 {
-  margin: 0 0 10px;
+footer.pngm-footer h4 {
+  margin: 0 0 8px;
   font-size: 15px;
   font-weight: 800;
   color: #111827;
@@ -4136,10 +4119,8 @@ footer.pngm-footer .pngm-footer-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0;
 }
 
-/* Vertical pipe between link items (mobile + company/info rows) */
 footer.pngm-footer .pngm-footer-sep {
   display: inline-block;
   width: 1px;
@@ -4150,7 +4131,7 @@ footer.pngm-footer .pngm-footer-sep {
   align-self: center;
 }
 
-footer.pngm-footer .pngm-footer-follow .pngm-footer-social {
+footer.pngm-footer .pngm-footer-social {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4161,12 +4142,12 @@ footer.pngm-footer .pngm-footer-follow .pngm-footer-social {
   line-height: 1.3;
 }
 
-footer.pngm-footer .pngm-footer-follow .pngm-footer-social:hover {
+footer.pngm-footer .pngm-footer-social:hover {
   color: #111827;
   text-decoration: none;
 }
 
-footer.pngm-footer .pngm-footer-follow .pngm-footer-social i {
+footer.pngm-footer .pngm-footer-social i {
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -4178,18 +4159,12 @@ footer.pngm-footer .pngm-footer-follow .pngm-footer-social i {
   flex: 0 0 22px;
 }
 
-footer.pngm-footer .pngm-footer-social-facebook i {
-  background: #1877f2;
-}
-
+footer.pngm-footer .pngm-footer-social-facebook i { background: #1877f2; }
 footer.pngm-footer .pngm-footer-social-instagram i {
   border-radius: 6px;
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
 }
-
-footer.pngm-footer .pngm-footer-social-tiktok i {
-  background: #111827;
-}
+footer.pngm-footer .pngm-footer-social-tiktok i { background: #111827; }
 
 footer.pngm-footer .pngm-footer-info a {
   color: #4b5563;
@@ -4207,15 +4182,7 @@ footer.pngm-footer .pngm-footer-info a:hover {
 
 footer.pngm-footer .footer-hook,
 footer.pngm-footer .footer-widgets {
-  margin: 0;
-  padding: 0;
-  min-height: 0;
-  line-height: 0;
-}
-
-footer.pngm-footer .footer-hook:empty,
-footer.pngm-footer .footer-widgets:empty {
-  display: none !important;
+  display: none;
 }
 
 a#scroll-to-top {
@@ -4234,26 +4201,21 @@ a#scroll-to-top svg {
   fill: #15803d !important;
 }
 
-/* Desktop: 3 columns with vertical section lines */
 @media screen and (min-width: 768px) {
   footer.pngm-footer {
     padding: 40px 0 36px;
   }
 
-  footer.pngm-footer .pngm-footer-mobile {
-    display: none;
-  }
+  footer.pngm-footer .pngm-footer-mobile { display: none; }
 
   footer.pngm-footer .pngm-footer-desktop {
     display: grid;
     grid-template-columns: minmax(220px, 1.4fr) minmax(150px, 0.9fr) minmax(220px, 1.2fr);
-    gap: 0;
     align-items: start;
   }
 
   footer.pngm-footer .pngm-footer-desktop .pngm-footer-col {
     padding: 0 28px;
-    min-height: 100%;
   }
 
   footer.pngm-footer .pngm-footer-desktop .pngm-footer-col + .pngm-footer-col {
@@ -4274,22 +4236,19 @@ a#scroll-to-top svg {
     gap: 10px;
   }
 
-  footer.pngm-footer .pngm-footer-desktop .pngm-footer-follow h4,
-  footer.pngm-footer .pngm-footer-desktop .pngm-footer-info h4 {
+  footer.pngm-footer .pngm-footer-desktop h4 {
     margin: 0 0 6px;
   }
 
-  footer.pngm-footer .pngm-footer-desktop .pngm-footer-info-grid {
+  footer.pngm-footer .pngm-footer-info-grid {
     display: grid;
     grid-template-columns: auto auto;
-    column-gap: 156px;
+    column-gap: 72px;
     row-gap: 10px;
     align-items: start;
-    width: 100%;
-    justify-content: start;
   }
 
-  footer.pngm-footer .pngm-footer-desktop .pngm-footer-info-col {
+  footer.pngm-footer .pngm-footer-info-col {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -4315,18 +4274,9 @@ a#scroll-to-top svg {
     height: 40px;
   }
 
-  footer.pngm-footer .pngm-footer-row {
-    row-gap: 10px;
-  }
-
   footer.pngm-footer .pngm-footer-sep {
     margin: 0 10px;
     height: 12px;
-  }
-
-  footer.pngm-footer .footer-hook,
-  footer.pngm-footer .footer-widgets {
-    display: none !important;
   }
 }
 
@@ -7277,7 +7227,6 @@ body.pngm-filter-open #side-menu .box.filter .picker.pattern .results {
 /* Wider content area (was 1080px ? felt too narrow on desktop). */
 .container,
 header .container,
-footer.pngm-footer .container,
 body#home > .content > section > .container,
 .home-search > .container.pngm-home-banner,
 .pngm-ds-container {
@@ -7287,7 +7236,6 @@ body#home > .content > section > .container,
 @media screen and (min-width: 1400px) {
   .container,
   header .container,
-  footer.pngm-footer .container,
   body#home > .content > section > .container,
   .home-search > .container.pngm-home-banner {
     max-width: 1360px !important;
