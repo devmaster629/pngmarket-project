@@ -482,13 +482,19 @@
 
               <div class="pngm-post-field">
                 <span class="pngm-post-label"><?php _e('Preferred Contact Method', 'epsilon'); ?> <span class="req">*</span></span>
+                <?php
+                  $pngm_contact_pref = 'message';
+                  if (function_exists('osc_item_id') && (int) osc_item_id() > 0 && function_exists('pngm_item_contact_pref')) {
+                      $pngm_contact_pref = pngm_item_contact_pref((int) osc_item_id());
+                  }
+                ?>
                 <div class="pngm-post-pills pngm-post-contact-pref" data-pills="contact-pref" role="radiogroup">
-                  <button type="button" class="pngm-post-pill" data-value="call"><?php _e('Call', 'epsilon'); ?></button>
-                  <button type="button" class="pngm-post-pill" data-value="whatsapp"><?php _e('WhatsApp', 'epsilon'); ?></button>
-                  <button type="button" class="pngm-post-pill is-selected" data-value="message"><?php _e('Message', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_contact_pref === 'call' ? ' is-selected' : ''; ?>" data-value="call"><?php _e('Call', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_contact_pref === 'whatsapp' ? ' is-selected' : ''; ?>" data-value="whatsapp"><?php _e('WhatsApp', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo ($pngm_contact_pref === 'message' || !in_array($pngm_contact_pref, array('call', 'whatsapp', 'message'), true)) ? ' is-selected' : ''; ?>" data-value="message"><?php _e('Message', 'epsilon'); ?></button>
                 </div>
-                <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Shown to buyers as the best way to reach you.', 'epsilon'); ?></p>
-                <input type="hidden" name="pngm_contact_pref" id="pngm_contact_pref" value="message" />
+                <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Shown to buyers as a small Preferred badge on your listing.', 'epsilon'); ?></p>
+                <input type="hidden" name="pngm_contact_pref" id="pngm_contact_pref" value="<?php echo osc_esc_html($pngm_contact_pref); ?>" />
               </div>
 
               <div class="pngm-post-field pngm-post-msg-prefs">

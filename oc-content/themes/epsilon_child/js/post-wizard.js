@@ -1030,13 +1030,29 @@
     $form.on('click', '.pngm-post-pills .pngm-post-pill', function () {
       var $btn = $(this);
       var $group = $btn.closest('.pngm-post-pills');
+      var value = String($btn.data('value') || '');
+      if ($group.data('pills') === 'contact-pref' && value === 'whatsapp' && !$('#pngm_whatsapp').is(':checked')) {
+        $('#pngm_whatsapp').prop('checked', true);
+      }
       $group.find('.pngm-post-pill').removeClass('is-selected');
       $btn.addClass('is-selected');
       if ($group.data('pills') === 'transaction') {
-        syncTransaction($btn.data('value'));
+        syncTransaction(value);
       }
       if ($group.data('pills') === 'contact-pref') {
-        $('#pngm_contact_pref').val($btn.data('value'));
+        $('#pngm_contact_pref').val(value);
+      }
+    });
+
+    $form.on('change', '#pngm_whatsapp', function () {
+      if ($(this).is(':checked')) {
+        return;
+      }
+      if (String($('#pngm_contact_pref').val() || '') === 'whatsapp') {
+        var $msg = $form.find('.pngm-post-contact-pref .pngm-post-pill[data-value="message"]');
+        $form.find('.pngm-post-contact-pref .pngm-post-pill').removeClass('is-selected');
+        $msg.addClass('is-selected');
+        $('#pngm_contact_pref').val('message');
       }
     });
 

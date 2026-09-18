@@ -144,6 +144,117 @@ if (function_exists('osc_add_hook')) {
     // with the contact-section checkbox, not a hidden plugin field.
     osc_add_hook('posted_item', 'pngm_item_whatsapp_save', 9);
     osc_add_hook('edited_item', 'pngm_item_whatsapp_save', 9);
+    osc_add_hook('posted_item', 'pngm_item_contact_pref_save', 9);
+    osc_add_hook('edited_item', 'pngm_item_contact_pref_save', 9);
+}
+
+/**
+ * Preference key for preferred contact method.
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_item_contact_pref_key($item_id)
+{
+    return 'pref_' . (int) $item_id;
+}
+
+/**
+ * Allowed preferred contact values.
+ *
+ * @return array
+ */
+function pngm_item_contact_pref_allowed()
+{
+    return array('call', 'whatsapp', 'message');
+}
+
+/**
+ * Persist preferred contact method from the post/edit pills.
+ *
+ * @param array $item
+ */
+function pngm_item_contact_pref_save($item)
+{
+    $item_id = 0;
+    if (is_array($item) && isset($item['pk_i_id'])) {
+        $item_id = (int) $item['pk_i_id'];
+    }
+    if ($item_id <= 0) {
+        return;
+    }
+
+    $pref = '';
+    if (isset($_POST['pngm_contact_pref'])) {
+        $pref = strtolower(trim((string) $_POST['pngm_contact_pref']));
+    } elseif (class_exists('Params')) {
+        $pref = strtolower(trim((string) Params::getParam('pngm_contact_pref')));
+    }
+
+    if (!in_array($pref, pngm_item_contact_pref_allowed(), true)) {
+        $pref = 'message';
+    }
+
+    // WhatsApp as preferred only makes sense with WhatsApp opt-in.
+    if ($pref === 'whatsapp' && !pngm_item_whatsapp_enabled($item_id)) {
+        $pref = 'message';
+    }
+
+    if (function_exists('osc_set_preference')) {
+        osc_set_preference(pngm_item_contact_pref_key($item_id), $pref, 'pngm_contact', 'STRING');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set(pngm_item_contact_pref_key($item_id), $pref, 'pngm_contact');
+        }
+    }
+}
+
+/**
+ * Seller preferred contact method for a listing.
+ *
+ * @param int $item_id
+ * @return string call|whatsapp|message
+ */
+function pngm_item_contact_pref($item_id = 0)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 && function_exists('osc_item_id')) {
+        $item_id = (int) osc_item_id();
+    }
+    if ($item_id <= 0) {
+        return 'message';
+    }
+
+    $pref = '';
+    if (function_exists('osc_get_preference')) {
+        $pref = strtolower(trim((string) osc_get_preference(pngm_item_contact_pref_key($item_id), 'pngm_contact')));
+    }
+
+    if (!in_array($pref, pngm_item_contact_pref_allowed(), true)) {
+        $pref = 'message';
+    }
+
+    if ($pref === 'whatsapp' && !pngm_item_whatsapp_enabled($item_id)) {
+        return 'message';
+    }
+
+    return $pref;
+}
+
+/**
+ * Buyer-facing label for preferred contact method.
+ *
+ * @param string $pref
+ * @return string
+ */
+function pngm_item_contact_pref_label($pref)
+{
+    $map = array(
+        'call' => __('Call', 'epsilon'),
+        'whatsapp' => __('WhatsApp', 'epsilon'),
+        'message' => __('Message', 'epsilon'),
+    );
+    $pref = (string) $pref;
+    return isset($map[$pref]) ? $map[$pref] : $map['message'];
 }
 
 /**
@@ -334,6 +445,8 @@ function pngm_render_seller_contact_buttons()
     }
 
     $channels = pngm_seller_contact_channels();
+    $item_id = (int) osc_item_id();
+    $pref = function_exists('pngm_item_contact_pref') ? pngm_item_contact_pref($item_id) : 'message';
 
     $call = null;
     if (function_exists('eps_get_item_phone')) {
@@ -341,6 +454,7 @@ function pngm_render_seller_contact_buttons()
         if (!empty($phone_data['found']) && empty($phone_data['login_required'])) {
             $phone_class = !empty($phone_data['class']) ? trim((string) $phone_data['class']) : 'masked';
             $call = array(
+                'key'   => 'call',
                 'url'   => !empty($phone_data['url']) ? $phone_data['url'] : '#',
                 'label' => __('Call', 'epsilon'),
                 'class' => trim('pngm-action-call phone ' . $phone_class),
@@ -358,6 +472,7 @@ function pngm_render_seller_contact_buttons()
     $whatsapp = null;
     if (!empty($channels['whatsapp']['url'])) {
         $whatsapp = array(
+            'key'   => 'whatsapp',
             'url'   => $channels['whatsapp']['url'],
             'label' => __('WhatsApp', 'epsilon'),
             'class' => 'pngm-action-whatsapp',
@@ -375,6 +490,7 @@ function pngm_render_seller_contact_buttons()
         $im_url = im_contact_button(osc_item(), true);
         if ($im_url !== false && $im_url !== null && $im_url !== '') {
             $chat = array(
+                'key'   => 'message',
                 'url'   => $im_url,
                 'label' => __('Chat', 'epsilon'),
                 'class' => 'pngm-action-chat',
@@ -386,26 +502,54 @@ function pngm_render_seller_contact_buttons()
         }
     }
 
-    $actions = array_filter(array($call, $whatsapp, $chat));
-    if (empty($actions)) {
+    $by_key = array();
+    if ($call) {
+        $by_key['call'] = $call;
+    }
+    if ($whatsapp) {
+        $by_key['whatsapp'] = $whatsapp;
+    }
+    if ($chat) {
+        $by_key['message'] = $chat;
+    }
+
+    if (empty($by_key)) {
         return;
     }
 
+    // Put preferred channel first when available.
+    $actions = array();
+    if (isset($by_key[$pref])) {
+        $actions[] = $by_key[$pref];
+        unset($by_key[$pref]);
+    }
+    foreach (array('call', 'whatsapp', 'message') as $k) {
+        if (isset($by_key[$k])) {
+            $actions[] = $by_key[$k];
+        }
+    }
+
     $count = count($actions);
+
     echo '<div class="pngm-contact-panel pngm-item-detail-block">';
     echo '<h2 class="pngm-contact-title">' . osc_esc_html(__('Contact Seller', 'epsilon')) . '</h2>';
     echo '<div class="pngm-contact-actions pngm-contact-count-' . (int) $count . '">';
 
     foreach ($actions as $action) {
+        $is_pref = (!empty($action['key']) && $action['key'] === $pref);
         $attr_html = '';
         if (!empty($action['attrs']) && is_array($action['attrs'])) {
             foreach ($action['attrs'] as $ak => $av) {
                 $attr_html .= ' ' . $ak . '="' . osc_esc_html($av) . '"';
             }
         }
-        echo '<a class="pngm-contact-action ' . osc_esc_html($action['class']) . '" href="' . osc_esc_html($action['url']) . '"' . $attr_html . '>';
+        $cls = 'pngm-contact-action ' . $action['class'] . ($is_pref ? ' is-preferred' : '');
+        echo '<a class="' . osc_esc_html($cls) . '" href="' . osc_esc_html($action['url']) . '"' . $attr_html . '>';
         echo '<i class="' . osc_esc_html($action['icon']) . '" aria-hidden="true"></i>';
         echo '<span>' . osc_esc_html($action['label']) . '</span>';
+        if ($is_pref) {
+            echo '<em class="pngm-contact-action-badge">' . osc_esc_html(__('Preferred', 'epsilon')) . '</em>';
+        }
         echo '</a>';
     }
 
