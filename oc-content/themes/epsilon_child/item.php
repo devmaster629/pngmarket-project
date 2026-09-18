@@ -597,17 +597,17 @@
           
           <div class="point">
             <div class="icon i1"><i class="far fa-credit-card"></i></div>
-            <span><?php _e('Never pay down a deposit in a bank account until you have met the seller, seen signed a purchase agreement.', 'epsilon'); ?></span>
+            <span><?php _e('Never send a deposit to a bank account until you have met the seller and seen a signed purchase agreement.', 'epsilon'); ?></span>
           </div>
           
           <div class="point">
             <div class="icon i2"><i class="fas fa-cash-register"></i></div>
-            <span><?php _e('No serious private advertisers ask for a down payment before you meet. ', 'epsilon'); ?></span>
+            <span><?php _e('No serious private seller asks for a down payment before you meet in person.', 'epsilon'); ?></span>
           </div>
           
           <div class="point">
             <div class="icon i3"><i class="fas fa-user-secret"></i></div>
-            <span><?php _e('Receiving an email with an in-scanned ID does not mean that you have identified the sender. You do this on the spot, when you sign a purchase agreement.', 'epsilon'); ?></span>
+            <span><?php _e('An emailed or scanned ID does not prove who you are dealing with. Verify identity in person when you sign a purchase agreement.', 'epsilon'); ?></span>
           </div>
         </div>
 
