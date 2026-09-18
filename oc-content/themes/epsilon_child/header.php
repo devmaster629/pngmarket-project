@@ -272,17 +272,8 @@
         <?php if($prev_link !== false) { ?><a href="<?php echo $prev_link; ?>" class="prev"><i class="fas fa-angle-left"></i> <?php _e('Previous', 'epsilon'); ?></a><?php } ?>
         <?php if($next_link !== false) { ?><a href="<?php echo $next_link; ?>" class="next"><?php _e('Next', 'epsilon'); ?> <i class="fas fa-angle-right"></i></a><?php } ?>
       </div>
-    <?php } else if(osc_get_osclass_location() == 'user' && osc_get_osclass_section() == 'pub_profile') { ?>
-      <?php
-        $next_link = eps_next_prev_user('next', osc_user_id());
-        $prev_link = eps_next_prev_user('prev', osc_user_id());
-      ?>
-      
-      <div class="navlinks">
-        <?php if($prev_link !== false) { ?><a href="<?php echo $prev_link; ?>" class="prev"><i class="fas fa-angle-left"></i> <?php _e('Previous', 'epsilon'); ?></a><?php } ?>
-        <?php if($next_link !== false) { ?><a href="<?php echo $next_link; ?>" class="next"><?php _e('Next', 'epsilon'); ?> <i class="fas fa-angle-right"></i></a><?php } ?>
-      </div>
     <?php } ?>
+    <?php /* A-022: no Previous/Next on public profiles — sequential ID browsing removed. */ ?>
   </div>
 <?php } ?>
 

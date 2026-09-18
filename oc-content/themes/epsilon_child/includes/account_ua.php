@@ -487,13 +487,10 @@ function pngm_ua_render_sidebar($active = '')
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Profile', 'epsilon')) . '</div>';
     $item('profile', osc_user_profile_url(), __('My Profile', 'epsilon'), 'fas fa-user');
-    // Prefer a real URL even when osc_user_public_profile_url() is empty
-    // (admin min-items / company-only rules) — avoids a dead href="" nav link.
+    // Prefer Osclass URL (respects public-profile gate). Fallback only for own preview.
     $public_profile_url = (string) osc_user_public_profile_url($user_id);
-    if ($public_profile_url === '') {
-        $public_profile_url = function_exists('eps_user_public_profile_url')
-            ? (string) eps_user_public_profile_url($user_id)
-            : sprintf(osc_base_url(true) . '?page=user&action=pub_profile&id=%d', $user_id);
+    if ($public_profile_url === '' && $user_id > 0) {
+        $public_profile_url = sprintf(osc_base_url(true) . '?page=user&action=pub_profile&id=%d', $user_id);
     }
     $item('public', $public_profile_url, __('Public Seller Profile', 'epsilon'), 'fas fa-id-card');
     if ($has_business && (function_exists('bpr_param') ? (bpr_param('only_company_users') == 0 || $is_company) : true)) {
