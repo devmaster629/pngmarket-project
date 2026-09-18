@@ -4465,10 +4465,11 @@ body#user-login.pngm-auth .input-box.pngm-field-ico input {
   }
 }
 
-body.pre-account.pngm-auth .g-recaptcha {
+body.pre-account.pngm-auth .g-recaptcha,
+body.pngm-auth-v2 .pngm-auth-captcha .g-recaptcha {
   display: flex;
   justify-content: center;
-  margin: 12px 0 16px;
+  margin: 0 !important;
 }
 
 .pngm-field-ico {
