@@ -220,6 +220,20 @@
             <?php if($item_extra['i_sold'] == 1) { ?><span class="sold"><?php _e('Sold', 'epsilon'); ?></span><?php } ?>
             <?php if($item_extra['i_sold'] == 2) { ?><span class="reserved"><?php _e('Reserved', 'epsilon'); ?></span><?php } ?>
           </div>
+          <?php
+            $pngm_owner = osc_is_web_user_logged_in()
+              && (int) osc_item_user_id() > 0
+              && (int) osc_logged_user_id() === (int) osc_item_user_id();
+            if ($pngm_owner && osc_item_is_expired() && function_exists('osc_item_can_renew') && osc_item_can_renew()) {
+          ?>
+            <p class="pngm-item-renew-cta">
+              <a class="btn btn-primary" href="<?php echo osc_esc_html(osc_item_renew_url()); ?>">
+                <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                <?php _e('Renew listing', 'epsilon'); ?>
+              </a>
+              <span><?php echo sprintf(__('Renew for another %d days. Your listing was not deleted.', 'epsilon'), defined('PNGM_LISTING_ACTIVE_DAYS') ? (int) PNGM_LISTING_ACTIVE_DAYS : 30); ?></span>
+            </p>
+          <?php } ?>
             
           <?php if(eps_check_category_price(osc_item_category_id())) { ?>
             <div class="row price under-header p-<?php echo osc_esc_html(osc_item_price()); ?>x<?php if(osc_item_price() <= 0) { ?> isstring<?php } ?>"><?php echo function_exists('pngm_format_price') ? pngm_format_price() : osc_item_formated_price(); ?></div>

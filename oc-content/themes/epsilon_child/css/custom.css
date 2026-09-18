@@ -2915,6 +2915,40 @@ body#item .basic .pngm-item-date p {
   margin: 0;
 }
 
+body#item .pngm-item-renew-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid #f5c2c7;
+  border-radius: 10px;
+  background: #fff5f5;
+  box-sizing: border-box;
+}
+
+body#item .pngm-item-renew-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #006b24;
+  color: #fff !important;
+  font-weight: 700;
+  text-decoration: none !important;
+}
+
+body#item .pngm-item-renew-cta a:hover {
+  background: #00551c;
+}
+
+body#item .pngm-item-renew-cta span {
+  font-size: 13px;
+  color: #6b7280;
+}
+
 body#item .pngm-item-meta-bar {
   display: block;
   float: none !important;

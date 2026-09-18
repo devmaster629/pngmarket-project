@@ -153,6 +153,16 @@
 
                 <div class="pngm-listing-meta">
                   <span class="pngm-listing-badge is-<?php echo osc_esc_html($status['key']); ?>"><?php echo osc_esc_html($status['label']); ?></span>
+                  <?php
+                    $expiry_label = function_exists('pngm_listing_expiry_label') ? pngm_listing_expiry_label() : '';
+                    if ($expiry_label !== '' && ($status['key'] === 'active' || $status['key'] === 'expired')) {
+                      if ($status['key'] === 'expired') {
+                        echo '<span class="pngm-listing-expiry is-expired">' . osc_esc_html(sprintf(__('Expired %s', 'epsilon'), $expiry_label)) . '</span>';
+                      } else {
+                        echo '<span class="pngm-listing-expiry">' . osc_esc_html(sprintf(__('Expires %s', 'epsilon'), $expiry_label)) . '</span>';
+                      }
+                    }
+                  ?>
                   <span class="pngm-listing-views"><i class="far fa-eye" aria-hidden="true"></i> <?php echo sprintf(__('%d views', 'epsilon'), (int) osc_item_views()); ?></span>
                   <time class="pngm-listing-date" datetime="<?php echo osc_esc_html(osc_item_pub_date()); ?>"><?php echo osc_format_date(osc_item_pub_date()); ?></time>
                 </div>

@@ -530,53 +530,9 @@ function pngm_notif_on_listing_renewed($item_id)
 osc_add_hook('renew_item', 'pngm_notif_on_listing_renewed');
 
 /**
- * Hourly: notify owners of listings that expired in the last hour.
+ * Hourly expired-listing mail is handled by includes/listing_expiry.php
+ * (pngm_listing_expiry_cron_expired) with Renew CTA.
  */
-function pngm_notif_cron_listing_expired()
-{
-    $from = date('Y-m-d H:i:s', time() - 3600);
-    $to = date('Y-m-d H:i:s');
-    $prefix = DB_TABLE_PREFIX;
-
-    try {
-        $conn = DBConnectionClass::newInstance();
-        $data = $conn->getOsclassDb();
-        $comm = new DBCommandClass($data);
-        $sql = sprintf(
-            'SELECT pk_i_id FROM %st_item WHERE b_premium = 0 AND dt_expiration BETWEEN "%s" AND "%s"',
-            $prefix,
-            $from,
-            $to
-        );
-        $rs = $comm->query($sql);
-        if (!$rs) {
-            return;
-        }
-        $rows = $rs->result();
-    } catch (Exception $e) {
-        return;
-    }
-
-    if (!is_array($rows)) {
-        return;
-    }
-
-    foreach ($rows as $row) {
-        $id = isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0;
-        if ($id <= 0) {
-            continue;
-        }
-        pngm_notif_notify_item_owner(
-            $id,
-            'listing_expired',
-            __('Listing expired: %s', 'epsilon'),
-            '<p>' . __('Hi %1$s,', 'epsilon') . '</p><p>' . __('Your listing “%2$s” has expired on %4$s.', 'epsilon') . '</p><p>%3$s</p>',
-            'pngm_listing_expired'
-        );
-    }
-}
-osc_add_hook('cron_hourly', 'pngm_notif_cron_listing_expired');
-
 /**
  * After a normal (non-AJAX) IM send, keep the original filename for display.
  *
