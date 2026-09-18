@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.58');
+    define('PNGM_CHILD_VERSION', '2.5.60');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -250,7 +250,8 @@ function pngm_enqueue_assets()
             || (strpos((string) Params::getParam('route'), 'osp-') === 0)
             || (Params::getParam('route') === 'pngm-notif-prefs')
             || (Params::getParam('route') === 'pngm-account-security')
-            || (Params::getParam('route') === 'pngm-subscriptions');
+            || (Params::getParam('route') === 'pngm-subscriptions')
+            || (Params::getParam('route') === 'pngm-activity');
     }
     if (Params::getParam('action') === 'pub_profile'
         || (function_exists('osc_get_osclass_section') && osc_get_osclass_section() === 'pub_profile')
@@ -1303,13 +1304,9 @@ function pngm_require_recaptcha_on_register()
         return;
     }
 
-    // Same single-use rule — UserActions::add() verifies once.
-    if (function_exists('osc_is_admin_user_logged_in') && osc_is_admin_user_logged_in()) {
-        if (!function_exists('osc_check_recaptcha') || !osc_check_recaptcha()) {
-            osc_add_flash_error_message(_m('The reCAPTCHA was not entered correctly'));
-            osc_redirect_to(osc_register_account_url());
-        }
-    }
+    // Do not call osc_check_recaptcha() here. Google tokens are single-use and
+    // UserActions::add() always verifies on front-end register (even with Oc-Admin
+    // logged in). Verifying twice causes valid CAPTCHAs to fail (QD-001).
 }
 
 function pngm_require_recaptcha_on_contact()

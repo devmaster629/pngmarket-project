@@ -1830,14 +1830,21 @@ function osc_check_recaptcha() {
   if(!osc_recaptcha_enabled() || trim(osc_recaptcha_private_key()) == '') {
     return true;
   }
-  
-  $gReCaptchaResponse = Params::getParam('g-recaptcha-response');
-  
-  if($gReCaptchaResponse !== '' || $gReCaptchaResponse !== false || $gReCaptchaResponse !== 0) {
+
+  // Prefer raw POST — HTMLPurifier can alter long tokens and cause valid CAPTCHAs to fail.
+  $gReCaptchaResponse = '';
+  if (isset($_POST['g-recaptcha-response'])) {
+    $gReCaptchaResponse = trim((string) $_POST['g-recaptcha-response']);
+  }
+  if ($gReCaptchaResponse === '' && class_exists('Params')) {
+    $gReCaptchaResponse = trim((string) Params::getParam('g-recaptcha-response', false, false));
+  }
+
+  if ($gReCaptchaResponse !== '') {
     $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
     $resp = $recaptcha->verify($gReCaptchaResponse, osc_get_ip());
-    
-    if($resp->isSuccess()) {
+
+    if ($resp->isSuccess()) {
       return true;
     }
   }

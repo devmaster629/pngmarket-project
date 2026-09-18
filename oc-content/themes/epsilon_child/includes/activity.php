@@ -103,6 +103,28 @@ function pngm_activity_icon($type)
 }
 
 /**
+ * Short label for an activity type badge.
+ *
+ * @param string $type
+ * @return string
+ */
+function pngm_activity_type_label($type)
+{
+    $map = array(
+        'listing_approved' => __('Approved', 'epsilon'),
+        'listing_rejected' => __('Rejected', 'epsilon'),
+        'listing_expiring' => __('Expiring', 'epsilon'),
+        'listing_expired' => __('Expired', 'epsilon'),
+        'listing_renewed' => __('Renewed', 'epsilon'),
+        'saved_search' => __('Saved search', 'epsilon'),
+        'security' => __('Security', 'epsilon'),
+        'subscription' => __('Subscription', 'epsilon'),
+    );
+    $type = (string) $type;
+    return isset($map[$type]) ? $map[$type] : __('Update', 'epsilon');
+}
+
+/**
  * Append an activity row (never for chat messages).
  *
  * @param int    $user_id
