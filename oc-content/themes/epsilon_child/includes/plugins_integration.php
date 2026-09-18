@@ -406,7 +406,7 @@ function pngm_align_theme_plugin_prefs()
     }
 }
 
-osc_add_hook('init', 'pngm_align_theme_plugin_prefs', 12);
+osc_add_hook('init', 'pngm_align_theme_plugin_prefs', 9);
 
 /**
  * Bridge theme Facebook button → facebook_js_login SDK (P1-003).
@@ -486,7 +486,8 @@ function pngm_facebook_login_bridge_script()
     <?php
 }
 
-osc_add_hook('footer_after', 'pngm_facebook_login_bridge_script', 15);
+// Osclass Plugins::runHook only executes priorities 0–10.
+osc_add_hook('footer_after', 'pngm_facebook_login_bridge_script', 9);
 
 /**
  * Admin dashboard notice: missing licensed plugins / Phase 3 exclusions.

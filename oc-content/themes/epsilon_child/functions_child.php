@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.54');
+    define('PNGM_CHILD_VERSION', '2.5.55');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -295,7 +295,7 @@ function pngm_repatch_jquery_validate()
     <?php
 }
 
-osc_add_hook('scripts_loaded', 'pngm_repatch_jquery_validate', 999);
+osc_add_hook('scripts_loaded', 'pngm_repatch_jquery_validate', 10);
 
 /**
  * Accessible viewport — allow native pinch-to-zoom (ITEM-01 / P1-001).
@@ -1091,7 +1091,8 @@ function pngm_item_post_minlength_script()
     <?php
 }
 
-osc_add_hook('footer', 'pngm_item_post_minlength_script', 20);
+// Osclass Plugins::runHook only executes priorities 0–10.
+osc_add_hook('footer', 'pngm_item_post_minlength_script', 8);
 
 /**
  * Post-ad validation UX — must run after parent item-post.php inline .validate() init.
@@ -1145,7 +1146,7 @@ function pngm_item_post_validation_script()
     <?php
 }
 
-osc_add_hook('footer_after', 'pngm_item_post_validation_script', 999);
+osc_add_hook('footer_after', 'pngm_item_post_validation_script', 10);
 
 /**
  * Server-side: title must be at least 3 letters; description has no minimum.
@@ -1353,6 +1354,11 @@ osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
  */
 function pngm_recaptcha_incognito_fix()
 {
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
+
     if (!function_exists('osc_recaptcha_public_key')) {
         return;
     }
@@ -1361,6 +1367,8 @@ function pngm_recaptcha_incognito_fix()
     if ($site_key === '' || $site_key === false || $site_key === null) {
         return;
     }
+
+    $printed = true;
 
     $lang = substr((string) osc_current_user_locale(), 0, 2);
     if ($lang === '') {
@@ -1586,7 +1594,8 @@ function pngm_recaptcha_incognito_fix()
     <?php
 }
 
-osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 30);
+// Must be 0–10: Osclass ignores higher footer priorities.
+osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 9);
 
 /**
  * Messages tab should open the latest conversation on desktop only.

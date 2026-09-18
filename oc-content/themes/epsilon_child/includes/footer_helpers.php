@@ -454,6 +454,6 @@ function pngm_ensure_footer_social_urls()
 }
 
 if (function_exists('osc_add_hook')) {
-    osc_add_hook('init', 'pngm_ensure_footer_pages', 20);
-    osc_add_hook('init', 'pngm_ensure_footer_social_urls', 21);
+    osc_add_hook('init', 'pngm_ensure_footer_pages', 8);
+    osc_add_hook('init', 'pngm_ensure_footer_social_urls', 9);
 }

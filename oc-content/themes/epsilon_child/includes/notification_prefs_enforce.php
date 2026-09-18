@@ -612,7 +612,7 @@ function pngm_im_on_insert_save_file_label($message_id)
         pngm_im_set_file_label($message_id, $original);
     }
 }
-osc_add_hook('im_insert_message', 'pngm_im_on_insert_save_file_label', 20);
+osc_add_hook('im_insert_message', 'pngm_im_on_insert_save_file_label', 9);
 
 /**
  * Deliver queued browser notifications for the logged-in user.
@@ -666,4 +666,5 @@ function pngm_notif_push_footer()
 </script>
     <?php
 }
-osc_add_hook('footer', 'pngm_notif_push_footer', 40);
+// Osclass Plugins::runHook only executes priorities 0–10.
+osc_add_hook('footer', 'pngm_notif_push_footer', 10);
