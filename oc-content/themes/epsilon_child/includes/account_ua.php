@@ -463,11 +463,6 @@ function pngm_ua_render_sidebar($active = '')
 
     echo '<aside id="user-menu" class="pngm-ua-sidebar" aria-label="' . osc_esc_html(__('Account menu', 'epsilon')) . '">';
     echo '<button type="button" class="pngm-ua-nav-close" aria-label="' . osc_esc_html(__('Close menu', 'epsilon')) . '">&times;</button>';
-    echo '<div class="pngm-ua-brand">';
-    echo '<a href="' . osc_esc_html(osc_base_url()) . '" class="pngm-ua-brand-link">';
-    echo '<span class="pngm-ua-brand-mark" aria-hidden="true"><i class="fas fa-check"></i></span>';
-    echo '<span class="pngm-ua-brand-text"><strong>PNG Market</strong><small>' . osc_esc_html(__('Buy · Sell · Find Anything', 'epsilon')) . '</small></span>';
-    echo '</a></div>';
 
     echo '<nav class="pngm-ua-nav">';
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Account', 'epsilon')) . '</div>';
@@ -501,11 +496,6 @@ function pngm_ua_render_sidebar($active = '')
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Settings', 'epsilon')) . '</div>';
     $item('notifications', function_exists('pngm_notif_prefs_url') ? pngm_notif_prefs_url() : osc_route_url('pngm-notif-prefs'), __('Notification Preferences', 'epsilon'), 'fas fa-sliders-h');
     $item('security', function_exists('pngm_sec_url') ? pngm_sec_url() : osc_route_url('pngm-account-security'), __('Account & Security', 'epsilon'), 'fas fa-shield-alt');
-    echo '</div>';
-
-    echo '<div class="pngm-ua-nav-hooks menu-hooks" hidden aria-hidden="true">';
-    // Plugin user_menu hooks (IM Messages, Business profile) are already covered
-    // by the curated links above — do not render them again as duplicates.
     echo '</div>';
 
     echo '</nav>';

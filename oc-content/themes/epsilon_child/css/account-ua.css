@@ -62,63 +62,20 @@ body.body-ua #user-menu.pngm-ua-sidebar {
   border: 1px solid #e6eaf0;
   border-radius: 14px;
   box-sizing: border-box;
-  /* Header is 72px — pin just below it with a small gap. */
   position: sticky;
   top: 84px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: calc(100vh - 112px);
-}
-
-.pngm-ua-brand {
-  padding: 4px 8px 14px;
-  border-bottom: 1px solid #eef1f4;
-  margin-bottom: 6px;
-}
-
-.pngm-ua-brand-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none !important;
-  color: #16202a;
-}
-
-.pngm-ua-brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #2e7d32;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 36px;
-}
-
-.pngm-ua-brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.pngm-ua-brand-text strong {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.pngm-ua-brand-text small {
-  font-size: 11px;
-  color: #8a94a0;
-  font-weight: 500;
+  gap: 12px;
+  height: auto;
+  min-height: 0;
 }
 
 .pngm-ua-nav {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
 .pngm-ua-nav-group {
@@ -193,24 +150,11 @@ body.body-ua #user-menu.pngm-ua-sidebar {
   color: #2e7d32;
 }
 
-.pngm-ua-nav-hooks a {
-  display: flex !important;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  color: #4b5563 !important;
-  background: transparent !important;
-  border: 0 !important;
-  margin: 0 0 2px !important;
-}
-
 .pngm-ua-logout {
   display: flex !important;
   align-items: center;
   gap: 10px;
-  margin-top: auto !important;
+  margin-top: 4px !important;
   padding: 12px !important;
   border-radius: 10px !important;
   color: #b91c1c !important;
@@ -777,10 +721,6 @@ body.body-ua #user-main.pngm-ua-panel h1 {
 
   .pngm-ua-sidebar {
     padding-top: 52px !important;
-  }
-
-  .pngm-ua-brand {
-    padding-right: 40px;
   }
 
   .pngm-ua-stats {
