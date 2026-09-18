@@ -3546,10 +3546,13 @@ body#item #item-side #seller {
   }
 }
 
-/* Site-owner WhatsApp lives on Contact us ? hide the global floating button */
+/* Site-owner WhatsApp lives on Contact us — hide the global floating button.
+   Also hide the duplicate wa_chat listing checkbox; contact-section owns opt-in. */
 body a.wac-btn.wac-web,
 body .wac-box,
-body .wac-box a.wac-web {
+body .wac-box a.wac-web,
+#wac-check,
+.control-group#wac-check {
   display: none !important;
 }
 

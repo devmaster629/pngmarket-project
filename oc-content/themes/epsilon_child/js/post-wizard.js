@@ -455,8 +455,12 @@
           showError($form.find('input[name^="title"]'), labels.needTitle);
           ok = false;
         }
-        if ($.trim(desc).length < 10) {
+        var descTrim = $.trim(desc);
+        if (descTrim.length < 1) {
           showError($form.find('textarea[name^="description"]'), labels.needDesc);
+          ok = false;
+        } else if (descTrim.length < 10) {
+          showError($form.find('textarea[name^="description"]'), labels.needDescShort || labels.needDesc);
           ok = false;
         }
 

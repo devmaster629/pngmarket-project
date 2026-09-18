@@ -357,11 +357,19 @@ function pngm_align_theme_plugin_prefs()
         }
     }
 
-    // WhatsApp Chat → PNG defaults + fix broken listing hooks.
+    // WhatsApp Chat → PNG defaults + seller opt-in (QD-004).
     if (function_exists('wac_param') && function_exists('osc_set_preference')) {
         $cc = trim((string) wac_param('default_country_code'));
         if ($cc === '') {
             osc_set_preference('default_country_code', '675', 'plugin-wa_chat');
+        }
+
+        // Require seller opt-in; do not auto-enable legacy listings.
+        if ((string) wac_param('ask_seller') !== '1') {
+            osc_set_preference('ask_seller', '1', 'plugin-wa_chat');
+        }
+        if ((string) wac_param('enable_existing') !== '0') {
+            osc_set_preference('enable_existing', '0', 'plugin-wa_chat');
         }
 
         $hooks = trim((string) wac_param('hooks'));
@@ -407,6 +415,21 @@ function pngm_align_theme_plugin_prefs()
 }
 
 osc_add_hook('init', 'pngm_align_theme_plugin_prefs', 9);
+
+/**
+ * QD-004: contact-section checkbox owns WhatsApp opt-in.
+ * Hide the duplicate wa_chat "Enable WhatsApp chat…" field on post/edit.
+ */
+function pngm_hide_duplicate_wac_item_form()
+{
+    if (!function_exists('osc_remove_hook')) {
+        return;
+    }
+    osc_remove_hook('item_form', 'wac_item_form');
+    osc_remove_hook('item_edit', 'wac_item_form');
+}
+
+osc_add_hook('init', 'pngm_hide_duplicate_wac_item_form', 10);
 
 /**
  * Bridge theme Facebook button → facebook_js_login SDK (P1-003).

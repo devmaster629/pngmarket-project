@@ -41,6 +41,112 @@ function pngm_whatsapp_digits($phone)
 }
 
 /**
+ * Preference key for listing WhatsApp opt-in (QD-004).
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_item_whatsapp_pref_key($item_id)
+{
+    return 'wa_' . (int) $item_id;
+}
+
+/**
+ * Whether the seller opted in to show WhatsApp on this listing.
+ * Default is off — no public wa.me link without consent.
+ *
+ * @param int $item_id
+ * @return bool
+ */
+function pngm_item_whatsapp_enabled($item_id = 0)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 && function_exists('osc_item_id')) {
+        $item_id = (int) osc_item_id();
+    }
+    if ($item_id <= 0) {
+        return false;
+    }
+
+    // Theme preference (source of truth for epsilon_child UI).
+    if (function_exists('osc_get_preference')) {
+        $pref = osc_get_preference(pngm_item_whatsapp_pref_key($item_id), 'pngm_whatsapp');
+        if ($pref !== '' && $pref !== null && $pref !== false) {
+            return ((string) $pref === '1' || (int) $pref === 1);
+        }
+    }
+
+    // Fallback: wa_chat plugin row when present.
+    if (class_exists('ModelWAC')) {
+        try {
+            $data = ModelWAC::newInstance()->getData($item_id);
+            if (is_array($data) && isset($data['b_enable'])) {
+                return ((int) $data['b_enable'] === 1);
+            }
+        } catch (Throwable $e) {
+            // Plugin table may be missing.
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Persist WhatsApp opt-in from the post/edit form checkbox.
+ *
+ * @param array $item
+ */
+function pngm_item_whatsapp_save($item)
+{
+    $item_id = 0;
+    if (is_array($item) && isset($item['pk_i_id'])) {
+        $item_id = (int) $item['pk_i_id'];
+    }
+    if ($item_id <= 0) {
+        return;
+    }
+
+    $enabled = 0;
+    if (isset($_POST['pngm_whatsapp']) && (string) $_POST['pngm_whatsapp'] !== '') {
+        $enabled = 1;
+    } elseif (class_exists('Params') && Params::getParam('pngm_whatsapp') !== '') {
+        $enabled = 1;
+    }
+
+    if (function_exists('osc_set_preference')) {
+        osc_set_preference(pngm_item_whatsapp_pref_key($item_id), (string) $enabled, 'pngm_whatsapp', 'BOOLEAN');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set(pngm_item_whatsapp_pref_key($item_id), (string) $enabled, 'pngm_whatsapp');
+        }
+    }
+
+    // Keep wa_chat plugin row in sync when available.
+    if (class_exists('ModelWAC')) {
+        try {
+            $model = ModelWAC::newInstance();
+            $data = $model->getData($item_id);
+            if (is_array($data) && isset($data['fk_i_item_id'])) {
+                $model->updateData($item_id, array('b_enable' => $enabled));
+            } else {
+                $model->insertData(array(
+                    'fk_i_item_id' => $item_id,
+                    'b_enable' => $enabled,
+                ));
+            }
+        } catch (Throwable $e) {
+            // Ignore plugin sync failures.
+        }
+    }
+}
+
+if (function_exists('osc_add_hook')) {
+    // Run after wa_chat's posted_item/edited_item (default priority 5) so ModelWAC stays in sync
+    // with the contact-section checkbox, not a hidden plugin field.
+    osc_add_hook('posted_item', 'pngm_item_whatsapp_save', 9);
+    osc_add_hook('edited_item', 'pngm_item_whatsapp_save', 9);
+}
+
+/**
  * Collect seller contact channels available for the current item.
  *
  * @return array
@@ -67,53 +173,55 @@ function pngm_seller_contact_channels()
         return $cache;
     }
 
+    $item_id = (int) osc_item_id();
     $user_id = (int) osc_item_user_id();
     $item_count = 0;
 
-    // Instant Messenger owns chat. Do not duplicate the standard Message button.
-
-    // WhatsApp from listing / seller phones (plugin or fallback wa.me).
-    $phones = array();
-    if (function_exists('eps_get_item_phone')) {
-        $p = eps_get_item_phone();
-        if (!empty($p['found']) && empty($p['login_required']) && !empty($p['phone'])) {
-            $phones[] = $p['phone'];
-        }
-    }
-
     if ($user_id > 0 && class_exists('User')) {
         $user = User::newInstance()->findByPrimaryKey($user_id);
-        if (is_array($user)) {
-            if (!empty($user['s_phone_mobile'])) {
-                $phones[] = $user['s_phone_mobile'];
-            }
-            if (!empty($user['s_phone_land'])) {
-                $phones[] = $user['s_phone_land'];
-            }
-            $item_count = isset($user['i_items']) ? (int) $user['i_items'] : 0;
+        if (is_array($user) && isset($user['i_items'])) {
+            $item_count = (int) $user['i_items'];
         }
     }
 
-    if (function_exists('wac_get_phone')) {
-        $wac_phone = wac_get_phone(osc_item_id());
-        if (!empty($wac_phone)) {
-            array_unshift($phones, $wac_phone);
-        }
-    }
+    // Instant Messenger owns chat. Do not duplicate the standard Message button.
 
-    foreach ($phones as $phone) {
-        $digits = pngm_whatsapp_digits($phone);
-        if ($digits !== '') {
-            $text = rawurlencode(sprintf(
-                __('Hi, I am interested in your listing: %s', 'epsilon'),
-                osc_item_url()
-            ));
-            $channels['whatsapp'] = array(
-                'url'   => 'https://wa.me/' . $digits . '?text=' . $text,
-                'label' => __('WhatsApp', 'epsilon'),
-                'class' => 'pngm-contact-whatsapp',
-            );
-            break;
+    // WhatsApp only when seller opted in (QD-004). Never leak digits otherwise.
+    if (pngm_item_whatsapp_enabled($item_id)) {
+        $phones = array();
+
+        if (function_exists('eps_get_item_phone')) {
+            $p = eps_get_item_phone();
+            if (!empty($p['found']) && empty($p['login_required']) && !empty($p['phone'])) {
+                $phones[] = $p['phone'];
+            }
+        }
+
+        // Listing contact phone may still exist when show_phone is off for Call UI.
+        if (function_exists('osc_item_contact_phone') && osc_item_contact_phone() !== '') {
+            $phones[] = osc_item_contact_phone();
+        }
+        if (empty($phones) && function_exists('eps_item_extra')) {
+            $extra = eps_item_extra($item_id);
+            if (is_array($extra) && !empty($extra['s_phone'])) {
+                $phones[] = $extra['s_phone'];
+            }
+        }
+
+        foreach ($phones as $phone) {
+            $digits = pngm_whatsapp_digits($phone);
+            if ($digits !== '') {
+                $text = rawurlencode(sprintf(
+                    __('Hi, I am interested in your listing: %s', 'epsilon'),
+                    osc_item_url()
+                ));
+                $channels['whatsapp'] = array(
+                    'url'   => 'https://wa.me/' . $digits . '?text=' . $text,
+                    'label' => __('WhatsApp', 'epsilon'),
+                    'class' => 'pngm-contact-whatsapp',
+                );
+                break;
+            }
         }
     }
 

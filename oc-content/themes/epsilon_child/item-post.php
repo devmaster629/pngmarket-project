@@ -193,7 +193,7 @@
                 <div class="input-box">
                   <?php ItemForm::description_textarea('description', $locale, osc_esc_html(eps_post_item_description())); ?>
                 </div>
-                <p class="pngm-post-field-error is-hidden" data-for="description" hidden><?php _e('Please enter a description.', 'epsilon'); ?></p>
+                <p class="pngm-post-field-error is-hidden" data-for="description" hidden><?php _e('Please enter at least 10 characters in the description.', 'epsilon'); ?></p>
                 <div class="pngm-post-counter" data-counter-for="description"><span>0</span>/5000</div>
               </div>
 
@@ -464,10 +464,19 @@
               </div>
 
               <div class="pngm-post-field pngm-post-whatsapp-field">
+                <?php
+                  $pngm_wa_checked = false;
+                  if (function_exists('osc_item_id') && (int) osc_item_id() > 0 && function_exists('pngm_item_whatsapp_enabled')) {
+                      $pngm_wa_checked = pngm_item_whatsapp_enabled((int) osc_item_id());
+                  }
+                ?>
                 <label class="pngm-post-whatsapp-card" for="pngm_whatsapp">
-                  <input type="checkbox" name="pngm_whatsapp" id="pngm_whatsapp" value="1" />
+                  <input type="checkbox" name="pngm_whatsapp" id="pngm_whatsapp" value="1"<?php echo $pngm_wa_checked ? ' checked="checked"' : ''; ?> />
                   <span class="pngm-post-whatsapp-ico" aria-hidden="true"><i class="fab fa-whatsapp"></i></span>
-                  <span class="pngm-post-whatsapp-copy"><?php _e('Yes, I\'m available on WhatsApp', 'epsilon'); ?></span>
+                  <span class="pngm-post-whatsapp-text">
+                    <span class="pngm-post-whatsapp-copy"><?php _e('Yes, I\'m available on WhatsApp', 'epsilon'); ?></span>
+                    <span class="pngm-post-whatsapp-consent"><?php _e('If enabled, buyers can open WhatsApp using the phone number on this listing. That number will be included in the public WhatsApp link.', 'epsilon'); ?></span>
+                  </span>
                 </label>
               </div>
 
@@ -613,8 +622,9 @@
       'checkSeller' => __('Check with seller', 'epsilon'),
       'free' => __('Free', 'epsilon'),
       'selectSub' => __('Please select a subcategory.', 'epsilon'),
-      'needTitle' => __('Please enter a title.', 'epsilon'),
+      'needTitle' => __('Please enter a title (at least 3 characters).', 'epsilon'),
       'needDesc' => __('Please enter a description.', 'epsilon'),
+      'needDescShort' => __('Please enter at least 10 characters in the description.', 'epsilon'),
       'needPrice' => __('Please enter a price, or choose Check with seller.', 'epsilon'),
       'needAttr' => __('Please complete: %s', 'epsilon'),
       'needMakeOther' => __('Please specify make / model.', 'epsilon'),
@@ -662,6 +672,14 @@
           contactName: { required: true, minlength: 2 }
         },
         messages: {
+          "title[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": {
+            required: '<?php echo osc_esc_js(__('Please enter a title (at least 3 characters).', 'epsilon')); ?>',
+            minlength: '<?php echo osc_esc_js(__('Please enter a title (at least 3 characters).', 'epsilon')); ?>'
+          },
+          "description[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": {
+            required: '<?php echo osc_esc_js(__('Please enter a description.', 'epsilon')); ?>',
+            minlength: '<?php echo osc_esc_js(__('Please enter at least 10 characters in the description.', 'epsilon')); ?>'
+          },
           contactEmail: { required: '<?php echo osc_esc_js(__('Please enter a valid email.', 'epsilon')); ?>', email: '<?php echo osc_esc_js(__('Please enter a valid email.', 'epsilon')); ?>' },
           contactName: { required: '<?php echo osc_esc_js(__('Please enter your full name.', 'epsilon')); ?>' }
         }
