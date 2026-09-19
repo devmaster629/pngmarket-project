@@ -224,6 +224,20 @@ function pngm_atr_show_item($item)
     atr_show_item($item);
     $html = ob_get_clean();
 
+    // Guests must not see phone/email attribute values on the listing.
+    if (function_exists('pngm_viewer_can_contact_seller') && !pngm_viewer_can_contact_seller() && $html !== '') {
+        $html = preg_replace(
+            '/<div[^>]*class="[^"]*atr-type-(?:phone|email)[^"]*"[^>]*>.*?<\/div>\s*/is',
+            '',
+            $html
+        );
+        $html = preg_replace(
+            '/<(?:div|li|tr)[^>]*id="atr-phone"[^>]*>.*?<\/(?:div|li|tr)>\s*/is',
+            '',
+            $html
+        );
+    }
+
     $html = pngm_atr_enhance_html($html);
     if ($html === '') {
         return;

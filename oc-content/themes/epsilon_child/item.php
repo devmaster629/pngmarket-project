@@ -156,10 +156,12 @@
               <a href="#" onclick="history.back();return false;" class="mlink back isMobile"><i class="fas fa-arrow-left"></i></a>
             <?php } ?>
 
-            <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
-              <a href="<?php echo im_contact_button(osc_item(), true); ?>" class="mlink contact isMobile"><i class="fas fa-envelope-open"></i></a>
-            <?php } else if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
-              <a href="<?php echo eps_item_fancy_url('contact'); ?>" data-type="contact" class="mlink contact isMobile open-form"><i class="fas fa-envelope-open"></i></a>
+            <?php if (function_exists('pngm_viewer_can_contact_seller') && pngm_viewer_can_contact_seller()) { ?>
+              <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
+                <a href="<?php echo im_contact_button(osc_item(), true); ?>" class="mlink contact isMobile"><i class="fas fa-envelope-open"></i></a>
+              <?php } else if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
+                <a href="<?php echo eps_item_fancy_url('contact'); ?>" data-type="contact" class="mlink contact isMobile open-form"><i class="fas fa-envelope-open"></i></a>
+              <?php } ?>
             <?php } ?>
             
             <a href="#" class="mlink share isMobile"><i class="fas fa-share-alt"></i></a>
@@ -496,7 +498,7 @@
       <div id="item-side">
         <?php osc_run_hook('item_sidebar_top'); ?>
 
-        <?php if($email_data['visible']) { ?>
+        <?php if(function_exists('pngm_viewer_can_contact_seller') && pngm_viewer_can_contact_seller() && $email_data['visible']) { ?>
           <a class="master-button email pngm-item-email <?php echo $email_data['class']; ?>" title="<?php echo osc_esc_html($email_data['title']); ?>" href="#" data-prefix="mailto" data-part1="<?php echo osc_esc_html($email_data['part1']); ?>" data-part2="<?php echo osc_esc_html($email_data['part2']); ?>">
             <i class="fas fa-at"></i>
             <span><?php echo $email_data['masked']; ?></span>
@@ -556,14 +558,14 @@
                 <div class="address"><i class="fas fa-map-marked-alt"></i> <?php echo $item_user_location; ?></div>
               <?php } ?>
 
-              <?php if($user_phone_mobile_data['found']) { ?>
+              <?php if(function_exists('pngm_viewer_can_contact_seller') && pngm_viewer_can_contact_seller() && !empty($user_phone_mobile_data['found']) && empty($user_phone_mobile_data['login_required'])) { ?>
                 <a class="phone-mobile phone <?php echo $user_phone_mobile_data['class']; ?>" title="<?php echo osc_esc_html($user_phone_mobile_data['title']); ?>" data-prefix="tel" href="<?php echo $user_phone_mobile_data['url']; ?>" data-part1="<?php echo osc_esc_html($user_phone_mobile_data['part1']); ?>" data-part2="<?php echo osc_esc_html($user_phone_mobile_data['part2']); ?>">
                   <i class="fas fa-phone-alt"></i>
                   <span><?php echo $user_phone_mobile_data['masked']; ?></span>
                 </a>
               <?php } ?>
 
-              <?php if($user_phone_land_data['found']) { ?>
+              <?php if(function_exists('pngm_viewer_can_contact_seller') && pngm_viewer_can_contact_seller() && !empty($user_phone_land_data['found']) && empty($user_phone_land_data['login_required'])) { ?>
                 <a class="phone-land phone <?php echo $user_phone_land_data['class']; ?>" title="<?php echo osc_esc_html($user_phone_land_data['title']); ?>" data-prefix="tel" href="<?php echo $user_phone_land_data['url']; ?>" data-part1="<?php echo osc_esc_html($user_phone_land_data['part1']); ?>" data-part2="<?php echo osc_esc_html($user_phone_land_data['part2']); ?>">
                   <i class="fas fa-phone-alt"></i>
                   <span><?php echo $user_phone_land_data['masked']; ?></span>

@@ -10,6 +10,17 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 /**
+ * Whether the current viewer may see seller contact channels (phone, WhatsApp, chat).
+ * Guests must log in first — no contact digits or messaging for logged-out users.
+ *
+ * @return bool
+ */
+function pngm_viewer_can_contact_seller()
+{
+    return function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in();
+}
+
+/**
  * Digits-only phone for WhatsApp (PNG defaults to country code 675).
  *
  * @param string $phone
@@ -297,8 +308,8 @@ function pngm_seller_contact_channels()
 
     // Instant Messenger owns chat. Do not duplicate the standard Message button.
 
-    // WhatsApp only when seller opted in (QD-004). Never leak digits otherwise.
-    if (pngm_item_whatsapp_enabled($item_id)) {
+    // WhatsApp only when seller opted in (QD-004) and viewer is logged in.
+    if (pngm_viewer_can_contact_seller() && pngm_item_whatsapp_enabled($item_id)) {
         $phones = array();
 
         if (function_exists('eps_get_item_phone')) {
@@ -437,10 +448,15 @@ function pngm_seller_contact_channels()
 
 /**
  * Render listing contact actions: Call | WhatsApp | Chat (mockup row).
+ * Guests see nothing — no contact details and no login CTA in this block.
  */
 function pngm_render_seller_contact_buttons()
 {
     if (!function_exists('osc_is_ad_page') || !osc_is_ad_page()) {
+        return;
+    }
+
+    if (!pngm_viewer_can_contact_seller()) {
         return;
     }
 
@@ -495,7 +511,6 @@ function pngm_render_seller_contact_buttons()
 
     if (function_exists('im_contact_button')) {
         if ($is_own_listing) {
-            // Owner preview: same look as for buyers; click explains they can't self-message.
             $chat = array(
                 'key'   => 'message',
                 'url'   => '#',
@@ -519,17 +534,6 @@ function pngm_render_seller_contact_buttons()
                     'icon'  => 'fas fa-comment-dots',
                     'attrs' => array(
                         'title' => __('Chat with seller', 'epsilon'),
-                    ),
-                );
-            } elseif (!osc_is_web_user_logged_in()) {
-                $chat = array(
-                    'key'   => 'message',
-                    'url'   => osc_user_login_url(),
-                    'label' => __('Chat', 'epsilon'),
-                    'class' => 'pngm-action-chat',
-                    'icon'  => 'fas fa-comment-dots',
-                    'attrs' => array(
-                        'title' => __('Log in to chat with the seller', 'epsilon'),
                     ),
                 );
             }

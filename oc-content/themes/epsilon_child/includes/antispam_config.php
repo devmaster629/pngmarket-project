@@ -102,6 +102,11 @@ function pngm_antispam_ensure_posting_prefs()
         pngm_antispam_set_osclass('reg_user_post', '1', 'BOOLEAN');
     }
 
+    // Phone / contact details require login (Osclass core flag used by Epsilon helpers).
+    if ((string) osc_get_preference('reg_user_can_see_phone') !== '1') {
+        pngm_antispam_set_osclass('reg_user_can_see_phone', '1', 'BOOLEAN');
+    }
+
     $wait = (int) osc_get_preference('items_wait_time');
     if ($wait < (int) PNGM_ANTISPAM_ITEMS_WAIT) {
         pngm_antispam_set_osclass('items_wait_time', (string) PNGM_ANTISPAM_ITEMS_WAIT, 'INTEGER');
@@ -120,6 +125,11 @@ function pngm_antispam_ensure_im_limits()
     // Plugin may be inactive — still safe to write prefs.
     if ((string) osc_get_preference('limit_enabled', 'plugin-instant_messenger') !== '1') {
         pngm_antispam_set_im('limit_enabled', 1);
+    }
+
+    // Guests cannot open or send IM threads.
+    if ((string) osc_get_preference('only_logged', 'plugin-instant_messenger') !== '1') {
+        pngm_antispam_set_im('only_logged', 1);
     }
 
     $applied = (string) osc_get_preference('pngm_antispam_im_limits', 'epsilon_child');
