@@ -318,3 +318,90 @@ function pngm_listing_expiry_cron_expired()
 
 osc_add_hook('init', 'pngm_listing_expiry_apply_policy', 4);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_expired', 8);
+
+/**
+ * Renew must not bump listing stats again.
+ * Expiry only hides ads by date — it never decreases user/category counters —
+ * but core renew() always calls _increaseStats(), which inflated My Listings.
+ *
+ * @param int $item_id
+ */
+function pngm_listing_renew_flag_stat_undo($item_id)
+{
+    $GLOBALS['pngm_renew_undo_stat_id'] = (int) $item_id;
+}
+osc_add_hook('renew_item', 'pngm_listing_renew_flag_stat_undo', 1);
+
+/**
+ * Undo the stats bump that renew() applies immediately after renew_item.
+ *
+ * @param array $item
+ */
+function pngm_listing_renew_undo_stat_bump($item)
+{
+    if (empty($GLOBALS['pngm_renew_undo_stat_id']) || !is_array($item)) {
+        return;
+    }
+    if ((int) @$item['pk_i_id'] !== (int) $GLOBALS['pngm_renew_undo_stat_id']) {
+        return;
+    }
+    unset($GLOBALS['pngm_renew_undo_stat_id']);
+
+    if (!empty($item['fk_i_user_id']) && class_exists('User')) {
+        User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
+    }
+    if (!empty($item['fk_i_category_id']) && class_exists('CategoryStats')) {
+        CategoryStats::newInstance()->decreaseNumItems($item['fk_i_category_id']);
+    }
+    if (!empty($item['fk_c_country_code']) && class_exists('CountryStats')) {
+        CountryStats::newInstance()->decreaseNumItems($item['fk_c_country_code']);
+    }
+    if (!empty($item['fk_i_region_id']) && class_exists('RegionStats')) {
+        RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
+    }
+    if (!empty($item['fk_i_city_id']) && class_exists('CityStats')) {
+        CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
+    }
+}
+osc_add_hook('item_increase_stat', 'pngm_listing_renew_undo_stat_bump', 8);
+
+/**
+ * One-shot: re-sync t_user.i_items with non-spam enabled+active listings
+ * (includes expired — same rules as core publish counters).
+ */
+function pngm_listing_repair_user_item_counts()
+{
+    if (!function_exists('osc_get_preference') || !defined('DB_TABLE_PREFIX')) {
+        return;
+    }
+    if ((string) osc_get_preference('pngm_user_items_repaired', 'epsilon_child') === 'v1') {
+        return;
+    }
+
+    $prefix = DB_TABLE_PREFIX;
+    try {
+        $conn = DBConnectionClass::newInstance();
+        $data = $conn->getOsclassDb();
+        $comm = new DBCommandClass($data);
+        $comm->query(sprintf(
+            'UPDATE %st_user u
+             SET u.i_items = (
+               SELECT COUNT(*) FROM %st_item i
+               WHERE i.fk_i_user_id = u.pk_i_id
+                 AND i.b_enabled = 1
+                 AND i.b_active = 1
+                 AND i.b_spam = 0
+             )',
+            $prefix,
+            $prefix
+        ));
+    } catch (Exception $e) {
+        return;
+    }
+
+    osc_set_preference('pngm_user_items_repaired', 'v1', 'epsilon_child', 'STRING');
+    if (class_exists('Preference')) {
+        Preference::newInstance()->toArray();
+    }
+}
+osc_add_hook('init', 'pngm_listing_repair_user_item_counts', 5);

@@ -511,6 +511,7 @@ function pngm_ua_render_sidebar($active = '')
 
 /**
  * Listing status counts for My Listings tabs.
+ * "all" matches the visible tabs and excludes spam (spam is not a user-facing status).
  *
  * @param int $user_id
  * @return array{all:int,active:int,pending_validate:int,blocked:int,expired:int}
@@ -530,14 +531,38 @@ function pngm_ua_listing_counts($user_id)
     }
 
     $m = Item::newInstance();
-    return array(
-        'all' => (int) $m->countItemTypesByUserID($user_id, 'all'),
+    $counts = array(
         'active' => (int) $m->countItemTypesByUserID($user_id, 'active'),
         'pending_validate' => (int) $m->countItemTypesByUserID($user_id, 'pending_validate'),
         'blocked' => (int) $m->countItemTypesByUserID($user_id, 'blocked'),
         'expired' => (int) $m->countItemTypesByUserID($user_id, 'expired'),
     );
+    $counts['all'] = $counts['active'] + $counts['pending_validate'] + $counts['blocked'] + $counts['expired'];
+    return $counts;
 }
+
+/**
+ * Hide spam-flagged listings from the seller My Listings query/counts.
+ * (They were inflating "All listings" while Active correctly excluded them.)
+ *
+ * @param array $options
+ * @param int   $user_id
+ * @param string $email
+ * @return array
+ */
+function pngm_ua_find_items_exclude_spam($options, $user_id = 0, $email = '')
+{
+    if (!is_array($options)) {
+        $options = array();
+    }
+    if (!isset($options['custom_conditions_and']) || !is_array($options['custom_conditions_and'])) {
+        $options['custom_conditions_and'] = array();
+    }
+    // Avoid duplicating the condition if core already applied it for "active".
+    $options['custom_conditions_and'][] = 'i.b_spam = 0';
+    return $options;
+}
+osc_add_filter('find_item_types_by_user_id_options', 'pngm_ua_find_items_exclude_spam', 8);
 
 /**
  * Current listing status for badge styling.
@@ -546,6 +571,9 @@ function pngm_ua_listing_counts($user_id)
  */
 function pngm_ua_item_status()
 {
+    if ((int) osc_item_field('b_spam') === 1) {
+        return array('key' => 'inactive', 'label' => __('Removed', 'epsilon'));
+    }
     if (function_exists('osc_item_is_expired') && osc_item_is_expired()) {
         return array('key' => 'expired', 'label' => __('Expired', 'epsilon'));
     }
