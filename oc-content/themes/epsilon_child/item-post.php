@@ -632,6 +632,8 @@
       'selectCategory' => __('Please select a category.', 'epsilon'),
       'fixErrors' => __('Please fix the following:', 'epsilon'),
       'needTitle' => __('Please enter a title (at least 3 characters).', 'epsilon'),
+      'dupTitleCheck' => __('Checking title…', 'epsilon'),
+      'dupTitleFail' => __('A listing with this title already exists. Please choose a different title.', 'epsilon'),
       'needDesc' => __('Please enter a description.', 'epsilon'),
       'needDescShort' => __('Please enter at least 10 characters in the description.', 'epsilon'),
       'needPrice' => __('Please enter a price, or choose Check with seller.', 'epsilon'),

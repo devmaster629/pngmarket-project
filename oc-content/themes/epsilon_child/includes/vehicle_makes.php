@@ -166,6 +166,7 @@ function pngm_vehicle_ensure_value($m, $prefix, $attr_id, $parent_id, $name, $or
                 WHERE v.fk_i_attribute_id = ?
                   AND v.fk_i_parent_id IS NULL
                   AND vl.s_name = ?
+                ORDER BY v.pk_i_id ASC
                 LIMIT 1";
         $stmt = $m->prepare($sql);
         $stmt->bind_param('sis', $locale, $attr_id, $name);
@@ -177,18 +178,30 @@ function pngm_vehicle_ensure_value($m, $prefix, $attr_id, $parent_id, $name, $or
                 WHERE v.fk_i_attribute_id = ?
                   AND v.fk_i_parent_id = ?
                   AND vl.s_name = ?
+                ORDER BY v.pk_i_id ASC
                 LIMIT 1";
         $stmt = $m->prepare($sql);
         $stmt->bind_param('siis', $locale, $attr_id, $parent_id, $name);
     }
 
     $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
+    $found_id = 0;
+    if (method_exists($stmt, 'get_result')) {
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        if ($row && (int) $row['pk_i_id'] > 0) {
+            $found_id = (int) $row['pk_i_id'];
+        }
+    } else {
+        $stmt->bind_result($vid);
+        if ($stmt->fetch()) {
+            $found_id = (int) $vid;
+        }
+    }
     $stmt->close();
 
-    if ($row && (int) $row['pk_i_id'] > 0) {
-        return (int) $row['pk_i_id'];
+    if ($found_id > 0) {
+        return $found_id;
     }
 
     if ($parent_id === null) {
@@ -550,10 +563,78 @@ function pngm_vehicle_category_id_csv($m, $prefix)
 }
 
 /**
- * P2-006 — Enable Model (make cascade) + Body type filters for Vehicle search.
+ * Remove duplicate attribute values (same name + parent under one attribute).
+ * Keeps the lowest pk_i_id; remaps item rows that pointed at discarded ids.
  *
- * Body/fuel/etc. were limited to Cars (18), so Vehicles root search hid them.
- * Make was only on root id 1, so subcategory search ignored make/model filters.
+ * @param mysqli $m
+ * @param string $prefix
+ * @param int    $attr_id
+ */
+function pngm_vehicle_dedupe_attr_values($m, $prefix, $attr_id)
+{
+    $attr_id = (int) $attr_id;
+    if ($attr_id <= 0) {
+        return;
+    }
+
+    $sql = "SELECT vl.s_name AS s_name,
+                   COALESCE(v.fk_i_parent_id, 0) AS parent_key,
+                   MIN(v.pk_i_id) AS keep_id,
+                   GROUP_CONCAT(v.pk_i_id ORDER BY v.pk_i_id) AS all_ids
+            FROM {$prefix}t_attribute_value v
+            INNER JOIN {$prefix}t_attribute_value_locale vl
+              ON vl.fk_i_attribute_value_id = v.pk_i_id
+            WHERE v.fk_i_attribute_id = {$attr_id}
+            GROUP BY COALESCE(v.fk_i_parent_id, 0), vl.s_name, vl.fk_c_locale_code
+            HAVING COUNT(*) > 1";
+
+    $r = $m->query($sql);
+    if (!$r) {
+        return;
+    }
+
+    while ($row = $r->fetch_assoc()) {
+        $keep = (int) $row['keep_id'];
+        $ids = array_filter(array_map('intval', explode(',', (string) $row['all_ids'])));
+        $drop = array();
+        foreach ($ids as $id) {
+            if ($id > 0 && $id !== $keep) {
+                $drop[] = $id;
+            }
+        }
+        if (empty($drop)) {
+            continue;
+        }
+        $drop_csv = implode(',', $drop);
+
+        // Remap listings that used a discarded value id.
+        $m->query(
+            "UPDATE {$prefix}t_item_attribute
+             SET fk_i_attribute_value_id = {$keep}
+             WHERE fk_i_attribute_id = {$attr_id}
+               AND fk_i_attribute_value_id IN ({$drop_csv})"
+        );
+
+        $m->query(
+            "DELETE FROM {$prefix}t_attribute_value_locale
+             WHERE fk_i_attribute_value_id IN ({$drop_csv})"
+        );
+        $m->query(
+            "DELETE FROM {$prefix}t_attribute_value
+             WHERE pk_i_id IN ({$drop_csv})"
+        );
+    }
+}
+
+
+/**
+ * P2-006 / post-form split — Vehicle attribute category scopes.
+ *
+ * - Make / Brand: all Vehicles branches (bikes, boats, cars, …)
+ * - Shared specs (fuel, transmission, condition): all Vehicles
+ * - Car-only specs (body, seats, accessories): car-like leaves + root `1`
+ *   Root `1` keeps search filters on sCategory=1; post form uses leaf-exact
+ *   matching so Motorcycles do not inherit Cars fields via the root.
  *
  * @param mysqli $m
  * @param string $prefix
@@ -561,19 +642,54 @@ function pngm_vehicle_category_id_csv($m, $prefix)
  */
 function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
 {
-    $cats = pngm_vehicle_category_id_csv($m, $prefix);
-    if ($cats === '') {
-        $cats = '1';
+    $all_vehicle = pngm_vehicle_category_id_csv($m, $prefix);
+    if ($all_vehicle === '') {
+        $all_vehicle = '1';
     }
-    $cats_esc = $m->real_escape_string($cats);
 
-    // Vehicle listing attributes that belong in the Vehicles search sidebar.
-    $idents = array('make', 'body', 'fuel', 'transmission', 'accessories', 'seats', 'condition');
-    foreach ($idents as $ident) {
+    // Car-like leaves (no Motorcycles / Boats / Machinery / RVs / bike parts).
+    $car_like = array(1, 10, 11, 12, 17, 18);
+    $existing = array();
+    $r = $m->query(
+        "SELECT pk_i_id FROM {$prefix}t_category WHERE pk_i_id IN (" . implode(',', $car_like) . ")"
+    );
+    if ($r) {
+        while ($row = $r->fetch_assoc()) {
+            $existing[] = (int) $row['pk_i_id'];
+        }
+    }
+    if (!in_array(1, $existing, true)) {
+        $existing[] = 1;
+    }
+    sort($existing);
+    $car_csv = implode(',', $existing);
+    $all_esc = $m->real_escape_string($all_vehicle);
+    $car_esc = $m->real_escape_string($car_csv);
+
+    // Make / Brand (+ Other text) — every Vehicles branch.
+    $m->query(
+        "UPDATE {$prefix}t_attribute
+         SET s_category_id = '{$all_esc}',
+             b_enabled = 1,
+             b_search = 1,
+             b_hook = 1
+         WHERE s_identifier = 'make'"
+    );
+    $m->query(
+        "UPDATE {$prefix}t_attribute
+         SET s_category_id = '{$all_esc}',
+             b_enabled = 1,
+             b_search = 0,
+             b_hook = 1
+         WHERE s_identifier = 'make_other'"
+    );
+
+    // Shared vehicle specs — OK on Motorcycles and other branches.
+    foreach (array('fuel', 'transmission', 'condition') as $ident) {
         $ident_esc = $m->real_escape_string($ident);
         $m->query(
             "UPDATE {$prefix}t_attribute
-             SET s_category_id = '{$cats_esc}',
+             SET s_category_id = '{$all_esc}',
                  b_enabled = 1,
                  b_search = 1,
                  b_hook = 1
@@ -581,29 +697,32 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
         );
     }
 
-    // Keep "Other" free-text off search (post-only).
-    $m->query(
-        "UPDATE {$prefix}t_attribute
-         SET b_search = 0, s_category_id = '{$cats_esc}'
-         WHERE s_identifier = 'make_other'"
-    );
+    // Car-oriented specs — not shown on Motorcycles post form (leaf-exact filter).
+    foreach (array('body', 'seats', 'accessories') as $ident) {
+        $ident_esc = $m->real_escape_string($ident);
+        $m->query(
+            "UPDATE {$prefix}t_attribute
+             SET s_category_id = '{$car_esc}',
+                 b_enabled = 1,
+                 b_search = 1,
+                 b_hook = 1
+             WHERE s_identifier = '{$ident_esc}'"
+        );
+    }
 
-    // Body type: SELECT so search params (atr_ID=value) and post form stay consistent.
-    // (RADIO + s_search_type=SELECT breaks atr_search_extend value parsing.)
+    // Body type: SELECT for search + post consistency.
     $m->query(
         "UPDATE {$prefix}t_attribute
          SET s_type = 'SELECT', s_search_type = '', b_search = 1
          WHERE s_identifier = 'body'"
     );
 
-    // Clear label → Body type.
     $stmt = $m->prepare(
         "UPDATE {$prefix}t_attribute_locale l
          INNER JOIN {$prefix}t_attribute a ON a.pk_i_id = l.fk_i_attribute_id
          SET l.s_name = ?
          WHERE a.s_identifier = 'body'
-           AND l.fk_c_locale_code = ?
-           AND l.s_name IN ('Body', 'Body type', 'Body Type')"
+           AND l.fk_c_locale_code = ?"
     );
     if ($stmt) {
         $label = 'Body type';
@@ -612,7 +731,22 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
         $stmt->close();
     }
 
-    // Ensure Body type values exist (normalized list).
+    // Friendlier label (was "Car Condition").
+    $stmt2 = $m->prepare(
+        "UPDATE {$prefix}t_attribute_locale l
+         INNER JOIN {$prefix}t_attribute a ON a.pk_i_id = l.fk_i_attribute_id
+         SET l.s_name = ?
+         WHERE a.s_identifier = 'condition'
+           AND l.fk_c_locale_code = ?
+           AND l.s_name IN ('Car Condition', 'Condition')"
+    );
+    if ($stmt2) {
+        $cond = 'Condition';
+        $stmt2->bind_param('ss', $cond, $locale);
+        $stmt2->execute();
+        $stmt2->close();
+    }
+
     $body = $m->query("SELECT pk_i_id FROM {$prefix}t_attribute WHERE s_identifier = 'body' LIMIT 1");
     if ($body && $body->num_rows > 0) {
         $body_id = (int) $body->fetch_assoc()['pk_i_id'];
@@ -624,6 +758,8 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
             pngm_vehicle_ensure_value($m, $prefix, $body_id, null, $name, $order, $locale);
             $order += 10;
         }
+        // Seed once created many "SUV" rows — collapse duplicates in DB.
+        pngm_vehicle_dedupe_attr_values($m, $prefix, $body_id);
     }
 }
 

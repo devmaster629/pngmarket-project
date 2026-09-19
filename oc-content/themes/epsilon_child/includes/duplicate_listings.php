@@ -644,3 +644,68 @@ function pngm_dup_posted_item_notice($item)
     }
 }
 osc_add_hook('posted_item', 'pngm_dup_posted_item_notice', 8);
+
+/**
+ * AJAX: early exact-title check from the post wizard Details step.
+ * Skips throttle so sellers are not blocked mid-wizard for rate limits
+ * (those still apply on publish).
+ */
+function pngm_ajax_check_duplicate_title()
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    $title = trim((string) Params::getParam('title'));
+    $exclude = (int) Params::getParam('itemId');
+
+    if (strlen($title) < 3) {
+        echo json_encode(array('ok' => true, 'action' => 'ok'));
+        exit;
+    }
+
+    $exact = pngm_dup_find_exact_title_any($title, $exclude);
+    if (is_array($exact) && !empty($exact['pk_i_id'])) {
+        $match_title = isset($exact['s_title']) ? (string) $exact['s_title'] : $title;
+        echo json_encode(array(
+            'ok' => false,
+            'action' => 'block',
+            'match_id' => (int) $exact['pk_i_id'],
+            'message' => sprintf(
+                __('A listing with the same title (“%s”) already exists. Please choose a more specific title or edit the existing listing.', 'epsilon'),
+                $match_title
+            ),
+        ));
+        exit;
+    }
+
+    // Same-seller near-duplicate (title only — no description/price yet).
+    $user_id = 0;
+    $email = '';
+    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
+        $user_id = (int) osc_logged_user_id();
+        if (function_exists('osc_logged_user_email')) {
+            $email = strtolower(trim((string) osc_logged_user_email()));
+        }
+    }
+    $ip = function_exists('osc_get_ip') ? (string) osc_get_ip() : '';
+    $recent = pngm_dup_find_seller_items($user_id, $email, $ip, $exclude);
+    foreach ($recent as $row) {
+        $other_title = isset($row['s_title']) ? (string) $row['s_title'] : '';
+        $score = pngm_dup_title_score($title, $other_title);
+        if ($score >= (int) PNGM_DUP_BLOCK_SCORE) {
+            echo json_encode(array(
+                'ok' => false,
+                'action' => 'block',
+                'match_id' => isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0,
+                'message' => sprintf(
+                    __('This listing looks like a duplicate of one you already posted (“%s”). Please edit that listing instead of creating another.', 'epsilon'),
+                    $other_title !== '' ? $other_title : $title
+                ),
+            ));
+            exit;
+        }
+    }
+
+    echo json_encode(array('ok' => true, 'action' => 'ok'));
+    exit;
+}
+osc_add_hook('ajax_pngm_check_duplicate_title', 'pngm_ajax_check_duplicate_title');
