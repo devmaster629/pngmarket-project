@@ -236,11 +236,37 @@ function pngm_notif_pre_send_mail_filter($params, $type = '')
 
     $prefs = pngm_notif_prefs_get($user_id);
 
+    $subject = isset($params['subject']) ? (string) $params['subject'] : '';
+    $body_txt = isset($params['body']) ? strip_tags((string) $params['body']) : '';
+    if ($body_txt === '' && isset($params['alt_body'])) {
+        $body_txt = strip_tags((string) $params['alt_body']);
+    }
+
     if (strpos($type, 'alert_email_') === 0) {
-        if (!pngm_notif_user_allows($user_id, 'saved_search', 'email')) {
+        $email_ok = pngm_notif_user_allows($user_id, 'saved_search', 'email')
+            && pngm_notif_digest_allows_alert_type($prefs, $type);
+        if (pngm_notif_user_allows($user_id, 'saved_search', 'push')) {
+            pngm_notif_queue_push($user_id, 'saved_search', $subject, $body_txt, osc_user_alerts_url());
+        }
+        if (!$email_ok) {
             return array('stop' => true);
         }
-        if (!pngm_notif_digest_allows_alert_type($prefs, $type)) {
+        return $params;
+    }
+
+    // IM mails are not sent via pngm_notif_notify_user — queue push here.
+    if ($pref_key === 'msg_new' || $pref_key === 'msg_reply') {
+        if (pngm_notif_user_allows($user_id, $pref_key, 'push')) {
+            $url = osc_base_url() . 'index.php?page=custom&file=instant_messenger/user/threads.php';
+            if (function_exists('osc_route_url')) {
+                $try = osc_route_url('im-threads');
+                if (is_string($try) && $try !== '') {
+                    $url = $try;
+                }
+            }
+            pngm_notif_queue_push($user_id, $pref_key, $subject, $body_txt, $url);
+        }
+        if (!pngm_notif_user_allows($user_id, $pref_key, 'email')) {
             return array('stop' => true);
         }
         return $params;
@@ -267,10 +293,6 @@ function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '')
 {
     $user_id = (int) $user_id;
     $pref_key = (string) $pref_key;
-    // Chat stays on Messages — never toast / push for incoming messages.
-    if ($pref_key === 'msg_new' || $pref_key === 'msg_reply') {
-        return;
-    }
     if ($user_id <= 0 || !pngm_notif_user_allows($user_id, $pref_key, 'push')) {
         return;
     }
@@ -622,5 +644,7 @@ function pngm_notif_push_footer()
 </script>
     <?php
 }
-// Osclass Plugins::runHook only executes priorities 0–10.
-osc_add_hook('footer', 'pngm_notif_push_footer', 10);
+// Prefer web_push.php footer (Service Worker). Keep this as fallback if web_push is absent.
+if (!function_exists('pngm_webpush_footer')) {
+    osc_add_hook('footer', 'pngm_notif_push_footer', 10);
+}

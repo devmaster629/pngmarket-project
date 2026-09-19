@@ -606,7 +606,10 @@ function pngm_sec_2fa_complete_login($pending)
         return osc_user_login_url();
     }
 
-    if (!empty($pending['remember'])) {
+    // Always persist on this device (constant login), including after social + 2FA.
+    if (function_exists('pngm_persist_web_login')) {
+        pngm_persist_web_login($user);
+    } else {
         if ($user['s_secret'] == '') {
             require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
             $secret = osc_genRandomPassword();
@@ -696,7 +699,8 @@ function pngm_sec_after_login_gate($user, $url_redirect = '')
     }
 
     pngm_sec_soft_logout();
-    pngm_sec_2fa_start_challenge($user, false, (string) $url_redirect);
+    // Social logins have no Remember checkbox — always persist after 2FA succeeds.
+    pngm_sec_2fa_start_challenge($user, true, (string) $url_redirect);
     osc_add_flash_ok_message(__('Enter the 6-digit code from your authenticator app to finish signing in.', 'epsilon'));
     header('Location: ' . pngm_sec_2fa_url());
     exit;

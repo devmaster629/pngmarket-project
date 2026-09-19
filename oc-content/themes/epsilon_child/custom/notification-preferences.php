@@ -224,9 +224,20 @@ $section_num = 0;
         window.alert('<?php echo osc_esc_js(__('Push notifications are not supported in this browser.', 'epsilon')); ?>');
         return;
       }
-      Notification.requestPermission().then(function () { syncPushPill(); });
+      var finish = function () { syncPushPill(); };
+      Notification.requestPermission().then(function (perm) {
+        if (perm === 'granted' && 'serviceWorker' in navigator) {
+          var swUrl = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
+          navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
+        }
+        finish();
+      });
     });
   }
   syncPushPill();
+  if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    var swUrlBoot = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
+    navigator.serviceWorker.register(swUrlBoot, { scope: '/' }).catch(function () {});
+  }
 })();
 </script>

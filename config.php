@@ -118,8 +118,8 @@ define('WEB_PATH', osc_env('WEB_PATH', 'http://localhost:8000/'));
 // *************************************** //
 
 // Recommended php.ini settings to keep php sessions and cookies lifetime long
-// ini_set('session.cookie_lifetime', 94608000);
-// ini_set('session.gc_maxlifetime', 94608000);
+ini_set('session.cookie_lifetime', 94608000);
+ini_set('session.gc_maxlifetime', 94608000);
 
 // Enable debugging via .env (OSC_DEBUG=true, etc.)
 if (osc_env_bool('OSC_DEBUG')) {
@@ -196,8 +196,8 @@ if (osc_env_bool('OSC_DEBUG_DB_AJAX_PRINT')) {
 // define('BETA_TEST', true);
 
 // Increase default login time for user
-// session_set_cookie_params(2592000);
-// ini_set('session.gc_maxlifetime', 2592000);
+session_set_cookie_params(94608000);
+ini_set('session.gc_maxlifetime', 94608000);
 
 // Enable Countries, Regions, Cities and Categories to be pre-loaded into PHP session. Recommended if there is just few hundreds of records
 // define('OPTIMIZE_CATEGORIES', false);
