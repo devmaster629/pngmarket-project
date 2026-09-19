@@ -1,0 +1,37 @@
+/**
+ * P2-005 — Category item-detail templates
+ * Specialty categories keep a clear “Full specifications” heading above the table.
+ * Key-facts highlight boards were removed (table is the primary layout).
+ */
+
+body#item .pngm-item-specs-head {
+  margin: 0 0 10px;
+}
+
+body#item .pngm-item-specs-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #16202a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+body#item .pngm-item-specs-head h2 i {
+  color: #006b24;
+  font-size: 14px;
+}
+
+/* Specialty templates: hide plugin "Attributes" title (we supply our own). */
+body#item.pngm-item-tpl-vehicles #atr-item #atr-title,
+body#item.pngm-item-tpl-phones #atr-item #atr-title,
+body#item.pngm-item-tpl-home #atr-item #atr-title,
+body#item.pngm-item-tpl-fashion #atr-item #atr-title,
+body#item.pngm-item-tpl-sports #atr-item #atr-title {
+  display: none !important;
+}
+
+body#item.pngm-item-tpl-default .pngm-item-specs-head {
+  display: none !important;
+}

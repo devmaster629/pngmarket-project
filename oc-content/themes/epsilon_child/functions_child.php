@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.81');
+    define('PNGM_CHILD_VERSION', '2.5.83');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -27,6 +27,7 @@ require_once dirname(__FILE__) . '/includes/activity.php';
 require_once dirname(__FILE__) . '/includes/account_security.php';
 require_once dirname(__FILE__) . '/includes/subscriptions.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
+require_once dirname(__FILE__) . '/includes/item_detail_templates.php';
 require_once dirname(__FILE__) . '/includes/verification.php';
 
 /**
@@ -193,6 +194,9 @@ function pngm_enqueue_assets()
     osc_enqueue_style('pngm-custom', osc_current_web_theme_url('css/custom.css' . $version));
 
     $loc = function_exists('osc_get_osclass_location') ? (string) osc_get_osclass_location() : '';
+    if ($loc === 'item') {
+        osc_enqueue_style('pngm-item-detail-tpl', osc_current_web_theme_url('css/item-detail-templates.css' . $version));
+    }
     $page_param = (string) Params::getParam('page');
     if (in_array($loc, array('login', 'register'), true)
         || in_array($page_param, array('login', 'register'), true)

@@ -138,7 +138,7 @@
   <?php } ?>
 </head>
 
-<body id="item" class="<?php if(eps_device() <> '') { echo ' dvc-' . eps_device(); } ?><?php if(osc_item_is_expired()) { ?> expired<?php } ?>">
+<body id="item" class="<?php if(eps_device() <> '') { echo ' dvc-' . eps_device(); } ?><?php if(osc_item_is_expired()) { ?> expired<?php } ?><?php if (function_exists('pngm_item_tpl_body_class')) { echo ' ' . osc_esc_html(pngm_item_tpl_body_class()); } ?>">
   <?php osc_current_web_theme_path('header.php') ; ?>
 
   <div class="container primary">
@@ -297,6 +297,9 @@
         </div>
 
         <div class="props pngm-item-compact pngm-item-details">
+          <?php if (function_exists('pngm_item_tpl_render_specs_heading')) {
+            pngm_item_tpl_render_specs_heading();
+          } ?>
           <div id="item-hook"><?php osc_run_hook('item_detail', osc_item()); ?></div>
         </div>
 
