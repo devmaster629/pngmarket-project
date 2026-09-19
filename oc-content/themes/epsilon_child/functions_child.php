@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.90');
+    define('PNGM_CHILD_VERSION', '2.5.91');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1202,6 +1202,11 @@ osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
  */
 function pngm_auth_show_recaptcha($section = '')
 {
+    // Production keys reject 127.0.0.1 — hide widget on local so login is usable.
+    if (function_exists('pngm_is_local_dev_host') && pngm_is_local_dev_host()) {
+        return;
+    }
+
     if (function_exists('anr_get_option') && anr_get_option('site_key') !== '') {
         if (function_exists('eps_show_recaptcha')) {
             eps_show_recaptcha($section === 'register' ? 'registration' : $section);
@@ -1229,12 +1234,48 @@ function pngm_auth_show_recaptcha($section = '')
 }
 
 /**
+ * Local development hosts where Google reCAPTCHA site keys usually fail
+ * ("localhost is not in the list of supported domains").
+ *
+ * @return bool
+ */
+function pngm_is_local_dev_host()
+{
+    $host = '';
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        $host = strtolower((string) $_SERVER['HTTP_HOST']);
+    } elseif (function_exists('osc_base_url')) {
+        $host = strtolower((string) parse_url(osc_base_url(), PHP_URL_HOST));
+    }
+    $host = preg_replace('/:\d+$/', '', $host);
+    return in_array($host, array('localhost', '127.0.0.1', '::1'), true);
+}
+
+/**
+ * Soft-disable reCAPTCHA for this request only on local hosts (memory preference).
+ * Does not change the DB — production keeps CAPTCHA enabled.
+ */
+function pngm_local_disable_recaptcha_runtime()
+{
+    if (!pngm_is_local_dev_host() || !class_exists('Preference')) {
+        return;
+    }
+    Preference::newInstance()->set('recaptchaEnabled', '0', 'osclass');
+}
+osc_add_hook('init', 'pngm_local_disable_recaptcha_runtime', 0);
+
+/**
  * Front-end login/register must verify reCAPTCHA when the widget is configured.
  * Osclass skips the login check if Oc-Admin is logged in in the same browser,
  * so stage can be signed in without ticking the box.
+ * On local hosts we skip CAPTCHA so email/password login works without Google domain setup.
  */
 function pngm_recaptcha_is_required()
 {
+    if (function_exists('pngm_is_local_dev_host') && pngm_is_local_dev_host()) {
+        return false;
+    }
+
     if (!function_exists('osc_recaptcha_enabled') || !osc_recaptcha_enabled()) {
         return false;
     }

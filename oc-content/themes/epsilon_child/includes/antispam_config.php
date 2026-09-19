@@ -71,6 +71,11 @@ function pngm_antispam_ensure_recaptcha()
         return;
     }
 
+    // Do not force CAPTCHA on local — production keys reject localhost domains.
+    if (function_exists('pngm_is_local_dev_host') && pngm_is_local_dev_host()) {
+        return;
+    }
+
     $pub = trim((string) osc_get_preference('recaptchaPubKey'));
     $priv = trim((string) osc_get_preference('recaptchaPrivKey'));
     if ($pub === '' || $priv === '') {
