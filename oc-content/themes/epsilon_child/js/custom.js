@@ -1849,6 +1849,58 @@
   }
 
   /**
+   * P2-006 — Label Make cascade level-2 as "Model" on vehicle search filters.
+   */
+  function initVehicleSearchModelLabel() {
+    if (typeof window.jQuery === 'undefined') {
+      return;
+    }
+    var $ = window.jQuery;
+
+    function labelModelSelects(root) {
+      var $root = root ? $(root) : $('#atr-search #atr-make, #side-menu #atr-make');
+      if (!$root.length) {
+        $root = $('#atr-search #atr-make');
+      }
+      $root.each(function () {
+        var $block = $(this);
+        $block.find('select[data-level="1"]').each(function () {
+          var $opt = $(this).find('option[value=""]').first();
+          if ($opt.length) {
+            if (/select/i.test($opt.text()) && !/brand|make/i.test($opt.text())) {
+              $opt.text('Select make / brand…');
+            }
+          }
+        });
+        $block.find('select[data-level="2"]').each(function () {
+          var $sel = $(this);
+          if (!$sel.attr('aria-label')) {
+            $sel.attr('aria-label', 'Model');
+          }
+          var $opt = $sel.find('option[value=""]').first();
+          if ($opt.length) {
+            $opt.text('Select model…');
+          }
+          // Visible field label once (search sidebar).
+          if (!$sel.prev('.pngm-atr-model-label').length && !$sel.closest('label').length) {
+            $sel.before('<span class="pngm-atr-model-label">Model</span>');
+          }
+        });
+      });
+    }
+
+    labelModelSelects();
+    $(document).on('change', '#atr-search #atr-make select, #side-menu #atr-make select', function () {
+      setTimeout(function () { labelModelSelects(); }, 30);
+    });
+    $(document).ajaxComplete(function (event, xhr, settings) {
+      if (settings && settings.url && String(settings.url).indexOf('atr_select_url') !== -1) {
+        setTimeout(function () { labelModelSelects(); }, 40);
+      }
+    });
+  }
+
+  /**
    * ITEM-01 / ITEM-02 — Listing photo gallery.
    * Native pinch/pan/swipe viewer lives in gallery.js.
    */
@@ -4176,6 +4228,7 @@
     initPostingCityGrouping();
     initSearchableLocationSelects();
     initVehicleMakeOther();
+    initVehicleSearchModelLabel();
     initItemGallery();
     initUserAccountUx();
     initPostingPlaceholders();

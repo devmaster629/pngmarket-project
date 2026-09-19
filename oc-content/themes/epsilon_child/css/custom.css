@@ -2281,6 +2281,18 @@ a.pngm-search-subcat-all {
   margin-bottom: 6px;
 }
 
+/* P2-006 — Model label under Make / Brand on search filters */
+#atr-search #atr-make .pngm-atr-model-label,
+#side-menu #atr-make .pngm-atr-model-label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7785;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 
 /* ==========================================================================
    LOCATION-01 / LOCATION-02 ? City select grouping

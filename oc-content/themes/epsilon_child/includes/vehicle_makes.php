@@ -499,6 +499,9 @@ function pngm_seed_vehicle_makes()
 
         pngm_vehicle_ensure_other_text_field($m, $prefix, $attr_id, $locale);
 
+        // P2-006 / QA-009 — Model + Body type searchable on all Vehicles branches.
+        pngm_vehicle_ensure_search_filters($m, $prefix, $locale);
+
         // Clear Attributes plugin cache keys if present (best-effort).
         if (function_exists('osc_cache_flush')) {
             @osc_cache_flush();
@@ -507,6 +510,120 @@ function pngm_seed_vehicle_makes()
         $m->close();
     } catch (Throwable $e) {
         // Attributes plugin missing / DB unavailable.
+    }
+}
+
+/**
+ * All category ids under Vehicles (root + descendants) as a CSV for attribute scope.
+ *
+ * @param mysqli $m
+ * @param string $prefix
+ * @return string
+ */
+function pngm_vehicle_category_id_csv($m, $prefix)
+{
+    $ids = array(1);
+    $r = $m->query(
+        "SELECT pk_i_id FROM {$prefix}t_category
+         WHERE fk_i_parent_id = 1 OR pk_i_id = 1"
+    );
+    if ($r) {
+        while ($row = $r->fetch_assoc()) {
+            $ids[] = (int) $row['pk_i_id'];
+        }
+    }
+    // One more level (rare, but keep complete).
+    $list = implode(',', array_unique(array_filter($ids)));
+    if ($list !== '') {
+        $r2 = $m->query(
+            "SELECT pk_i_id FROM {$prefix}t_category WHERE fk_i_parent_id IN ({$list})"
+        );
+        if ($r2) {
+            while ($row = $r2->fetch_assoc()) {
+                $ids[] = (int) $row['pk_i_id'];
+            }
+        }
+    }
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    sort($ids);
+    return implode(',', $ids);
+}
+
+/**
+ * P2-006 — Enable Model (make cascade) + Body type filters for Vehicle search.
+ *
+ * Body/fuel/etc. were limited to Cars (18), so Vehicles root search hid them.
+ * Make was only on root id 1, so subcategory search ignored make/model filters.
+ *
+ * @param mysqli $m
+ * @param string $prefix
+ * @param string $locale
+ */
+function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
+{
+    $cats = pngm_vehicle_category_id_csv($m, $prefix);
+    if ($cats === '') {
+        $cats = '1';
+    }
+    $cats_esc = $m->real_escape_string($cats);
+
+    // Vehicle listing attributes that belong in the Vehicles search sidebar.
+    $idents = array('make', 'body', 'fuel', 'transmission', 'accessories', 'seats', 'condition');
+    foreach ($idents as $ident) {
+        $ident_esc = $m->real_escape_string($ident);
+        $m->query(
+            "UPDATE {$prefix}t_attribute
+             SET s_category_id = '{$cats_esc}',
+                 b_enabled = 1,
+                 b_search = 1,
+                 b_hook = 1
+             WHERE s_identifier = '{$ident_esc}'"
+        );
+    }
+
+    // Keep "Other" free-text off search (post-only).
+    $m->query(
+        "UPDATE {$prefix}t_attribute
+         SET b_search = 0, s_category_id = '{$cats_esc}'
+         WHERE s_identifier = 'make_other'"
+    );
+
+    // Body type: SELECT so search params (atr_ID=value) and post form stay consistent.
+    // (RADIO + s_search_type=SELECT breaks atr_search_extend value parsing.)
+    $m->query(
+        "UPDATE {$prefix}t_attribute
+         SET s_type = 'SELECT', s_search_type = '', b_search = 1
+         WHERE s_identifier = 'body'"
+    );
+
+    // Clear label → Body type.
+    $stmt = $m->prepare(
+        "UPDATE {$prefix}t_attribute_locale l
+         INNER JOIN {$prefix}t_attribute a ON a.pk_i_id = l.fk_i_attribute_id
+         SET l.s_name = ?
+         WHERE a.s_identifier = 'body'
+           AND l.fk_c_locale_code = ?
+           AND l.s_name IN ('Body', 'Body type', 'Body Type')"
+    );
+    if ($stmt) {
+        $label = 'Body type';
+        $stmt->bind_param('ss', $label, $locale);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    // Ensure Body type values exist (normalized list).
+    $body = $m->query("SELECT pk_i_id FROM {$prefix}t_attribute WHERE s_identifier = 'body' LIMIT 1");
+    if ($body && $body->num_rows > 0) {
+        $body_id = (int) $body->fetch_assoc()['pk_i_id'];
+        $wanted = array(
+            'Sedan', 'Hatchback', 'Wagon', 'SUV', '4WD', 'Pickup', 'Van & Minibus', 'Coupe', 'Convertible', 'Other'
+        );
+        $order = 10;
+        foreach ($wanted as $name) {
+            pngm_vehicle_ensure_value($m, $prefix, $body_id, null, $name, $order, $locale);
+            $order += 10;
+        }
     }
 }
 
