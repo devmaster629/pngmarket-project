@@ -1,10 +1,75 @@
-/* PNG Market service worker — notification click + ready for future Web Push */
+/* PNG Market service worker — PWA installability + light offline shell + notifications */
+var PNGM_SW_CACHE = 'pngm-shell-v1';
+var PNGM_SHELL = [
+  './',
+  './manifest.webmanifest',
+  './pwa/icon-192.png',
+  './pwa/icon-512.png',
+  './pwa/apple-touch-icon.png'
+];
+
 self.addEventListener('install', function (event) {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(PNGM_SW_CACHE).then(function (cache) {
+      return cache.addAll(PNGM_SHELL).catch(function () {
+        // Partial cache is fine (paths may differ under rewrite).
+      });
+    }).then(function () {
+      return self.skipWaiting();
+    })
+  );
 });
 
 self.addEventListener('activate', function (event) {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(function (keys) {
+      return Promise.all(
+        keys.filter(function (k) { return k !== PNGM_SW_CACHE; }).map(function (k) {
+          return caches.delete(k);
+        })
+      );
+    }).then(function () {
+      return self.clients.claim();
+    })
+  );
+});
+
+self.addEventListener('fetch', function (event) {
+  var req = event.request;
+  if (req.method !== 'GET') {
+    return;
+  }
+  var url = new URL(req.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Navigation: network-first, fall back to cached shell.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).catch(function () {
+        return caches.match('./').then(function (cached) {
+          return cached || caches.match(req);
+        });
+      })
+    );
+    return;
+  }
+
+  // Static PWA assets: cache-first.
+  if (url.pathname.indexOf('/pwa/') === 0 || url.pathname.endsWith('manifest.webmanifest') || url.pathname.endsWith('/sw.js')) {
+    event.respondWith(
+      caches.match(req).then(function (cached) {
+        return cached || fetch(req).then(function (res) {
+          var copy = res.clone();
+          caches.open(PNGM_SW_CACHE).then(function (cache) {
+            cache.put(req, copy);
+          });
+          return res;
+        });
+      })
+    );
+  }
 });
 
 self.addEventListener('notificationclick', function (event) {

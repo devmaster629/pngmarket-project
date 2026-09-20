@@ -10,6 +10,7 @@
 <?php if(!osc_is_search_page()) { ?><meta name="googlebot" content="index, follow" /><?php } ?>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <?php
+  // PWA / Add to Home Screen tags are emitted via pngm_pwa_head() on the header hook.
   if(eps_param('generate_favicons') == 1 && !function_exists('pwa_call_after_install')) {
     osc_current_web_theme_path('head-favicon.php');
   }
