@@ -155,9 +155,16 @@
                   <span class="pngm-listing-badge is-<?php echo osc_esc_html($status['key']); ?>"><?php echo osc_esc_html($status['label']); ?></span>
                   <?php
                     $expiry_label = function_exists('pngm_listing_expiry_label') ? pngm_listing_expiry_label() : '';
+                    $days_left = function_exists('pngm_listing_expiry_days_left') ? pngm_listing_expiry_days_left() : null;
+                    $in_warn = function_exists('pngm_listing_expiry_in_warn_window') && pngm_listing_expiry_in_warn_window();
                     if ($expiry_label !== '' && ($status['key'] === 'active' || $status['key'] === 'expired')) {
                       if ($status['key'] === 'expired') {
                         echo '<span class="pngm-listing-expiry is-expired">' . osc_esc_html(sprintf(__('Expired %s', 'epsilon'), $expiry_label)) . '</span>';
+                      } elseif ($in_warn && $days_left !== null) {
+                        echo '<span class="pngm-listing-expiry is-expiring">' . osc_esc_html(sprintf(
+                          _n('Expires in %d day', 'Expires in %d days', (int) $days_left, 'epsilon'),
+                          (int) $days_left
+                        )) . '</span>';
                       } else {
                         echo '<span class="pngm-listing-expiry">' . osc_esc_html(sprintf(__('Expires %s', 'epsilon'), $expiry_label)) . '</span>';
                       }

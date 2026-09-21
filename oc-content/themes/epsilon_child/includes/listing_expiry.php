@@ -237,6 +237,44 @@ function pngm_listing_expiry_label()
 }
 
 /**
+ * Whole days until the current item expires (ceil). Null if unknown / never.
+ *
+ * @return int|null
+ */
+function pngm_listing_expiry_days_left()
+{
+    if (!function_exists('osc_item_field')) {
+        return null;
+    }
+    $dt = (string) osc_item_field('dt_expiration');
+    if ($dt === '' || strpos($dt, '9999') === 0) {
+        return null;
+    }
+    $ts = strtotime($dt);
+    if ($ts === false) {
+        return null;
+    }
+    $diff = $ts - time();
+    if ($diff <= 0) {
+        return 0;
+    }
+    return (int) ceil($diff / 86400);
+}
+
+/**
+ * Whether the current listing is inside the 7-day reminder window.
+ *
+ * @return bool
+ */
+function pngm_listing_expiry_in_warn_window()
+{
+    $days = pngm_listing_expiry_days_left();
+    return $days !== null
+        && $days > 0
+        && $days <= (int) PNGM_LISTING_WARN_DAYS;
+}
+
+/**
  * Renew URL for an item row (includes secret for email links).
  *
  * @param array $item
@@ -289,6 +327,20 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
     if (!is_array($aItem) || empty($aItem['pk_i_id'])) {
         return;
     }
+
+    $item_id = (int) $aItem['pk_i_id'];
+    if ($item_id <= 0) {
+        return;
+    }
+
+    // Same-request guard only. Cross-request dedupe is the pngm_warn_mail flag
+    // (set at hook priority 1 before SMTP), checked by the resilient cron.
+    static $pngm_warn_activity_done = array();
+    if (!empty($pngm_warn_activity_done[$item_id])) {
+        return;
+    }
+    $pngm_warn_activity_done[$item_id] = 1;
+
     if (!function_exists('pngm_notif_item_owner_id') || !function_exists('pngm_activity_add')) {
         return;
     }
@@ -312,18 +364,29 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
         $exp_label = function_exists('osc_format_date') ? osc_format_date($exp_raw) : $exp_raw;
     }
 
+    $days_left = null;
+    if ($exp_raw !== '') {
+        $ts = strtotime($exp_raw);
+        if ($ts !== false) {
+            $days_left = max(1, (int) ceil(($ts - time()) / 86400));
+        }
+    }
+    if ($days_left === null) {
+        $days_left = (int) PNGM_LISTING_WARN_DAYS;
+    }
+
     $subject = sprintf(__('Listing expiring soon: %s', 'epsilon'), $title_listing);
     $body = $exp_label !== ''
         ? sprintf(
             __('“%1$s” expires on %2$s (in about %3$d days). It will become Expired — not deleted. Renew it from My Listings after expiry.', 'epsilon'),
             $title_listing,
             $exp_label,
-            (int) PNGM_LISTING_WARN_DAYS
+            $days_left
         )
         : sprintf(
             __('“%1$s” expires in about %2$d days. It will become Expired — not deleted. Renew it from My Listings after expiry.', 'epsilon'),
             $title_listing,
-            (int) PNGM_LISTING_WARN_DAYS
+            $days_left
         );
 
     // Activity feed (bell) — same channel as other listing events.
@@ -335,6 +398,60 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
     }
 }
 osc_add_hook('hook_email_warn_expiration', 'pngm_listing_expiry_warn_notify_inapp', 8);
+
+/**
+ * Dedup flag must be set even if SMTP hangs inside the email hook.
+ *
+ * @param array $aItem
+ */
+function pngm_listing_expiry_warn_mark_on_hook($aItem)
+{
+    if (!is_array($aItem) || empty($aItem['pk_i_id'])) {
+        return;
+    }
+    pngm_listing_expiry_warn_mark_notified((int) $aItem['pk_i_id']);
+}
+osc_add_hook('hook_email_warn_expiration', 'pngm_listing_expiry_warn_mark_on_hook', 1);
+
+/**
+ * @param int $item_id
+ * @return bool
+ */
+function pngm_listing_expiry_warn_was_notified($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return false;
+    }
+    return (string) osc_get_preference('item_' . $item_id, 'pngm_warn_mail') === '1';
+}
+
+/**
+ * @param int $item_id
+ */
+function pngm_listing_expiry_warn_mark_notified($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_set_preference')) {
+        return;
+    }
+    osc_set_preference('item_' . $item_id, '1', 'pngm_warn_mail', 'BOOLEAN');
+}
+
+/**
+ * Clear warn-mail flag on renew so the next cycle can notify again.
+ *
+ * @param int $item_id
+ */
+function pngm_listing_expiry_clear_warn_flag($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_delete_preference')) {
+        return;
+    }
+    osc_delete_preference('item_' . $item_id, 'pngm_warn_mail');
+}
+osc_add_hook('renew_item', 'pngm_listing_expiry_clear_warn_flag', 2);
 
 /**
  * @param int $item_id
@@ -375,6 +492,66 @@ function pngm_listing_expiry_clear_expired_flag($item_id)
     osc_delete_preference('item_' . $item_id, 'pngm_expired_mail');
 }
 osc_add_hook('renew_item', 'pngm_listing_expiry_clear_expired_flag', 2);
+
+/**
+ * Hourly safety net for the 7-day reminder.
+ *
+ * Core only matches a 1-hour slot exactly N days ahead — easy to miss when cron
+ * is late or when expiry is moved into the window for testing. This catches any
+ * active listing that expires within WARN_DAYS and has not been reminded yet.
+ */
+function pngm_listing_expiry_cron_warn()
+{
+    if (!defined('DB_TABLE_PREFIX') || !class_exists('Item')) {
+        return;
+    }
+
+    $prefix = DB_TABLE_PREFIX;
+    $now = date('Y-m-d H:i:s');
+    $until = date('Y-m-d H:i:s', time() + ((int) PNGM_LISTING_WARN_DAYS * 24 * 3600));
+
+    try {
+        $conn = DBConnectionClass::newInstance();
+        $data = $conn->getOsclassDb();
+        $comm = new DBCommandClass($data);
+        $sql = sprintf(
+            'SELECT pk_i_id FROM %st_item
+             WHERE b_active = 1 AND b_enabled = 1 AND b_spam = 0
+               AND dt_expiration > "%s"
+               AND dt_expiration <= "%s"
+             ORDER BY dt_expiration ASC
+             LIMIT 200',
+            $prefix,
+            $now,
+            $until
+        );
+        $rs = $comm->query($sql);
+        if (!$rs) {
+            return;
+        }
+        $rows = $rs->result();
+    } catch (Exception $e) {
+        return;
+    }
+
+    if (!is_array($rows)) {
+        return;
+    }
+
+    foreach ($rows as $row) {
+        $id = isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0;
+        if ($id <= 0 || pngm_listing_expiry_warn_was_notified($id)) {
+            continue;
+        }
+        $item = Item::newInstance()->findByPrimaryKey($id);
+        if (!is_array($item) || empty($item['s_contact_email'])) {
+            continue;
+        }
+        // Mark before SMTP so a hung mailer cannot leave the listing unmarked.
+        pngm_listing_expiry_warn_mark_notified($id);
+        osc_run_hook('hook_email_warn_expiration', $item);
+    }
+}
 
 /**
  * Hourly: notify owners of listings that expired recently (with Renew CTA).
@@ -475,6 +652,7 @@ function pngm_listing_expiry_cron_expired()
 osc_add_hook('init', 'pngm_listing_expiry_apply_policy', 4);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_enforce_category_days', 5);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_demote_expired_premium', 6);
+osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_warn', 7);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_expired', 8);
 
 /**

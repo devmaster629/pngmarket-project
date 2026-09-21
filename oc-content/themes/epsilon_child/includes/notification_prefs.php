@@ -85,11 +85,13 @@ function pngm_notif_prefs_schema()
                     'id' => 'listing_expiring',
                     'label' => __('Listing expiring', 'epsilon'),
                     'icon' => 'fas fa-clock',
+                    'default_on' => true,
                 ),
                 array(
                     'id' => 'listing_expired',
                     'label' => __('Listing expired', 'epsilon'),
                     'icon' => 'fas fa-hourglass-end',
+                    'default_on' => true,
                 ),
                 array(
                     'id' => 'listing_renewed',

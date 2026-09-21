@@ -1063,8 +1063,12 @@ body.body-ua #user-main.pngm-ua-panel h1 {
 .pngm-listing-expiry {
   display: inline-block;
   font-size: 12px;
-  color: #6b7280;
+  color: #6b7785;
   font-weight: 600;
+}
+
+.pngm-listing-expiry.is-expiring {
+  color: #b45309;
 }
 
 .pngm-listing-expiry.is-expired {
