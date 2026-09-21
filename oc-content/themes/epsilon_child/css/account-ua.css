@@ -22,7 +22,21 @@ body.body-ua:not(#home) {
 
 @media screen and (max-width: 767px) {
   body.body-ua:not(#home) {
-    padding-top: 64px !important;
+    padding-top: 52px !important;
+  }
+
+  body.body-ua .container.primary.pngm-ua-shell,
+  body.body-ua.pngm-ua-dashboard .container.primary {
+    margin-top: 10px;
+  }
+
+  body.pngm-ua-listings .pngm-listings-head {
+    margin-bottom: 10px;
+  }
+
+  body.pngm-ua-listings .pngm-listings-head h1 {
+    font-size: 20px;
+    line-height: 1.25;
   }
 }
 
@@ -1317,6 +1331,8 @@ body.body-ua.pngm-ua-listings form[name="user-items-search"].pngm-listings-toolb
   .pngm-listing-card {
     gap: 10px;
     padding: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .pngm-listing-thumb {
@@ -1325,21 +1341,47 @@ body.body-ua.pngm-ua-listings form[name="user-items-search"].pngm-listings-toolb
     height: 72px;
   }
 
+  .pngm-listing-body {
+    flex: 1 1 calc(100% - 100px);
+    min-width: 0;
+  }
+
   .pngm-listing-title {
     font-size: 14px;
     padding-right: 4px;
   }
 
-  .pngm-listing-actions .pngm-listing-btn {
-    display: none;
+  /* Same primary actions as desktop: Edit / Deactivate / Preview (+ Renew). */
+  .pngm-listing-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    margin-top: 2px;
+    padding-top: 10px;
+    border-top: 1px solid #eef1f4;
   }
 
-  .pngm-listing-actions {
-    justify-content: flex-end;
+  .pngm-listing-actions .pngm-listing-btn {
+    display: inline-flex;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 8px;
   }
 
   .pngm-listing-more {
     margin-left: auto;
+  }
+
+  .pngm-listing-more-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .pngm-listing-more-menu {
+    z-index: 20;
+    min-width: 168px;
   }
 
   .pngm-listings-toolbar {
