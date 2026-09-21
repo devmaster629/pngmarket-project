@@ -275,6 +275,21 @@ function pngm_listing_expiry_in_warn_window()
 }
 
 /**
+ * Renew URL for the current View item (always includes secret).
+ *
+ * @return string
+ */
+function pngm_item_renew_url()
+{
+    if (!function_exists('osc_item_renew_url')) {
+        return '';
+    }
+    $secret = function_exists('osc_item_field') ? (string) osc_item_field('s_secret') : '';
+    $id = function_exists('osc_item_id') ? (int) osc_item_id() : 0;
+    return osc_item_renew_url($secret, $id);
+}
+
+/**
  * Renew URL for an item row (includes secret for email links).
  *
  * @param array $item
@@ -288,6 +303,50 @@ function pngm_listing_renew_url($item)
     $secret = isset($item['s_secret']) ? (string) $item['s_secret'] : '';
     return osc_item_renew_url($secret, (int) $item['pk_i_id']);
 }
+
+/**
+ * After a successful renew: confirm reactivation + new expiry in the OK flash.
+ *
+ * @param int $item_id
+ */
+function pngm_listing_renew_remember_expiry($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !class_exists('Item')) {
+        return;
+    }
+    $item = Item::newInstance()->findByPrimaryKey($item_id);
+    if (!is_array($item) || empty($item['dt_expiration'])) {
+        return;
+    }
+    $GLOBALS['pngm_renew_flash_expiration'] = (string) $item['dt_expiration'];
+}
+osc_add_hook('renew_item', 'pngm_listing_renew_remember_expiry', 9);
+
+/**
+ * Enrich core "listing has been renewed" flash with the new expiry date.
+ *
+ * @param string $msg
+ * @param string $section
+ * @param string $type
+ * @return string
+ */
+function pngm_listing_renew_flash_message($msg, $section = 'pubMessages', $type = 'ok')
+{
+    if ($type !== 'ok' || empty($GLOBALS['pngm_renew_flash_expiration'])) {
+        return $msg;
+    }
+    $exp_raw = (string) $GLOBALS['pngm_renew_flash_expiration'];
+    unset($GLOBALS['pngm_renew_flash_expiration']);
+    $exp = function_exists('osc_format_date') ? osc_format_date($exp_raw) : $exp_raw;
+    $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    return sprintf(
+        __('The listing has been renewed. It is active again and expires on %1$s (%2$d days).', 'epsilon'),
+        $exp,
+        $days
+    );
+}
+osc_add_filter('osc_add_flash_message_value', 'pngm_listing_renew_flash_message', 8);
 
 /**
  * Append guidance + My Listings link to the 7-day expiry warning email.

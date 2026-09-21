@@ -229,7 +229,7 @@
             if ($pngm_owner && osc_item_is_expired() && function_exists('osc_item_can_renew') && osc_item_can_renew()) {
           ?>
             <p class="pngm-item-renew-cta">
-              <a class="btn btn-primary" href="<?php echo osc_esc_html(osc_item_renew_url()); ?>">
+              <a class="btn btn-primary" href="<?php echo osc_esc_html(function_exists('pngm_item_renew_url') ? pngm_item_renew_url() : osc_item_renew_url(osc_item_field('s_secret'), osc_item_id())); ?>">
                 <i class="fas fa-sync-alt" aria-hidden="true"></i>
                 <?php _e('Renew listing', 'epsilon'); ?>
               </a>

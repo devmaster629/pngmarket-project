@@ -117,7 +117,7 @@
       <?php if ($current_type === 'expired') { ?>
         <div class="pngm-listings-policy" role="note">
           <i class="fas fa-info-circle" aria-hidden="true"></i>
-          <p><?php _e('Expired listings are inactive and hidden from search — they are not deleted. Renew any listing below to make it public again for another 30 days.', 'epsilon'); ?></p>
+          <p><?php _e('Expired listings are inactive and hidden from search — they are not deleted. Use Renew on any listing below to reactivate it for another 30 days with a new expiry date.', 'epsilon'); ?></p>
         </div>
       <?php } ?>
 
@@ -183,7 +183,7 @@
 
                 <div class="pngm-listing-actions">
                   <?php if ($status['key'] === 'expired' && osc_item_can_renew()) { ?>
-                    <a class="pngm-listing-btn is-renew" href="<?php echo osc_item_renew_url(); ?>"><i class="fas fa-sync-alt" aria-hidden="true"></i> <?php _e('Renew', 'epsilon'); ?></a>
+                    <a class="pngm-listing-btn is-renew" href="<?php echo osc_esc_html(function_exists('pngm_item_renew_url') ? pngm_item_renew_url() : osc_item_renew_url($secret, osc_item_id())); ?>"><i class="fas fa-sync-alt" aria-hidden="true"></i> <?php _e('Renew', 'epsilon'); ?></a>
                   <?php } ?>
 
                   <a class="pngm-listing-btn" href="<?php echo osc_item_edit_url(); ?>" rel="nofollow"><i class="fas fa-pen" aria-hidden="true"></i> <?php _e('Edit', 'epsilon'); ?></a>

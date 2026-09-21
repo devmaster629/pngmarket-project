@@ -97,6 +97,7 @@ function pngm_notif_prefs_schema()
                     'id' => 'listing_renewed',
                     'label' => __('Listing renewed', 'epsilon'),
                     'icon' => 'fas fa-sync-alt',
+                    'default_on' => true,
                 ),
             ),
         ),
