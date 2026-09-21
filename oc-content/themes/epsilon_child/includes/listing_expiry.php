@@ -3,6 +3,7 @@
  * Listing expiry policy: 30 days active, 7-day reminder, soft Expired (no delete), renew.
  *
  * Uses Osclass core: category i_expiration_days, warn_expiration cron mail, renew action.
+ * Premium is a visibility badge only — it does not keep ads public past 30 days.
  */
 
 if (isset($_SERVER['SCRIPT_FILENAME'])
@@ -18,7 +19,8 @@ if (!defined('PNGM_LISTING_WARN_DAYS')) {
     define('PNGM_LISTING_WARN_DAYS', 7);
 }
 if (!defined('PNGM_LISTING_EXPIRY_POLICY_VER')) {
-    define('PNGM_LISTING_EXPIRY_POLICY_VER', 'v1');
+    // v2: premium no longer bypasses the 30-day public visibility rule.
+    define('PNGM_LISTING_EXPIRY_POLICY_VER', 'v2');
 }
 
 /**
@@ -50,8 +52,47 @@ function pngm_listing_expiry_enforce_prefs()
 }
 
 /**
- * One-shot: set all categories to 30-day expiry and recalculate item dt_expiration.
- * Existing rows stay in the DB (soft Expired via date — never deleted by this policy).
+ * Soft-expire premium ads whose dt_expiration has passed.
+ * Osclass core treats b_premium=1 as never-hidden; PNG Market still ends public
+ * visibility after 30 days (premium is a badge/boost while active only).
+ *
+ * @param DBCommandClass|null $comm
+ * @return void
+ */
+function pngm_listing_expiry_demote_expired_premium($comm = null)
+{
+    if (!defined('DB_TABLE_PREFIX')) {
+        return;
+    }
+
+    $prefix = DB_TABLE_PREFIX;
+    $now = date('Y-m-d H:i:s');
+
+    try {
+        if ($comm === null) {
+            $conn = DBConnectionClass::newInstance();
+            $data = $conn->getOsclassDb();
+            $comm = new DBCommandClass($data);
+        }
+
+        $comm->query(sprintf(
+            'UPDATE %st_item
+             SET b_premium = 0
+             WHERE b_premium = 1
+               AND dt_expiration < "%s"
+               AND dt_expiration NOT LIKE "9999%%"',
+            $prefix,
+            $now
+        ));
+    } catch (Exception $e) {
+        return;
+    }
+}
+
+/**
+ * One-shot (versioned): set all categories to 30-day expiry and recalculate
+ * item dt_expiration for every listing — including premium. Existing rows stay
+ * in the DB (soft Expired via date — never deleted by this policy).
  *
  * @param bool $force
  */
@@ -65,6 +106,8 @@ function pngm_listing_expiry_apply_policy($force = false)
 
     $applied = (string) osc_get_preference('pngm_listing_expiry_policy', 'epsilon_child');
     if (!$force && $applied === PNGM_LISTING_EXPIRY_POLICY_VER) {
+        // Lightweight: clear premium on ads that just crossed expiry.
+        pngm_listing_expiry_demote_expired_premium();
         return;
     }
 
@@ -83,15 +126,18 @@ function pngm_listing_expiry_apply_policy($force = false)
             $days
         ));
 
-        // Soft expiry from publish date + category days. Premium stays searchable via core helpers.
+        // Soft expiry from publish date + category days for ALL listings.
+        // Premium keeps its badge only while dt_expiration is still in the future.
         $comm->query(sprintf(
             'UPDATE %st_item AS a
              INNER JOIN %st_category AS b ON b.pk_i_id = a.fk_i_category_id
              SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)
-             WHERE a.b_premium = 0 AND b.i_expiration_days > 0',
+             WHERE b.i_expiration_days > 0',
             $prefix,
             $prefix
         ));
+
+        pngm_listing_expiry_demote_expired_premium($comm);
     } catch (Exception $e) {
         return;
     }
@@ -101,6 +147,73 @@ function pngm_listing_expiry_apply_policy($force = false)
         Preference::newInstance()->toArray();
     }
 }
+
+/**
+ * Keep every category on the 30-day policy (covers newly added categories).
+ */
+function pngm_listing_expiry_enforce_category_days()
+{
+    if (!defined('DB_TABLE_PREFIX')) {
+        return;
+    }
+
+    $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    $prefix = DB_TABLE_PREFIX;
+
+    try {
+        $conn = DBConnectionClass::newInstance();
+        $data = $conn->getOsclassDb();
+        $comm = new DBCommandClass($data);
+        $comm->query(sprintf(
+            'UPDATE %st_category SET i_expiration_days = %d WHERE i_expiration_days IS NULL OR i_expiration_days <> %d',
+            $prefix,
+            $days,
+            $days
+        ));
+    } catch (Exception $e) {
+        return;
+    }
+}
+
+/**
+ * Public search must require a future dt_expiration even for premium rows.
+ * Replaces Osclass core's (b_premium = 1 || dt_expiration >= now) bypass.
+ *
+ * @param array $conditions
+ * @return array
+ */
+function pngm_listing_expiry_search_item_conditions($conditions)
+{
+    if (!is_array($conditions) || !defined('DB_TABLE_PREFIX')) {
+        return $conditions;
+    }
+
+    $prefix = DB_TABLE_PREFIX;
+    $now = date('Y-m-d H:i:s');
+    $strict = sprintf("%st_item.dt_expiration >= '%s'", $prefix, $now);
+    $out = array();
+    $replaced = false;
+
+    foreach ($conditions as $condition) {
+        $condition = (string) $condition;
+        if (
+            strpos($condition, 'b_premium') !== false
+            && strpos($condition, 'dt_expiration') !== false
+        ) {
+            $out[] = $strict;
+            $replaced = true;
+            continue;
+        }
+        $out[] = $condition;
+    }
+
+    if (!$replaced) {
+        $out[] = $strict;
+    }
+
+    return $out;
+}
+osc_add_filter('sql_search_item_conditions', 'pngm_listing_expiry_search_item_conditions');
 
 /**
  * Human expiry date for the current View item.
@@ -282,8 +395,9 @@ function pngm_listing_expiry_cron_expired()
         $conn = DBConnectionClass::newInstance();
         $data = $conn->getOsclassDb();
         $comm = new DBCommandClass($data);
+        // Include recently demoted premium (b_premium cleared when expired).
         $sql = sprintf(
-            'SELECT pk_i_id FROM %st_item WHERE b_premium = 0 AND dt_expiration BETWEEN "%s" AND "%s"',
+            'SELECT pk_i_id FROM %st_item WHERE dt_expiration BETWEEN "%s" AND "%s"',
             $prefix,
             $from,
             $to
@@ -359,6 +473,8 @@ function pngm_listing_expiry_cron_expired()
 }
 
 osc_add_hook('init', 'pngm_listing_expiry_apply_policy', 4);
+osc_add_hook('cron_hourly', 'pngm_listing_expiry_enforce_category_days', 5);
+osc_add_hook('cron_hourly', 'pngm_listing_expiry_demote_expired_premium', 6);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_expired', 8);
 
 /**

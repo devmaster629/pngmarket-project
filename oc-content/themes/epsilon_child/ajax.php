@@ -98,6 +98,8 @@ if(@$_GET['ajaxPatternSearch'] == 1) {
         $dao->where('i.b_active', 1);
         $dao->where('i.b_enabled', 1);
         $dao->where('i.b_spam', 0);
+        // 30-day policy: hide soft-expired ads (premium included).
+        $dao->where(sprintf("i.dt_expiration >= '%s'", date('Y-m-d H:i:s')));
 
         // SEARCH-01: match title, description or category name (partial), nationwide.
         $dao->where(sprintf(
