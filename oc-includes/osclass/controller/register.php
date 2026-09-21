@@ -128,6 +128,10 @@ class CWebRegister extends BaseModel {
         
         $this->redirectTo(osc_base_url());
         break;
+
+      default:          // register form (page=register with empty action)
+        $this->doView('user-register.php');
+        break;
     }
   }
 

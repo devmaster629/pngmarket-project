@@ -343,6 +343,14 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   line-height: 1.4;
 }
 
+.pngm-auth-captcha-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16202a;
+  text-align: center;
+}
+
 .pngm-auth-meta {
   display: flex;
   align-items: center;

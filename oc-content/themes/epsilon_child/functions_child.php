@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.6.5');
+    define('PNGM_CHILD_VERSION', '2.6.6');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1229,9 +1229,12 @@ function pngm_auth_show_recaptcha($section = '')
         return;
     }
 
-    // Placeholder only — pngm_recaptcha_incognito_fix() loads api.js + renders
-    // (compact on narrow phones). Avoid dual google.com + recaptcha.net scripts.
-    echo '<div class="g-recaptcha pngm-g-recaptcha" data-sitekey="'
+    $label = __('Security check — confirm you are human', 'epsilon');
+    // Accessible region so auditors/screen readers see CAPTCHA before the iframe loads.
+    echo '<div class="pngm-auth-captcha-label" id="pngm-recaptcha-label">'
+        . osc_esc_html($label)
+        . '</div>';
+    echo '<div class="g-recaptcha pngm-g-recaptcha" role="group" aria-labelledby="pngm-recaptcha-label" data-sitekey="'
         . osc_esc_html($key)
         . '" data-pngm-recaptcha="1"></div>';
 }
