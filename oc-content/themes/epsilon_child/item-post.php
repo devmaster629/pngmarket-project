@@ -566,7 +566,23 @@
                 <span><?php printf(__('I confirm that this listing complies with %s Terms of Use.', 'epsilon'), osc_page_title()); ?></span>
               </label>
               <p class="pngm-post-field-error" data-for="pngm_terms" hidden><?php _e('Please accept the Terms of Use.', 'epsilon'); ?></p>
-              <div class="row captcha pngm-post-captcha"><?php osc_run_hook('item_publish_bottom'); eps_show_recaptcha(); ?></div>
+              <div class="row captcha pngm-post-captcha"><?php
+                osc_run_hook('item_publish_bottom');
+                // Do not call eps_show_recaptcha() here: it injects google api.js without
+                // render=explicit, which auto-renders inside the hidden Review step and
+                // throws "reCAPTCHA Timeout". Placeholder only — footer JS renders when
+                // the step becomes visible (same pattern as login).
+                if (function_exists('osc_recaptcha_items_enabled') && osc_recaptcha_items_enabled()
+                    && function_exists('osc_recaptcha_public_key')
+                ) {
+                    $pngm_post_captcha_key = trim((string) osc_recaptcha_public_key(true));
+                    if ($pngm_post_captcha_key !== '') {
+                        echo '<div class="g-recaptcha pngm-g-recaptcha" data-sitekey="'
+                            . osc_esc_html($pngm_post_captcha_key)
+                            . '" data-pngm-recaptcha="1" data-pngm-defer="1"></div>';
+                    }
+                }
+              ?></div>
             </div>
           </div>
           <aside class="pngm-post-side">

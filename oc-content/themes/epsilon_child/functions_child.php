@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.94');
+    define('PNGM_CHILD_VERSION', '2.5.96');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1256,7 +1256,7 @@ function pngm_is_local_dev_host()
 
 /**
  * Soft-disable reCAPTCHA for this request only on local hosts (memory preference).
- * Does not change the DB — production keeps CAPTCHA enabled.
+ * Does not change the DB — staging/production keep CAPTCHA enabled.
  */
 function pngm_local_disable_recaptcha_runtime()
 {
@@ -1264,14 +1264,14 @@ function pngm_local_disable_recaptcha_runtime()
         return;
     }
     Preference::newInstance()->set('recaptchaEnabled', '0', 'osclass');
+    Preference::newInstance()->set('enabled_recaptcha_items', '0', 'osclass');
 }
 osc_add_hook('init', 'pngm_local_disable_recaptcha_runtime', 0);
 
 /**
  * Front-end login/register must verify reCAPTCHA when the widget is configured.
- * Osclass skips the login check if Oc-Admin is logged in in the same browser,
- * so stage can be signed in without ticking the box.
  * On local hosts we skip CAPTCHA so email/password login works without Google domain setup.
+ * Staging keeps CAPTCHA (login already works there).
  */
 function pngm_recaptcha_is_required()
 {
@@ -1411,6 +1411,10 @@ function pngm_recaptcha_incognito_fix()
         return;
     }
 
+    if (function_exists('pngm_is_local_dev_host') && pngm_is_local_dev_host()) {
+        return;
+    }
+
     if (!function_exists('osc_recaptcha_public_key')) {
         return;
     }
@@ -1442,7 +1446,29 @@ function pngm_recaptcha_incognito_fix()
   function widgets() {
     return Array.prototype.slice.call(
       document.querySelectorAll('.g-recaptcha, [id^="anr_captcha_field_"], [data-pngm-recaptcha]')
-    );
+    ).filter(function (el) {
+      return !isCaptchaDeferredHidden(el);
+    });
+  }
+
+  // Publish wizard keeps Review (and captcha) in display:none until the last step.
+  // Google throws "reCAPTCHA Timeout" if we render while hidden.
+  function isCaptchaDeferredHidden(el) {
+    if (!el) {
+      return true;
+    }
+    var panel = el.closest ? el.closest('.pngm-post-step-panel') : null;
+    if (panel) {
+      if (panel.hasAttribute('hidden') || panel.hidden) {
+        return true;
+      }
+      try {
+        if (window.getComputedStyle(panel).display === 'none') {
+          return true;
+        }
+      } catch (e) {}
+    }
+    return false;
   }
 
   function isRendered(el) {
@@ -1642,11 +1668,15 @@ function pngm_recaptcha_incognito_fix()
   }
 
   function boot() {
+    document.addEventListener('pngm:post-step', function () {
+      // Review step just became visible — safe to render deferred captcha.
+      ensure();
+    });
+    guardAuthForms();
     if (!widgets().length) {
       return;
     }
     ensure();
-    guardAuthForms();
     setTimeout(ensure, 400);
     setTimeout(ensure, 1200);
     setTimeout(ensure, 3000);

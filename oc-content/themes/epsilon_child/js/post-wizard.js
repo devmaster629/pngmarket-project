@@ -163,6 +163,10 @@
         this.style.setProperty('display', on ? 'block' : 'none', 'important');
       });
 
+      try {
+        document.dispatchEvent(new CustomEvent('pngm:post-step', { detail: { step: step, total: total } }));
+      } catch (err) {}
+
       $stepper.find('.pngm-post-step').each(function () {
         var s = parseInt(this.getAttribute('data-step'), 10);
         $(this).toggleClass('is-active', s === step).toggleClass('is-done', s < step);
