@@ -459,6 +459,17 @@ body.body-ua #user-menu.pngm-ua-sidebar {
   background: #e8f5e9;
 }
 
+.pngm-ua-btn.is-secondary {
+  background: #f4f6f8;
+  color: #16202a !important;
+  border-color: #d5dbe3;
+}
+
+.pngm-ua-btn.is-secondary:hover {
+  background: #e8ecf1;
+  border-color: #c5ccd6;
+}
+
 /* Messages list */
 .pngm-ua-msg-list,
 .pngm-ua-act-list {
@@ -1409,7 +1420,7 @@ body.body-ua.pngm-ua-listings form[name="user-items-search"].pngm-listings-toolb
 
 .pngm-notif-top {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -1484,6 +1495,102 @@ button.pngm-notif-card {
   align-items: center;
   justify-content: center;
   flex: 0 0 40px;
+}
+
+.pngm-notif-push-panel {
+  margin: 0 0 20px;
+  padding: 18px 16px;
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+.pngm-notif-push-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pngm-notif-push-panel-head h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #16202a;
+  line-height: 1.3;
+}
+
+.pngm-notif-push-panel-head p {
+  margin: 0;
+  font-size: 13px;
+  color: #8a94a0;
+  line-height: 1.45;
+}
+
+.pngm-notif-push-status {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 1px solid #eef1f5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pngm-notif-push-status li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid #eef1f5;
+  font-size: 13px;
+}
+
+.pngm-notif-push-status li:first-child {
+  border-top: 0;
+}
+
+.pngm-notif-push-status li span {
+  color: #5a6570;
+}
+
+.pngm-notif-push-status li strong {
+  font-weight: 700;
+  color: #16202a;
+}
+
+.pngm-notif-push-status li strong.is-ok {
+  color: #2e7d32;
+}
+
+.pngm-notif-push-status li strong.is-warn {
+  color: #b26a00;
+}
+
+.pngm-notif-push-status li strong.is-bad {
+  color: #c62828;
+}
+
+.pngm-notif-push-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pngm-notif-push-actions .pngm-ua-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pngm-notif-push-hint {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 13px;
+  color: #5a6570;
+  line-height: 1.4;
 }
 
 .pngm-notif-chevron {

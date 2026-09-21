@@ -12,6 +12,10 @@ if (!function_exists('pngm_notif_prefs_get')) {
     require_once dirname(__FILE__) . '/../includes/notification_prefs.php';
 }
 
+if (function_exists('pngm_webpush_ensure_sw_file')) {
+    pngm_webpush_ensure_sw_file();
+}
+
 $user_id = osc_logged_user_id();
 $saved_flash = false;
 
@@ -67,19 +71,44 @@ $section_num = 0;
           <span class="pngm-notif-switch-ui" aria-hidden="true"></span>
         </span>
       </label>
-
-      <button type="button" class="pngm-notif-card pngm-notif-push" id="pngm-notif-push-btn">
-        <span class="pngm-notif-push-ico" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
-        <span class="pngm-notif-card-copy">
-          <strong>
-            <?php _e('Push notifications', 'epsilon'); ?>
-            <span class="pngm-notif-pill" data-push-pill><?php _e('Enabled', 'epsilon'); ?></span>
-          </strong>
-          <em><?php _e('Manage browser permission', 'epsilon'); ?></em>
-        </span>
-        <i class="fas fa-chevron-right pngm-notif-chevron" aria-hidden="true"></i>
-      </button>
     </div>
+
+    <section class="pngm-notif-push-panel" id="pngm-notif-push-panel" aria-labelledby="pngm-push-heading">
+      <div class="pngm-notif-push-panel-head">
+        <span class="pngm-notif-push-ico" aria-hidden="true"><i class="fas fa-bell"></i></span>
+        <div>
+          <h2 id="pngm-push-heading"><?php _e('Browser push notifications', 'epsilon'); ?></h2>
+          <p><?php _e('Enable browser permission so PNGMarket can show alerts on this device (messages, listing expiry, saved searches).', 'epsilon'); ?></p>
+        </div>
+      </div>
+
+      <ul class="pngm-notif-push-status" aria-live="polite">
+        <li>
+          <span><?php _e('Browser support', 'epsilon'); ?></span>
+          <strong data-push-support>—</strong>
+        </li>
+        <li>
+          <span><?php _e('Permission', 'epsilon'); ?></span>
+          <strong data-push-permission>—</strong>
+        </li>
+        <li>
+          <span><?php _e('Service worker', 'epsilon'); ?></span>
+          <strong data-push-sw>—</strong>
+        </li>
+      </ul>
+
+      <div class="pngm-notif-push-actions">
+        <button type="button" class="pngm-ua-btn" id="pngm-notif-push-enable">
+          <i class="fas fa-unlock-alt" aria-hidden="true"></i>
+          <?php _e('Enable browser notifications', 'epsilon'); ?>
+        </button>
+        <button type="button" class="pngm-ua-btn is-secondary" id="pngm-notif-push-test" hidden>
+          <i class="fas fa-paper-plane" aria-hidden="true"></i>
+          <?php _e('Send test notification', 'epsilon'); ?>
+        </button>
+      </div>
+      <p class="pngm-notif-push-hint" data-push-hint></p>
+    </section>
 
     <div class="pngm-notif-table-head" aria-hidden="true">
       <span></span>
@@ -172,8 +201,33 @@ $section_num = 0;
 
   var allow = document.getElementById('pngm_notif_allow');
   var toast = document.getElementById('pngm-notif-toast');
-  var pushBtn = document.getElementById('pngm-notif-push-btn');
-  var pushPill = root.querySelector('[data-push-pill]');
+  var enableBtn = document.getElementById('pngm-notif-push-enable');
+  var testBtn = document.getElementById('pngm-notif-push-test');
+  var elSupport = root.querySelector('[data-push-support]');
+  var elPerm = root.querySelector('[data-push-permission]');
+  var elSw = root.querySelector('[data-push-sw]');
+  var elHint = root.querySelector('[data-push-hint]');
+  var swUrl = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
+  var iconUrl = <?php echo json_encode(osc_base_url()); ?>;
+  var L = {
+    yes: <?php echo json_encode(__('Supported', 'epsilon')); ?>,
+    no: <?php echo json_encode(__('Not supported', 'epsilon')); ?>,
+    granted: <?php echo json_encode(__('Granted', 'epsilon')); ?>,
+    denied: <?php echo json_encode(__('Blocked', 'epsilon')); ?>,
+    default: <?php echo json_encode(__('Not asked yet', 'epsilon')); ?>,
+    swOn: <?php echo json_encode(__('Registered', 'epsilon')); ?>,
+    swOff: <?php echo json_encode(__('Not registered', 'epsilon')); ?>,
+    swChecking: <?php echo json_encode(__('Checking…', 'epsilon')); ?>,
+    unsupported: <?php echo json_encode(__('Push notifications are not supported in this browser.', 'epsilon')); ?>,
+    blocked: <?php echo json_encode(__('Notifications are blocked. Allow them in your browser site settings, then reload.', 'epsilon')); ?>,
+    enableCta: <?php echo json_encode(__('Enable browser notifications', 'epsilon')); ?>,
+    enabledCta: <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>,
+    hintReady: <?php echo json_encode(__('Permission granted. Use “Send test notification” to verify this device.', 'epsilon')); ?>,
+    hintAsk: <?php echo json_encode(__('Click “Enable browser notifications” to open the browser permission prompt.', 'epsilon')); ?>,
+    testTitle: <?php echo json_encode(__('PNGMarket test notification', 'epsilon')); ?>,
+    testBody: <?php echo json_encode(__('Browser push is working on this device.', 'epsilon')); ?>,
+    testFail: <?php echo json_encode(__('Could not show a test notification. Check permission and try again.', 'epsilon')); ?>
+  };
 
   function syncAllow() {
     var on = !!(allow && allow.checked);
@@ -183,24 +237,108 @@ $section_num = 0;
     });
   }
 
-  function syncPushPill() {
-    if (!pushPill || !('Notification' in window)) {
-      if (pushPill) pushPill.textContent = '<?php echo osc_esc_js(__('Unavailable', 'epsilon')); ?>';
+  function setText(el, text, state) {
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove('is-ok', 'is-warn', 'is-bad');
+    if (state) el.classList.add(state);
+  }
+
+  function setHint(text) {
+    if (elHint) elHint.textContent = text || '';
+  }
+
+  function showTestNotification(reg) {
+    var opts = {
+      body: L.testBody,
+      icon: iconUrl,
+      tag: 'pngm-test-' + Date.now(),
+      data: { url: window.location.href }
+    };
+    if (reg && typeof reg.showNotification === 'function') {
+      return reg.showNotification(L.testTitle, opts);
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification(L.testTitle, opts);
+        return Promise.resolve();
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    }
+    return Promise.reject(new Error('unavailable'));
+  }
+
+  function refreshPushStatus() {
+    var supported = ('Notification' in window);
+    var swOk = ('serviceWorker' in navigator);
+    setText(elSupport, supported ? L.yes : L.no, supported ? 'is-ok' : 'is-bad');
+
+    if (!supported) {
+      setText(elPerm, L.no, 'is-bad');
+      setText(elSw, swOk ? L.swOff : L.no, 'is-bad');
+      if (enableBtn) {
+        enableBtn.disabled = true;
+        enableBtn.textContent = L.unsupported;
+      }
+      if (testBtn) testBtn.hidden = true;
+      setHint(L.unsupported);
       return;
     }
+
     var perm = Notification.permission;
     if (perm === 'granted') {
-      pushPill.textContent = '<?php echo osc_esc_js(__('Enabled', 'epsilon')); ?>';
-      pushPill.classList.add('is-on');
-      pushPill.classList.remove('is-off');
+      setText(elPerm, L.granted, 'is-ok');
+      setHint(L.hintReady);
+      if (enableBtn) {
+        enableBtn.disabled = true;
+        enableBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> ' + L.enabledCta;
+      }
+      if (testBtn) testBtn.hidden = false;
     } else if (perm === 'denied') {
-      pushPill.textContent = '<?php echo osc_esc_js(__('Blocked', 'epsilon')); ?>';
-      pushPill.classList.add('is-off');
-      pushPill.classList.remove('is-on');
+      setText(elPerm, L.denied, 'is-bad');
+      setHint(L.blocked);
+      if (enableBtn) {
+        enableBtn.disabled = true;
+        enableBtn.innerHTML = '<i class="fas fa-ban" aria-hidden="true"></i> ' + L.denied;
+      }
+      if (testBtn) testBtn.hidden = true;
     } else {
-      pushPill.textContent = '<?php echo osc_esc_js(__('Ask permission', 'epsilon')); ?>';
-      pushPill.classList.remove('is-on', 'is-off');
+      setText(elPerm, L.default, 'is-warn');
+      setHint(L.hintAsk);
+      if (enableBtn) {
+        enableBtn.disabled = false;
+        enableBtn.innerHTML = '<i class="fas fa-unlock-alt" aria-hidden="true"></i> ' + L.enableCta;
+      }
+      if (testBtn) testBtn.hidden = true;
     }
+
+    if (!swOk) {
+      setText(elSw, L.no, 'is-bad');
+      return;
+    }
+
+    setText(elSw, L.swChecking, 'is-warn');
+    navigator.serviceWorker.getRegistration('/').then(function (reg) {
+      if (reg) {
+        setText(elSw, L.swOn, 'is-ok');
+      } else {
+        setText(elSw, L.swOff, 'is-warn');
+      }
+    }).catch(function () {
+      setText(elSw, L.swOff, 'is-warn');
+    });
+  }
+
+  function registerSw() {
+    if (!('serviceWorker' in navigator)) {
+      return Promise.resolve(null);
+    }
+    return navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function (reg) {
+      return reg;
+    }).catch(function () {
+      return null;
+    });
   }
 
   if (allow) {
@@ -218,26 +356,49 @@ $section_num = 0;
     }, 4000);
   }
 
-  if (pushBtn) {
-    pushBtn.addEventListener('click', function () {
+  if (enableBtn) {
+    enableBtn.addEventListener('click', function () {
       if (!('Notification' in window)) {
-        window.alert('<?php echo osc_esc_js(__('Push notifications are not supported in this browser.', 'epsilon')); ?>');
+        setHint(L.unsupported);
         return;
       }
-      var finish = function () { syncPushPill(); };
+      enableBtn.disabled = true;
       Notification.requestPermission().then(function (perm) {
-        if (perm === 'granted' && 'serviceWorker' in navigator) {
-          var swUrl = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
-          navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
+        if (perm === 'granted') {
+          return registerSw().then(function () {
+            refreshPushStatus();
+          });
         }
-        finish();
+        refreshPushStatus();
+      }).catch(function () {
+        refreshPushStatus();
       });
     });
   }
-  syncPushPill();
+
+  if (testBtn) {
+    testBtn.addEventListener('click', function () {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        setHint(L.testFail);
+        return;
+      }
+      testBtn.disabled = true;
+      registerSw().then(function (reg) {
+        return showTestNotification(reg);
+      }).then(function () {
+        setHint(L.hintReady);
+      }).catch(function () {
+        setHint(L.testFail);
+      }).then(function () {
+        testBtn.disabled = false;
+        refreshPushStatus();
+      });
+    });
+  }
+
+  refreshPushStatus();
   if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    var swUrlBoot = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
-    navigator.serviceWorker.register(swUrlBoot, { scope: '/' }).catch(function () {});
+    registerSw().then(function () { refreshPushStatus(); });
   }
 })();
 </script>
