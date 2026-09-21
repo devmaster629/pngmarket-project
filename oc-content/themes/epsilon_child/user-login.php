@@ -58,6 +58,7 @@
                 <?php UserForm::rememberme_login_checkbox(null, true); ?>
                 <span><?php _e('Stay signed in on this device', 'epsilon'); ?></span>
               </label>
+              <input type="hidden" name="remember" value="1" />
               <a class="pngm-auth-link" href="<?php echo osc_recover_user_password_url(); ?>"><?php _e('Forgot password?', 'epsilon'); ?></a>
             </div>
 
