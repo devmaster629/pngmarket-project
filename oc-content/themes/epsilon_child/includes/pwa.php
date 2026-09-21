@@ -226,6 +226,8 @@ function pngm_pwa_public_status()
             '512' => is_readable($icon_512),
         ),
         'apple_capable' => true,
+        'mobile_install_ui' => true,
+        'platforms' => array('android', 'ios'),
     );
 }
 
@@ -255,7 +257,8 @@ function pngm_pwa_head()
 }
 
 /**
- * Register service worker + detect standalone display mode for verification.
+ * Register service worker + mobile install UX (Android prompt / iOS A2HS guide).
+ * Responsive UI alone is not a PWA — this exposes the real install path.
  */
 function pngm_pwa_register_sw_footer()
 {
@@ -270,9 +273,42 @@ function pngm_pwa_register_sw_footer()
     $sw = function_exists('pngm_webpush_sw_url')
         ? pngm_webpush_sw_url()
         : (rtrim(osc_base_url(), '/') . '/sw.js');
+    $icon = pngm_pwa_root_url() . 'icon-192.png';
+    $name = function_exists('osc_page_title') ? trim((string) osc_page_title()) : 'PNGMarket';
+    if ($name === '') {
+        $name = 'PNGMarket';
+    }
+    $L = array(
+        'title' => sprintf(__('Install %s', 'epsilon'), $name),
+        'body' => __('Add to your home screen for a faster, full-screen app experience.', 'epsilon'),
+        'install' => __('Install app', 'epsilon'),
+        'iosTitle' => __('Add to Home Screen', 'epsilon'),
+        'iosBody' => __('On iPhone/iPad: tap Share, then “Add to Home Screen”.', 'epsilon'),
+        'gotIt' => __('Got it', 'epsilon'),
+        'dismiss' => __('Not now', 'epsilon'),
+    );
     ?>
+<div id="pngm-pwa-install" class="pngm-pwa-install" hidden data-pngm-pwa-install>
+  <div class="pngm-pwa-install-inner">
+    <img class="pngm-pwa-install-icon" src="<?php echo osc_esc_html($icon); ?>" width="48" height="48" alt="" />
+    <div class="pngm-pwa-install-copy">
+      <strong data-pngm-pwa-title><?php echo osc_esc_html($L['title']); ?></strong>
+      <em data-pngm-pwa-body><?php echo osc_esc_html($L['body']); ?></em>
+    </div>
+    <div class="pngm-pwa-install-actions">
+      <button type="button" class="pngm-pwa-install-btn" data-pngm-pwa-primary><?php echo osc_esc_html($L['install']); ?></button>
+      <button type="button" class="pngm-pwa-install-dismiss" data-pngm-pwa-dismiss aria-label="<?php echo osc_esc_html($L['dismiss']); ?>">&times;</button>
+    </div>
+  </div>
+</div>
 <script>
 (function () {
+  var swUrl = <?php echo json_encode($sw); ?>;
+  var L = <?php echo json_encode($L); ?>;
+  var deferredPrompt = null;
+  var banner = document.querySelector('[data-pngm-pwa-install]');
+  var storageKey = 'pngm_pwa_install_dismissed_v1';
+
   function detectDisplayMode() {
     var mode = 'browser';
     try {
@@ -283,7 +319,6 @@ function pngm_pwa_register_sw_footer()
       } else if (window.matchMedia('(display-mode: fullscreen)').matches) {
         mode = 'fullscreen';
       } else if (typeof navigator !== 'undefined' && navigator.standalone === true) {
-        // iOS Safari Add to Home Screen
         mode = 'standalone';
       }
     } catch (e) {}
@@ -294,9 +329,130 @@ function pngm_pwa_register_sw_footer()
       el.textContent = mode;
       el.classList.toggle('is-ok', mode === 'standalone');
     });
+    return mode;
   }
 
-  detectDisplayMode();
+  function isIos() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isMobileish() {
+    try {
+      return window.matchMedia('(max-width: 900px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function wasDismissed() {
+    try {
+      return window.localStorage.getItem(storageKey) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function dismiss() {
+    if (!banner) return;
+    banner.hidden = true;
+    try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
+  }
+
+  function showBanner(mode) {
+    if (!banner || !isMobileish() || wasDismissed()) return;
+    if (mode === 'standalone') return;
+    var title = banner.querySelector('[data-pngm-pwa-title]');
+    var body = banner.querySelector('[data-pngm-pwa-body]');
+    var primary = banner.querySelector('[data-pngm-pwa-primary]');
+    if (isIos()) {
+      if (title) title.textContent = L.iosTitle;
+      if (body) body.textContent = L.iosBody;
+      if (primary) primary.textContent = L.gotIt;
+      banner.setAttribute('data-mode', 'ios');
+    } else if (deferredPrompt) {
+      if (title) title.textContent = L.title;
+      if (body) body.textContent = L.body;
+      if (primary) primary.textContent = L.install;
+      banner.setAttribute('data-mode', 'android');
+    } else {
+      // Android/desktop Chrome may delay beforeinstallprompt — still show guidance.
+      if (title) title.textContent = L.title;
+      if (body) body.textContent = L.body;
+      if (primary) {
+        primary.textContent = L.gotIt;
+      }
+      banner.setAttribute('data-mode', 'guide');
+    }
+    banner.hidden = false;
+  }
+
+  function bindBanner() {
+    if (!banner) return;
+    var primary = banner.querySelector('[data-pngm-pwa-primary]');
+    var dismissBtn = banner.querySelector('[data-pngm-pwa-dismiss]');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', dismiss);
+    }
+    if (primary) {
+      primary.addEventListener('click', function () {
+        var mode = banner.getAttribute('data-mode') || '';
+        if (mode === 'android' && deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function () {
+            deferredPrompt = null;
+            dismiss();
+          }).catch(function () {
+            dismiss();
+          });
+          return;
+        }
+        dismiss();
+      });
+    }
+  }
+
+  // Account & Security / any page install buttons
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-pngm-pwa-install-btn]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () { deferredPrompt = null; }).catch(function () {});
+      return;
+    }
+    if (isIos()) {
+      window.alert(L.iosBody);
+      return;
+    }
+    showBanner(detectDisplayMode());
+  });
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.documentElement.setAttribute('data-pngm-pwa-installable', '1');
+    showBanner(detectDisplayMode());
+  });
+
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    dismiss();
+    detectDisplayMode();
+  });
+
+  var mode = detectDisplayMode();
+  bindBanner();
+  // iOS never fires beforeinstallprompt — show A2HS guide after a short delay.
+  if (isIos() && mode !== 'standalone') {
+    window.setTimeout(function () { showBanner(mode); }, 1800);
+  } else if (!isIos() && mode !== 'standalone') {
+    window.setTimeout(function () {
+      if (!deferredPrompt) showBanner(detectDisplayMode());
+    }, 4000);
+  }
+
   try {
     var mq = window.matchMedia('(display-mode: standalone)');
     if (mq && typeof mq.addEventListener === 'function') {
@@ -306,15 +462,58 @@ function pngm_pwa_register_sw_footer()
     }
   } catch (e) {}
 
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register(<?php echo json_encode($sw); ?>, { scope: '/' }).catch(function () {});
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
+  }
 })();
 </script>
+    <?php
+}
+
+/**
+ * Lightweight CSS for the mobile install banner.
+ */
+function pngm_pwa_install_css()
+{
+    if (defined('OC_ADMIN') && OC_ADMIN) {
+        return;
+    }
+    ?>
+<style id="pngm-pwa-install-css">
+.pngm-pwa-install[hidden]{display:none!important}
+.pngm-pwa-install{
+  position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  z-index:10050;pointer-events:none
+}
+.pngm-pwa-install-inner{
+  pointer-events:auto;display:flex;align-items:center;gap:12px;
+  padding:12px;border-radius:14px;background:#fff;border:1px solid #e6eaf0;
+  box-shadow:0 10px 28px rgba(22,32,42,.16)
+}
+.pngm-pwa-install-icon{width:48px;height:48px;border-radius:12px;flex:0 0 48px;object-fit:cover}
+.pngm-pwa-install-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pngm-pwa-install-copy strong{font-size:14px;color:#16202a;line-height:1.3}
+.pngm-pwa-install-copy em{font-style:normal;font-size:12px;color:#5a6570;line-height:1.35}
+.pngm-pwa-install-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.pngm-pwa-install-btn{
+  appearance:none;border:0;border-radius:10px;background:#059669;color:#fff;
+  font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap
+}
+.pngm-pwa-install-dismiss{
+  appearance:none;border:0;background:transparent;color:#8a94a0;
+  font-size:22px;line-height:1;padding:4px 6px;cursor:pointer
+}
+html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
+@media (min-width:901px){
+  .pngm-pwa-install{left:auto;right:20px;bottom:20px;width:380px;max-width:calc(100vw - 40px)}
+}
+</style>
     <?php
 }
 
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init', 'pngm_pwa_ensure_manifest', 3);
     osc_add_hook('header', 'pngm_pwa_head', 8);
+    osc_add_hook('header', 'pngm_pwa_install_css', 9);
     osc_add_hook('footer', 'pngm_pwa_register_sw_footer', 9);
 }

@@ -560,7 +560,7 @@ if ($show_pass && $show_email) {
             <?php echo !empty($pngm_pwa['standalone_configured']) ? __('Standalone ready', 'epsilon') : __('Not ready', 'epsilon'); ?>
           </span>
         </div>
-        <p class="pngm-sec-help"><?php _e('Install PNGMarket to your home screen to open it without browser chrome.', 'epsilon'); ?></p>
+        <p class="pngm-sec-help"><?php _e('This is a Progressive Web App — not only a responsive mobile site. Install it on iPhone or Android for a full-screen app.', 'epsilon'); ?></p>
 
         <div class="pngm-sec-limits">
           <article class="pngm-sec-limit<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-on' : ''; ?>">
@@ -582,6 +582,19 @@ if ($show_pass && $show_email) {
                 <span class="pngm-sec-limit-pill" data-pngm-display-mode-label>browser</span>
               </div>
               <em><?php _e('Updates to “standalone” after Add to Home Screen', 'epsilon'); ?></em>
+            </div>
+          </article>
+
+          <article class="pngm-sec-limit is-on">
+            <span class="pngm-sec-limit-ico is-msg" aria-hidden="true"><i class="fas fa-download"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('Install on this device', 'epsilon'); ?></strong>
+              </div>
+              <em><?php _e('Android: Install app prompt. iPhone: Share → Add to Home Screen.', 'epsilon'); ?></em>
+              <div class="pngm-sec-actions" style="margin-top:10px">
+                <button type="button" class="pngm-ua-btn" data-pngm-pwa-install-btn><?php _e('Install / Add to Home Screen', 'epsilon'); ?></button>
+              </div>
             </div>
           </article>
         </div>
