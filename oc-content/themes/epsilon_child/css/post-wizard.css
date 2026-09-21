@@ -25,8 +25,23 @@ body.pngm-post-wizard {
 }
 
 @media screen and (max-width: 767px) {
-  body.pngm-post-wizard {
-    padding-top: 48px !important;
+  /* Header only (48px) + small gap. Do not reserve space for the hidden search bar. */
+  body.pngm-post-wizard,
+  body#body-item-post.pngm-post-wizard {
+    padding-top: 52px !important;
+  }
+
+  body.pngm-post-wizard .pngm-post-wrap {
+    padding: 8px 14px 24px;
+  }
+
+  body.pngm-post-wizard .pngm-post-page-title {
+    margin: 0 0 10px;
+    font-size: 20px;
+  }
+
+  body.pngm-post-wizard .pngm-post-stepper {
+    margin-bottom: 14px;
   }
 }
 

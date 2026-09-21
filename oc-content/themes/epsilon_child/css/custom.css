@@ -1482,6 +1482,13 @@ body:not(#home) {
   padding-top: 138px;
 }
 
+/* Post/edit listing hides the search strip — header clearance only. */
+body#body-item-post.pngm-post-wizard,
+body.pngm-post-wizard.item-publish,
+body.pngm-post-wizard {
+  padding-top: 72px !important;
+}
+
 /* Homepage: hero already has search ? hide the bar until scroll. */
 body#home .pngm-global-search.is-home {
   display: none !important;
@@ -6577,6 +6584,24 @@ body.pngm-filter-open {
 
   body:not(#home) {
     padding-top: 102px !important;
+  }
+
+  /* Post/edit listing: search strip is hidden — only clear the 48px header. */
+  body#body-item-post.pngm-post-wizard,
+  body.pngm-post-wizard.item-publish,
+  body.pngm-post-wizard {
+    padding-top: 52px !important;
+  }
+
+  body#body-item-post.pngm-post-wizard .pngm-post-wrap,
+  body.pngm-post-wizard .pngm-post-wrap {
+    padding-top: 8px;
+    padding-bottom: 24px;
+  }
+
+  body#body-item-post.pngm-post-wizard .pngm-post-page-title,
+  body.pngm-post-wizard .pngm-post-page-title {
+    margin: 0 0 10px;
   }
 
   body#home:not(.pngm-sticky-search) {
