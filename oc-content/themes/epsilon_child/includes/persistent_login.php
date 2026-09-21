@@ -113,6 +113,101 @@ function pngm_persist_web_login($user)
 }
 
 /**
+ * Detect how the current login request authenticated.
+ *
+ * @return string password|google|facebook|twofa|unknown
+ */
+function pngm_persist_detect_login_method()
+{
+    if (!class_exists('Params')) {
+        return 'unknown';
+    }
+    if (Params::getParam('gglLogin') == 1 || Params::getParam('route') === 'ggl-redirect') {
+        return 'google';
+    }
+    if (Params::getParam('fjlRedirect') == 1) {
+        return 'facebook';
+    }
+    if (Session::newInstance()->_get('pngm_2fa_just_done') === '1'
+        || Params::getParam('pngm_2fa_action') === 'verify'
+    ) {
+        return 'twofa';
+    }
+    if (Params::getParam('page') === 'login') {
+        return 'password';
+    }
+    return 'unknown';
+}
+
+/**
+ * Record login method + mark social provider connected (Account & Security UI).
+ *
+ * @param int    $user_id
+ * @param string $method
+ * @param bool   $persisted
+ */
+function pngm_persist_record_login($user_id, $method, $persisted)
+{
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !function_exists('pngm_sec_get') || !function_exists('pngm_sec_save')) {
+        return;
+    }
+    $data = pngm_sec_get($user_id);
+    $data['last_login_method'] = $method;
+    $data['last_login_at'] = date('Y-m-d H:i:s');
+    $data['last_login_persisted'] = $persisted ? 1 : 0;
+    if ($method === 'google' || $method === 'facebook') {
+        if (!isset($data['connected']) || !is_array($data['connected'])) {
+            $data['connected'] = array('google' => 0, 'facebook' => 0);
+        }
+        $data['connected'][$method] = 1;
+    }
+    pngm_sec_save($user_id, $data);
+
+    if (function_exists('pngm_sec_log_activity')) {
+        $labels = array(
+            'google' => __('Signed in with Google (stay signed in)', 'epsilon'),
+            'facebook' => __('Signed in with Facebook (stay signed in)', 'epsilon'),
+            'password' => __('Signed in with email (stay signed in)', 'epsilon'),
+            'twofa' => __('Signed in with two-step verification (stay signed in)', 'epsilon'),
+        );
+        if (isset($labels[$method])) {
+            pngm_sec_log_activity($user_id, 'login', $labels[$method]);
+        }
+    }
+}
+
+/**
+ * Public status for Account & Security (auditor / user can verify persistence).
+ *
+ * @param int $user_id
+ * @return array
+ */
+function pngm_persist_status($user_id = 0)
+{
+    $user_id = (int) ($user_id ?: (function_exists('osc_logged_user_id') ? osc_logged_user_id() : 0));
+    $cid = Cookie::newInstance()->get_value('oc_userId');
+    $sec = Cookie::newInstance()->get_value('oc_userSecret');
+    $cookie_ok = ($cid !== '' && $sec !== '' && $user_id > 0 && (int) $cid === $user_id);
+    $method = 'unknown';
+    $at = '';
+    $recorded = 0;
+    if ($user_id > 0 && function_exists('pngm_sec_get')) {
+        $data = pngm_sec_get($user_id);
+        $method = !empty($data['last_login_method']) ? (string) $data['last_login_method'] : 'unknown';
+        $at = !empty($data['last_login_at']) ? (string) $data['last_login_at'] : '';
+        $recorded = !empty($data['last_login_persisted']) ? 1 : 0;
+    }
+    return array(
+        'cookie_active' => $cookie_ok,
+        'method' => $method,
+        'at' => $at,
+        'recorded_persisted' => $recorded,
+        'ok' => $cookie_ok,
+    );
+}
+
+/**
  * After any successful web login (password, Google, Facebook, 2FA), keep the device signed in.
  *
  * @param array  $user
@@ -123,11 +218,18 @@ function pngm_persist_after_login($user, $url_redirect = '')
     if (!is_array($user) || empty($user['pk_i_id'])) {
         return;
     }
+    // Already persisted in 2FA complete for this request.
+    if (Session::newInstance()->_get('pngm_persist_done') === '1') {
+        Session::newInstance()->_drop('pngm_persist_done');
+        return;
+    }
     // 2FA gate may soft-logout immediately after; skip until challenge completes.
     if (Session::newInstance()->_get('pngm_2fa_uid')) {
         return;
     }
-    pngm_persist_web_login($user);
+    $ok = pngm_persist_web_login($user);
+    $method = pngm_persist_detect_login_method();
+    pngm_persist_record_login((int) $user['pk_i_id'], $method, $ok);
 }
 
 /**

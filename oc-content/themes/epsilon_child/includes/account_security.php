@@ -353,6 +353,7 @@ function pngm_sec_2fa_clear_pending()
         'pngm_2fa_tries',
         'pngm_2fa_remember',
         'pngm_2fa_redirect',
+        'pngm_2fa_method',
         'pngm_2fa_setup_secret',
     );
     foreach ($keys as $k) {
@@ -547,6 +548,7 @@ function pngm_sec_2fa_pending()
         'tries' => (int) Session::newInstance()->_get('pngm_2fa_tries'),
         'remember' => (int) Session::newInstance()->_get('pngm_2fa_remember'),
         'redirect' => (string) Session::newInstance()->_get('pngm_2fa_redirect'),
+        'method' => (string) Session::newInstance()->_get('pngm_2fa_method'),
     );
 }
 
@@ -558,7 +560,7 @@ function pngm_sec_2fa_pending()
  * @param string $redirect
  * @return bool
  */
-function pngm_sec_2fa_start_challenge($user, $remember = false, $redirect = '')
+function pngm_sec_2fa_start_challenge($user, $remember = false, $redirect = '', $method = '')
 {
     if (!is_array($user) || empty($user['pk_i_id'])) {
         return false;
@@ -573,12 +575,19 @@ function pngm_sec_2fa_start_challenge($user, $remember = false, $redirect = '')
     if ($redirect === '' || stripos($redirect, 'login') !== false || stripos($redirect, 'two-step') !== false) {
         $redirect = osc_user_dashboard_url();
     }
+    if ($method === '' && function_exists('pngm_persist_detect_login_method')) {
+        $method = pngm_persist_detect_login_method();
+    }
+    if ($method === '' || $method === 'unknown') {
+        $method = 'password';
+    }
 
     Session::newInstance()->_set('pngm_2fa_uid', (int) $user['pk_i_id']);
     Session::newInstance()->_set('pngm_2fa_exp', time() + 900);
     Session::newInstance()->_set('pngm_2fa_tries', 0);
     Session::newInstance()->_set('pngm_2fa_remember', $remember ? 1 : 0);
     Session::newInstance()->_set('pngm_2fa_redirect', $redirect);
+    Session::newInstance()->_set('pngm_2fa_method', $method);
     return true;
 }
 
@@ -607,8 +616,9 @@ function pngm_sec_2fa_complete_login($pending)
     }
 
     // Always persist on this device (constant login), including after social + 2FA.
+    $ok = false;
     if (function_exists('pngm_persist_web_login')) {
-        pngm_persist_web_login($user);
+        $ok = pngm_persist_web_login($user);
     } else {
         if ($user['s_secret'] == '') {
             require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
@@ -619,7 +629,14 @@ function pngm_sec_2fa_complete_login($pending)
         Cookie::newInstance()->push('oc_userId', $user['pk_i_id']);
         Cookie::newInstance()->push('oc_userSecret', $user['s_secret']);
         Cookie::newInstance()->set();
+        $ok = true;
     }
+
+    $method = !empty($pending['method']) ? (string) $pending['method'] : 'twofa';
+    if (function_exists('pngm_persist_record_login')) {
+        pngm_persist_record_login($user_id, $method, $ok);
+    }
+    Session::newInstance()->_set('pngm_persist_done', '1');
 
     pngm_sec_trust_current_device($user_id);
     pngm_sec_touch_session($user_id);
@@ -700,7 +717,16 @@ function pngm_sec_after_login_gate($user, $url_redirect = '')
 
     pngm_sec_soft_logout();
     // Social logins have no Remember checkbox — always persist after 2FA succeeds.
-    pngm_sec_2fa_start_challenge($user, true, (string) $url_redirect);
+    $method = function_exists('pngm_persist_detect_login_method') ? pngm_persist_detect_login_method() : 'unknown';
+    if ($method === 'unknown' || $method === 'password') {
+        // Prefer social if this request looks like an OAuth callback.
+        if (Params::getParam('fjlRedirect') == 1) {
+            $method = 'facebook';
+        } elseif (Params::getParam('gglLogin') == 1 || Params::getParam('route') === 'ggl-redirect') {
+            $method = 'google';
+        }
+    }
+    pngm_sec_2fa_start_challenge($user, true, (string) $url_redirect, $method);
     osc_add_flash_ok_message(__('Enter the 6-digit code from your authenticator app to finish signing in.', 'epsilon'));
     header('Location: ' . pngm_sec_2fa_url());
     exit;
