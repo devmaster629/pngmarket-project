@@ -1,0 +1,19 @@
+# Optional: merge into the server's existing Osclass/Hostinger .htaccess
+# (do not replace rewrite rules). Fixes .webmanifest served as text/plain.
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType application/javascript .js
+</IfModule>
+
+<IfModule mod_headers.c>
+  <Files "manifest.webmanifest">
+    Header set Content-Type "application/manifest+json; charset=utf-8"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </Files>
+  <Files "sw.js">
+    Header set Content-Type "application/javascript; charset=utf-8"
+    Header set Service-Worker-Allowed "/"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </Files>
+</IfModule>

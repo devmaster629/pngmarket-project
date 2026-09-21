@@ -117,37 +117,40 @@ function pngm_pwa_ensure_manifest()
         $short = substr($short, 0, 12);
     }
 
-    $base = rtrim(osc_base_url(), '/') . '/';
-    $icon_base = pngm_pwa_root_url();
+    // Path-absolute URLs so local/stage/prod share one manifest shape (no host baked in).
+    $start = '/?utm_source=pwa';
+    $scope = '/';
+    $icon_192 = '/pwa/icon-192.png';
+    $icon_512 = '/pwa/icon-512.png';
 
     $manifest = array(
-        'id' => $base,
+        'id' => $scope,
         'name' => $name,
         'short_name' => $short,
         'description' => __('Buy, sell and find anything in Papua New Guinea', 'epsilon'),
-        'start_url' => $base . '?utm_source=pwa',
-        'scope' => $base,
+        'start_url' => $start,
+        'scope' => $scope,
         'display' => 'standalone',
-        'orientation' => 'portrait-primary',
+        'orientation' => 'any',
         'theme_color' => $colors['theme'],
         'background_color' => $colors['background'],
         'lang' => 'en',
         'dir' => 'ltr',
         'icons' => array(
             array(
-                'src' => $icon_base . 'icon-192.png',
+                'src' => $icon_192,
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'any',
             ),
             array(
-                'src' => $icon_base . 'icon-512.png',
+                'src' => $icon_512,
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'any',
             ),
             array(
-                'src' => $icon_base . 'icon-512.png',
+                'src' => $icon_512,
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable',
@@ -174,13 +177,13 @@ function pngm_pwa_ensure_manifest()
 }
 
 /**
- * Public URL of the web app manifest.
+ * Public URL of the web app manifest (PHP endpoint = correct Content-Type).
  *
  * @return string
  */
 function pngm_pwa_manifest_url()
 {
-    return rtrim(osc_base_url(), '/') . '/manifest.webmanifest';
+    return rtrim(osc_base_url(), '/') . '/pwa-manifest.php';
 }
 
 /**
@@ -210,16 +213,10 @@ function pngm_pwa_head()
 
 /**
  * Register service worker for every visitor (needed for Chrome installability).
- * Logged-in users still get queued notifications via web_push.php.
  */
 function pngm_pwa_register_sw_footer()
 {
     if (defined('OC_ADMIN') && OC_ADMIN) {
-        return;
-    }
-
-    // Avoid double-register script when web_push footer already runs for logged-in users.
-    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
         return;
     }
 
