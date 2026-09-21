@@ -181,6 +181,42 @@ function pngm_cron_health()
         $out['warnings'][] = sprintf('warn_expiration is %d (expected 7).', $warn);
     }
 
+    // Explicit audit rows: expiry / reminders / saved-search alerts.
+    $out['jobs'] = array(
+        'expiry' => array(
+            'label' => 'Listing soft-expiry + premium demote',
+            'wired' => function_exists('pngm_listing_expiry_cron_expired')
+                && function_exists('pngm_listing_expiry_demote_expired_premium'),
+            'schedule' => 'cron_hourly',
+            'ok' => empty($out['rows']['HOURLY']['stale']),
+        ),
+        'reminders' => array(
+            'label' => '7-day expiry reminder emails',
+            'wired' => function_exists('pngm_listing_expiry_cron_warn') && $warn === 7,
+            'schedule' => 'cron_hourly (+ core warn slot)',
+            'warn_days' => $warn,
+            'ok' => function_exists('pngm_listing_expiry_cron_warn') && $warn === 7
+                && empty($out['rows']['HOURLY']['stale']),
+        ),
+        'alerts' => array(
+            'label' => 'Saved search / alert emails',
+            'wired' => function_exists('osc_runAlert'),
+            'schedule' => 'minutely/instant + hourly + daily + weekly',
+            'ok' => function_exists('osc_runAlert')
+                && empty($out['rows']['HOURLY']['stale'])
+                && empty($out['rows']['DAILY']['stale']),
+        ),
+    );
+    foreach ($out['jobs'] as $key => $job) {
+        if (empty($job['wired'])) {
+            $out['ok'] = false;
+            $out['warnings'][] = sprintf('Cron job "%s" is not wired.', $key);
+        } elseif (empty($job['ok'])) {
+            $out['ok'] = false;
+            $out['warnings'][] = sprintf('Cron job "%s" schedule looks stale — check server crontab.', $key);
+        }
+    }
+
     // Message emails are deferred (~5 min) and need minutely cron.
     if (function_exists('im_param') && (int) im_param('email_deferred') === 1) {
         $minutely = isset($out['rows']['MINUTELY']) ? $out['rows']['MINUTELY'] : null;
@@ -236,6 +272,22 @@ function pngm_cron_admin_dashboard()
         . ' · local=' . ($h['local'] ? 'yes' : 'no')
     ) . '</li>';
     echo '</ul>';
+
+    if (!empty($h['jobs']) && is_array($h['jobs'])) {
+        echo '<p style="margin-top:8px;"><strong>' . osc_esc_html(__('PNG Market jobs:', 'epsilon')) . '</strong></p>';
+        echo '<ul style="margin:0 0 0 18px;">';
+        foreach ($h['jobs'] as $job) {
+            if (!is_array($job)) {
+                continue;
+            }
+            $mark = (!empty($job['wired']) && !empty($job['ok'])) ? '✓' : '⚠';
+            $line = $mark . ' ' . (string) @$job['label']
+                . ' · ' . (string) @$job['schedule']
+                . (!empty($job['wired']) ? '' : ' · NOT WIRED');
+            echo '<li>' . osc_esc_html($line) . '</li>';
+        }
+        echo '</ul>';
+    }
 
     if (!empty($h['warnings'])) {
         echo '<p style="margin-top:8px;"><strong>' . osc_esc_html(__('Action needed:', 'epsilon')) . '</strong></p><ul style="margin:0 0 0 18px;">';
