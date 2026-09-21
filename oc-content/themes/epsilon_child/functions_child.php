@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.5.92');
+    define('PNGM_CHILD_VERSION', '2.5.93');
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -19,6 +19,7 @@ require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/listing_expiry.php';
+require_once dirname(__FILE__) . '/includes/cron_setup.php';
 require_once dirname(__FILE__) . '/includes/antispam_config.php';
 require_once dirname(__FILE__) . '/includes/duplicate_listings.php';
 require_once dirname(__FILE__) . '/includes/public_profile_gate.php';

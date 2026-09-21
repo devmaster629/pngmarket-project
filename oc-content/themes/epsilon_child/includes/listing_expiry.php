@@ -224,7 +224,48 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
 osc_add_hook('hook_email_warn_expiration', 'pngm_listing_expiry_warn_notify_inapp', 8);
 
 /**
- * Hourly: notify owners of listings that expired in the last hour (with Renew CTA).
+ * @param int $item_id
+ * @return bool
+ */
+function pngm_listing_expiry_expired_was_notified($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return false;
+    }
+    return (string) osc_get_preference('item_' . $item_id, 'pngm_expired_mail') === '1';
+}
+
+/**
+ * @param int $item_id
+ */
+function pngm_listing_expiry_expired_mark_notified($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_set_preference')) {
+        return;
+    }
+    osc_set_preference('item_' . $item_id, '1', 'pngm_expired_mail', 'BOOLEAN');
+}
+
+/**
+ * Clear expired-mail flag on renew so the next cycle can notify again.
+ *
+ * @param int $item_id
+ */
+function pngm_listing_expiry_clear_expired_flag($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_delete_preference')) {
+        return;
+    }
+    osc_delete_preference('item_' . $item_id, 'pngm_expired_mail');
+}
+osc_add_hook('renew_item', 'pngm_listing_expiry_clear_expired_flag', 2);
+
+/**
+ * Hourly: notify owners of listings that expired recently (with Renew CTA).
+ * Looks back up to 48h and dedupes so a missed cron still delivers once.
  * Replaces pngm_notif_cron_listing_expired.
  */
 function pngm_listing_expiry_cron_expired()
@@ -233,7 +274,7 @@ function pngm_listing_expiry_cron_expired()
         return;
     }
 
-    $from = date('Y-m-d H:i:s', time() - 3600);
+    $from = date('Y-m-d H:i:s', time() - (48 * 3600));
     $to = date('Y-m-d H:i:s');
     $prefix = DB_TABLE_PREFIX;
 
@@ -265,7 +306,7 @@ function pngm_listing_expiry_cron_expired()
 
     foreach ($rows as $row) {
         $id = isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0;
-        if ($id <= 0) {
+        if ($id <= 0 || pngm_listing_expiry_expired_was_notified($id)) {
             continue;
         }
         $item = Item::newInstance()->findByPrimaryKey($id);
@@ -313,6 +354,7 @@ function pngm_listing_expiry_cron_expired()
             $renew_url !== '' ? $renew_url : $item_url,
             'pngm_listing_expired'
         );
+        pngm_listing_expiry_expired_mark_notified($id);
     }
 }
 
