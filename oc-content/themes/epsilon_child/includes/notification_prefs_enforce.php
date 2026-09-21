@@ -103,14 +103,23 @@ function pngm_notif_pref_key_for_mail_type($type)
 function pngm_notif_digest_allows_alert_type($prefs, $type)
 {
     $digest = isset($prefs['digest']) ? (string) $prefs['digest'] : 'immediate';
-    if ($digest === 'daily') {
-        return $type === 'alert_email_daily';
-    }
+    $type = (string) $type;
+
+    // Digest is a maximum frequency preference, not an exclusive cron-type lock.
     if ($digest === 'weekly') {
         return $type === 'alert_email_weekly';
     }
-    // immediate: allow instant + hourly (near-real-time); block daily/weekly digests
-    return in_array($type, array('alert_email_instant', 'alert_email_hourly'), true);
+    if ($digest === 'daily') {
+        return in_array($type, array('alert_email_daily', 'alert_email_weekly'), true);
+    }
+
+    // immediate: deliver whatever frequency the saved search is set to.
+    return in_array($type, array(
+        'alert_email_instant',
+        'alert_email_hourly',
+        'alert_email_daily',
+        'alert_email_weekly',
+    ), true);
 }
 
 /**
@@ -738,6 +747,49 @@ function pngm_notif_push_footer()
 </script>
     <?php
 }
+/**
+ * Activity bell entry when a saved-search alert email is sent.
+ *
+ * @param array $user
+ * @param string $ads
+ * @param array $s_search
+ * @param array $items
+ * @param int $totalItems
+ */
+function pngm_notif_on_saved_search_alert($user, $ads = '', $s_search = array(), $items = array(), $totalItems = 0)
+{
+    if (!function_exists('pngm_activity_add') || !is_array($user)) {
+        return;
+    }
+    $user_id = isset($user['pk_i_id']) ? (int) $user['pk_i_id'] : 0;
+    if ($user_id <= 0 && !empty($user['s_email']) && function_exists('pngm_notif_user_id_by_email')) {
+        $user_id = pngm_notif_user_id_by_email($user['s_email']);
+    }
+    if ($user_id <= 0) {
+        return;
+    }
+
+    $totalItems = (int) $totalItems;
+    if ($totalItems <= 0 && is_array($items)) {
+        $totalItems = count($items);
+    }
+    if ($totalItems <= 0) {
+        return;
+    }
+
+    $subject = sprintf(
+        _n('%d new listing matches your saved search', '%d new listings match your saved search', $totalItems, 'epsilon'),
+        $totalItems
+    );
+    $body = __('Open Saved Searches to review matching listings.', 'epsilon');
+    $url = function_exists('osc_user_alerts_url') ? osc_user_alerts_url() : osc_base_url();
+    pngm_activity_add($user_id, 'saved_search', $subject, $body, $url);
+}
+osc_add_hook('hook_alert_email_instant', 'pngm_notif_on_saved_search_alert', 8);
+osc_add_hook('hook_alert_email_hourly', 'pngm_notif_on_saved_search_alert', 8);
+osc_add_hook('hook_alert_email_daily', 'pngm_notif_on_saved_search_alert', 8);
+osc_add_hook('hook_alert_email_weekly', 'pngm_notif_on_saved_search_alert', 8);
+
 // Prefer web_push.php footer (Service Worker). Keep this as fallback if web_push is absent.
 if (!function_exists('pngm_webpush_footer')) {
     osc_add_hook('footer', 'pngm_notif_push_footer', 10);

@@ -108,6 +108,7 @@ function pngm_notif_prefs_schema()
                     'id' => 'saved_search',
                     'label' => __('Saved search matches', 'epsilon'),
                     'icon' => 'fas fa-search',
+                    'default_on' => true,
                 ),
             ),
         ),

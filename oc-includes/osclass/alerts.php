@@ -130,7 +130,7 @@ function osc_runAlert($type = null, $last_exec = null){
             }
             
             // Only trigger alert to non-banned users
-            if(osc_is_email_banned($user['s_email']) !== false) {
+            if(osc_is_email_banned($user['s_email']) === false) {
               osc_run_hook('hook_' . $internal_name, $user, $ads, $alert, $items, $totalItems);
               AlertsStats::newInstance()->increase(date('Y-m-d'));
             }

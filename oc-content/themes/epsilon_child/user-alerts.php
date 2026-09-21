@@ -208,6 +208,9 @@
     <div id="user-main" class="pngm-ua-main pngm-ua-panel">
       <h1><?php _e('Saved searches', 'epsilon'); ?></h1>
       <h2><?php _e('Receive email notification when new item, that match your search criteria, is published.', 'epsilon'); ?></h2>
+      <p class="pngm-alerts-policy">
+        <?php _e('Alerts are checked by server cron (instant / hourly / daily / weekly, depending on each saved search). New matching listings are emailed and can also appear as browser notifications when allowed in Notification preferences.', 'epsilon'); ?>
+      </p>
       
       <div class="alerts-box">
         <?php if(is_array($alerts) && count($alerts) > 0) { ?>
