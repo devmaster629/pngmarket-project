@@ -5363,6 +5363,17 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
   line-height: 1.4;
 }
 
+html.pngm-pwa-standalone body {
+  /* Installed app: tighten top safe-area feel */
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+html.pngm-pwa-standalone .pngm-sec-badge[data-pngm-pwa-live],
+html.pngm-pwa-standalone [data-pngm-display-mode-label].is-ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
 .pngm-sec-social-meta {
   display: inline-flex;
   align-items: center;

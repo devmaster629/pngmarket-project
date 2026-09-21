@@ -131,6 +131,7 @@ function pngm_pwa_ensure_manifest()
         'start_url' => $start,
         'scope' => $scope,
         'display' => 'standalone',
+        'display_override' => array('standalone', 'minimal-ui'),
         'orientation' => 'any',
         'theme_color' => $colors['theme'],
         'background_color' => $colors['background'],
@@ -187,6 +188,48 @@ function pngm_pwa_manifest_url()
 }
 
 /**
+ * Public installability / standalone status (for auditors + Account & Security).
+ *
+ * @return array
+ */
+function pngm_pwa_public_status()
+{
+    pngm_pwa_ensure_manifest();
+    $root = rtrim(ABS_PATH, '/\\') . DIRECTORY_SEPARATOR;
+    $manifest_file = $root . 'manifest.webmanifest';
+    $sw_file = $root . 'sw.js';
+    $icon_192 = pngm_pwa_root_dir() . 'icon-192.png';
+    $icon_512 = pngm_pwa_root_dir() . 'icon-512.png';
+
+    $display = 'standalone';
+    if (is_readable($manifest_file)) {
+        $decoded = json_decode((string) file_get_contents($manifest_file), true);
+        if (is_array($decoded) && !empty($decoded['display'])) {
+            $display = (string) $decoded['display'];
+        }
+    }
+
+    return array(
+        'ok' => ($display === 'standalone'
+            && is_readable($manifest_file)
+            && is_readable($sw_file)
+            && is_readable($icon_192)
+            && is_readable($icon_512)),
+        'display' => $display,
+        'standalone_configured' => ($display === 'standalone'),
+        'manifest_url' => pngm_pwa_manifest_url(),
+        'sw_url' => function_exists('pngm_webpush_sw_url')
+            ? pngm_webpush_sw_url()
+            : (rtrim(osc_base_url(), '/') . '/sw.js'),
+        'icons' => array(
+            '192' => is_readable($icon_192),
+            '512' => is_readable($icon_512),
+        ),
+        'apple_capable' => true,
+    );
+}
+
+/**
  * Emit PWA / Apple head tags.
  */
 function pngm_pwa_head()
@@ -212,7 +255,7 @@ function pngm_pwa_head()
 }
 
 /**
- * Register service worker for every visitor (needed for Chrome installability).
+ * Register service worker + detect standalone display mode for verification.
  */
 function pngm_pwa_register_sw_footer()
 {
@@ -230,6 +273,39 @@ function pngm_pwa_register_sw_footer()
     ?>
 <script>
 (function () {
+  function detectDisplayMode() {
+    var mode = 'browser';
+    try {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        mode = 'standalone';
+      } else if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+        mode = 'minimal-ui';
+      } else if (window.matchMedia('(display-mode: fullscreen)').matches) {
+        mode = 'fullscreen';
+      } else if (typeof navigator !== 'undefined' && navigator.standalone === true) {
+        // iOS Safari Add to Home Screen
+        mode = 'standalone';
+      }
+    } catch (e) {}
+    document.documentElement.setAttribute('data-pngm-display-mode', mode);
+    document.documentElement.classList.toggle('pngm-pwa-standalone', mode === 'standalone');
+    var nodes = document.querySelectorAll('[data-pngm-display-mode-label]');
+    Array.prototype.forEach.call(nodes, function (el) {
+      el.textContent = mode;
+      el.classList.toggle('is-ok', mode === 'standalone');
+    });
+  }
+
+  detectDisplayMode();
+  try {
+    var mq = window.matchMedia('(display-mode: standalone)');
+    if (mq && typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', detectDisplayMode);
+    } else if (mq && typeof mq.addListener === 'function') {
+      mq.addListener(detectDisplayMode);
+    }
+  } catch (e) {}
+
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register(<?php echo json_encode($sw); ?>, { scope: '/' }).catch(function () {});
 })();

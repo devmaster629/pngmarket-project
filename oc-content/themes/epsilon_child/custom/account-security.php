@@ -549,6 +549,45 @@ if ($show_pass && $show_email) {
       </section>
       <?php } ?>
 
+      <?php
+        $pngm_pwa = function_exists('pngm_pwa_public_status') ? pngm_pwa_public_status() : null;
+        if (is_array($pngm_pwa)) {
+      ?>
+      <section class="pngm-sec-card" id="pngm-sec-pwa">
+        <div class="pngm-sec-card-top">
+          <h2><?php _e('App mode (PWA)', 'epsilon'); ?></h2>
+          <span class="pngm-sec-badge<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-ok' : ''; ?>">
+            <?php echo !empty($pngm_pwa['standalone_configured']) ? __('Standalone ready', 'epsilon') : __('Not ready', 'epsilon'); ?>
+          </span>
+        </div>
+        <p class="pngm-sec-help"><?php _e('Install PNGMarket to your home screen to open it without browser chrome.', 'epsilon'); ?></p>
+
+        <div class="pngm-sec-limits">
+          <article class="pngm-sec-limit<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-on' : ''; ?>">
+            <span class="pngm-sec-limit-ico" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('Configured display', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill"><?php echo osc_esc_html((string) $pngm_pwa['display']); ?></span>
+              </div>
+              <em><?php _e('From web app manifest', 'epsilon'); ?></em>
+            </div>
+          </article>
+
+          <article class="pngm-sec-limit">
+            <span class="pngm-sec-limit-ico is-post" aria-hidden="true"><i class="fas fa-desktop"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('This session', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill" data-pngm-display-mode-label>browser</span>
+              </div>
+              <em><?php _e('Updates to “standalone” after Add to Home Screen', 'epsilon'); ?></em>
+            </div>
+          </article>
+        </div>
+      </section>
+      <?php } ?>
+
       <section class="pngm-sec-card" id="pngm-sec-activity">
         <h2><?php _e('Recent security activity', 'epsilon'); ?></h2>
         <?php if (empty($activity)) { ?>
