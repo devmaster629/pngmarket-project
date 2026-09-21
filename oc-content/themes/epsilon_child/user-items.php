@@ -114,6 +114,13 @@
         </div>
       </form>
 
+      <?php if ($current_type === 'expired') { ?>
+        <div class="pngm-listings-policy" role="note">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          <p><?php _e('Expired listings are inactive and hidden from search — they are not deleted. Renew any listing below to make it public again for another 30 days.', 'epsilon'); ?></p>
+        </div>
+      <?php } ?>
+
       <div class="pngm-listings-list items-box <?php echo osc_esc_html($current_type); ?>">
         <?php if (osc_count_items() > 0) { ?>
           <?php while (osc_has_items()) {
@@ -230,9 +237,15 @@
           </div>
         <?php } else { ?>
           <div class="pngm-listings-empty">
-            <p><strong><?php _e('No listings found', 'epsilon'); ?></strong></p>
-            <p><?php _e('You don’t have any listings in this category or filter.', 'epsilon'); ?></p>
-            <a class="pngm-ua-btn" href="<?php echo osc_item_post_url(); ?>"><i class="fas fa-plus" aria-hidden="true"></i> <?php _e('Place an ad', 'epsilon'); ?></a>
+            <?php if ($current_type === 'expired') { ?>
+              <p><strong><?php _e('No expired listings', 'epsilon'); ?></strong></p>
+              <p><?php _e('When a listing reaches 30 days, it becomes inactive here (not deleted) so you can renew it.', 'epsilon'); ?></p>
+              <a class="pngm-ua-btn" href="<?php echo osc_esc_html(pngm_ua_items_url('active')); ?>"><?php _e('View active listings', 'epsilon'); ?></a>
+            <?php } else { ?>
+              <p><strong><?php _e('No listings found', 'epsilon'); ?></strong></p>
+              <p><?php _e('You don’t have any listings in this category or filter.', 'epsilon'); ?></p>
+              <a class="pngm-ua-btn" href="<?php echo osc_item_post_url(); ?>"><i class="fas fa-plus" aria-hidden="true"></i> <?php _e('Place an ad', 'epsilon'); ?></a>
+            <?php } ?>
           </div>
         <?php } ?>
       </div>

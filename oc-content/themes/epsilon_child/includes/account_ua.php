@@ -575,7 +575,11 @@ function pngm_ua_item_status()
         return array('key' => 'inactive', 'label' => __('Removed', 'epsilon'));
     }
     if (function_exists('osc_item_is_expired') && osc_item_is_expired()) {
-        return array('key' => 'expired', 'label' => __('Expired', 'epsilon'));
+        return array(
+            'key' => 'expired',
+            // Soft-expire: hidden from public, kept in account for renew (never deleted).
+            'label' => __('Expired (inactive)', 'epsilon'),
+        );
     }
     if (function_exists('osc_item_is_enabled') && !osc_item_is_enabled()) {
         return array('key' => 'inactive', 'label' => __('Inactive', 'epsilon'));

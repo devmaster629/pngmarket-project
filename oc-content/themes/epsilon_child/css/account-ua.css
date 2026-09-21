@@ -969,7 +969,9 @@ body.body-ua #user-main.pngm-ua-panel h1 {
   flex: 1 1 auto;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  /* Fixed meta/actions widths so status column starts at the same x on every row
+     (pending vs active differ in expiry line + button set). */
+  grid-template-columns: minmax(0, 1fr) 168px 300px;
   align-items: center;
   column-gap: 28px;
   row-gap: 10px;
@@ -1026,7 +1028,9 @@ body.body-ua #user-main.pngm-ua-panel h1 {
   justify-content: center;
   gap: 6px;
   text-align: left;
-  min-width: 120px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .pngm-listing-badge {
@@ -1092,6 +1096,9 @@ body.body-ua #user-main.pngm-ua-panel h1 {
   justify-content: flex-end;
   gap: 8px;
   position: relative;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .pngm-listing-btn {
@@ -1181,6 +1188,29 @@ body.body-ua #user-main.pngm-ua-panel h1 {
   background: #f3faf3;
   border: 1px dashed #c8e6c9;
   border-radius: 14px;
+}
+
+.pngm-listings-policy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: #fff8e6;
+  border: 1px solid #f0d9a0;
+  border-radius: 10px;
+  color: #7a5b12;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pngm-listings-policy i {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.pngm-listings-policy p {
+  margin: 0;
 }
 
 .pngm-listings-empty p {
