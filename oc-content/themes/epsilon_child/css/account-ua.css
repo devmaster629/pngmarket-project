@@ -5276,6 +5276,93 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
   color: #c62828;
 }
 
+.pngm-sec-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.pngm-sec-limit {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e6eaf0;
+  border-radius: 12px;
+  background: #fafbfc;
+  box-sizing: border-box;
+}
+
+.pngm-sec-limit.is-on {
+  background: #f4faf4;
+  border-color: #d7e8d8;
+}
+
+.pngm-sec-limit-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  font-size: 15px;
+}
+
+.pngm-sec-limit-ico.is-post {
+  background: #eef3fd;
+  color: #1a56db;
+}
+
+.pngm-sec-limit-ico.is-msg {
+  background: #fff4e5;
+  color: #b26a00;
+}
+
+.pngm-sec-limit-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pngm-sec-limit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pngm-sec-limit-top strong {
+  font-size: 14px;
+  color: #16202a;
+  white-space: nowrap;
+}
+
+.pngm-sec-limit-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 700;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.pngm-sec-limit-body em {
+  font-style: normal;
+  font-size: 13px;
+  color: #5a6570;
+  line-height: 1.4;
+}
+
 .pngm-sec-social-meta {
   display: inline-flex;
   align-items: center;

@@ -490,6 +490,65 @@ if ($show_pass && $show_email) {
         </form>
       </section>
 
+      <?php
+        $pngm_limits = function_exists('pngm_antispam_public_status') ? pngm_antispam_public_status() : null;
+        if (is_array($pngm_limits)) {
+          $reg = $pngm_limits['registration'];
+          $post = $pngm_limits['posting'];
+          $msg = $pngm_limits['messaging'];
+      ?>
+      <section class="pngm-sec-card" id="pngm-sec-rate-limits">
+        <div class="pngm-sec-card-top">
+          <h2><?php _e('Rate limits & abuse protection', 'epsilon'); ?></h2>
+          <span class="pngm-sec-badge is-ok"><?php _e('Active', 'epsilon'); ?></span>
+        </div>
+        <p class="pngm-sec-help"><?php _e('These protections run on registration, listing publish, and messaging.', 'epsilon'); ?></p>
+
+        <div class="pngm-sec-limits">
+          <article class="pngm-sec-limit<?php echo !empty($reg['active']) ? ' is-on' : ''; ?>">
+            <span class="pngm-sec-limit-ico" aria-hidden="true"><i class="fas fa-user-plus"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('Registration', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill"><?php echo (int) $reg['max_per_hour']; ?>/hr</span>
+              </div>
+              <em><?php _e('Per IP address', 'epsilon'); ?><?php echo !empty($reg['captcha']) ? ' · CAPTCHA' : ''; ?></em>
+            </div>
+          </article>
+
+          <article class="pngm-sec-limit<?php echo !empty($post['active']) ? ' is-on' : ''; ?>">
+            <span class="pngm-sec-limit-ico is-post" aria-hidden="true"><i class="fas fa-clipboard-list"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('Posting', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill"><?php echo (int) $post['max_per_hour']; ?>/hr</span>
+              </div>
+              <em><?php echo osc_esc_html(sprintf(
+                  __('Wait %d–%d seconds between listings', 'epsilon'),
+                  (int) $post['items_wait'],
+                  (int) $post['min_seconds']
+              )); ?></em>
+            </div>
+          </article>
+
+          <article class="pngm-sec-limit<?php echo !empty($msg['active']) ? ' is-on' : ''; ?>">
+            <span class="pngm-sec-limit-ico is-msg" aria-hidden="true"><i class="fas fa-comments"></i></span>
+            <div class="pngm-sec-limit-body">
+              <div class="pngm-sec-limit-top">
+                <strong><?php _e('Messaging', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill"><?php echo (int) $msg['period_hours']; ?>h</span>
+              </div>
+              <em><?php echo osc_esc_html(sprintf(
+                  __('%d messages or %d contacts (new accounts)', 'epsilon'),
+                  (int) $msg['max_messages'],
+                  (int) $msg['max_users']
+              )); ?></em>
+            </div>
+          </article>
+        </div>
+      </section>
+      <?php } ?>
+
       <section class="pngm-sec-card" id="pngm-sec-activity">
         <h2><?php _e('Recent security activity', 'epsilon'); ?></h2>
         <?php if (empty($activity)) { ?>

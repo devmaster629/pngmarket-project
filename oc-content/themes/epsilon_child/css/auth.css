@@ -351,6 +351,35 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   text-align: center;
 }
 
+.pngm-auth-limits {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f3f7f3;
+  border: 1px solid #d7e5d8;
+  text-align: left;
+}
+
+.pngm-auth-limits strong {
+  display: block;
+  font-size: 13px;
+  color: #1b5e20;
+  margin-bottom: 4px;
+}
+
+.pngm-auth-limits ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pngm-auth-limits li {
+  font-size: 12px;
+  color: #5b6670;
+  line-height: 1.4;
+  padding: 2px 0;
+}
+
 .pngm-auth-meta {
   display: flex;
   align-items: center;

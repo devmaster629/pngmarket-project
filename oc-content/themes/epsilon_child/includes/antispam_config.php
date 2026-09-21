@@ -36,6 +36,11 @@ if (!defined('PNGM_ANTISPAM_IM_PERIOD_HOURS')) {
     define('PNGM_ANTISPAM_IM_PERIOD_HOURS', 12);
 }
 
+/** Max account registrations per IP per hour. */
+if (!defined('PNGM_ANTISPAM_REG_MAX_PER_HOUR')) {
+    define('PNGM_ANTISPAM_REG_MAX_PER_HOUR', 5);
+}
+
 /**
  * @param string $name
  * @param mixed  $value
@@ -170,6 +175,114 @@ function pngm_antispam_ensure_im_limits()
 }
 
 /**
+ * Count users registered from this IP in the last hour.
+ *
+ * @param string $ip
+ * @return int
+ */
+function pngm_antispam_reg_count_ip_hour($ip)
+{
+    $ip = trim((string) $ip);
+    if ($ip === '' || !defined('DB_TABLE_PREFIX')) {
+        return 0;
+    }
+    try {
+        $conn = DBConnectionClass::newInstance();
+        $data = $conn->getOsclassDb();
+        $dao = new DBCommandClass($data);
+        $since = date('Y-m-d H:i:s', time() - 3600);
+        $dao->select('COUNT(*) as total');
+        $dao->from(DB_TABLE_PREFIX . 't_user');
+        $dao->where('s_access_ip', $ip);
+        $dao->where(sprintf("dt_reg_date >= '%s'", $since));
+        $res = $dao->get();
+        if ($res) {
+            $row = $res->row();
+            return isset($row['total']) ? (int) $row['total'] : 0;
+        }
+    } catch (Throwable $e) {
+        return 0;
+    }
+    return 0;
+}
+
+/**
+ * Block rapid registration spam from the same IP.
+ */
+function pngm_antispam_require_register_rate_limit()
+{
+    $ip = function_exists('osc_get_ip') ? (string) osc_get_ip() : '';
+    if ($ip === '') {
+        return;
+    }
+    $count = pngm_antispam_reg_count_ip_hour($ip);
+    $max = (int) PNGM_ANTISPAM_REG_MAX_PER_HOUR;
+    if ($count >= $max) {
+        osc_add_flash_error_message(
+            sprintf(
+                __('Too many accounts were created from this network recently. Please wait before registering again (limit: %d per hour).', 'epsilon'),
+                $max
+            )
+        );
+        osc_redirect_to(osc_register_account_url());
+    }
+}
+
+/**
+ * Public snapshot of active rate limits (for Account & Security / auditors).
+ *
+ * @return array
+ */
+function pngm_antispam_public_status()
+{
+    $items_wait = function_exists('osc_items_wait_time') ? (int) osc_items_wait_time() : (int) osc_get_preference('items_wait_time');
+    $dup_min = defined('PNGM_DUP_MIN_SECONDS') ? (int) PNGM_DUP_MIN_SECONDS : 90;
+    $dup_hour = defined('PNGM_DUP_MAX_PER_HOUR') ? (int) PNGM_DUP_MAX_PER_HOUR : 3;
+    $im_on = ((string) osc_get_preference('limit_enabled', 'plugin-instant_messenger') === '1');
+    $im_msgs = (int) osc_get_preference('limit_max_messages', 'plugin-instant_messenger');
+    $im_users = (int) osc_get_preference('limit_max_users', 'plugin-instant_messenger');
+    $im_hours = (int) osc_get_preference('limit_period_hours', 'plugin-instant_messenger');
+    $reg_max = (int) PNGM_ANTISPAM_REG_MAX_PER_HOUR;
+    $captcha = function_exists('pngm_recaptcha_is_required') && pngm_recaptcha_is_required();
+
+    return array(
+        'active' => true,
+        'registration' => array(
+            'active' => true,
+            'label' => sprintf(__('Max %d new accounts per IP per hour + CAPTCHA', 'epsilon'), $reg_max),
+            'max_per_hour' => $reg_max,
+            'captcha' => $captcha,
+        ),
+        'posting' => array(
+            'active' => ($items_wait > 0 || $dup_min > 0),
+            'label' => sprintf(
+                __('Min %d–%d seconds between listings; max %d listings per hour', 'epsilon'),
+                max(1, $items_wait),
+                max($items_wait, $dup_min),
+                $dup_hour
+            ),
+            'items_wait' => $items_wait,
+            'min_seconds' => $dup_min,
+            'max_per_hour' => $dup_hour,
+        ),
+        'messaging' => array(
+            'active' => $im_on,
+            'label' => $im_on
+                ? sprintf(
+                    __('Max %d messages or %d contacts per %d hours (new accounts)', 'epsilon'),
+                    $im_msgs,
+                    $im_users,
+                    $im_hours
+                )
+                : __('Messaging limits off', 'epsilon'),
+            'max_messages' => $im_msgs,
+            'max_users' => $im_users,
+            'period_hours' => $im_hours,
+        ),
+    );
+}
+
+/**
  * Apply anti-spam policy on normal page loads.
  */
 function pngm_antispam_apply_policy()
@@ -195,4 +308,5 @@ function pngm_antispam_apply_policy()
 
 if (function_exists('osc_add_hook')) {
     osc_add_hook('init', 'pngm_antispam_apply_policy', 4);
+    osc_add_hook('before_user_register', 'pngm_antispam_require_register_rate_limit', 1);
 }
