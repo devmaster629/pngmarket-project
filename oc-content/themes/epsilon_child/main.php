@@ -223,12 +223,8 @@
     //osc_get_premiums(eps_param('premium_home_count') - $has_day_offer); 
     $premium_items = eps_premium_items(eps_param('premium_home_count') - $has_day_offer, @$day_offer['pk_i_id']);
     // 30-day policy: never surface soft-expired ads in the premium strip.
-    if (is_array($premium_items) && function_exists('osc_isExpired')) {
-      $premium_items = array_values(array_filter($premium_items, function ($row) {
-        return is_array($row)
-          && !empty($row['dt_expiration'])
-          && !osc_isExpired($row['dt_expiration']);
-      }));
+    if (function_exists('pngm_listing_expiry_filter_item_rows')) {
+      $premium_items = pngm_listing_expiry_filter_item_rows($premium_items);
     }
   ?>
 
@@ -440,7 +436,13 @@
   <?php } ?>
   
 
-  <?php View::newInstance()->_exportVariableToView('latestItems', eps_random_items()); ?>
+  <?php
+    $pngm_latest_items = eps_random_items();
+    if (function_exists('pngm_listing_expiry_filter_item_rows')) {
+      $pngm_latest_items = pngm_listing_expiry_filter_item_rows($pngm_latest_items);
+    }
+    View::newInstance()->_exportVariableToView('latestItems', $pngm_latest_items);
+  ?>
   
   <?php if(osc_count_latest_items() > 0) { ?>
     <?php

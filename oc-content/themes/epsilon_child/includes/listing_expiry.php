@@ -216,6 +216,70 @@ function pngm_listing_expiry_search_item_conditions($conditions)
 osc_add_filter('sql_search_item_conditions', 'pngm_listing_expiry_search_item_conditions');
 
 /**
+ * Homepage "latest" (eps_random_items) builds raw SQL with the core premium OR
+ * bypass and only runs custom_item_search_conditions — not sql_search_item_conditions.
+ * Force the same strict dt_expiration rule there.
+ *
+ * @param string $where
+ * @return string
+ */
+function pngm_listing_expiry_custom_item_search_conditions($where)
+{
+    $where = (string) $where;
+    if ($where === '' || !defined('DB_TABLE_PREFIX')) {
+        return $where;
+    }
+
+    $prefix = preg_quote(DB_TABLE_PREFIX, '/');
+    $now = date('Y-m-d H:i:s');
+    $strict = DB_TABLE_PREFIX . "t_item.dt_expiration >= '" . $now . "'";
+
+    $replaced = preg_replace(
+        '/' . $prefix . 't_item\.b_premium\s*=\s*1\s*OR\s*' . $prefix . 't_item\.dt_expiration\s*>=\s*\'[^\']+\'/i',
+        $strict,
+        $where,
+        1,
+        $count
+    );
+    if (is_string($replaced) && $count > 0) {
+        return $replaced;
+    }
+
+    // Also match aliased forms used elsewhere (i.b_premium / i.dt_expiration).
+    $replaced = preg_replace(
+        '/\bi\.b_premium\s*=\s*1\s*OR\s*i\.dt_expiration\s*>=\s*\'[^\']+\'/i',
+        "i.dt_expiration >= '" . $now . "'",
+        $where,
+        1,
+        $count2
+    );
+    if (is_string($replaced) && $count2 > 0) {
+        return $replaced;
+    }
+
+    return $where;
+}
+osc_add_filter('custom_item_search_conditions', 'pngm_listing_expiry_custom_item_search_conditions', 8);
+
+/**
+ * Drop soft-expired rows from any preloaded item array (premium strip, latest, etc.).
+ *
+ * @param array $items
+ * @return array
+ */
+function pngm_listing_expiry_filter_item_rows($items)
+{
+    if (!is_array($items) || !function_exists('osc_isExpired')) {
+        return $items;
+    }
+    return array_values(array_filter($items, function ($row) {
+        return is_array($row)
+            && !empty($row['dt_expiration'])
+            && !osc_isExpired($row['dt_expiration']);
+    }));
+}
+
+/**
  * Human expiry date for the current View item.
  *
  * @return string
