@@ -183,6 +183,6 @@ function im_email_message_notify($send_to_user_name, $send_to_user_email, $send_
     $email_build['attachment'] = $attachment_path;
   }
 
-  osc_sendMail($email_build);
+  osc_sendMail($email_build, 'im_message');
   return true;
 }

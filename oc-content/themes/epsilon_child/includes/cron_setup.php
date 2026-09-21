@@ -181,6 +181,15 @@ function pngm_cron_health()
         $out['warnings'][] = sprintf('warn_expiration is %d (expected 7).', $warn);
     }
 
+    // Message emails are deferred (~5 min) and need minutely cron.
+    if (function_exists('im_param') && (int) im_param('email_deferred') === 1) {
+        $minutely = isset($out['rows']['MINUTELY']) ? $out['rows']['MINUTELY'] : null;
+        if (is_array($minutely) && !empty($minutely['stale'])) {
+            $out['ok'] = false;
+            $out['warnings'][] = 'Message notification emails are deferred; minutely cron is stale so IM mail may not send.';
+        }
+    }
+
     $root = defined('ABS_PATH') ? rtrim(str_replace('\\', '/', ABS_PATH), '/') : '';
     $php = defined('PHP_BINARY') && PHP_BINARY !== '' ? PHP_BINARY : 'php';
     $runner = $root !== '' ? $root . '/pngm-cron.php' : 'pngm-cron.php';

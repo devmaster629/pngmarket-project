@@ -226,6 +226,13 @@ function pngm_notif_pre_send_mail_filter($params, $type = '')
         if ($im !== null) {
             $pref_key = pngm_notif_im_pref_key($im[0]);
         }
+    } elseif ($type === 'im_message') {
+        $im = pngm_notif_im_mail_context();
+        if ($im !== null) {
+            $pref_key = pngm_notif_im_pref_key($im[0]);
+        } else {
+            $pref_key = 'msg_new';
+        }
     } else {
         $pref_key = pngm_notif_pref_key_for_mail_type($type);
     }
@@ -254,18 +261,9 @@ function pngm_notif_pre_send_mail_filter($params, $type = '')
         return $params;
     }
 
-    // IM mails are not sent via pngm_notif_notify_user — queue push here.
+    // IM mails: email gated here; browser push is queued on im_insert_message
+    // so it does not wait for deferred SMTP cron.
     if ($pref_key === 'msg_new' || $pref_key === 'msg_reply') {
-        if (pngm_notif_user_allows($user_id, $pref_key, 'push')) {
-            $url = osc_base_url() . 'index.php?page=custom&file=instant_messenger/user/threads.php';
-            if (function_exists('osc_route_url')) {
-                $try = osc_route_url('im-threads');
-                if (is_string($try) && $try !== '') {
-                    $url = $try;
-                }
-            }
-            pngm_notif_queue_push($user_id, $pref_key, $subject, $body_txt, $url);
-        }
         if (!pngm_notif_user_allows($user_id, $pref_key, 'email')) {
             return array('stop' => true);
         }
@@ -317,6 +315,9 @@ function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '')
     }
 
     osc_set_preference('pushq_' . $user_id, json_encode($queue), 'pngm_notif_prefs', 'STRING');
+    if (class_exists('Preference')) {
+        Preference::newInstance()->toArray();
+    }
 }
 
 /**
@@ -591,6 +592,99 @@ function pngm_im_on_insert_save_file_label($message_id)
     }
 }
 osc_add_hook('im_insert_message', 'pngm_im_on_insert_save_file_label', 9);
+
+/**
+ * Queue browser push as soon as a message is stored (does not wait for deferred email).
+ *
+ * @param int $message_id
+ */
+function pngm_im_on_insert_queue_push($message_id)
+{
+    $message_id = (int) $message_id;
+    if ($message_id <= 0 || !class_exists('ModelIM') || !function_exists('pngm_notif_queue_push')) {
+        return;
+    }
+
+    $msg = ModelIM::newInstance()->getMessageById($message_id);
+    if (!is_array($msg) || empty($msg['fk_i_thread_id'])) {
+        return;
+    }
+
+    $thread = ModelIM::newInstance()->getThreadById((int) $msg['fk_i_thread_id']);
+    if (!is_array($thread)) {
+        return;
+    }
+
+    $type = isset($msg['i_type']) ? (int) $msg['i_type'] : 0;
+    // type 0 = from-user wrote → notify to-user; type 1 = reverse.
+    if ($type === 0) {
+        if ((int) @$thread['i_to_user_notify'] !== 1) {
+            return;
+        }
+        $user_id = (int) @$thread['i_to_user_id'];
+        $from_name = isset($thread['s_from_user_name']) ? (string) $thread['s_from_user_name'] : __('Someone', 'epsilon');
+    } else {
+        if ((int) @$thread['i_from_user_notify'] !== 1) {
+            return;
+        }
+        $user_id = (int) @$thread['i_from_user_id'];
+        $from_name = isset($thread['s_to_user_name']) ? (string) $thread['s_to_user_name'] : __('Someone', 'epsilon');
+    }
+
+    if ($user_id <= 0) {
+        // Guest recipient — try email lookup.
+        $email = ($type === 0)
+            ? (isset($thread['s_to_user_email']) ? (string) $thread['s_to_user_email'] : '')
+            : (isset($thread['s_from_user_email']) ? (string) $thread['s_from_user_email'] : '');
+        if ($email !== '' && function_exists('pngm_notif_user_id_by_email')) {
+            $user_id = pngm_notif_user_id_by_email($email);
+        }
+    }
+    if ($user_id <= 0) {
+        return;
+    }
+
+    $thread_id = (int) $thread['i_thread_id'];
+    $rows = ModelIM::newInstance()->getMessagesByThreadId($thread_id);
+    $count = is_array($rows) ? count($rows) : 0;
+    $pref_key = ($count <= 1) ? 'msg_new' : 'msg_reply';
+
+    if (!function_exists('pngm_notif_user_allows') || !pngm_notif_user_allows($user_id, $pref_key, 'push')) {
+        return;
+    }
+
+    $title = ($pref_key === 'msg_new')
+        ? sprintf(__('New message from %s', 'epsilon'), $from_name)
+        : sprintf(__('Reply from %s', 'epsilon'), $from_name);
+    $body = isset($msg['s_message']) ? trim(strip_tags((string) $msg['s_message'])) : '';
+    if ($body === '' && !empty($msg['s_file'])) {
+        $body = __('Sent an attachment', 'epsilon');
+    }
+    if (function_exists('mb_substr')) {
+        $body = mb_substr($body, 0, 140, 'UTF-8');
+    } else {
+        $body = substr($body, 0, 140);
+    }
+
+    $url = osc_base_url() . 'index.php?page=custom&file=instant_messenger/user/threads.php';
+    if (function_exists('osc_route_url')) {
+        $secret = ($type === 0)
+            ? (isset($thread['s_to_secret']) ? (string) $thread['s_to_secret'] : '')
+            : (isset($thread['s_from_secret']) ? (string) $thread['s_from_secret'] : '');
+        $try = osc_route_url('im-messages', array('thread-id' => $thread_id, 'secret' => $secret));
+        if (is_string($try) && $try !== '') {
+            $url = $try;
+        } else {
+            $try = osc_route_url('im-threads');
+            if (is_string($try) && $try !== '') {
+                $url = $try;
+            }
+        }
+    }
+
+    pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url);
+}
+osc_add_hook('im_insert_message', 'pngm_im_on_insert_queue_push', 8);
 
 /**
  * Deliver queued browser notifications for the logged-in user.
