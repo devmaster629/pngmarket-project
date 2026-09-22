@@ -808,12 +808,21 @@
 
       if (imgs.length) {
         $cover.append($('<img/>').attr({ src: imgs[0], alt: title }));
+        $cover.append(
+          '<button type="button" class="pngm-photo-view" title="View photo" aria-label="View photo">' +
+            '<i class="far fa-eye" aria-hidden="true"></i>' +
+          '</button>'
+        );
         imgs.slice(0, 8).forEach(function (src, idx) {
           var $btn = $('<button type="button" class="pngm-post-review-thumb"/>').append($('<img/>').attr('src', src));
           if (idx === 0) {
             $btn.addClass('is-active');
           }
           $btn.on('click', function () {
+            if ($btn.hasClass('is-active') && typeof window.pngmOpenPhotoViewer === 'function') {
+              window.pngmOpenPhotoViewer(src);
+              return;
+            }
             $thumbs.find('.pngm-post-review-thumb').removeClass('is-active');
             $btn.addClass('is-active');
             $cover.find('img').attr('src', src);

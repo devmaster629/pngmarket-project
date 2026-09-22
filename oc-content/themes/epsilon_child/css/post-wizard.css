@@ -1210,6 +1210,7 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
 }
 
 .pngm-post-review-cover {
+  position: relative;
   aspect-ratio: 16 / 10;
   background: #111;
   border: 1px solid #e3e8ed;
@@ -1225,6 +1226,19 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
   height: 100%;
   object-fit: cover;
   background: #000;
+  cursor: zoom-in;
+}
+
+.pngm-post-review-cover .pngm-photo-view {
+  left: auto;
+  right: 10px;
+  bottom: 10px;
+  width: 40px;
+  height: 40px;
+}
+
+.pngm-post-review-cover .pngm-photo-view i {
+  font-size: 16px;
 }
 
 .pngm-post-review-placeholder {
@@ -1253,9 +1267,9 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
 .pngm-post-review-thumbs {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin: 10px 0 12px;
   overflow-x: auto;
-  padding-top: 4px;
+  padding: 0;
 }
 
 .pngm-post-review-thumbs:empty {

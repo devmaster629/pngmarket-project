@@ -554,9 +554,9 @@
                   </div>
                   <span class="pngm-post-review-badge" id="pngm-review-price">—</span>
                 </div>
+                <div class="pngm-post-review-thumbs" id="pngm-review-thumbs"></div>
                 <h3 class="pngm-post-review-title" id="pngm-review-title">—</h3>
                 <dl class="pngm-post-review-meta" id="pngm-review-meta"></dl>
-                <div class="pngm-post-review-thumbs" id="pngm-review-thumbs"></div>
               </div>
             </div>
 

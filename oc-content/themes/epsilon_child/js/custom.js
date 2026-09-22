@@ -2621,6 +2621,8 @@
       document.body.classList.add('pngm-photo-viewer-open');
     }
 
+    window.pngmOpenPhotoViewer = open;
+
     function close() {
       viewer.attr('hidden', 'hidden');
       img.removeAttribute('src');
@@ -2732,8 +2734,8 @@
     $(document).on('click.pngmPhotoPreview', '.pngm-photo-view', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      var $li = $(this).closest('li');
-      var el = $li.find('.ajax_preview_img img, img').get(0);
+      var $host = $(this).closest('li, #pngm-review-cover, #pngm-public-cover, .pngm-post-review-thumb');
+      var el = $host.find('img').get(0) || $(this).siblings('img').get(0);
       open(fullSrc(el));
     });
 
@@ -2742,6 +2744,15 @@
         return;
       }
 
+      e.preventDefault();
+      e.stopPropagation();
+      open(fullSrc(this));
+    });
+
+    $(document).on('click.pngmPhotoPreview', '#pngm-review-cover img, #pngm-public-cover img', function (e) {
+      if ($(e.target).closest('.pngm-photo-view, .pngm-post-review-badge').length) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       open(fullSrc(this));
@@ -2757,7 +2768,31 @@
         });
         obs.observe(listRoot, { childList: true, subtree: true });
       }
+      var reviewRoot = document.getElementById('pngm-review-cover');
+      if (reviewRoot) {
+        var reviewObs = new MutationObserver(function () {
+          ensureReviewViewButton();
+        });
+        reviewObs.observe(reviewRoot, { childList: true, subtree: true });
+      }
     }
+
+    function ensureReviewViewButton() {
+      var $cover = $('#pngm-review-cover');
+      if (!$cover.length || !$cover.find('img').length) {
+        return;
+      }
+      if ($cover.find('.pngm-photo-view').length) {
+        return;
+      }
+      $cover.append(
+        '<button type="button" class="pngm-photo-view" title="View photo" aria-label="View photo">' +
+          '<i class="far fa-eye" aria-hidden="true"></i>' +
+        '</button>'
+      );
+    }
+
+    ensureReviewViewButton();
 
     document.addEventListener('error', function (e) {
       var el = e.target;
