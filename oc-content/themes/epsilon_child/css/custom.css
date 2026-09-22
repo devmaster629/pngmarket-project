@@ -3154,12 +3154,80 @@ body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-out {
 }
 
 /* Upload photos: open full image before the listing is posted */
-.upload-photos .ajax_preview_img {
+.upload-photos .ajax_preview_img,
+#photos .ajax_preview_img {
+  cursor: zoom-in;
+  position: relative;
+}
+
+.upload-photos .ajax_preview_img img,
+#photos .ajax_preview_img img {
   cursor: zoom-in;
 }
 
-.upload-photos .ajax_preview_img img {
-  cursor: zoom-in;
+/* Reorder handle — corner, not centered over the photo */
+body.pngm-post-wizard .qq-upload-list li .qq-upload-move,
+.upload-photos .qq-upload-list li .qq-upload-move,
+#photos .qq-upload-list li .qq-upload-move {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  top: 6px !important;
+  left: 6px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  box-shadow: none !important;
+  z-index: 4 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+body.pngm-post-wizard .qq-upload-list li .qq-upload-move i,
+.upload-photos .qq-upload-list li .qq-upload-move i {
+  line-height: 1 !important;
+}
+
+/* Eye = view / pinch-zoom lightbox */
+.pngm-photo-view {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.pngm-photo-view:hover,
+.pngm-photo-view:focus {
+  background: #1b5e20;
+  outline: none;
+}
+
+.pngm-photo-view i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+body.pngm-post-wizard .upload-photos .qq-upload-delete,
+body.pngm-post-wizard #photos .qq-upload-delete {
+  opacity: 1 !important;
+  z-index: 5;
 }
 
 .pngm-photo-viewer {
@@ -3175,12 +3243,22 @@ body.pngm-lg-open .lg-actions .lg-icon.lg-zoom-out {
   display: none !important;
 }
 
+body.pngm-photo-viewer-open {
+  overflow: hidden;
+}
+
+body.pngm-photo-viewer-open #navi-bar {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .pngm-photo-viewer-bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   padding: 8px 10px;
+  padding-top: max(8px, env(safe-area-inset-top));
 }
 
 .pngm-photo-viewer-close {

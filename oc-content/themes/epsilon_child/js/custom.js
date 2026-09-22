@@ -2583,6 +2583,7 @@
     var lastX = 0;
     var lastY = 0;
     var panning = false;
+    var lastTap = 0;
 
     function applyTransform() {
       img.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scale + ')';
@@ -2602,15 +2603,22 @@
     }
 
     function fullSrc(el) {
-      var src = el.getAttribute('src') || '';
+      if (!el) {
+        return '';
+      }
+      var src = el.getAttribute('src') || el.getAttribute('data-src') || '';
       return src.replace('_thumbnail.', '.').replace('_preview.', '.');
     }
 
     function open(src) {
+      if (!src) {
+        return;
+      }
       img.src = src;
       resetTransform();
       viewer.removeAttr('hidden');
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('pngm-photo-viewer-open');
     }
 
     function close() {
@@ -2618,6 +2626,29 @@
       img.removeAttribute('src');
       resetTransform();
       document.body.style.overflow = '';
+      document.body.classList.remove('pngm-photo-viewer-open');
+    }
+
+    function ensureViewButtons(scope) {
+      var $scope = scope ? $(scope) : $(document);
+      $scope.find('.upload-photos .qq-upload-list li, #photos .qq-upload-list li, #uppy-gallery li').each(function () {
+        var $li = $(this);
+        if (!$li.find('img').length) {
+          return;
+        }
+        var $preview = $li.find('.ajax_preview_img').first();
+        if (!$preview.length) {
+          $preview = $li;
+        }
+        if ($li.find('.pngm-photo-view').length) {
+          return;
+        }
+        $preview.append(
+          '<button type="button" class="pngm-photo-view" title="View photo" aria-label="View photo">' +
+            '<i class="far fa-eye" aria-hidden="true"></i>' +
+          '</button>'
+        );
+      });
     }
 
     viewer.find('.pngm-photo-viewer-close').on('click', function (e) {
@@ -2653,6 +2684,23 @@
       }
     }, { passive: true });
 
+    stage.addEventListener('touchend', function (e) {
+      if (e.touches.length === 0 && e.changedTouches && e.changedTouches.length === 1 && !panning) {
+        var now = Date.now();
+        if (now - lastTap < 320) {
+          if (scale > 1.05) {
+            resetTransform();
+          } else {
+            scale = 2.5;
+            applyTransform();
+          }
+          lastTap = 0;
+        } else {
+          lastTap = now;
+        }
+      }
+    }, { passive: true });
+
     stage.addEventListener('touchmove', function (e) {
       if (e.touches.length === 2 && startDist > 0) {
         e.preventDefault();
@@ -2681,8 +2729,16 @@
       applyTransform();
     }, { passive: false });
 
+    $(document).on('click.pngmPhotoPreview', '.pngm-photo-view', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var $li = $(this).closest('li');
+      var el = $li.find('.ajax_preview_img img, img').get(0);
+      open(fullSrc(el));
+    });
+
     $(document).on('click.pngmPhotoPreview', '.upload-photos .ajax_preview_img img, #photos .ajax_preview_img img', function (e) {
-      if ($(e.target).closest('.qq-upload-delete, .qq-upload-rotate, .qq-upload-move, .qq-upload-rotate-img').length) {
+      if ($(e.target).closest('.qq-upload-delete, .qq-upload-rotate, .qq-upload-move, .qq-upload-rotate-img, .pngm-photo-view').length) {
         return;
       }
 
@@ -2690,6 +2746,18 @@
       e.stopPropagation();
       open(fullSrc(this));
     });
+
+    ensureViewButtons();
+
+    if (window.MutationObserver) {
+      var listRoot = document.querySelector('#photos .qq-upload-list, #uppy-gallery, .upload-photos .qq-upload-list');
+      if (listRoot) {
+        var obs = new MutationObserver(function () {
+          ensureViewButtons(listRoot);
+        });
+        obs.observe(listRoot, { childList: true, subtree: true });
+      }
+    }
 
     document.addEventListener('error', function (e) {
       var el = e.target;
