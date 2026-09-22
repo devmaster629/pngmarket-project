@@ -454,6 +454,22 @@
       return text || (labels.requiredField || 'Required field');
     }
 
+    /** Duplicate of Step 5 contact phone (Attributes plugin PHONE field). */
+    function isContactPhoneAttribute($group) {
+      if (!$group || !$group.length) {
+        return false;
+      }
+      var cls = String($group.attr('class') || '').toLowerCase();
+      if (cls.indexOf('atr-type-phone') !== -1) {
+        return true;
+      }
+      var id = String($group.attr('id') || '').toLowerCase();
+      if (id === 'atr-phone' || id.indexOf('atr-phone') === 0) {
+        return true;
+      }
+      return /contact\s*phone|^phone(\s*number)?$/i.test(attrGroupLabel($group));
+    }
+
     function isFilledSelect($sel) {
       var v = String($sel.val() || '');
       return v !== '' && v !== '0';
@@ -470,6 +486,9 @@
       $groups.each(function () {
         var $group = $(this);
         if (!$group.is(':visible')) {
+          return;
+        }
+        if (isContactPhoneAttribute($group)) {
           return;
         }
         if (!$group.find('label .req, .control-label .req, span.req').length) {
@@ -926,8 +945,8 @@
         if (!name || seen[name]) {
           return;
         }
-        // Contact phone is shown in the seller/contact area on the live listing.
-        if (/contact\s*phone/i.test(name)) {
+        // Contact phone is Step 5 only — skip Attributes PHONE duplicates.
+        if (isContactPhoneAttribute($group) || /contact\s*phone/i.test(name)) {
           return;
         }
         var value = '';

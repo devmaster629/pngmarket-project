@@ -76,6 +76,10 @@ function pngm_atr_post_form($cat_id = null, $item_id = null)
         if (!empty($a['fk_i_linked_to_attr_id']) && (int) $a['fk_i_linked_to_attr_id'] > 0) {
             continue;
         }
+        // Phone belongs on Contact (step 5) via Osclass contactPhone — not Item details.
+        if (isset($a['s_type']) && strtoupper((string) $a['s_type']) === 'PHONE') {
+            continue;
+        }
         if ($cat_id > 0 && !pngm_atr_applies_to_leaf($a, $cat_id)) {
             continue;
         }
