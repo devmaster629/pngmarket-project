@@ -113,6 +113,7 @@ body.pngm-post-wizard .pngm-post-page-title {
   font-size: 12px;
   font-weight: 700;
   color: #6b7785;
+  flex: 0 0 auto;
 }
 
 .pngm-post-step.is-active .pngm-post-step-dot {
@@ -138,16 +139,34 @@ body.pngm-post-wizard .pngm-post-page-title {
   color: #2e7d32;
 }
 
+/* Desktop: line optically centered with the whole step (dot + label) */
 .pngm-post-step-line {
   width: 28px;
   height: 2px;
   background: #d0d7de;
   margin: 0 2px 18px;
   flex: 0 0 auto;
+  align-self: center;
 }
 
 .pngm-post-step-line.is-done {
   background: #2e7d32;
+}
+
+/* Mobile: keep connector lines level with the dots (toward the top) */
+@media screen and (max-width: 767px) {
+  .pngm-post-stepper-list {
+    align-items: flex-start;
+  }
+
+  .pngm-post-step {
+    min-width: 56px;
+  }
+
+  .pngm-post-step-line {
+    align-self: flex-start;
+    margin: 13px 2px 0;
+  }
 }
 
 /* Layout */
@@ -1036,29 +1055,99 @@ body.pngm-post-wizard .upload-photos .qq-upload-button > div {
 
 body.pngm-post-wizard .qq-upload-list,
 body.pngm-post-wizard #photos .qq-upload-list,
-body.pngm-post-wizard .upload-photos .qq-upload-list {
+body.pngm-post-wizard .upload-photos .qq-upload-list,
+body.pngm-post-wizard #uppy-gallery {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  gap: 12px !important;
   margin: 12px 0 0 !important;
   padding: 12px !important;
   width: 100% !important;
   float: none !important;
+  clear: both !important;
   position: relative !important;
+  left: auto !important;
+  top: auto !important;
   z-index: 1;
   box-sizing: border-box;
+  list-style: none !important;
 }
 
-body.pngm-post-wizard .qq-upload-list li,
-body.pngm-post-wizard #photos .qq-upload-list li {
-  width: auto !important;
-  height: auto !important;
+body.pngm-post-wizard .qq-upload-list > li,
+body.pngm-post-wizard #photos .qq-upload-list > li,
+body.pngm-post-wizard #uppy-gallery > li,
+body.pngm-post-wizard .upload-photos .qq-upload-list > li {
+  position: relative !important;
   float: none !important;
+  clear: none !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 8px !important;
   aspect-ratio: 1 / 1;
-  border: 1px solid #e3e8ed;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fff;
+  border: 1px solid #e3e8ed !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Parent theme floats .ajax_preview_img — that collapses grid cells on desktop */
+body.pngm-post-wizard .upload-photos .ajax_preview_img,
+body.pngm-post-wizard #photos .ajax_preview_img,
+body.pngm-post-wizard #uppy-gallery .ajax_preview_img {
+  float: none !important;
+  clear: none !important;
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  margin: 4px 0 0 !important;
+  padding-top: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #171717 !important;
+  border-radius: 6px !important;
+}
+
+body.pngm-post-wizard .upload-photos .ajax_preview_img img,
+body.pngm-post-wizard #photos .ajax_preview_img img,
+body.pngm-post-wizard #uppy-gallery .ajax_preview_img img {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+
+body.pngm-post-wizard .qq-upload-list > li .qq-upload-file,
+body.pngm-post-wizard #uppy-gallery > li .qq-upload-file {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+@media screen and (max-width: 767px) {
+  body.pngm-post-wizard .qq-upload-list,
+  body.pngm-post-wizard #photos .qq-upload-list,
+  body.pngm-post-wizard .upload-photos .qq-upload-list,
+  body.pngm-post-wizard #uppy-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }
 
 /* Uppy modal must cover viewport (not trapped by wizard layout) */
