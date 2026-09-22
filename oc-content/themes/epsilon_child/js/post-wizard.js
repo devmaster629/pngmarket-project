@@ -127,6 +127,7 @@
         // Freshly loaded fields start neutral — red only after a failed Next.
         $box.find('.error').removeClass('error');
         $box.find('.is-invalid').removeClass('is-invalid');
+        syncAttrsSectionVisibility();
         $(document).trigger('pngm:attrs-loaded');
         if (window.pngmItemValidation && window.pngmItemValidation.forceEnhanceValidator) {
           window.pngmItemValidation.forceEnhanceValidator();
@@ -135,6 +136,51 @@
         $box.removeClass('is-loading');
         attrsRequest = null;
       });
+    }
+
+    /**
+     * Hide the whole attributes block (and Make/Brand tip) when this category
+     * has no extra fields — e.g. Cameras with only Contact Phone (already removed).
+     */
+    function syncAttrsSectionVisibility() {
+      var $wrap = $('#pngm-post-attrs-wrap');
+      var $box = $('#post-hooks');
+      var $hint = $wrap.find('.pngm-post-make-hint');
+      if (!$wrap.length || !$box.length) {
+        return;
+      }
+
+      var $fields = $box.find('.control-group.atr-field, .atr-field.control-group').filter(function () {
+        var $g = $(this);
+        if ($g.hasClass('atr-type-phone') || $g.hasClass('atr-type-divider')) {
+          return false;
+        }
+        // Must have a real control — empty atr-form shells do not count.
+        return $g.find('input, select, textarea').length > 0;
+      });
+
+      var hasFields = $fields.length > 0;
+      $wrap.toggle(hasFields);
+      if (hasFields) {
+        $wrap.removeAttr('hidden').prop('hidden', false);
+      } else {
+        $wrap.attr('hidden', 'hidden').prop('hidden', true);
+      }
+
+      var hasMake = $fields.filter(function () {
+        var id = String($(this).attr('id') || '').toLowerCase();
+        var label = $.trim($(this).find('> label, .control-label').first().text()).toLowerCase();
+        return /make|brand|model/.test(id + ' ' + label);
+      }).length > 0;
+
+      if ($hint.length) {
+        $hint.toggle(hasMake);
+        if (hasMake) {
+          $hint.removeAttr('hidden').prop('hidden', false);
+        } else {
+          $hint.attr('hidden', 'hidden').prop('hidden', true);
+        }
+      }
     }
 
     function updateSummary(rootName, leafName) {
@@ -290,6 +336,9 @@
         // Clearing the placeholder must wipe the previous leaf (e.g. Cars).
         $catId.val('');
         updateSummary(null, '—');
+        attrsLoadedFor = '';
+        $('#post-hooks').empty();
+        syncAttrsSectionVisibility();
       }
       return id;
     }
@@ -1650,6 +1699,7 @@
     updateMapPreview();
     syncEmailFieldVisibility();
     $form.on('change', '#pngm_email_notify', syncEmailFieldVisibility);
+    syncAttrsSectionVisibility();
     showStep(1);
   }
 

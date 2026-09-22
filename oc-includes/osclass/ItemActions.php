@@ -453,12 +453,16 @@ class ItemActions {
    */
   private function _akismet_text($title, $description, $author, $email) {
     $spam = false;
+    // Local / explicit disable — do not wait on unreachable Akismet hosts.
+    if ((defined('PNGM_DISABLE_AKISMET') && PNGM_DISABLE_AKISMET) || !osc_akismet_key()) {
+      return false;
+    }
     foreach($title as $k => $_data) {
       $_title = $title[$k];
       $_description = $description[$k];
       $content = $_title . ' ' . $_description;
-      if(osc_akismet_key()) {
-        require_once LIB_PATH . 'Akismet.class.php';
+      require_once LIB_PATH . 'Akismet.class.php';
+      try {
         $akismet = new Akismet(osc_base_url(), osc_akismet_key());
 
         $akismet->setCommentContent($content);
@@ -472,6 +476,9 @@ class ItemActions {
           $spam = true;
           break;
         }
+      } catch (Exception $e) {
+        // Akismet unreachable / bad key must not block publishing.
+        $spam = false;
       }
     }
 
@@ -1700,18 +1707,22 @@ class ItemActions {
       $status_num = 1;
     }
 
-    if(osc_akismet_key()) {
+    if(osc_akismet_key() && !(defined('PNGM_DISABLE_AKISMET') && PNGM_DISABLE_AKISMET)) {
       require_once LIB_PATH . 'Akismet.class.php';
-      $akismet = new Akismet(osc_base_url(), osc_akismet_key());
-      $akismet->setCommentAuthor($authorName);
-      $akismet->setCommentAuthorEmail($authorEmail);
-      $akismet->setCommentContent($body);
-      $akismet->setPermalink($itemURL);
+      try {
+        $akismet = new Akismet(osc_base_url(), osc_akismet_key());
+        $akismet->setCommentAuthor($authorName);
+        $akismet->setCommentAuthorEmail($authorEmail);
+        $akismet->setCommentContent($body);
+        $akismet->setPermalink($itemURL);
 
-      $status = $akismet->isCommentSpam() ? 'SPAM' : $status;
-      
-      if($status == 'SPAM') {
-        $status_num = 5;
+        $status = $akismet->isCommentSpam() ? 'SPAM' : $status;
+
+        if($status == 'SPAM') {
+          $status_num = 5;
+        }
+      } catch (Exception $e) {
+        // Keep comment flow when Akismet is unreachable.
       }
     }
 

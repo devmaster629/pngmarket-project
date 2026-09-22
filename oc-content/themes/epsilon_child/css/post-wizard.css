@@ -2140,12 +2140,22 @@ body.pngm-post-wizard > .content > .container > .box > h1 {
   }
 }
 
-/* Attributes plugin inside details card */
-body.pngm-post-wizard #post-hooks,
-body.pngm-post-wizard #plugin-hook {
+/* Attributes plugin inside details card — only shown when fields exist */
+body.pngm-post-wizard .pngm-post-attrs-wrap {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #eef1f4;
+}
+
+body.pngm-post-wizard .pngm-post-attrs-wrap[hidden] {
+  display: none !important;
+}
+
+body.pngm-post-wizard #post-hooks,
+body.pngm-post-wizard #plugin-hook {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 /* Phone lives on Contact (step 5) — never show Attributes PHONE on Item details */
@@ -2155,10 +2165,8 @@ body.pngm-post-wizard #atr-phone {
   display: none !important;
 }
 
-body.pngm-post-wizard #post-hooks:empty {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
+body.pngm-post-wizard .pngm-post-make-hint[hidden] {
+  display: none !important;
 }
 
 body.pngm-post-wizard #post-hooks.is-loading {

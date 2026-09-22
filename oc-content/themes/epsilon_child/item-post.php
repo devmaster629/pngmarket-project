@@ -244,8 +244,10 @@
               </div>
 
               <?php osc_run_hook('item_publish_description'); ?>
-              <div id="post-hooks" class="hooks-block pngm-post-attrs"><?php if ($edit) { ItemForm::plugin_edit_item(); } else { ItemForm::plugin_post_item(); } ?></div>
-              <p class="pngm-post-muted pngm-post-make-hint"><?php _e('Tip: choose “Other” under Make / Brand to type a custom make or model.', 'epsilon'); ?></p>
+              <div class="pngm-post-attrs-wrap" id="pngm-post-attrs-wrap" hidden>
+                <div id="post-hooks" class="hooks-block pngm-post-attrs"><?php if ($edit) { ItemForm::plugin_edit_item(); } else { ItemForm::plugin_post_item(); } ?></div>
+                <p class="pngm-post-muted pngm-post-make-hint" hidden><?php _e('Tip: choose “Other” under Make / Brand to type a custom make or model.', 'epsilon'); ?></p>
+              </div>
               <?php osc_run_hook('item_publish_hook'); ?>
               <?php osc_run_hook('item_publish_price'); ?>
             </div>

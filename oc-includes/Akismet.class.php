@@ -186,12 +186,18 @@ class Akismet
    */
   public function isCommentSpam() {
     $response = $this->sendRequest($this->getQueryString(), $this->wordPressAPIKey . '.rest.akismet.com', '/' . $this->akismetVersion . '/comment-check');
-    
-    if($response[1] == 'invalid' && !$this->isKeyValid()) {
+    $body = (is_array($response) && isset($response[1])) ? (string) $response[1] : '';
+
+    // Empty / unreachable API → treat as not spam (do not block publishing).
+    if ($body === '') {
+      return false;
+    }
+
+    if ($body == 'invalid' && !$this->isKeyValid()) {
       throw new exception('The Wordpress API key passed to the Akismet constructor is invalid.  Please obtain a valid one from http://wordpress.com/api-keys/');
     }
-    
-    return ($response[1] == 'true');
+
+    return ($body == 'true');
   }
 
   /**
@@ -342,26 +348,43 @@ class SocketWriteRead {
   /**
    *  Sends the data to the remote host.
    *
-   * @throws  exception An exception is thrown if a connection cannot be made to the remote host.
+   *  Connection failures are non-fatal: response stays empty so callers treat
+   *  the check as "not spam" (fail open) instead of killing the request.
    */
   public function send() {
     $this->response = '';
-    
-    $fs = fsockopen($this->host, $this->port, $this->errorNumber, $this->errorString, 3);
-    
-    if($this->errorNumber != 0) {
-      throw new Exception('Error connecting to host: ' . $this->host . ' Error number: ' . $this->errorNumber . ' Error message: ' . $this->errorString);
+    $this->errorNumber = 0;
+    $this->errorString = '';
+
+    // stream_socket_client honors the timeout on Windows; fsockopen often does not
+    // and can hang ~20–60s when Akismet is unreachable.
+    $errno = 0;
+    $errstr = '';
+    $fs = @stream_socket_client(
+      'tcp://' . $this->host . ':' . (int) $this->port,
+      $errno,
+      $errstr,
+      1.5
+    );
+    $this->errorNumber = (int) $errno;
+    $this->errorString = (string) $errstr;
+
+    if ($fs === false) {
+      return;
     }
-    
-    if($fs !== false) {
-      @fwrite($fs, $this->request);
-      
-      while(!feof($fs)) {
-        $this->response .= fgets($fs, $this->responseLength);
+
+    stream_set_timeout($fs, 2);
+    @fwrite($fs, $this->request);
+
+    while (!feof($fs)) {
+      $this->response .= fgets($fs, $this->responseLength);
+      $meta = stream_get_meta_data($fs);
+      if (!empty($meta['timed_out'])) {
+        break;
       }
-      
-      fclose($fs);
     }
+
+    fclose($fs);
   }
   
   /**

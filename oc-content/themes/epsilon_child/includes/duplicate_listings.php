@@ -5,7 +5,8 @@
  * - Score near-identical titles (same seller / email / IP)
  * - Block exact titles site-wide
  * - Throttle rapid posting
- * - Queue softer same-seller matches for moderation (b_active = 0)
+ *
+ * Soft "moderate → pending" was removed: every successful publish stays active.
  *
  * NOTE: Osclass Plugins::applyFilter only runs priorities 0–10.
  */
@@ -530,20 +531,12 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
         return $result;
     }
 
-    if ($best_score >= (int) PNGM_DUP_MODERATE_SCORE) {
-        $result['action'] = 'moderate';
-        $result['message'] = sprintf(
-            __('This listing is very similar to one you already posted (“%s”). It was submitted for moderation review and is not public yet.', 'epsilon'),
-            $best_title !== '' ? $best_title : __('your earlier ad', 'epsilon')
-        );
-        return $result;
-    }
-
+    // Near-duplicates used to force pending (b_active=0). Publish stays active now.
     return $result;
 }
 
 /**
- * Soft-duplicates: force inactive before insert so success=1 and stats stay correct.
+ * Evaluate duplicates for block-only checks (no soft pending).
  *
  * @param array $aItem
  * @return array
@@ -554,12 +547,7 @@ function pngm_dup_item_add_prepare_data($aItem)
     if (!is_array($aItem)) {
         return $aItem;
     }
-    $eval = pngm_dup_evaluate($aItem, 0);
-    $GLOBALS['pngm_dup_eval'] = $eval;
-    if ($eval['action'] === 'moderate') {
-        $aItem['active'] = 'INACTIVE';
-        $GLOBALS['pngm_dup_moderate'] = $eval;
-    }
+    $GLOBALS['pngm_dup_eval'] = pngm_dup_evaluate($aItem, 0);
     return $aItem;
 }
 osc_add_filter('item_add_prepare_data', 'pngm_dup_item_add_prepare_data', 8);
@@ -579,12 +567,7 @@ function pngm_dup_pre_item_add_error($flash_error, $aItem)
         : pngm_dup_evaluate(is_array($aItem) ? $aItem : array(), 0);
 
     if ($eval['action'] === 'block' && $eval['message'] !== '') {
-        unset($GLOBALS['pngm_dup_moderate']);
         $flash_error .= ($flash_error !== '' ? PHP_EOL : '') . $eval['message'];
-        return $flash_error;
-    }
-    if ($eval['action'] === 'moderate') {
-        $GLOBALS['pngm_dup_moderate'] = $eval;
     }
     return $flash_error;
 }
@@ -615,39 +598,23 @@ function pngm_dup_pre_item_edit_error($flash_error, $aItem)
 osc_add_filter('pre_item_edit_error', 'pngm_dup_pre_item_edit_error', 8);
 
 /**
- * Safety net: keep soft duplicates inactive in DB.
+ * Soft-pending path removed — listings stay active after a successful publish.
  *
  * @param array $aInsert
  * @return array
  */
 function pngm_dup_item_post_data($aInsert)
 {
-    if (!empty($GLOBALS['pngm_dup_moderate']) && is_array($aInsert)) {
-        $aInsert['b_active'] = 0;
-    }
     return $aInsert;
 }
 osc_add_filter('item_post_data', 'pngm_dup_item_post_data', 8);
 
 /**
- * Flash moderation notice after a soft-duplicate insert.
- *
  * @param array $item
  */
 function pngm_dup_posted_item_notice($item)
 {
-    if (empty($GLOBALS['pngm_dup_moderate']) || !is_array($GLOBALS['pngm_dup_moderate'])) {
-        return;
-    }
-    $msg = isset($GLOBALS['pngm_dup_moderate']['message'])
-        ? (string) $GLOBALS['pngm_dup_moderate']['message']
-        : __('Your listing was submitted for moderation because it looks similar to one you already posted.', 'epsilon');
     unset($GLOBALS['pngm_dup_moderate'], $GLOBALS['pngm_dup_eval']);
-    if ($msg !== '' && function_exists('osc_add_flash_warning_message')) {
-        osc_add_flash_warning_message($msg);
-    } elseif ($msg !== '' && function_exists('osc_add_flash_ok_message')) {
-        osc_add_flash_ok_message($msg);
-    }
 }
 osc_add_hook('posted_item', 'pngm_dup_posted_item_notice', 8);
 

@@ -14,12 +14,17 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 if (!defined('PNGM_PRODUCTION_POLICY_VER')) {
-    define('PNGM_PRODUCTION_POLICY_VER', 'v3');
+    define('PNGM_PRODUCTION_POLICY_VER', 'v4');
 }
 
-/** First N listings from an account stay inactive until an admin activates one. */
+/**
+ * Osclass moderate_items:
+ *  -1 = publish immediately (no Validate step)
+ *   0 = inactive unless logged_user_item_validation
+ *  >0 = first N listings per account stay inactive until validated
+ */
 if (!defined('PNGM_MODERATE_FIRST_ITEMS')) {
-    define('PNGM_MODERATE_FIRST_ITEMS', 1);
+    define('PNGM_MODERATE_FIRST_ITEMS', -1);
 }
 
 /** Preferred listing photo extensions (Uppy + AjaxUploader + ItemActions).
@@ -76,10 +81,10 @@ function pngm_production_enforce_prefs()
     pngm_production_set('reg_user_can_contact', '1', 'BOOLEAN');
     pngm_production_set('reg_user_can_see_phone', '1', 'BOOLEAN');
 
-    // First listing needs admin approval. Later listings publish immediately.
-    // logged_user_item_validation=1 would skip this for every logged-in user.
+    // Publish immediately — no email/Validate step. Redirect to the live ad.
     pngm_production_set('moderate_items', (string) PNGM_MODERATE_FIRST_ITEMS, 'INTEGER');
-    pngm_production_set('logged_user_item_validation', '0', 'BOOLEAN');
+    pngm_production_set('logged_user_item_validation', '1', 'BOOLEAN');
+    pngm_production_set('item_post_redirect', 'ITEM-CAT', 'STRING');
 
     if ((string) osc_get_preference('logging_auto_cleanup') !== '1') {
         pngm_production_set('logging_auto_cleanup', '1', 'BOOLEAN');
