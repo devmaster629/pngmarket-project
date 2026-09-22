@@ -194,7 +194,7 @@
                 <div class="input-box">
                   <?php ItemForm::description_textarea('description', $locale, osc_esc_html(eps_post_item_description())); ?>
                 </div>
-                <p class="pngm-post-field-error is-hidden" data-for="description" hidden><?php _e('Please enter at least 10 characters in the description.', 'epsilon'); ?></p>
+                <p class="pngm-post-field-error is-hidden" data-for="description" hidden><?php _e('Please enter a description.', 'epsilon'); ?></p>
                 <div class="pngm-post-counter" data-counter-for="description"><span>0</span>/5000</div>
               </div>
 
@@ -651,7 +651,6 @@
       'dupTitleCheck' => __('Checking title…', 'epsilon'),
       'dupTitleFail' => __('A listing with this title already exists. Please choose a different title.', 'epsilon'),
       'needDesc' => __('Please enter a description.', 'epsilon'),
-      'needDescShort' => __('Please enter at least 10 characters in the description.', 'epsilon'),
       'needPrice' => __('Please enter a price, or choose Check with seller.', 'epsilon'),
       'needAttr' => __('Please complete: %s', 'epsilon'),
       'needMakeOther' => __('Please specify make / model.', 'epsilon'),
@@ -725,7 +724,7 @@
         },
         rules: {
           "title[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": { required: true, minlength: 3 },
-          "description[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": { required: true, minlength: 10 },
+          "description[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": { required: true },
           contactEmail: { required: true, email: true },
           contactName: { required: true, minlength: 2 }
         },
@@ -735,8 +734,7 @@
             minlength: '<?php echo osc_esc_js(__('Please enter a title (at least 3 characters).', 'epsilon')); ?>'
           },
           "description[<?php echo osc_esc_js(osc_current_user_locale()); ?>]": {
-            required: '<?php echo osc_esc_js(__('Please enter a description.', 'epsilon')); ?>',
-            minlength: '<?php echo osc_esc_js(__('Please enter at least 10 characters in the description.', 'epsilon')); ?>'
+            required: '<?php echo osc_esc_js(__('Please enter a description.', 'epsilon')); ?>'
           },
           contactEmail: { required: '<?php echo osc_esc_js(__('Please enter a valid email.', 'epsilon')); ?>', email: '<?php echo osc_esc_js(__('Please enter a valid email.', 'epsilon')); ?>' },
           contactName: { required: '<?php echo osc_esc_js(__('Please enter your full name.', 'epsilon')); ?>' }

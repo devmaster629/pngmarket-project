@@ -598,9 +598,6 @@
         if (descTrim.length < 1) {
           showError($form.find('textarea[name^="description"]'), labels.needDesc);
           ok = false;
-        } else if (descTrim.length < 10) {
-          showError($form.find('textarea[name^="description"]'), labels.needDescShort || labels.needDesc);
-          ok = false;
         }
 
         var $priceField = $step2.find('.pngm-post-price-field');
