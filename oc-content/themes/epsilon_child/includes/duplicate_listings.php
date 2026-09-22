@@ -26,10 +26,10 @@ if (!defined('PNGM_DUP_MODERATE_SCORE')) {
     define('PNGM_DUP_MODERATE_SCORE', 75);
 }
 if (!defined('PNGM_DUP_MAX_PER_HOUR')) {
-    define('PNGM_DUP_MAX_PER_HOUR', 3);
+    define('PNGM_DUP_MAX_PER_HOUR', 0);
 }
 if (!defined('PNGM_DUP_MIN_SECONDS')) {
-    define('PNGM_DUP_MIN_SECONDS', 90);
+    define('PNGM_DUP_MIN_SECONDS', 0);
 }
 
 /**
@@ -433,26 +433,32 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
     $cat_id = isset($aItem['catId']) ? (int) $aItem['catId'] : 0;
     $price = isset($aItem['price']) ? (int) $aItem['price'] : 0;
 
-    // --- Throttle ---
-    $hour_count = pngm_dup_count_last_hour($user_id, $email);
-    if ($hour_count >= (int) PNGM_DUP_MAX_PER_HOUR) {
-        $result['action'] = 'block';
-        $result['message'] = sprintf(
-            __('You have posted too many listings recently. Please wait before posting again (limit: %d per hour).', 'epsilon'),
-            (int) PNGM_DUP_MAX_PER_HOUR
-        );
-        return $result;
+    // --- Throttle (0 = disabled) ---
+    $max_per_hour = (int) PNGM_DUP_MAX_PER_HOUR;
+    if ($max_per_hour > 0) {
+        $hour_count = pngm_dup_count_last_hour($user_id, $email);
+        if ($hour_count >= $max_per_hour) {
+            $result['action'] = 'block';
+            $result['message'] = sprintf(
+                __('You have posted too many listings recently. Please wait before posting again (limit: %d per hour).', 'epsilon'),
+                $max_per_hour
+            );
+            return $result;
+        }
     }
 
-    $since = pngm_dup_seconds_since_last($user_id, $email);
-    if ($since !== null && $since < (int) PNGM_DUP_MIN_SECONDS) {
-        $wait = (int) PNGM_DUP_MIN_SECONDS - (int) $since;
-        $result['action'] = 'block';
-        $result['message'] = sprintf(
-            __('Please wait %d seconds before posting another listing.', 'epsilon'),
-            max(1, $wait)
-        );
-        return $result;
+    $min_seconds = (int) PNGM_DUP_MIN_SECONDS;
+    if ($min_seconds > 0) {
+        $since = pngm_dup_seconds_since_last($user_id, $email);
+        if ($since !== null && $since < $min_seconds) {
+            $wait = $min_seconds - (int) $since;
+            $result['action'] = 'block';
+            $result['message'] = sprintf(
+                __('Please wait %d seconds before posting another listing.', 'epsilon'),
+                max(1, $wait)
+            );
+            return $result;
+        }
     }
 
     if ($title === '') {

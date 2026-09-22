@@ -65,8 +65,7 @@
           </form>
 
           <p class="pngm-auth-switch">
-            <?php _e("Don't have an account?", 'epsilon'); ?>
-            <a href="<?php echo osc_register_account_url(); ?>"><?php _e('Register', 'epsilon'); ?></a>
+            <a href="<?php echo osc_register_account_url(); ?>"><?php _e("Don't have an account? Register", 'epsilon'); ?></a>
           </p>
         </div>
       </div>

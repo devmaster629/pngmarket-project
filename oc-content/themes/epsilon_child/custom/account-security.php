@@ -521,13 +521,15 @@ if ($show_pass && $show_email) {
             <div class="pngm-sec-limit-body">
               <div class="pngm-sec-limit-top">
                 <strong><?php _e('Posting', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo (int) $post['max_per_hour']; ?>/hr</span>
+                <span class="pngm-sec-limit-pill"><?php echo !empty($post['active']) ? ((int) $post['max_per_hour'] . '/hr') : __('Off', 'epsilon'); ?></span>
               </div>
-              <em><?php echo osc_esc_html(sprintf(
-                  __('Wait %d–%d seconds between listings', 'epsilon'),
-                  (int) $post['items_wait'],
-                  (int) $post['min_seconds']
-              )); ?></em>
+              <em><?php echo !empty($post['active'])
+                  ? osc_esc_html(sprintf(
+                      __('Wait %d–%d seconds between listings', 'epsilon'),
+                      (int) $post['items_wait'],
+                      (int) $post['min_seconds']
+                  ))
+                  : osc_esc_html(__('No timing limit between listings', 'epsilon')); ?></em>
             </div>
           </article>
 
@@ -536,13 +538,15 @@ if ($show_pass && $show_email) {
             <div class="pngm-sec-limit-body">
               <div class="pngm-sec-limit-top">
                 <strong><?php _e('Messaging', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo (int) $msg['period_hours']; ?>h</span>
+                <span class="pngm-sec-limit-pill"><?php echo !empty($msg['active']) ? ((int) $msg['period_hours'] . 'h') : __('Off', 'epsilon'); ?></span>
               </div>
-              <em><?php echo osc_esc_html(sprintf(
-                  __('%d messages or %d contacts (new accounts)', 'epsilon'),
-                  (int) $msg['max_messages'],
-                  (int) $msg['max_users']
-              )); ?></em>
+              <em><?php echo !empty($msg['active'])
+                  ? osc_esc_html(sprintf(
+                      __('%d messages or %d contacts (new accounts)', 'epsilon'),
+                      (int) $msg['max_messages'],
+                      (int) $msg['max_users']
+                  ))
+                  : osc_esc_html(__('No message or contact rate limit', 'epsilon')); ?></em>
             </div>
           </article>
         </div>

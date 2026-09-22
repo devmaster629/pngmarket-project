@@ -34,8 +34,7 @@
 
       <div class="pngm-auth-panel">
         <div class="pngm-auth-box">
-          <h1><?php _e('Create your account', 'epsilon'); ?></h1>
-          <p class="pngm-auth-lead"><?php _e('Join PNGMarket and start your journey.', 'epsilon'); ?></p>
+          <h1 class="pngm-auth-lead"><?php _e('Create your account', 'epsilon'); ?></h1>
 
           <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('register', 'row'); } ?>
 
@@ -89,16 +88,16 @@
 
             <?php if (function_exists('pngm_antispam_public_status')) {
                 $pngm_limits = pngm_antispam_public_status();
+                if (!empty($pngm_limits['registration']['label'])) {
                 ?>
               <div class="pngm-auth-limits" id="pngm-auth-limits">
                 <strong><?php _e('Abuse protection active', 'epsilon'); ?></strong>
                 <ul>
                   <li><?php echo osc_esc_html($pngm_limits['registration']['label']); ?></li>
-                  <li><?php echo osc_esc_html($pngm_limits['posting']['label']); ?></li>
-                  <li><?php echo osc_esc_html($pngm_limits['messaging']['label']); ?></li>
                 </ul>
               </div>
-            <?php } ?>
+            <?php }
+            } ?>
 
             <label class="pngm-auth-check pngm-auth-terms">
               <input type="checkbox" name="pngm_terms" id="pngm_terms" value="1" required />
@@ -117,8 +116,7 @@
           </form>
 
           <p class="pngm-auth-switch">
-            <?php _e('Already have an account?', 'epsilon'); ?>
-            <a href="<?php echo osc_user_login_url(); ?>"><?php _e('Log in', 'epsilon'); ?></a>
+            <a href="<?php echo osc_user_login_url(); ?>"><?php _e('Already have an account? Log in', 'epsilon'); ?></a>
           </p>
         </div>
       </div>

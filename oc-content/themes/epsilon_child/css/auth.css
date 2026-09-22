@@ -436,7 +436,7 @@ body.pngm-auth-v2 .pngm-auth-meta .pngm-auth-check,
 }
 
 .pngm-auth-terms {
-  margin: 4px 0 28px;
+  margin: 4px 0 14px;
   width: 100%;
 }
 
@@ -547,17 +547,20 @@ body.pngm-auth-v2 .pngm-social-login.is-row .pngm-soc-facebook {
 }
 
 .pngm-auth-switch {
-  margin: 6px 0 0;
+  margin: 16px 0 0;
   text-align: center;
   font-size: 14px;
-  color: #6b7785;
+  line-height: 1.4;
+  color: #1b5e20;
 }
 
 .pngm-auth-switch a {
+  display: inline;
+  margin-left: 0;
   color: #1b5e20 !important;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  margin-left: 4px;
 }
 
 .pngm-auth-switch a:hover {
@@ -638,10 +641,6 @@ body.pngm-auth-v2 .pngm-auth-control input {
   .pngm-auth-box {
     max-width: 100%;
     overflow: visible;
-  }
-
-  .pngm-auth-box h1 {
-    font-size: 26px;
   }
 
   .pngm-auth-box > h1.pngm-auth-lead {

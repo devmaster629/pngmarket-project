@@ -13,25 +13,25 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 if (!defined('PNGM_ANTISPAM_POLICY_VER')) {
-    define('PNGM_ANTISPAM_POLICY_VER', 'v1');
+    define('PNGM_ANTISPAM_POLICY_VER', 'v2');
 }
 
-/** Minimum seconds between listing publishes (Osclass core). */
+/** Minimum seconds between listing publishes (Osclass core). 0 = disabled. */
 if (!defined('PNGM_ANTISPAM_ITEMS_WAIT')) {
-    define('PNGM_ANTISPAM_ITEMS_WAIT', 60);
+    define('PNGM_ANTISPAM_ITEMS_WAIT', 0);
 }
 
-/** IM: max messages per window for new / low-trust users. */
+/** IM: max messages per window for new / low-trust users. Unused when limits off. */
 if (!defined('PNGM_ANTISPAM_IM_MAX_MESSAGES')) {
     define('PNGM_ANTISPAM_IM_MAX_MESSAGES', 20);
 }
 
-/** IM: max distinct recipients per window. */
+/** IM: max distinct recipients per window. Unused when limits off. */
 if (!defined('PNGM_ANTISPAM_IM_MAX_USERS')) {
     define('PNGM_ANTISPAM_IM_MAX_USERS', 8);
 }
 
-/** IM: window length in hours. */
+/** IM: window length in hours. Unused when limits off. */
 if (!defined('PNGM_ANTISPAM_IM_PERIOD_HOURS')) {
     define('PNGM_ANTISPAM_IM_PERIOD_HOURS', 12);
 }
@@ -39,6 +39,11 @@ if (!defined('PNGM_ANTISPAM_IM_PERIOD_HOURS')) {
 /** Max account registrations per IP per hour. */
 if (!defined('PNGM_ANTISPAM_REG_MAX_PER_HOUR')) {
     define('PNGM_ANTISPAM_REG_MAX_PER_HOUR', 5);
+}
+
+/** Whether Instant Messenger flood limits are enforced. */
+if (!defined('PNGM_ANTISPAM_IM_LIMITS_ENABLED')) {
+    define('PNGM_ANTISPAM_IM_LIMITS_ENABLED', false);
 }
 
 /**
@@ -117,9 +122,12 @@ function pngm_antispam_ensure_posting_prefs()
         pngm_antispam_set_osclass('reg_user_can_see_phone', '1', 'BOOLEAN');
     }
 
-    $wait = (int) osc_get_preference('items_wait_time');
-    if ($wait < (int) PNGM_ANTISPAM_ITEMS_WAIT) {
-        pngm_antispam_set_osclass('items_wait_time', (string) PNGM_ANTISPAM_ITEMS_WAIT, 'INTEGER');
+    // Listing wait between publishes (0 = no timing limit).
+    $desired_wait = (int) PNGM_ANTISPAM_ITEMS_WAIT;
+    $applied = (string) osc_get_preference('pngm_antispam_posting', 'epsilon_child');
+    if ($applied !== PNGM_ANTISPAM_POLICY_VER || (int) osc_get_preference('items_wait_time') !== $desired_wait) {
+        pngm_antispam_set_osclass('items_wait_time', (string) $desired_wait, 'INTEGER');
+        osc_set_preference('pngm_antispam_posting', PNGM_ANTISPAM_POLICY_VER, 'epsilon_child', 'STRING');
     }
 }
 
@@ -132,11 +140,6 @@ function pngm_antispam_ensure_im_limits()
         return;
     }
 
-    // Plugin may be inactive — still safe to write prefs.
-    if ((string) osc_get_preference('limit_enabled', 'plugin-instant_messenger') !== '1') {
-        pngm_antispam_set_im('limit_enabled', 1);
-    }
-
     // Guests cannot open or send IM threads.
     if ((string) osc_get_preference('only_logged', 'plugin-instant_messenger') !== '1') {
         pngm_antispam_set_im('only_logged', 1);
@@ -147,23 +150,28 @@ function pngm_antispam_ensure_im_limits()
         return;
     }
 
-    // Seed sensible numbers once (admin may tighten/loosen afterward).
-    pngm_antispam_set_im('limit_max_messages', (int) PNGM_ANTISPAM_IM_MAX_MESSAGES);
-    pngm_antispam_set_im('limit_max_users', (int) PNGM_ANTISPAM_IM_MAX_USERS);
-    pngm_antispam_set_im('limit_period_hours', (int) PNGM_ANTISPAM_IM_PERIOD_HOURS);
+    $im_on = PNGM_ANTISPAM_IM_LIMITS_ENABLED ? 1 : 0;
+    pngm_antispam_set_im('limit_enabled', $im_on);
 
-    // Trust lift: after sustained normal use, stop applying the window.
-    $disable_msgs = (int) osc_get_preference('limit_disable_after_messages', 'plugin-instant_messenger');
-    if ($disable_msgs <= 0) {
-        pngm_antispam_set_im('limit_disable_after_messages', 100);
-    }
-    $disable_users = (int) osc_get_preference('limit_disable_after_users', 'plugin-instant_messenger');
-    if ($disable_users <= 0) {
-        pngm_antispam_set_im('limit_disable_after_users', 20);
-    }
-    $disable_days = (int) osc_get_preference('limit_disable_after_days_from_reg', 'plugin-instant_messenger');
-    if ($disable_days <= 0) {
-        pngm_antispam_set_im('limit_disable_after_days_from_reg', 60);
+    if ($im_on) {
+        // Seed sensible numbers once (admin may tighten/loosen afterward).
+        pngm_antispam_set_im('limit_max_messages', (int) PNGM_ANTISPAM_IM_MAX_MESSAGES);
+        pngm_antispam_set_im('limit_max_users', (int) PNGM_ANTISPAM_IM_MAX_USERS);
+        pngm_antispam_set_im('limit_period_hours', (int) PNGM_ANTISPAM_IM_PERIOD_HOURS);
+
+        // Trust lift: after sustained normal use, stop applying the window.
+        $disable_msgs = (int) osc_get_preference('limit_disable_after_messages', 'plugin-instant_messenger');
+        if ($disable_msgs <= 0) {
+            pngm_antispam_set_im('limit_disable_after_messages', 100);
+        }
+        $disable_users = (int) osc_get_preference('limit_disable_after_users', 'plugin-instant_messenger');
+        if ($disable_users <= 0) {
+            pngm_antispam_set_im('limit_disable_after_users', 20);
+        }
+        $disable_days = (int) osc_get_preference('limit_disable_after_days_from_reg', 'plugin-instant_messenger');
+        if ($disable_days <= 0) {
+            pngm_antispam_set_im('limit_disable_after_days_from_reg', 60);
+        }
     }
 
     // Fewer notification emails when chatting quickly.
@@ -236,14 +244,15 @@ function pngm_antispam_require_register_rate_limit()
 function pngm_antispam_public_status()
 {
     $items_wait = function_exists('osc_items_wait_time') ? (int) osc_items_wait_time() : (int) osc_get_preference('items_wait_time');
-    $dup_min = defined('PNGM_DUP_MIN_SECONDS') ? (int) PNGM_DUP_MIN_SECONDS : 90;
-    $dup_hour = defined('PNGM_DUP_MAX_PER_HOUR') ? (int) PNGM_DUP_MAX_PER_HOUR : 3;
+    $dup_min = defined('PNGM_DUP_MIN_SECONDS') ? (int) PNGM_DUP_MIN_SECONDS : 0;
+    $dup_hour = defined('PNGM_DUP_MAX_PER_HOUR') ? (int) PNGM_DUP_MAX_PER_HOUR : 0;
     $im_on = ((string) osc_get_preference('limit_enabled', 'plugin-instant_messenger') === '1');
     $im_msgs = (int) osc_get_preference('limit_max_messages', 'plugin-instant_messenger');
     $im_users = (int) osc_get_preference('limit_max_users', 'plugin-instant_messenger');
     $im_hours = (int) osc_get_preference('limit_period_hours', 'plugin-instant_messenger');
     $reg_max = (int) PNGM_ANTISPAM_REG_MAX_PER_HOUR;
     $captcha = function_exists('pngm_recaptcha_is_required') && pngm_recaptcha_is_required();
+    $posting_on = ($items_wait > 0 || $dup_min > 0 || $dup_hour > 0);
 
     return array(
         'active' => true,
@@ -254,13 +263,15 @@ function pngm_antispam_public_status()
             'captcha' => $captcha,
         ),
         'posting' => array(
-            'active' => ($items_wait > 0 || $dup_min > 0),
-            'label' => sprintf(
-                __('Min %d–%d seconds between listings; max %d listings per hour', 'epsilon'),
-                max(1, $items_wait),
-                max($items_wait, $dup_min),
-                $dup_hour
-            ),
+            'active' => $posting_on,
+            'label' => $posting_on
+                ? sprintf(
+                    __('Min %d–%d seconds between listings; max %d listings per hour', 'epsilon'),
+                    max(1, $items_wait),
+                    max($items_wait, $dup_min),
+                    max(1, $dup_hour)
+                )
+                : __('Listing timing limits off', 'epsilon'),
             'items_wait' => $items_wait,
             'min_seconds' => $dup_min,
             'max_per_hour' => $dup_hour,
