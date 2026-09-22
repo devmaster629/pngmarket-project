@@ -22,8 +22,7 @@ if (!defined('PNGM_MODERATE_FIRST_ITEMS')) {
     define('PNGM_MODERATE_FIRST_ITEMS', 1);
 }
 
-/**
- * Preferred listing photo extensions (Uppy + AjaxUploader + ItemActions).
+/** Preferred listing photo extensions (Uppy + AjaxUploader + ItemActions).
  * Stored in Osclass preference allowedExt.
  * Skips svg/psd/ico (security / not useful as listing photos).
  */
@@ -32,6 +31,13 @@ if (!defined('PNGM_ALLOWED_IMAGE_EXT')) {
         'PNGM_ALLOWED_IMAGE_EXT',
         'png,gif,jpg,jpeg,jpe,jfif,pjp,pjpeg,webp,bmp,dib,avif,heic,heif,tif,tiff,jxl,jp2,j2k'
     );
+}
+
+/**
+ * Preferred max upload size for listing photos (kilobytes).
+ */
+if (!defined('PNGM_MAX_IMAGE_KB')) {
+    define('PNGM_MAX_IMAGE_KB', 20480); // 20MB
 }
 
 /**
@@ -105,6 +111,12 @@ function pngm_production_enforce_prefs()
             }
         }
         pngm_production_set('allowedExt', implode(',', $ordered), 'STRING');
+    }
+
+    // Listing photo max size (20MB) — keep at least this large.
+    $want_kb = (int) PNGM_MAX_IMAGE_KB;
+    if ($want_kb > 0 && (int) osc_get_preference('maxSizeKb') < $want_kb) {
+        pngm_production_set('maxSizeKb', (string) $want_kb, 'INTEGER');
     }
 }
 

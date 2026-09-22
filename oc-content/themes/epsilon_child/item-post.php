@@ -289,7 +289,29 @@
                 ?>
               </div>
               <div class="pngm-post-field-error" data-for="photos" hidden></div>
-              <p class="pngm-post-upload-meta"><?php echo sprintf(__('Up to %d photos · JPG/PNG · max 10MB each', 'epsilon'), $max_imgs); ?></p>
+              <p class="pngm-post-upload-meta"><?php
+                $max_kb = function_exists('osc_max_size_kb') ? (int) osc_max_size_kb() : 20480;
+                $max_mb = max(1, (int) round($max_kb / 1024));
+                echo osc_esc_html(sprintf(__('Up to %d photos · max %dMB each', 'epsilon'), $max_imgs, $max_mb));
+              ?></p>
+              <script>
+              (function () {
+                var note = <?php echo json_encode(sprintf(__('Up to %d photos · max %dMB each', 'epsilon'), $max_imgs, $max_mb), JSON_UNESCAPED_UNICODE); ?>;
+                function applyNote() {
+                  var nodes = document.querySelectorAll('.uppy-Dashboard-note');
+                  var i;
+                  for (i = 0; i < nodes.length; i += 1) {
+                    nodes[i].textContent = note;
+                  }
+                }
+                document.addEventListener('click', function (e) {
+                  if (e.target && (e.target.id === 'uppy-upload-button' || (e.target.closest && e.target.closest('#uppy-upload-button')))) {
+                    window.setTimeout(applyNote, 80);
+                    window.setTimeout(applyNote, 400);
+                  }
+                });
+              })();
+              </script>
               <?php osc_run_hook('item_publish_images'); ?>
             </div>
           </div>
