@@ -14,12 +14,24 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 if (!defined('PNGM_PRODUCTION_POLICY_VER')) {
-    define('PNGM_PRODUCTION_POLICY_VER', 'v1');
+    define('PNGM_PRODUCTION_POLICY_VER', 'v3');
 }
 
 /** First N listings from an account stay inactive until an admin activates one. */
 if (!defined('PNGM_MODERATE_FIRST_ITEMS')) {
     define('PNGM_MODERATE_FIRST_ITEMS', 1);
+}
+
+/**
+ * Preferred listing photo extensions (Uppy + AjaxUploader + ItemActions).
+ * Stored in Osclass preference allowedExt.
+ * Skips svg/psd/ico (security / not useful as listing photos).
+ */
+if (!defined('PNGM_ALLOWED_IMAGE_EXT')) {
+    define(
+        'PNGM_ALLOWED_IMAGE_EXT',
+        'png,gif,jpg,jpeg,jpe,jfif,pjp,pjpeg,webp,bmp,dib,avif,heic,heif,tif,tiff,jxl,jp2,j2k'
+    );
 }
 
 /**
@@ -70,11 +82,29 @@ function pngm_production_enforce_prefs()
         pngm_production_set('logging_months', '12', 'INTEGER');
     }
 
+    $desired = array_filter(array_map('trim', explode(',', strtolower((string) PNGM_ALLOWED_IMAGE_EXT))));
     $ext = strtolower((string) osc_get_preference('allowedExt'));
     $parts = array_filter(array_map('trim', explode(',', $ext)));
-    if (!in_array('webp', $parts, true)) {
-        $parts[] = 'webp';
-        pngm_production_set('allowedExt', implode(',', $parts), 'STRING');
+    $merged = $parts;
+    foreach ($desired as $want) {
+        if ($want !== '' && !in_array($want, $merged, true)) {
+            $merged[] = $want;
+        }
+    }
+    // Prefer a stable, broad order when we had to grow the list.
+    if ($merged !== $parts) {
+        $ordered = array();
+        foreach ($desired as $want) {
+            if (in_array($want, $merged, true)) {
+                $ordered[] = $want;
+            }
+        }
+        foreach ($merged as $extra) {
+            if (!in_array($extra, $ordered, true)) {
+                $ordered[] = $extra;
+            }
+        }
+        pngm_production_set('allowedExt', implode(',', $ordered), 'STRING');
     }
 }
 
