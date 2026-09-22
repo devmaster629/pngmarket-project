@@ -165,14 +165,24 @@ body.pngm-auth-v2 .pngm-auth-visual img,
 }
 
 .pngm-auth-lead {
-  margin: 0 0 26px;
+  margin: 0 0 14px;
   color: #6b7785;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+
+/* Login uses lead as the sole heading — keep it readable, not oversized */
+.pngm-auth-box > h1.pngm-auth-lead {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #16202a;
+  line-height: 1.35;
 }
 
 .pngm-auth-field {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 
 .pngm-auth-field label {
@@ -478,7 +488,7 @@ body.pngm-auth-v2 .pngm-auth-submit:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0 16px;
+  margin: 0 0 12px;
   color: #8a94a0;
   font-size: 12px;
 }
@@ -494,8 +504,8 @@ body.pngm-auth-v2 .pngm-auth-submit:hover {
 body.pngm-auth-v2 .pngm-social-login.is-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 0 0 18px;
+  gap: 10px;
+  margin: 0 0 14px;
 }
 
 body.pngm-auth-v2 .pngm-auth-form {
@@ -596,10 +606,14 @@ body.pngm-auth-v2 .pngm-auth-control input {
     padding-top: 64px !important;
   }
 
+  /* Keep card tall for desktop split; panel itself starts content at the top */
   .pngm-auth-card,
-  .pngm-auth-visual,
-  .pngm-auth-panel {
+  .pngm-auth-visual {
     min-height: calc(100vh - 64px);
+  }
+
+  .pngm-auth-panel {
+    min-height: 0;
   }
 }
 
@@ -616,7 +630,8 @@ body.pngm-auth-v2 .pngm-auth-control input {
 
   .pngm-auth-panel {
     min-height: 0;
-    padding: 28px 20px 40px;
+    align-items: flex-start;
+    padding: 16px 20px 28px;
     overflow: visible;
   }
 
@@ -627,6 +642,10 @@ body.pngm-auth-v2 .pngm-auth-control input {
 
   .pngm-auth-box h1 {
     font-size: 26px;
+  }
+
+  .pngm-auth-box > h1.pngm-auth-lead {
+    font-size: 17px;
   }
 
   body.pngm-auth-v2 .pngm-social-login.is-row {

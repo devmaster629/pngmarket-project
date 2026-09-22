@@ -19,8 +19,7 @@
 
       <div class="pngm-auth-panel">
         <div class="pngm-auth-box">
-          <h1><?php _e('Welcome back!', 'epsilon'); ?></h1>
-          <p class="pngm-auth-lead"><?php _e('Log in to your PNGMarket account.', 'epsilon'); ?></p>
+          <h1 class="pngm-auth-lead"><?php _e('Log in to your PNGMarket account.', 'epsilon'); ?></h1>
 
           <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login', 'row'); } ?>
 
