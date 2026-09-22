@@ -5091,6 +5091,27 @@ body.pngm-ua-messages.file-messages .pngm-im-list-side {
   gap: 6px 12px;
 }
 
+.pngm-sec-pass-tips-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #6b7785;
+}
+
+.pngm-sec-pass-warn {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px solid #f0e0b2;
+  color: #8a6d1d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pngm-sec-pass-warn[hidden] {
+  display: none !important;
+}
+
 .pngm-sec-pass-rules li {
   position: relative;
   padding-left: 18px;

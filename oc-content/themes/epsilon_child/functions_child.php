@@ -7,7 +7,12 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.7.5');
+    define('PNGM_CHILD_VERSION', '2.7.7');
+}
+
+/** Minimum password length for registration / password change (complexity is advisory only). */
+if (!defined('PNGM_PASSWORD_MIN_LENGTH')) {
+    define('PNGM_PASSWORD_MIN_LENGTH', 6);
 }
 
 require_once dirname(__FILE__) . '/includes/vehicle_makes.php';
@@ -1195,6 +1200,63 @@ function pngm_item_title_desc_length_error($flash_error, $aItem)
 
 osc_add_filter('pre_item_add_error', 'pngm_item_title_desc_length_error', 10);
 osc_add_filter('pre_item_edit_error', 'pngm_item_title_desc_length_error', 10);
+
+/**
+ * @return int
+ */
+function pngm_password_min_length()
+{
+    return (int) PNGM_PASSWORD_MIN_LENGTH;
+}
+
+/**
+ * Soft strength check — never blocks registration; for UI warnings only.
+ *
+ * @param string $password
+ * @return bool true when password is considered weak (but may still be valid length)
+ */
+function pngm_password_is_weak($password)
+{
+    $password = (string) $password;
+    $min = pngm_password_min_length();
+    if (strlen($password) < $min) {
+        return false;
+    }
+    $score = 0;
+    if (preg_match('/[a-z]/', $password)) {
+        $score++;
+    }
+    if (preg_match('/[A-Z]/', $password)) {
+        $score++;
+    }
+    if (preg_match('/\d/', $password)) {
+        $score++;
+    }
+    if (preg_match('/[^A-Za-z0-9]/', $password)) {
+        $score++;
+    }
+    if (strlen($password) >= 10) {
+        $score++;
+    }
+    return $score < 3;
+}
+
+/**
+ * Enforce minimum password length on registration (complexity is not required).
+ */
+function pngm_require_password_min_on_register()
+{
+    $pass = (string) Params::getParam('s_password', false, false);
+    $min = pngm_password_min_length();
+    if ($pass !== '' && strlen($pass) < $min) {
+        osc_add_flash_error_message(
+            sprintf(__('Password: enter at least %d characters.', 'epsilon'), $min)
+        );
+        osc_redirect_to(osc_register_account_url());
+    }
+}
+
+osc_add_hook('before_user_register', 'pngm_require_password_min_on_register', 2);
 
 /**
  * Show reCAPTCHA on auth pages when a site key exists.

@@ -45,8 +45,10 @@ if (strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST' && $action !== ''
             osc_add_flash_error_message(__("Current password doesn't match", 'epsilon'));
         } elseif ($new1 !== $new2) {
             osc_add_flash_error_message(__("Passwords don't match", 'epsilon'));
-        } elseif (strlen($new1) < 8) {
-            osc_add_flash_error_message(__('New password must be at least 8 characters', 'epsilon'));
+        } elseif (strlen($new1) < pngm_password_min_length()) {
+            osc_add_flash_error_message(
+                sprintf(__('New password must be at least %d characters', 'epsilon'), pngm_password_min_length())
+            );
         } else {
             User::newInstance()->update(
                 array('s_password' => osc_hash_password($new1)),
@@ -282,15 +284,17 @@ if ($show_pass && $show_email) {
           </label>
           <label class="pngm-sec-field">
             <span><?php _e('New password', 'epsilon'); ?></span>
-            <input type="password" name="new_password" id="pngm-sec-new-pass" required minlength="8" />
+            <input type="password" name="new_password" id="pngm-sec-new-pass" required minlength="<?php echo (int) pngm_password_min_length(); ?>" />
           </label>
           <label class="pngm-sec-field">
             <span><?php _e('Confirm new password', 'epsilon'); ?></span>
-            <input type="password" name="new_password2" required minlength="8" />
+            <input type="password" name="new_password2" required minlength="<?php echo (int) pngm_password_min_length(); ?>" />
           </label>
 
+          <p class="pngm-sec-pass-warn" id="pngm-sec-pass-warn" hidden><?php _e('This password looks weak. You can still save it — a longer mix of letters and numbers is safer.', 'epsilon'); ?></p>
+          <p class="pngm-sec-pass-tips-label"><?php _e('Tips for a stronger password (optional):', 'epsilon'); ?></p>
           <ul class="pngm-sec-pass-rules" id="pngm-sec-pass-rules" aria-live="polite">
-            <li data-rule="len"><?php _e('At least 8 characters', 'epsilon'); ?></li>
+            <li data-rule="len"><?php echo osc_esc_html(sprintf(__('At least %d characters', 'epsilon'), pngm_password_min_length())); ?></li>
             <li data-rule="case"><?php _e('Upper and lower case letters', 'epsilon'); ?></li>
             <li data-rule="num"><?php _e('At least one number', 'epsilon'); ?></li>
             <li data-rule="sym"><?php _e('At least one symbol', 'epsilon'); ?></li>
@@ -663,11 +667,23 @@ if ($show_pass && $show_email) {
 (function () {
   var pass = document.getElementById('pngm-sec-new-pass');
   var rules = document.getElementById('pngm-sec-pass-rules');
+  var warn = document.getElementById('pngm-sec-pass-warn');
+  var minLen = <?php echo (int) pngm_password_min_length(); ?>;
   if (pass && rules) {
+    function isWeak(v) {
+      if (v.length < minLen) return false;
+      var score = 0;
+      if (/[a-z]/.test(v)) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/\d/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      if (v.length >= 10) score++;
+      return score < 3;
+    }
     function check() {
       var v = String(pass.value || '');
       var map = {
-        len: v.length >= 8,
+        len: v.length >= minLen,
         case: /[a-z]/.test(v) && /[A-Z]/.test(v),
         num: /\d/.test(v),
         sym: /[^A-Za-z0-9]/.test(v)
@@ -677,6 +693,9 @@ if ($show_pass && $show_email) {
       for (i = 0; i < items.length; i += 1) {
         var key = items[i].getAttribute('data-rule');
         items[i].classList.toggle('is-ok', !!map[key]);
+      }
+      if (warn) {
+        warn.hidden = !(v.length >= minLen && isWeak(v));
       }
     }
     pass.addEventListener('input', check);

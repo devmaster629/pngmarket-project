@@ -128,10 +128,33 @@
   <script type="text/javascript">
   (function ($) {
     $(function () {
+      var minLen = <?php echo (int) pngm_password_min_length(); ?>;
+      var $form = $('form#register');
+      var $pass = $('input[name="s_password"]');
+      var $pass2 = $('input[name="s_password2"]');
+
       $('input[name="s_name"]').attr('placeholder', '<?php echo osc_esc_js(__('First name, Last name', 'epsilon')); ?>').attr('required', true);
       $('input[name="s_email"]').attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true).prop('type', 'email');
-      $('input[name="s_password"]').removeAttr('placeholder').attr('required', true).attr('minlength', 8);
-      $('input[name="s_password2"]').removeAttr('placeholder').attr('required', true);
+      $pass.removeAttr('placeholder').attr('required', true).attr('minlength', minLen);
+      $pass2.removeAttr('placeholder').attr('required', true).attr('minlength', minLen);
+
+      if ($form.length && $.fn.validate && $form.data('validator')) {
+        $form.validate().settings.rules.s_password = $.extend({}, $form.validate().settings.rules.s_password, {
+          required: true,
+          minlength: minLen
+        });
+        $form.validate().settings.rules.s_password2 = $.extend({}, $form.validate().settings.rules.s_password2, {
+          required: true,
+          minlength: minLen,
+          equalTo: '#s_password'
+        });
+        $form.validate().settings.messages.s_password = $.extend({}, $form.validate().settings.messages.s_password, {
+          minlength: '<?php echo osc_esc_js(sprintf(__('Password: enter at least %d characters.', 'epsilon'), pngm_password_min_length())); ?>'
+        });
+        $form.validate().settings.messages.s_password2 = $.extend({}, $form.validate().settings.messages.s_password2, {
+          minlength: '<?php echo osc_esc_js(sprintf(__('Password: enter at least %d characters.', 'epsilon'), pngm_password_min_length())); ?>'
+        });
+      }
 
       function mark($input, ok) {
         var $field = $input.closest('.pngm-auth-field');
@@ -148,13 +171,12 @@
         var el = this;
         mark($(this), el.checkValidity ? el.checkValidity() : true);
       });
-      $('input[name="s_password"]').on('blur input', function () {
-        mark($(this), $(this).val().length >= 8);
-        var $p2 = $('input[name="s_password2"]');
-        if ($p2.val()) mark($p2, $p2.val() === $(this).val());
+      $pass.on('blur input', function () {
+        mark($(this), $(this).val().length >= minLen);
+        if ($pass2.val()) mark($pass2, $pass2.val() === $(this).val());
       });
-      $('input[name="s_password2"]').on('blur input', function () {
-        mark($(this), $(this).val() !== '' && $(this).val() === $('input[name="s_password"]').val());
+      $pass2.on('blur input', function () {
+        mark($(this), $(this).val() !== '' && $(this).val() === $pass.val());
       });
     });
   })(jQuery);
