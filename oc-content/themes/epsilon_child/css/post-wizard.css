@@ -1898,8 +1898,19 @@ body.pngm-post-wizard #atr-make_other:not(.pngm-other-visible) {
   background: #fff;
 }
 
+/*
+ * Parent style.css: `.item-publish footer { height:60px }` collapses the
+ * PNGMarket footer so Information (and half of Follow us) never enter page
+ * scroll height — content spills under #navi-bar and cannot be scrolled to.
+ */
+body.pngm-post-wizard.item-publish footer,
+body.pngm-post-wizard footer.pngm-footer,
+body#body-item-post.pngm-post-wizard footer.pngm-footer,
 body.pngm-post-wizard footer,
 body.pngm-post-wizard .pngm-footer {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
   margin-top: 0;
 }
 
@@ -2063,7 +2074,8 @@ body.pngm-post-wizard > .content > .container > .box > h1 {
 
 @media screen and (max-width: 767px) {
   body.pngm-post-wizard .pngm-post-wrap {
-    padding-bottom: 32px;
+    /* Keep space for #navi-bar only — post nav stays in document flow */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .pngm-post-step-label {
@@ -2074,10 +2086,52 @@ body.pngm-post-wizard > .content > .container > .box > h1 {
     min-width: 36px;
   }
 
+  /*
+   * Sticky Back/Next was covering the site footer (Information links).
+   * Keep the bar in normal flow on mobile so the full footer can scroll into view.
+   */
   .pngm-post-nav {
-    bottom: 48px;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
     padding-left: 0;
     padding-right: 0;
+    padding-bottom: 12px;
+    margin: 12px 0 0;
+    box-shadow: none;
+    z-index: 1;
+  }
+
+  /*
+   * Match homepage footer on mobile: full brand + Follow us + Information,
+   * with clearance above fixed #navi-bar. Parent also sets overflow:hidden.
+   */
+  body.pngm-post-wizard.item-publish footer,
+  body.pngm-post-wizard footer.pngm-footer,
+  body#body-item-post.pngm-post-wizard footer.pngm-footer {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin-top: 12px !important;
+  }
+
+  body.pngm-post-wizard footer.pngm-footer .pngm-footer-mobile,
+  body#body-item-post.pngm-post-wizard footer.pngm-footer .pngm-footer-mobile {
+    display: block !important;
+  }
+
+  body.pngm-post-wizard footer.pngm-footer .pngm-footer-info,
+  body#body-item-post.pngm-post-wizard footer.pngm-footer .pngm-footer-info {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  body.pngm-post-wizard,
+  body#body-item-post.pngm-post-wizard {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   body.pngm-post-wizard #post-hooks .atr-row,

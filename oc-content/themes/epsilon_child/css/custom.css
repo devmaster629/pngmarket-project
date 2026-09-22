@@ -4384,6 +4384,17 @@ footer.pngm-footer .pngm-footer-info a:hover {
   text-decoration: none;
 }
 
+footer.pngm-footer .pngm-footer-copy {
+  margin: 22px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #4b5563;
+}
+
 footer.pngm-footer .footer-hook,
 footer.pngm-footer .footer-widgets {
   display: none;
@@ -6674,7 +6685,7 @@ body.pngm-filter-open {
   body#body-item-post.pngm-post-wizard .pngm-post-wrap,
   body.pngm-post-wizard .pngm-post-wrap {
     padding-top: 8px;
-    padding-bottom: 24px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   body#body-item-post.pngm-post-wizard .pngm-post-page-title,

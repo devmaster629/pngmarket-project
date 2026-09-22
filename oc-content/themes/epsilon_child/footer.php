@@ -194,6 +194,10 @@
       <?php } ?>
     </div>
 
+    <p class="pngm-footer-copy">
+      &copy; <?php echo (int) date('Y'); ?> <?php echo osc_esc_html(!empty($pngm_contact['name']) ? $pngm_contact['name'] : 'PNGMarket'); ?>. <?php echo osc_esc_html(__('All rights reserved.', 'epsilon')); ?>
+    </p>
+
     <div class="footer-hook"><?php osc_run_hook('footer'); ?></div>
     <div class="footer-widgets"><?php osc_show_widgets('footer'); ?></div>
   </div>

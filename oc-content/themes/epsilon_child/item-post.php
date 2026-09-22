@@ -108,7 +108,7 @@
   $locale = osc_current_user_locale();
   $max_imgs = (int) osc_max_images_per_item();
 ?>
-<body id="body-item-post" class="item-publish pngm-post-wizard">
+<body id="body-item-post" class="item-publish pngm-post-wizard has-footer">
   <?php osc_current_web_theme_path('header.php'); ?>
 
   <div class="pngm-post-wrap">
