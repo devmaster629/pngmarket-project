@@ -99,7 +99,7 @@ function pngm_atr_svg_icon($a)
 }
 
 /**
- * Meta bar under price: Posted · views · Listing ID (plain text, no box).
+ * Meta bar under price: Posted · Listing ID (plain text, no box).
  */
 function pngm_render_item_meta_bar()
 {
@@ -110,20 +110,12 @@ function pngm_render_item_meta_bar()
     $posted = function_exists('eps_smart_date')
         ? eps_smart_date(osc_item_pub_date())
         : osc_format_date(osc_item_pub_date());
-    $views = function_exists('osc_item_views') ? (int) osc_item_views() : 0;
     $id = (int) osc_item_id();
 
-    $parts = array();
-    $parts[] = sprintf(__('Posted %s', 'epsilon'), $posted);
-    $parts[] = sprintf(__('%d views', 'epsilon'), $views);
-    $parts[] = sprintf(__('Listing ID: %s', 'epsilon'), $id);
-
     echo '<p class="pngm-item-meta-bar">'
-        . osc_esc_html($parts[0])
+        . osc_esc_html(sprintf(__('Posted %s', 'epsilon'), $posted))
         . ' &middot; '
-        . osc_esc_html($parts[1])
-        . ' &middot; '
-        . osc_esc_html($parts[2])
+        . osc_esc_html(sprintf(__('Listing ID: %s', 'epsilon'), $id))
         . '</p>';
 }
 

@@ -177,7 +177,6 @@
                       }
                     }
                   ?>
-                  <span class="pngm-listing-views"><i class="far fa-eye" aria-hidden="true"></i> <?php echo sprintf(__('%d views', 'epsilon'), (int) osc_item_views()); ?></span>
                   <time class="pngm-listing-date" datetime="<?php echo osc_esc_html(osc_item_pub_date()); ?>"><?php echo osc_format_date(osc_item_pub_date()); ?></time>
                 </div>
 
