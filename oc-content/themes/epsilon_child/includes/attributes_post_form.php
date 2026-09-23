@@ -80,6 +80,11 @@ function pngm_atr_post_form($cat_id = null, $item_id = null)
         if (isset($a['s_type']) && strtoupper((string) $a['s_type']) === 'PHONE') {
             continue;
         }
+        // Theme already has Condition (eps_simple_condition) — skip Attributes duplicate.
+        $ident = isset($a['s_identifier']) ? strtolower(trim((string) $a['s_identifier'])) : '';
+        if ($ident === 'condition') {
+            continue;
+        }
         if ($cat_id > 0 && !pngm_atr_applies_to_leaf($a, $cat_id)) {
             continue;
         }

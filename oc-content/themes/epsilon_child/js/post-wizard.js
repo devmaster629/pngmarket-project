@@ -83,17 +83,141 @@
     /**
      * Category attributes (Make, Seats, ...) are rendered server-side for the
      * category known at page load. The wizard picks the category in step 1, so
-     * reload the plugin fields whenever that choice changes.
+     * reload the plugin fields whenever that choice changes — but never wipe
+     * values the seller already entered when they only press Back/Next.
      */
     var attrsLoadedFor = String(cfg.leaf || '');
     var attrsRequest = null;
+    var attrsDraft = {};
+
+    function attrsDraftKey($el) {
+      var name = String($el.attr('name') || '');
+      var id = String($el.attr('id') || '');
+      if (name) {
+        return 'n:' + name;
+      }
+      if (id) {
+        return 'i:' + id;
+      }
+      return '';
+    }
+
+    function captureAttrsDraft() {
+      var $box = $('#post-hooks');
+      if (!$box.length) {
+        return;
+      }
+      var next = {};
+      var present = {};
+      $box.find('input, select, textarea').each(function () {
+        var $el = $(this);
+        var key = attrsDraftKey($el);
+        if (!key) {
+          return;
+        }
+        var type = String($el.attr('type') || '').toLowerCase();
+        if (type === 'file' || type === 'button' || type === 'submit') {
+          return;
+        }
+        // Keep named hiddens (Attributes cascade often stores atr_* there).
+        if (type === 'hidden' && !$el.attr('name')) {
+          return;
+        }
+        present[key] = true;
+        if ($el.is(':checkbox')) {
+          if (!next[key]) {
+            next[key] = [];
+          }
+          if ($el.is(':checked')) {
+            next[key].push(String($el.val()));
+          }
+        } else if ($el.is(':radio')) {
+          if ($el.is(':checked')) {
+            next[key] = String($el.val());
+          } else if (!Object.prototype.hasOwnProperty.call(next, key)) {
+            next[key] = '';
+          }
+        } else {
+          next[key] = String($el.val() == null ? '' : $el.val());
+        }
+      });
+      // Update keys currently in the DOM; keep cascade keys that were temporarily removed.
+      Object.keys(present).forEach(function (k) {
+        attrsDraft[k] = Object.prototype.hasOwnProperty.call(next, k) ? next[k] : '';
+      });
+    }
+
+    function applyAttrsDraftPass() {
+      var $box = $('#post-hooks');
+      if (!$box.length || !attrsDraft || !Object.keys(attrsDraft).length) {
+        return;
+      }
+      $box.find('input, select, textarea').each(function () {
+        var $el = $(this);
+        var key = attrsDraftKey($el);
+        if (!key || !Object.prototype.hasOwnProperty.call(attrsDraft, key)) {
+          return;
+        }
+        var saved = attrsDraft[key];
+        if ($el.is(':checkbox')) {
+          var list = $.isArray(saved) ? saved : [saved];
+          $el.prop('checked', list.indexOf(String($el.val())) !== -1);
+        } else if ($el.is(':radio')) {
+          $el.prop('checked', String($el.val()) === String(saved));
+        } else {
+          var cur = String($el.val() == null ? '' : $el.val());
+          var want = String(saved == null ? '' : saved);
+          if (cur !== want) {
+            $el.val(want);
+          }
+        }
+      });
+    }
+
+    function applyAttrsDraft() {
+      applyAttrsDraftPass();
+      // Cascade Make/Brand: only fetch children when level-2 is missing.
+      // Re-firing change when Ford/Everest already rendered causes atr-loading forever
+      // (cascade AJAX is also runhook → used to re-enter this path).
+      var $lvl1 = $('#post-hooks').find('select[data-level="1"]');
+      if ($lvl1.length) {
+        var needCascade = false;
+        $lvl1.each(function () {
+          var $s = $(this);
+          if (!$s.val()) {
+            return;
+          }
+          if ($s.nextAll('select[data-level]').length) {
+            return;
+          }
+          needCascade = true;
+          $s.trigger('change');
+        });
+        if (needCascade) {
+          window.setTimeout(applyAttrsDraftPass, 350);
+          window.setTimeout(applyAttrsDraftPass, 900);
+        }
+      }
+      syncAttrsSectionVisibility();
+    }
 
     function loadCategoryAttributes(catId, force) {
       var $box = $('#post-hooks');
       catId = String(catId || '');
 
-      if (!$box.length || !catId || (!force && catId === attrsLoadedFor)) {
+      if (!$box.length || !catId) {
         return;
+      }
+      // Same category already in the DOM — keep seller input (Back/Next must not wipe).
+      if (!force && catId === attrsLoadedFor) {
+        return;
+      }
+      // Different category → drop previous attribute draft (do not copy old Make onto new cat).
+      if (attrsLoadedFor && attrsLoadedFor !== catId) {
+        attrsDraft = {};
+      } else {
+        // Same category forced reload — snapshot current values first.
+        captureAttrsDraft();
       }
       attrsLoadedFor = catId;
 
@@ -127,7 +251,7 @@
         // Freshly loaded fields start neutral — red only after a failed Next.
         $box.find('.error').removeClass('error');
         $box.find('.is-invalid').removeClass('is-invalid');
-        syncAttrsSectionVisibility();
+        applyAttrsDraft();
         $(document).trigger('pngm:attrs-loaded');
         if (window.pngmItemValidation && window.pngmItemValidation.forceEnhanceValidator) {
           window.pngmItemValidation.forceEnhanceValidator();
@@ -337,6 +461,7 @@
         $catId.val('');
         updateSummary(null, '—');
         attrsLoadedFor = '';
+        attrsDraft = {};
         $('#post-hooks').empty();
         syncAttrsSectionVisibility();
       }
@@ -1343,6 +1468,7 @@
       'input.pngmPostClear change.pngmPostClear',
       '#post-hooks input, #post-hooks select, #post-hooks textarea, .atr-form input, .atr-form select, .atr-form textarea',
       function () {
+        captureAttrsDraft();
         var $el = $(this);
         var $group = $el.closest('.control-group.atr-field, .atr-field');
         if (!$group.length) {
@@ -1508,7 +1634,8 @@
       if (step === 1) {
         var leafId = String($sub.val() || $catId.val() || '').trim();
         if (leafId) {
-          loadCategoryAttributes(leafId, true);
+          // Do not force-reload: that wiped Make/Accessories/etc. on every Next.
+          loadCategoryAttributes(leafId);
         }
       }
       if (step === 2) {
@@ -1554,8 +1681,15 @@
         }
         return false;
       }
-      if (!validateStep(6)) {
+      // Final publish must still enforce Contact (step 5) + Terms (step 6).
+      if (!validateStep(5) || !validateStep(6)) {
         e.preventDefault();
+        if (!$('#pngm_call_availability').val() || !$('#pngm_terms').is(':checked')) {
+          // Jump back to the step that failed so the seller can fix it.
+          if (!$('#pngm_call_availability').val()) {
+            showStep(5);
+          }
+        }
         return false;
       }
       // Ensure free / check pricing before submit
@@ -1636,8 +1770,26 @@
     });
     $(document).ajaxComplete(function (event, xhr, settings) {
       var url = settings && settings.url ? String(settings.url) : '';
+      var data = settings && settings.data != null ? String(settings.data) : '';
       if (url.indexOf('city') !== -1 || url.indexOf('region') !== -1 || url.indexOf('ajaxLoc') !== -1) {
         setTimeout(updateMapPreview, 80);
+      }
+      // Only react to category attribute form loads — NOT Make cascade
+      // (hook=atr_select_url also uses runhook and would loop atr-loading forever).
+      var isAttrFormLoad =
+        (url.indexOf('item_form') !== -1 || url.indexOf('item_edit') !== -1
+          || data.indexOf('item_form') !== -1 || data.indexOf('item_edit') !== -1)
+        && url.indexOf('atr_select_url') === -1
+        && data.indexOf('atr_select_url') === -1;
+      if (isAttrFormLoad) {
+        window.setTimeout(function () {
+          captureAttrsDraft();
+          // Do not call applyAttrsDraft() here — it can re-trigger cascades.
+          applyAttrsDraftPass();
+          $('#post-hooks .atr-loading').removeClass('atr-loading');
+          syncAttrsSectionVisibility();
+          $(document).trigger('pngm:attrs-loaded');
+        }, 30);
       }
       // A finished upload should clear the "photo required" error.
       setTimeout(function () {
@@ -1699,7 +1851,17 @@
     updateMapPreview();
     syncEmailFieldVisibility();
     $form.on('change', '#pngm_email_notify', syncEmailFieldVisibility);
-    syncAttrsSectionVisibility();
+    // Load leaf attributes into #post-hooks (Make/Brand for parts, etc.).
+    // Osclass also AJAX-fills #plugin-hook; we own #post-hooks so sellers see fields.
+    if (cfg.leaf) {
+      loadCategoryAttributes(String(cfg.leaf), true);
+    } else {
+      syncAttrsSectionVisibility();
+      captureAttrsDraft();
+    }
+    // Retry visibility after late plugin AJAX.
+    window.setTimeout(syncAttrsSectionVisibility, 200);
+    window.setTimeout(syncAttrsSectionVisibility, 800);
     showStep(1);
   }
 

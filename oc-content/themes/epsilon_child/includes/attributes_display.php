@@ -121,6 +121,7 @@ function pngm_render_item_meta_bar()
 
 /**
  * Inject SVG icons into plugin attribute rows and mark the block as visual.
+ * Drops rows with no visible value (empty Accessories / Transmission chips).
  *
  * @param string $html
  * @return string
@@ -156,6 +157,7 @@ function pngm_atr_enhance_html($html)
     );
 
     $html = preg_replace('/<span class="atr-value-single[^"]*"[^>]*>\s*<\/span>/i', '', $html);
+    $html = preg_replace('/<span class="atr-value-single[^"]*\batr-empty\b[^"]*"[^>]*>.*?<\/span>/is', '', $html);
 
     // Inject one SVG icon after each attribute <li ...>
     $html = preg_replace_callback(
@@ -192,6 +194,31 @@ function pngm_atr_enhance_html($html)
         $html
     );
 
+    // Remove attribute rows that have no remaining value text (icon + label only).
+    $html = preg_replace_callback(
+        '/<li\b[^>]*\batr-line\b[^>]*>.*?<\/li>/is',
+        function ($m) {
+            $li = $m[0];
+            $value = '';
+            if (preg_match('/<div[^>]*class="[^"]*\batr-value\b[^"]*"[^>]*>(.*?)<\/div>/is', $li, $vm)) {
+                $value = $vm[1];
+            }
+            $text = trim(html_entity_decode(strip_tags($value), ENT_QUOTES, 'UTF-8'));
+            $text = preg_replace('/\s+/u', ' ', $text);
+            // Placeholder / empty markers from the plugin (use \x{…} — PHP PCRE has no \u)
+            if ($text === '' || preg_match('/^[\-\x{2013}\x{2014}\s]*(no selection)?[\-\x{2013}\x{2014}\s]*$/iu', $text)) {
+                return '';
+            }
+            return $li;
+        },
+        $html
+    );
+
+    // Nothing left to show
+    if (!preg_match('/<li\b[^>]*\batr-line\b/i', $html)) {
+        return '';
+    }
+
     return $html;
 }
 
@@ -199,22 +226,69 @@ function pngm_atr_enhance_html($html)
  * Replace plugin item_detail attributes with enhanced visual output.
  *
  * Uses the plugin's atr_show_item() so attribute data always renders the same
- * way as before; we only enhance markup (icons + CSS class).
+ * way as before; we only enhance markup (icons + CSS class) and leaf-filter
+ * so Car Parts does not inherit Cars-only specs via the Vehicles root.
  *
  * @param array $item
  */
 function pngm_atr_show_item($item)
 {
-    if (!function_exists('atr_show_item')) {
+    if (!function_exists('atr_show_item') || !function_exists('atr_single_attribute') || !class_exists('ModelATR')) {
+        if (function_exists('atr_show_item')) {
+            atr_show_item($item);
+        }
         return;
     }
     if (!is_array($item) || empty($item['pk_i_id'])) {
         return;
     }
 
-    ob_start();
-    atr_show_item($item);
-    $html = ob_get_clean();
+    $item_id = (int) $item['pk_i_id'];
+    $cat_id = isset($item['fk_i_category_id']) ? (int) $item['fk_i_category_id'] : 0;
+
+    $attributes = ModelATR::newInstance()->getItemAttributes($item_id, $cat_id > 0 ? $cat_id : null);
+    if (!is_array($attributes) || empty($attributes)) {
+        return;
+    }
+
+    $rows = '';
+    foreach ($attributes as $a) {
+        if (!is_array($a) || empty($a['pk_i_id'])) {
+            continue;
+        }
+        if (isset($a['b_hook']) && (int) $a['b_hook'] !== 1) {
+            continue;
+        }
+        if (!empty($a['fk_i_linked_to_attr_id']) && (int) $a['fk_i_linked_to_attr_id'] > 0) {
+            continue;
+        }
+        // Phone/email belong on contact UI, not specs.
+        if (isset($a['s_type'])) {
+            $t = strtoupper((string) $a['s_type']);
+            if ($t === 'PHONE' || $t === 'EMAIL') {
+                continue;
+            }
+        }
+        // Leaf-exact: Cars body/seats must not appear on Car Parts via root Vehicles.
+        if ($cat_id > 0 && function_exists('pngm_atr_applies_to_leaf') && !pngm_atr_applies_to_leaf($a, $cat_id)) {
+            continue;
+        }
+        $row = atr_single_attribute($a, $item_id);
+        if (is_string($row) && trim($row) !== '') {
+            $rows .= $row;
+        }
+    }
+
+    if ($rows === '') {
+        return;
+    }
+
+    $html = '<ul id="atr-item" class="pngm-atr-visual atr-theme-' . osc_current_web_theme() . ' '
+        . ((function_exists('atr_param') && atr_param('styled') == 1) ? 'atr-styled' : '')
+        . '">';
+    $html .= '<h3 id="atr-title">' . __('Full specifications', 'epsilon') . '</h3>';
+    $html .= $rows;
+    $html .= '</ul>';
 
     // Guests must not see phone/email attribute values on the listing.
     if (function_exists('pngm_viewer_can_contact_seller') && !pngm_viewer_can_contact_seller() && $html !== '') {

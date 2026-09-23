@@ -157,6 +157,8 @@ if (function_exists('osc_add_hook')) {
     osc_add_hook('edited_item', 'pngm_item_whatsapp_save', 9);
     osc_add_hook('posted_item', 'pngm_item_contact_pref_save', 9);
     osc_add_hook('edited_item', 'pngm_item_contact_pref_save', 9);
+    osc_add_hook('posted_item', 'pngm_item_call_availability_save', 9);
+    osc_add_hook('edited_item', 'pngm_item_call_availability_save', 9);
 }
 
 /**
@@ -249,6 +251,94 @@ function pngm_item_contact_pref($item_id = 0)
     }
 
     return $pref;
+}
+
+/**
+ * Preference key for call availability.
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_item_call_availability_key($item_id)
+{
+    return 'call_avail_' . (int) $item_id;
+}
+
+/**
+ * Allowed call availability values.
+ *
+ * @return array
+ */
+function pngm_item_call_availability_allowed()
+{
+    return array('anytime', 'weekdays', 'evenings', 'weekends');
+}
+
+/**
+ * Persist call availability from the contact step.
+ *
+ * @param array $item
+ */
+function pngm_item_call_availability_save($item)
+{
+    $item_id = 0;
+    if (is_array($item) && isset($item['pk_i_id'])) {
+        $item_id = (int) $item['pk_i_id'];
+    }
+    if ($item_id <= 0) {
+        return;
+    }
+
+    $avail = '';
+    // Params is the Osclass source of truth after request bootstrap.
+    if (class_exists('Params')) {
+        $avail = strtolower(trim((string) Params::getParam('pngm_call_availability')));
+    }
+    if ($avail === '' && isset($_POST['pngm_call_availability'])) {
+        $avail = strtolower(trim((string) $_POST['pngm_call_availability']));
+    }
+    if ($avail === '' && isset($_REQUEST['pngm_call_availability'])) {
+        $avail = strtolower(trim((string) $_REQUEST['pngm_call_availability']));
+    }
+
+    if (!in_array($avail, pngm_item_call_availability_allowed(), true)) {
+        return;
+    }
+
+    if (function_exists('osc_set_preference')) {
+        osc_set_preference(pngm_item_call_availability_key($item_id), $avail, 'pngm_contact', 'STRING');
+    }
+    if (class_exists('Preference')) {
+        Preference::newInstance()->set(pngm_item_call_availability_key($item_id), $avail, 'pngm_contact');
+    }
+}
+
+/**
+ * Seller call availability for a listing.
+ *
+ * @param int $item_id
+ * @return string anytime|weekdays|evenings|weekends|''
+ */
+function pngm_item_call_availability($item_id = 0)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 && function_exists('osc_item_id')) {
+        $item_id = (int) osc_item_id();
+    }
+    if ($item_id <= 0) {
+        return '';
+    }
+
+    $avail = '';
+    if (function_exists('osc_get_preference')) {
+        $avail = strtolower(trim((string) osc_get_preference(pngm_item_call_availability_key($item_id), 'pngm_contact')));
+    }
+
+    if (!in_array($avail, pngm_item_call_availability_allowed(), true)) {
+        return '';
+    }
+
+    return $avail;
 }
 
 /**

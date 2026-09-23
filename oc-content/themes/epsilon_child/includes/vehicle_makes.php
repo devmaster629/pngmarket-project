@@ -628,13 +628,75 @@ function pngm_vehicle_dedupe_attr_values($m, $prefix, $attr_id)
 
 
 /**
- * P2-006 / post-form split — Vehicle attribute category scopes.
+ * Resolve Vehicles subcategory ids by English name (stable across renumbered installs).
  *
- * - Make / Brand: all Vehicles branches (bikes, boats, cars, …)
- * - Shared specs (fuel, transmission, condition): all Vehicles
- * - Car-only specs (body, seats, accessories): car-like leaves + root `1`
- *   Root `1` keeps search filters on sCategory=1; post form uses leaf-exact
- *   matching so Motorcycles do not inherit Cars fields via the root.
+ * @param mysqli $m
+ * @param string $prefix
+ * @param array  $names
+ * @return int[]
+ */
+function pngm_vehicle_ids_by_names($m, $prefix, array $names)
+{
+    $out = array();
+    if (empty($names)) {
+        return $out;
+    }
+    $esc = array();
+    foreach ($names as $name) {
+        $esc[] = "'" . $m->real_escape_string((string) $name) . "'";
+    }
+    $sql = "SELECT DISTINCT c.pk_i_id
+            FROM {$prefix}t_category c
+            INNER JOIN {$prefix}t_category_description d ON d.fk_i_category_id = c.pk_i_id
+            WHERE d.s_name IN (" . implode(',', $esc) . ")
+              AND (c.fk_i_parent_id = 1 OR c.pk_i_id = 1)";
+    $r = $m->query($sql);
+    if ($r) {
+        while ($row = $r->fetch_assoc()) {
+            $id = (int) $row['pk_i_id'];
+            if ($id > 0) {
+                $out[] = $id;
+            }
+        }
+    }
+    return array_values(array_unique($out));
+}
+
+/**
+ * CSV helper — only ids that still exist in t_category.
+ *
+ * @param mysqli $m
+ * @param string $prefix
+ * @param int[]  $ids
+ * @return string
+ */
+function pngm_vehicle_ids_to_csv($m, $prefix, array $ids)
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    if (empty($ids)) {
+        return '';
+    }
+    $existing = array();
+    $r = $m->query(
+        "SELECT pk_i_id FROM {$prefix}t_category WHERE pk_i_id IN (" . implode(',', $ids) . ")"
+    );
+    if ($r) {
+        while ($row = $r->fetch_assoc()) {
+            $existing[] = (int) $row['pk_i_id'];
+        }
+    }
+    sort($existing);
+    return implode(',', $existing);
+}
+
+/**
+ * P2-006 / post-form split — Vehicle attribute category scopes per subcategory.
+ *
+ * Post form uses leaf-exact matching (pngm_atr_applies_to_leaf). Scopes:
+ * - Make / Condition: every Vehicles branch (incl. parts)
+ * - Fuel / Transmission: powered vehicles only — NOT parts
+ * - Body / Seats / Accessories: car-like leaves only (Cars, Trucks, Buses, Other)
+ *   — never Car/Motorcycle Parts, Motorbikes, Boats, Machinery, RVs
  *
  * @param mysqli $m
  * @param string $prefix
@@ -646,27 +708,54 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
     if ($all_vehicle === '') {
         $all_vehicle = '1';
     }
+    $all_ids = array_filter(array_map('intval', explode(',', $all_vehicle)));
 
-    // Car-like leaves (no Motorcycles / Boats / Machinery / RVs / bike parts).
-    $car_like = array(1, 10, 11, 12, 17, 18);
-    $existing = array();
-    $r = $m->query(
-        "SELECT pk_i_id FROM {$prefix}t_category WHERE pk_i_id IN (" . implode(',', $car_like) . ")"
-    );
-    if ($r) {
-        while ($row = $r->fetch_assoc()) {
-            $existing[] = (int) $row['pk_i_id'];
-        }
+    // Parts listings are not whole vehicles — no body/fuel/seats/etc.
+    $parts_ids = pngm_vehicle_ids_by_names($m, $prefix, array(
+        'Car Parts & Accessories',
+        'Car Parts and Accessories',
+        'Motorcycle Parts',
+        'Motorbike Parts',
+    ));
+
+    // Full car/commercial cabin specs (ABS, Hatchback, seat count, …).
+    $car_like_ids = pngm_vehicle_ids_by_names($m, $prefix, array(
+        'Cars',
+        'Trucks & Commercial',
+        'Trucks and Commercial',
+        'Buses & Vans',
+        'Buses and Vans',
+        'Other Vehicles',
+    ));
+    // Root Vehicles keeps these in search when browsing the whole tree.
+    if (!in_array(1, $car_like_ids, true)) {
+        $car_like_ids[] = 1;
     }
-    if (!in_array(1, $existing, true)) {
-        $existing[] = 1;
+
+    // Fuel/transmission: anything under Vehicles that is not a parts leaf.
+    $powered_ids = array_values(array_diff($all_ids, $parts_ids));
+    if (empty($powered_ids)) {
+        $powered_ids = $all_ids;
     }
-    sort($existing);
-    $car_csv = implode(',', $existing);
-    $all_esc = $m->real_escape_string($all_vehicle);
+
+    $all_csv = pngm_vehicle_ids_to_csv($m, $prefix, $all_ids);
+    $powered_csv = pngm_vehicle_ids_to_csv($m, $prefix, $powered_ids);
+    $car_csv = pngm_vehicle_ids_to_csv($m, $prefix, $car_like_ids);
+    if ($all_csv === '') {
+        $all_csv = '1';
+    }
+    if ($powered_csv === '') {
+        $powered_csv = $all_csv;
+    }
+    if ($car_csv === '') {
+        $car_csv = '1,18';
+    }
+
+    $all_esc = $m->real_escape_string($all_csv);
+    $powered_esc = $m->real_escape_string($powered_csv);
     $car_esc = $m->real_escape_string($car_csv);
 
-    // Make / Brand (+ Other text) — every Vehicles branch.
+    // Make / Brand (+ Other text) — every Vehicles branch (parts need compatible make).
     $m->query(
         "UPDATE {$prefix}t_attribute
          SET s_category_id = '{$all_esc}',
@@ -684,12 +773,22 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
          WHERE s_identifier = 'make_other'"
     );
 
-    // Shared vehicle specs — OK on Motorcycles and other branches.
-    foreach (array('fuel', 'transmission', 'condition') as $ident) {
+    // Condition applies to whole vehicles and parts alike.
+    $m->query(
+        "UPDATE {$prefix}t_attribute
+         SET s_category_id = '{$all_esc}',
+             b_enabled = 1,
+             b_search = 1,
+             b_hook = 1
+         WHERE s_identifier = 'condition'"
+    );
+
+    // Fuel / Transmission — powered vehicles only (not Car/Motorcycle Parts).
+    foreach (array('fuel', 'transmission') as $ident) {
         $ident_esc = $m->real_escape_string($ident);
         $m->query(
             "UPDATE {$prefix}t_attribute
-             SET s_category_id = '{$all_esc}',
+             SET s_category_id = '{$powered_esc}',
                  b_enabled = 1,
                  b_search = 1,
                  b_hook = 1
@@ -697,7 +796,7 @@ function pngm_vehicle_ensure_search_filters($m, $prefix, $locale)
         );
     }
 
-    // Car-oriented specs — not shown on Motorcycles post form (leaf-exact filter).
+    // Car cabin / feature specs — Cars, Trucks, Buses, Other Vehicles only.
     foreach (array('body', 'seats', 'accessories') as $ident) {
         $ident_esc = $m->real_escape_string($ident);
         $m->query(

@@ -477,12 +477,18 @@
               <div class="pngm-post-field">
                 <label for="pngm_call_availability"><?php _e('Call Availability', 'epsilon'); ?> <span class="req">*</span></label>
                 <div class="input-box">
+                  <?php
+                    $pngm_call_avail = '';
+                    if (function_exists('osc_item_id') && (int) osc_item_id() > 0 && function_exists('pngm_item_call_availability')) {
+                        $pngm_call_avail = pngm_item_call_availability((int) osc_item_id());
+                    }
+                  ?>
                   <select name="pngm_call_availability" id="pngm_call_availability" class="pngm-post-select">
                     <option value=""><?php _e('Select call availability', 'epsilon'); ?></option>
-                    <option value="anytime"><?php _e('Anytime', 'epsilon'); ?></option>
-                    <option value="weekdays"><?php _e('Weekdays', 'epsilon'); ?></option>
-                    <option value="evenings"><?php _e('Evenings', 'epsilon'); ?></option>
-                    <option value="weekends"><?php _e('Weekends', 'epsilon'); ?></option>
+                    <option value="anytime"<?php echo $pngm_call_avail === 'anytime' ? ' selected="selected"' : ''; ?>><?php _e('Anytime', 'epsilon'); ?></option>
+                    <option value="weekdays"<?php echo $pngm_call_avail === 'weekdays' ? ' selected="selected"' : ''; ?>><?php _e('Weekdays', 'epsilon'); ?></option>
+                    <option value="evenings"<?php echo $pngm_call_avail === 'evenings' ? ' selected="selected"' : ''; ?>><?php _e('Evenings', 'epsilon'); ?></option>
+                    <option value="weekends"<?php echo $pngm_call_avail === 'weekends' ? ' selected="selected"' : ''; ?>><?php _e('Weekends', 'epsilon'); ?></option>
                   </select>
                 </div>
                 <p class="pngm-post-field-error is-hidden" data-for="pngm_call_availability" hidden><?php _e('Please select call availability.', 'epsilon'); ?></p>

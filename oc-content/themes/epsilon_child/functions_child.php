@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.6');
+    define('PNGM_CHILD_VERSION', '2.9.10');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -763,17 +763,19 @@ function pngm_fix_vehicle_attribute_categories()
             implode(',', $make_escaped)
         ));
 
-        // Car-specific attributes stay on Cars only.
-        $car_only = array('accessories', 'body', 'fuel', 'seats', 'transmission', 'condition');
+        // Detailed vehicle specs are applied by pngm_vehicle_ensure_search_filters
+        // (init prio 9). Here only clamp empty/unmapped car-cabin attrs away from
+        // the global “all categories” default so Phones never inherits them.
+        $car_cabin = array('accessories', 'body', 'seats');
         $escaped = array();
-        foreach ($car_only as $id) {
+        foreach ($car_cabin as $id) {
             $escaped[] = "'" . $m->real_escape_string($id) . "'";
         }
-
         $m->query(sprintf(
             "UPDATE %st_attribute
              SET s_category_id = '%d'
-             WHERE s_identifier IN (%s)",
+             WHERE s_identifier IN (%s)
+               AND (s_category_id IS NULL OR s_category_id = '' OR s_category_id = '0')",
             $prefix,
             $cars_id,
             implode(',', $escaped)
