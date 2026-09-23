@@ -8,11 +8,14 @@ body.pngm-post-wizard {
 
 body.pngm-post-wizard,
 body.pngm-post-wizard > .content,
-body.pngm-post-wizard .pngm-post-wrap,
+body.pngm-post-wizard .pngm-post-wrap {
+  background: #fff !important;
+}
+
 body.pngm-post-wizard footer,
 body.pngm-post-wizard .pngm-footer,
 body.pngm-post-wizard footer.pngm-footer {
-  background: #fff !important;
+  background: #f3f5f7 !important;
 }
 
 /* Posting flow: no global search strip */
