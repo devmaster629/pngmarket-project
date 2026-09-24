@@ -264,14 +264,31 @@ function im_thread_context($thread, $secret = '') {
   }
 
   $logged_id = (osc_is_web_user_logged_in() ? (int)osc_logged_user_id() : 0);
-  $viewer_is_from = (($logged_id > 0 && (int)$thread['i_from_user_id'] == $logged_id) || ($secret != '' && $secret == $thread['s_from_secret']));
+  $is_from = ($logged_id > 0 && (int)$thread['i_from_user_id'] === $logged_id);
+  $is_to = ($logged_id > 0 && (int)$thread['i_to_user_id'] === $logged_id);
+  $secret_from = ($secret !== '' && $secret === (string)$thread['s_from_secret']);
+  $secret_to = ($secret !== '' && $secret === (string)$thread['s_to_secret']);
+
+  // Logged-in users: membership only (copied secret URLs must not open someone else's chat).
+  // Guests: valid thread secret only.
+  if($logged_id > 0) {
+    $result['can_view'] = ($is_from || $is_to);
+    $viewer_is_from = $is_from;
+  } else {
+    $result['can_view'] = ($secret_from || $secret_to);
+    $viewer_is_from = $secret_from;
+  }
+
+  if(!$result['can_view']) {
+    return $result;
+  }
 
   if($viewer_is_from) {
     $result['viewer_is_from'] = true;
     $result['send_type'] = 0;
     $result['viewer'] = im_user_pack(im_arr($thread, 'i_from_user_id', 0), im_arr($thread, 's_from_user_name'), im_arr($thread, 's_from_user_email'));
     $result['target'] = im_user_pack(im_arr($thread, 'i_to_user_id', 0), im_arr($thread, 's_to_user_name'), im_arr($thread, 's_to_user_email'));
-    $result['secret'] = ($secret != '' ? $secret : im_str(im_arr($thread, 's_from_secret')));
+    $result['secret'] = im_str(im_arr($thread, 's_from_secret'));
     $result['notify'] = (int)$thread['i_from_user_notify'];
     $result['target_removed'] = ((int)$thread['i_to_user_id'] <= 0 && trim((string)$thread['s_to_user_email']) == '');
   } else {
@@ -279,15 +296,10 @@ function im_thread_context($thread, $secret = '') {
     $result['send_type'] = 1;
     $result['viewer'] = im_user_pack(im_arr($thread, 'i_to_user_id', 0), im_arr($thread, 's_to_user_name'), im_arr($thread, 's_to_user_email'));
     $result['target'] = im_user_pack(im_arr($thread, 'i_from_user_id', 0), im_arr($thread, 's_from_user_name'), im_arr($thread, 's_from_user_email'));
-    $result['secret'] = ($secret != '' ? $secret : im_str(im_arr($thread, 's_to_secret')));
+    $result['secret'] = im_str(im_arr($thread, 's_to_secret'));
     $result['notify'] = (int)$thread['i_to_user_notify'];
     $result['target_removed'] = ((int)$thread['i_from_user_id'] <= 0 && trim((string)$thread['s_from_user_email']) == '');
   }
-
-  $result['can_view'] = (
-    ($logged_id > 0 && ((int)$thread['i_from_user_id'] == $logged_id || (int)$thread['i_to_user_id'] == $logged_id))
-    || ($secret != '' && ($secret == $thread['s_from_secret'] || $secret == $thread['s_to_secret']))
-  );
 
   return $result;
 }

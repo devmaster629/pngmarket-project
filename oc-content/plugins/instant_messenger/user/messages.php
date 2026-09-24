@@ -36,6 +36,23 @@ $type = $result['send_type'];
 $target_is_null = $result['target_removed'];
 $secret = $result['secret'];
 
+// Deny before any send/delete — do not allow foreign secret URLs for other accounts.
+if(!$result['can_view']) {
+  if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
+    http_response_code(403);
+    echo '';
+    return;
+  }
+  $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
+  if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
+    require $pngm_unauth;
+    return;
+  }
+  osc_add_flash_error_message(__('This thread is not available to you. You are not eligible to view or access its content.', 'instant_messenger'));
+  header('Location: ' . (osc_is_web_user_logged_in() ? osc_route_url('im-threads') : osc_base_url()));
+  exit;
+}
+
 $thread_target_id = $result['target']['pk_i_id'];
 $thread_target_name = $result['target']['s_name'];
 $thread_target_email = $result['target']['s_email'];
@@ -176,22 +193,6 @@ if($thread['i_from_user_id'] > 0) {
 $to_public_url = '';
 if($thread['i_to_user_id'] > 0) {
   $to_public_url = osc_user_public_profile_url($thread['i_to_user_id']);
-}
-
-if(!$result['can_view']) {
-  if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
-    http_response_code(403);
-    echo '';
-    return;
-  }
-  $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
-  if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
-    require $pngm_unauth;
-    return;
-  }
-  osc_add_flash_error_message(__('This thread is not available to you. You are not eligible to view or access its content.', 'instant_messenger'));
-  header('Location: ' . (osc_is_web_user_logged_in() ? osc_route_url('im-threads') : osc_base_url()));
-  exit;
 }
 
 $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']);
@@ -516,10 +517,11 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
         <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
         <?php if($att_enable == 1) { ?>
-          <button type="button" class="pngm-im-attach-btn im-attachment" id="pngm-im-attach-trigger" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>" aria-label="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
+          <label for="im-file" class="pngm-im-attach-btn im-attachment" id="pngm-im-attach-trigger" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
             <i class="fas fa-paperclip" aria-hidden="true"></i>
-          </button>
-          <input type="file" name="im-file[]" id="im-file" class="im-file pngm-im-file-input" multiple tabindex="-1" aria-hidden="true" />
+            <span class="sr-only"><?php _e('Upload file', 'instant_messenger'); ?></span>
+          </label>
+          <input type="file" name="im-file[]" id="im-file" class="im-file pngm-im-file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt,.gif,.png,.jpg,.jpeg" />
         <?php } ?>
 
         <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>

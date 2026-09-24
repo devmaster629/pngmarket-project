@@ -4509,7 +4509,7 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 
 .pngm-im-composer {
   display: flex !important;
-  flex-wrap: nowrap;
+  flex-wrap: wrap !important;
   align-items: flex-end;
   gap: 8px;
   float: none !important;
@@ -4610,13 +4610,14 @@ body #im-message-form .im-file-list {
   display: flex !important;
   flex-wrap: wrap;
   gap: 6px;
-  flex: 0 0 100%;
-  order: 15;
+  flex: 1 1 100% !important;
+  order: 15 !important;
   width: 100% !important;
   max-width: 100% !important;
-  margin: 0 !important;
+  margin: 4px 0 0 !important;
   padding: 0 !important;
   float: none !important;
+  box-sizing: border-box !important;
 }
 
 body.pngm-ua-messages #im-message-form .im-file-list[hidden],
@@ -4744,7 +4745,23 @@ body.im-chat-page #im-message-form .im-textarea {
 body #im-message-form input.im-file,
 body #im-message-form .pngm-im-file-input,
 body.im-chat-page #im-message-form #im-file {
-  /* Keep out of the hit-testing tree — never overlay Send on mobile. */
+  /* Visually hidden but still activatable via <label for="im-file"> (Android needs this). */
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 0.1px !important;
+  height: 0.1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  opacity: 0.01 !important;
+  clip: auto !important;
+  pointer-events: auto !important;
+  z-index: 0 !important;
+}
+
+.sr-only {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -4753,10 +4770,7 @@ body.im-chat-page #im-message-form #im-file {
   overflow: hidden !important;
   clip: rect(0, 0, 0, 0) !important;
   border: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  display: block !important;
-  z-index: -1 !important;
+  white-space: nowrap !important;
 }
 
 /* Desktop: labeled send button. Mobile: circular icon (see max-width block below). */
@@ -4796,7 +4810,7 @@ body.im-chat-page #im-message-form #im-file {
   body.im-chat-page #im-message-form.pngm-im-composer,
   body.im-chat-page #im-message-form {
     display: flex !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     flex-direction: row !important;
     align-items: flex-end !important;
     gap: 8px !important;

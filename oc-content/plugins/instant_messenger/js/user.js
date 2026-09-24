@@ -70,9 +70,10 @@ $(document).ready(function(){
   Tipped.create('.im-has-tooltip, .im-tooltip', { maxWidth: 200, radius: false });
   Tipped.create('.im-has-tooltip-left', { maxWidth: 200, radius: false } );
 
-  // Attach trigger is a <button> (not a wrapping <label>) so Send taps never open the file picker.
-  $('body').off('click.imAttachBtn', '#pngm-im-attach-trigger, button.pngm-im-attach-btn')
-    .on('click.imAttachBtn', '#pngm-im-attach-trigger, button.pngm-im-attach-btn', function(e) {
+  // Native <label for="im-file"> opens the picker (works on Android). Only
+  // fall back to programmatic click for non-label triggers.
+  $('body').off('click.imAttachBtn', '#pngm-im-attach-trigger, button.pngm-im-attach-btn, .pngm-im-attach-btn')
+    .on('click.imAttachBtn', 'button.pngm-im-attach-btn', function(e) {
       e.preventDefault();
       e.stopPropagation();
       var input = document.getElementById('im-file');

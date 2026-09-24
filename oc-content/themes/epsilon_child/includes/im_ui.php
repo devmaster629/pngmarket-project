@@ -971,9 +971,9 @@ function pngm_im_ui_script()
         relaxMessageRules($form);
         ensureSendHint($form);
         enhanceAttachmentLinks($(document));
-        // Paperclip is a real button (not a <label>) so it cannot steal Send taps on mobile.
+        // Prefer native <label for="im-file"> (Android). Programmatic click only for <button>.
         $form.off('click.pngmImAttach', '#pngm-im-attach-trigger, .pngm-im-attach-btn')
-          .on('click.pngmImAttach', '#pngm-im-attach-trigger, button.pngm-im-attach-btn', function (e) {
+          .on('click.pngmImAttach', 'button.pngm-im-attach-btn', function (e) {
             e.preventDefault();
             e.stopPropagation();
             var input = document.getElementById('im-file');
