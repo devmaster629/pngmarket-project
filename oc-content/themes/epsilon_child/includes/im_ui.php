@@ -858,6 +858,9 @@ function pngm_im_ui_script()
             $form.find('[name="im-message"]').rules('add', {
               required: {
                 depends: function () {
+                  if (typeof window.imGetComposerFiles === 'function' && window.imGetComposerFiles().length) {
+                    return false;
+                  }
                   var fileInput = document.getElementById('im-file');
                   return !(fileInput && fileInput.files && fileInput.files.length);
                 }
@@ -968,6 +971,16 @@ function pngm_im_ui_script()
         relaxMessageRules($form);
         ensureSendHint($form);
         enhanceAttachmentLinks($(document));
+        // Paperclip is a real button (not a <label>) so it cannot steal Send taps on mobile.
+        $form.off('click.pngmImAttach', '#pngm-im-attach-trigger, .pngm-im-attach-btn')
+          .on('click.pngmImAttach', '#pngm-im-attach-trigger, button.pngm-im-attach-btn', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var input = document.getElementById('im-file');
+            if (input) {
+              input.click();
+            }
+          });
         if (typeof window.pngmLayoutChat === 'function') {
           window.pngmLayoutChat({ pinBottom: true });
         }

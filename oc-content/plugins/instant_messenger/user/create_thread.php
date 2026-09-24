@@ -8,8 +8,14 @@ if($result['error'] != '') {
 }
 
 $from_user_id = (osc_is_web_user_logged_in() ? osc_logged_user_id() : null);
-$from_user_name = osc_esc_html(Params::getParam('im-from-user-name') <> '' ? Params::getParam('im-from-user-name') : osc_logged_user_name());
-$from_user_email = osc_esc_html(Params::getParam('im-from-user-email') ? Params::getParam('im-from-user-email') : osc_logged_user_email());
+// Logged-in users always use their registered name/email (no form fields).
+if (osc_is_web_user_logged_in()) {
+  $from_user_name = osc_esc_html(osc_logged_user_name());
+  $from_user_email = osc_esc_html(osc_logged_user_email());
+} else {
+  $from_user_name = osc_esc_html(Params::getParam('im-from-user-name') <> '' ? Params::getParam('im-from-user-name') : '');
+  $from_user_email = osc_esc_html(Params::getParam('im-from-user-email') <> '' ? Params::getParam('im-from-user-email') : '');
+}
 
 if(im_param('one_thread_per_user') == 1) {
   $check_item_id = (in_array($result['mode'], array('item', 'user_redirect')) ? $result['item_id'] : 0);
@@ -100,19 +106,24 @@ if(Params::getParam('im-action') == 'create_thread') {
   <form id="im-create-thread-form" name="im-create-thread-form" class="im-body im-form-validate" action="<?php echo $form_url; ?>" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="im-action" id="im-action" value="create_thread">
 
+    <?php if (osc_is_web_user_logged_in()) { ?>
+      <input type="hidden" name="im-from-user-name" id="im-from-user-name" value="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
+      <input type="hidden" name="im-from-user-email" id="im-from-user-email" value="<?php echo osc_esc_html(osc_logged_user_email()); ?>" />
+    <?php } else { ?>
     <div class="im-row">
       <div class="im-col-24">
         <label class="im-label" for="im-from-user-name"><?php _e('Your name', 'instant_messenger'); ?></label>
-        <input type="text" class="im-input" name="im-from-user-name" id="im-from-user-name" value="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
+        <input type="text" class="im-input" name="im-from-user-name" id="im-from-user-name" value="" />
       </div>
     </div>
 
     <div class="im-row">
       <div class="im-col-24">
         <label class="im-label" for="im-from-user-email"><?php _e('Your email', 'instant_messenger'); ?></label>
-        <input type="text" class="im-input" name="im-from-user-email" id="im-from-user-email" value="<?php echo osc_esc_html(osc_logged_user_email()); ?>" />
+        <input type="text" class="im-input" name="im-from-user-email" id="im-from-user-email" value="" />
       </div>
     </div>
+    <?php } ?>
 
     <?php if(im_param('autogenerate_title') != 1) { ?>
       <div class="im-row">

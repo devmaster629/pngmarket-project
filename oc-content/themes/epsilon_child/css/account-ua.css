@@ -4720,7 +4720,7 @@ body.im-chat-page #im-message-form .im-textarea {
   flex: 0 0 40px;
   width: 40px;
   height: 44px;
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   color: #6b7785;
@@ -4728,11 +4728,35 @@ body.im-chat-page #im-message-form .im-textarea {
   position: static !important;
   top: auto !important;
   right: auto !important;
+  left: auto !important;
   float: none !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  z-index: 2;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.pngm-im-attach-btn input {
-  display: none;
+.pngm-im-attach-btn input,
+body #im-message-form input.im-file,
+body #im-message-form .pngm-im-file-input,
+body.im-chat-page #im-message-form #im-file {
+  /* Keep out of the hit-testing tree — never overlay Send on mobile. */
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: block !important;
+  z-index: -1 !important;
 }
 
 /* Desktop: labeled send button. Mobile: circular icon (see max-width block below). */
@@ -4758,6 +4782,7 @@ body.im-chat-page #im-message-form .im-textarea {
     position: static !important;
     top: auto !important;
     right: auto !important;
+    z-index: 3;
   }
 
   .pngm-im-composer .im-button-alt,
@@ -4791,6 +4816,16 @@ body.im-chat-page #im-message-form .im-textarea {
     gap: 0 !important;
     position: static !important;
     float: none !important;
+    z-index: 5 !important;
+    pointer-events: auto !important;
+  }
+
+  body.im-chat-page #im-message-form .pngm-im-attach-btn,
+  body.im-chat-page #im-message-form > button.pngm-im-attach-btn {
+    display: inline-flex !important;
+    position: static !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
   }
 
   body.im-chat-page #im-message-form .pngm-im-send span {

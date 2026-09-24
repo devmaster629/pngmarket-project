@@ -516,10 +516,10 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
         <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
         <?php if($att_enable == 1) { ?>
-          <label class="pngm-im-attach-btn im-attachment" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
+          <button type="button" class="pngm-im-attach-btn im-attachment" id="pngm-im-attach-trigger" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>" aria-label="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
             <i class="fas fa-paperclip" aria-hidden="true"></i>
-            <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
-          </label>
+          </button>
+          <input type="file" name="im-file[]" id="im-file" class="im-file pngm-im-file-input" multiple tabindex="-1" aria-hidden="true" />
         <?php } ?>
 
         <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
@@ -551,7 +551,8 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
   $pngm_im_secret = (Params::getParam('secret') <> '' ? Params::getParam('secret') : 'n');
   $pngm_im_refresh_base = osc_route_url('im-messages', array('thread-id' => $thread_id, 'secret' => $pngm_im_secret));
   $pngm_im_refresh_url = $pngm_im_refresh_base . (strpos($pngm_im_refresh_base, '?') !== false ? '&' : '?') . 'imaction=refresh';
-  $pngm_im_refresh_ajax = osc_base_url(true) . '?page=ajax&action=pngm_im_refresh&thread-id=' . (int) $thread_id . '&secret=' . rawurlencode($pngm_im_secret);
+  // Must use runhook — bare action=pngm_im_refresh is not a CWebAjax case and returns JSON error.
+  $pngm_im_refresh_ajax = osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_im_refresh&thread-id=' . (int) $thread_id . '&secret=' . rawurlencode($pngm_im_secret);
 ?>
 
 <script>
@@ -582,9 +583,13 @@ $(document).ready(function() {
     var inputs = form.find('input, select, textarea');
 
     var hasFile = false;
-    var fileInput = form.find('input[type="file"]')[0];
-    if(fileInput && fileInput.files && fileInput.files.length) {
+    if(typeof window.imGetComposerFiles === 'function' && window.imGetComposerFiles().length) {
       hasFile = true;
+    } else {
+      var fileInput = form.find('input[type="file"]')[0];
+      if(fileInput && fileInput.files && fileInput.files.length) {
+        hasFile = true;
+      }
     }
 
     // Validate form first (message is optional when an attachment is present)
@@ -685,6 +690,11 @@ function imRefreshMessages(forceBottom) {
       if(!response || !response.length) {
         return;
       }
+      // Broken AJAX endpoints return JSON {"error":...} with HTTP 200 — treat as empty.
+      var trimmed = String(response).replace(/^\s+/, '');
+      if(trimmed.charAt(0) === '{' || trimmed.charAt(0) === '[') {
+        return;
+      }
 
       var $board = $('.im-table.im-messages');
       var el = $board[0];
@@ -716,6 +726,9 @@ function imRefreshMessages(forceBottom) {
 
         if(typeof window.pngmLayoutChat === 'function') {
           window.pngmLayoutChat({ pinBottom: stick });
+        }
+        if(typeof window.pngmImAfterBoardSwap === 'function') {
+          window.pngmImAfterBoardSwap();
         }
 
         if(imShowOlder == 1) {

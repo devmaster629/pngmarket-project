@@ -7154,6 +7154,22 @@ body.pngm-filter-open {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+  }
+
+  body.im-chat-page #im-message-form #im-file,
+  body.im-chat-page #im-message-form input.im-file,
+  body.im-chat-page #im-message-form .pngm-im-file-input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
   }
 
   body.im-chat-page #im-message-form .im-attachment .im-att-box,
@@ -7203,6 +7219,8 @@ body.pngm-filter-open {
     align-items: center !important;
     justify-content: center !important;
     gap: 0 !important;
+    z-index: 5 !important;
+    pointer-events: auto !important;
   }
 
   body.im-chat-page #im-message-form .pngm-im-send span {
@@ -7415,6 +7433,20 @@ body.pngm-filter-open {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body.im-chat-page #im-message-form #im-file,
+  body.im-chat-page #im-message-form input.im-file,
+  body.im-chat-page #im-message-form .pngm-im-file-input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
   }
 
   body.im-chat-page #im-message-form .im-attachment .im-att-box,

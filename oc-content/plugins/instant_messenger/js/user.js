@@ -70,6 +70,17 @@ $(document).ready(function(){
   Tipped.create('.im-has-tooltip, .im-tooltip', { maxWidth: 200, radius: false });
   Tipped.create('.im-has-tooltip-left', { maxWidth: 200, radius: false } );
 
+  // Attach trigger is a <button> (not a wrapping <label>) so Send taps never open the file picker.
+  $('body').off('click.imAttachBtn', '#pngm-im-attach-trigger, button.pngm-im-attach-btn')
+    .on('click.imAttachBtn', '#pngm-im-attach-trigger, button.pngm-im-attach-btn', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var input = document.getElementById('im-file');
+      if(input) {
+        input.click();
+      }
+    });
+
 
   // ATTACHMENTS: keep a file list so users can add several and remove any of them
   (function() {
@@ -235,13 +246,25 @@ $(document).ready(function(){
     $('form.im-form-validate').validate({
       rules: {
         "im-from-user-name": {
-          required: true,
-          minlength: 3
+          // Only guests see this field; logged-in users send a hidden registered name.
+          required: {
+            depends: function () {
+              return $('#im-from-user-name').is(':visible');
+            }
+          }
         },
         
         "im-from-user-email": {
-          required: true,
-          email: true
+          required: {
+            depends: function () {
+              return $('#im-from-user-email').is(':visible');
+            }
+          },
+          email: {
+            depends: function () {
+              return $('#im-from-user-email').is(':visible');
+            }
+          }
         },
         
         /*
@@ -254,6 +277,10 @@ $(document).ready(function(){
         "im-message": {
           required: {
             depends: function () {
+              // Attachment-only is allowed (pending file list or native input).
+              if (typeof window.imGetComposerFiles === 'function' && window.imGetComposerFiles().length) {
+                return false;
+              }
               var fileInput = document.getElementById('im-file');
               return !(fileInput && fileInput.files && fileInput.files.length);
             }
@@ -269,8 +296,7 @@ $(document).ready(function(){
       
       messages: {
         "im-from-user-name": {
-          required: imRqName2,
-          minlength: imDsName2
+          required: imRqName2
         },
         
         "im-from-user-email": {
