@@ -99,7 +99,8 @@ function pngm_atr_svg_icon($a)
 }
 
 /**
- * Meta bar under price: Posted · Listing ID (plain text, no box).
+ * Meta bar under price: Location · Posted · Listing ID (plain text, no box).
+ * Location lives here (and in the map block) — not in the breadcrumb trail.
  */
 function pngm_render_item_meta_bar()
 {
@@ -111,11 +112,25 @@ function pngm_render_item_meta_bar()
         ? eps_smart_date(osc_item_pub_date())
         : osc_format_date(osc_item_pub_date());
     $id = (int) osc_item_id();
+    $parts = array();
+
+    $city = function_exists('pngm_city_only') ? pngm_city_only() : (function_exists('osc_item_city') ? osc_item_city() : '');
+    $city = trim((string) $city);
+    if ($city !== '') {
+        $city_html = '<i class="fas fa-map-marker-alt" aria-hidden="true"></i> ' . osc_esc_html($city);
+        $city_id = function_exists('osc_item_city_id') ? (int) osc_item_city_id() : 0;
+        if ($city_id > 0 && function_exists('osc_search_url')) {
+            $parts[] = '<a class="pngm-item-meta-loc" href="' . osc_esc_html(osc_search_url(array('page' => 'search', 'sCity' => $city_id))) . '">' . $city_html . '</a>';
+        } else {
+            $parts[] = '<span class="pngm-item-meta-loc">' . $city_html . '</span>';
+        }
+    }
+
+    $parts[] = osc_esc_html(sprintf(__('Posted %s', 'epsilon'), $posted));
+    $parts[] = osc_esc_html(sprintf(__('Listing ID: %s', 'epsilon'), $id));
 
     echo '<p class="pngm-item-meta-bar">'
-        . osc_esc_html(sprintf(__('Posted %s', 'epsilon'), $posted))
-        . ' &middot; '
-        . osc_esc_html(sprintf(__('Listing ID: %s', 'epsilon'), $id))
+        . implode(' <span class="pngm-item-meta-sep">&middot;</span> ', $parts)
         . '</p>';
 }
 

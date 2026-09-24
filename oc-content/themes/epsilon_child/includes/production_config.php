@@ -123,6 +123,13 @@ function pngm_production_enforce_prefs()
     if ($want_kb > 0 && (int) osc_get_preference('maxSizeKb') < $want_kb) {
         pngm_production_set('maxSizeKb', (string) $want_kb, 'INTEGER');
     }
+
+    // Item breadcrumbs: category path only (location stays on the listing / map).
+    pngm_production_set('breadcrumbs_item_country', '0', 'BOOLEAN');
+    pngm_production_set('breadcrumbs_item_region', '0', 'BOOLEAN');
+    pngm_production_set('breadcrumbs_item_city', '0', 'BOOLEAN');
+    pngm_production_set('breadcrumbs_item_category', '1', 'BOOLEAN');
+    pngm_production_set('breadcrumbs_item_parent_categories', '1', 'BOOLEAN');
 }
 
 /**
