@@ -20,6 +20,14 @@
     }
   }
 
+  function catKeywords() {
+    try {
+      return JSON.parse(document.getElementById('pngm-post-cat-keywords').textContent || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
   function init() {
     var $form = $('form.pngm-post-form[data-pngm-wizard="1"]');
     if (!$form.length) {
@@ -28,6 +36,7 @@
 
     var cfg = boot();
     var map = subcats();
+    var keywords = catKeywords();
     var step = 1;
     var total = 6;
     var labels = cfg.labels || {};
@@ -45,7 +54,209 @@
     var $subWrap = $('.pngm-post-subcat-wrap');
     var $txNative = $('#sTransaction');
     var $errorList = $('#error_list');
+    var $suggestBox = $('#pngm-cat-suggest');
+    var $suggestChips = $('#pngm-cat-suggest-chips');
     var summaryMessages = [];
+    var suggestTimer = null;
+    var lastSuggestKey = '';
+
+    function normalizeText(s) {
+      return String(s || '')
+        .toLowerCase()
+        .replace(/['’]/g, '')
+        .replace(/[^a-z0-9\s&+]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function buildCatIndex() {
+      var index = [];
+      var byLeafName = {};
+      $('.pngm-post-cat-card').each(function () {
+        var rootId = parseInt($(this).data('root-id'), 10) || 0;
+        var rootName = String($(this).data('root-name') || '');
+        var list = map[String(rootId)] || map[rootId] || [];
+        list.forEach(function (row) {
+          var leafName = String(row.name || '');
+          var entry = {
+            rootId: rootId,
+            rootName: rootName,
+            leafId: parseInt(row.id, 10) || 0,
+            leafName: leafName,
+            leafNorm: normalizeText(leafName),
+            rootNorm: normalizeText(rootName)
+          };
+          if (!entry.leafId || !entry.leafNorm) {
+            return;
+          }
+          index.push(entry);
+          if (!byLeafName[entry.leafNorm]) {
+            byLeafName[entry.leafNorm] = [];
+          }
+          byLeafName[entry.leafNorm].push(entry);
+        });
+      });
+      return { index: index, byLeafName: byLeafName };
+    }
+
+    var catIndex = buildCatIndex();
+
+    function resolveLeafByName(name) {
+      var norm = normalizeText(name);
+      var hits = catIndex.byLeafName[norm] || [];
+      if (!hits.length) {
+        // Fuzzy: leaf name contains or equals keyword target
+        hits = catIndex.index.filter(function (c) {
+          return c.leafNorm === norm || c.leafNorm.indexOf(norm) !== -1 || norm.indexOf(c.leafNorm) !== -1;
+        });
+      }
+      if (!hits.length) {
+        return null;
+      }
+      if (hits.length === 1) {
+        return hits[0];
+      }
+      // Prefer Home over Phones for duplicate "Home Appliances"
+      var preferred = hits.filter(function (h) {
+        return /home/i.test(h.rootName) && !/phone/i.test(h.rootName);
+      });
+      return preferred[0] || hits[0];
+    }
+
+    function scoreTitleSuggestions(title) {
+      var raw = normalizeText(title);
+      if (raw.length < 3) {
+        return [];
+      }
+      var stop = {
+        a: 1, an: 1, the: 1, and: 1, or: 1, for: 1, with: 1, from: 1, to: 1,
+        of: 1, in: 1, on: 1, at: 1, new: 1, used: 1, sale: 1, sell: 1, selling: 1,
+        buy: 1, free: 1, png: 1, good: 1, great: 1, nice: 1, brand: 1, model: 1
+      };
+      var tokens = raw.split(' ').filter(function (t) {
+        return t.length > 1 && !stop[t];
+      });
+      if (!tokens.length) {
+        return [];
+      }
+      var scores = {};
+
+      function bump(entry, pts) {
+        if (!entry || !entry.leafId) {
+          return;
+        }
+        var key = String(entry.leafId);
+        if (!scores[key]) {
+          scores[key] = { entry: entry, score: 0 };
+        }
+        scores[key].score += pts;
+      }
+
+      // Keyword / brand dictionary (multi-word first)
+      Object.keys(keywords).forEach(function (kw) {
+        var kn = normalizeText(kw);
+        if (!kn || kn.length < 2) {
+          return;
+        }
+        var hit = false;
+        if (kn.indexOf(' ') !== -1) {
+          hit = raw.indexOf(kn) !== -1;
+        } else {
+          hit = tokens.indexOf(kn) !== -1 || new RegExp('(?:^|\\s)' + kn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)').test(raw);
+        }
+        if (!hit) {
+          return;
+        }
+        var target = resolveLeafByName(keywords[kw]);
+        // Longer / more specific keywords score higher
+        bump(target, 40 + Math.min(20, kn.length));
+      });
+
+      catIndex.index.forEach(function (entry) {
+        // Full subcategory name in title
+        if (entry.leafNorm.length >= 3 && raw.indexOf(entry.leafNorm) !== -1) {
+          bump(entry, 55);
+        }
+        var leafParts = entry.leafNorm.split(' ').filter(function (p) {
+          return p.length > 2 && !stop[p];
+        });
+        leafParts.forEach(function (p) {
+          if (tokens.indexOf(p) !== -1) {
+            bump(entry, p.length >= 5 ? 18 : 12);
+          }
+        });
+        // Root name token match (weaker)
+        var rootParts = entry.rootNorm.split(/[\s&]+/).filter(function (p) {
+          return p.length > 3 && !stop[p];
+        });
+        rootParts.forEach(function (p) {
+          if (tokens.indexOf(p) !== -1) {
+            bump(entry, 6);
+          }
+        });
+      });
+
+      return Object.keys(scores)
+        .map(function (k) { return scores[k]; })
+        .filter(function (row) { return row.score >= 12; })
+        .sort(function (a, b) { return b.score - a.score; })
+        .slice(0, 3)
+        .map(function (row) { return row.entry; });
+    }
+
+    function renderCategorySuggestions(title) {
+      var key = normalizeText(title);
+      if (key === lastSuggestKey) {
+        return;
+      }
+      lastSuggestKey = key;
+      var suggestions = scoreTitleSuggestions(title);
+      $suggestChips.empty();
+      if (!suggestions.length) {
+        $suggestBox.prop('hidden', true).attr('hidden', 'hidden');
+        return;
+      }
+      var selectedLeaf = String($catId.val() || $sub.val() || '');
+      suggestions.forEach(function (s) {
+        var label = s.rootName + ' › ' + s.leafName;
+        var $btn = $('<button type="button" class="pngm-post-suggest-chip" role="listitem"/>')
+          .attr({
+            'data-root-id': s.rootId,
+            'data-root-name': s.rootName,
+            'data-leaf-id': s.leafId,
+            'data-leaf-name': s.leafName
+          })
+          .text(label);
+        if (selectedLeaf && String(s.leafId) === selectedLeaf) {
+          $btn.addClass('is-selected');
+        }
+        $suggestChips.append($btn);
+      });
+      $suggestBox.prop('hidden', false).removeAttr('hidden');
+    }
+
+    function scheduleCategorySuggestions() {
+      window.clearTimeout(suggestTimer);
+      suggestTimer = window.setTimeout(function () {
+        renderCategorySuggestions($form.find('input[name^="title"]').val() || '');
+      }, 180);
+    }
+
+    function applyCategorySuggestion(rootId, rootName, leafId, leafName) {
+      rootId = parseInt(rootId, 10) || 0;
+      leafId = parseInt(leafId, 10) || 0;
+      if (!rootId || !leafId) {
+        return;
+      }
+      $catId.val(String(leafId));
+      setRoot(rootId, rootName, true);
+      fillSubcats(rootId, leafId);
+      $sub.val(String(leafId));
+      syncCatFromSubcategory();
+      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+      $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + leafId + '"]').addClass('is-selected');
+      updateSummary(rootName, leafName || ($sub.find('option:selected').text() || ''));
+    }
 
     function fillSubcats(rootId, selectedLeaf) {
       var list = map[String(rootId)] || map[rootId] || [];
@@ -307,12 +518,15 @@
       }
     }
 
-    function updateSummary(rootName, leafName) {
+    function updateSummary(rootName, leafName, titleText) {
       if (rootName !== null && rootName !== undefined) {
         $('[data-sum="root"]').text(rootName || '—');
       }
       if (leafName !== null && leafName !== undefined) {
         $('[data-sum="leaf"]').text(leafName || '—');
+      }
+      if (titleText !== null && titleText !== undefined) {
+        $('[data-sum="title"]').text(titleText || '—');
       }
     }
 
@@ -746,6 +960,13 @@
         var rootId = String($root.val() || '').trim();
         var leafId = String($sub.val() || '').trim();
         var $catGrid = $form.find('.pngm-post-cat-grid');
+        var title = $form.find('input[name^="title"]').val() || '';
+        var okStep1 = true;
+
+        if ($.trim(title).length < 3) {
+          showError($form.find('input[name^="title"]'), labels.needTitle);
+          okStep1 = false;
+        }
 
         // No category chosen — clear leaf state and only flag the category grid.
         if (!rootId || !$catGrid.find('.pngm-post-cat-card.is-selected').length) {
@@ -756,37 +977,35 @@
           clearSubcategoryWarning();
           updateSummary('—', '—');
           showError($catGrid, labels.selectCategory || 'Please select a category.');
+          okStep1 = false;
+        } else {
+          $subWrap.removeClass('is-hidden');
+          // Placeholder / cleared subcategory must not keep a previous leaf id.
+          if (!leafId) {
+            $catId.val('');
+            updateSummary(null, '—');
+            showError($sub, labels.selectSub || 'Please select a subcategory.');
+            $sub.addClass('is-invalid');
+            okStep1 = false;
+          } else {
+            $catId.val(leafId);
+            clearSubcategoryWarning();
+            $catGrid.removeClass('is-invalid');
+            hideFieldError($form.find('.pngm-post-field-error[data-for="category"]'));
+            updateSummary(null, $sub.find('option:selected').text() || '');
+          }
+        }
+
+        if (!okStep1) {
           focusFirstInvalid();
           return false;
         }
-
-        $subWrap.removeClass('is-hidden');
-        // Placeholder / cleared subcategory must not keep a previous leaf id.
-        if (!leafId) {
-          $catId.val('');
-          updateSummary(null, '—');
-          showError($sub, labels.selectSub || 'Please select a subcategory.');
-          $sub.addClass('is-invalid');
-          focusFirstInvalid();
-          return false;
-        }
-
-        $catId.val(leafId);
-        clearSubcategoryWarning();
-        $catGrid.removeClass('is-invalid');
-        hideFieldError($form.find('.pngm-post-field-error[data-for="category"]'));
-        updateSummary(null, $sub.find('option:selected').text() || '');
         return true;
       }
       if (n === 2) {
         var $step2 = $form.find('.pngm-post-step-panel[data-step="2"]');
-        var title = $form.find('input[name^="title"]').val() || '';
         var desc = $form.find('textarea[name^="description"]').val() || '';
         var ok = true;
-        if ($.trim(title).length < 3) {
-          showError($form.find('input[name^="title"]'), labels.needTitle);
-          ok = false;
-        }
         var descTrim = $.trim(desc);
         if (descTrim.length < 1) {
           showError($form.find('textarea[name^="description"]'), labels.needDesc);
@@ -1501,12 +1720,31 @@
     // Category cards
     $form.on('click', '.pngm-post-cat-card', function () {
       setRoot($(this).data('root-id'), $(this).data('root-name'), false);
+      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+    });
+
+    $form.on('click', '.pngm-post-suggest-chip', function () {
+      var $chip = $(this);
+      applyCategorySuggestion(
+        $chip.data('root-id'),
+        $chip.data('root-name'),
+        $chip.data('leaf-id'),
+        $chip.data('leaf-name')
+      );
+    });
+
+    $form.on('input', 'input[name^="title"]', function () {
+      var t = $.trim($(this).val() || '');
+      updateSummary(null, null, t || '—');
+      scheduleCategorySuggestions();
     });
 
     $sub.on('change input', function () {
       syncCatFromSubcategory();
       if ($sub.val()) {
         $catId.trigger('change');
+        $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+        $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + $sub.val() + '"]').addClass('is-selected');
       }
     });
 
@@ -1636,8 +1874,6 @@
           // Do not force-reload: that wiped Make/Accessories/etc. on every Next.
           loadCategoryAttributes(leafId);
         }
-      }
-      if (step === 2) {
         checkDuplicateTitle(function (ok) {
           if (!ok) {
             return;
@@ -1645,6 +1881,11 @@
           clearErrorSummary();
           showStep(step + 1);
         });
+        return;
+      }
+      if (step === 2) {
+        clearErrorSummary();
+        showStep(step + 1);
         return;
       }
       clearErrorSummary();
@@ -1857,6 +2098,12 @@
     } else {
       syncAttrsSectionVisibility();
       captureAttrsDraft();
+    }
+
+    var bootTitle = $.trim($form.find('input[name^="title"]').val() || '');
+    if (bootTitle) {
+      updateSummary(null, null, bootTitle);
+      renderCategorySuggestions(bootTitle);
     }
     // Retry visibility after late plugin AJAX.
     window.setTimeout(syncAttrsSectionVisibility, 200);

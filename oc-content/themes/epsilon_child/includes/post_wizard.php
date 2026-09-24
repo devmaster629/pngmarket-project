@@ -20,14 +20,14 @@ function pngm_post_wizard_steps()
         1 => array(
             'key'   => 'category',
             'label' => __('Category', 'epsilon'),
-            'title' => __('1. Category / Subcategory', 'epsilon'),
-            'sub'   => __('Choose what you are listing.', 'epsilon'),
+            'title' => __('1. Title & Category', 'epsilon'),
+            'sub'   => __('Start with a title — we’ll suggest a category you can change anytime.', 'epsilon'),
         ),
         2 => array(
             'key'   => 'details',
             'label' => __('Details', 'epsilon'),
             'title' => __('2. Item Details', 'epsilon'),
-            'sub'   => __('Tell buyers what you are offering.', 'epsilon'),
+            'sub'   => __('Add description, price, and other details.', 'epsilon'),
         ),
         3 => array(
             'key'   => 'photos',

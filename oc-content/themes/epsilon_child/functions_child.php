@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.11');
+    define('PNGM_CHILD_VERSION', '2.9.12');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -22,6 +22,7 @@ require_once dirname(__FILE__) . '/includes/item_page.php';
 require_once dirname(__FILE__) . '/includes/footer_helpers.php';
 require_once dirname(__FILE__) . '/includes/plugins_integration.php';
 require_once dirname(__FILE__) . '/includes/category_icons.php';
+require_once dirname(__FILE__) . '/includes/category_suggest.php';
 require_once dirname(__FILE__) . '/includes/listing_helpers.php';
 require_once dirname(__FILE__) . '/includes/listing_expiry.php';
 require_once dirname(__FILE__) . '/includes/cron_setup.php';

@@ -129,7 +129,7 @@
 
       <?php osc_run_hook('item_publish_top'); ?>
 
-      <!-- ========== STEP 1: CATEGORY ========== -->
+      <!-- ========== STEP 1: TITLE & CATEGORY ========== -->
       <section class="pngm-post-step-panel is-active" data-step="1" id="pngm-step-category">
         <div class="pngm-post-step-head">
           <h2><?php echo osc_esc_html($steps[1]['title']); ?></h2>
@@ -137,6 +137,21 @@
         </div>
 
         <div class="pngm-post-card">
+          <div class="pngm-post-field pngm-post-title-field">
+            <label for="title[<?php echo $locale; ?>]"><?php _e('Title', 'epsilon'); ?> <span class="req">*</span></label>
+            <div class="input-box">
+              <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
+            </div>
+            <p class="pngm-post-field-error is-hidden" data-for="title" hidden><?php _e('Please enter a title.', 'epsilon'); ?></p>
+            <div class="pngm-post-counter" data-counter-for="title"><span>0</span>/100</div>
+          </div>
+
+          <div class="pngm-post-suggest" id="pngm-cat-suggest" hidden>
+            <p class="pngm-post-suggest-label"><?php _e('Suggested categories', 'epsilon'); ?></p>
+            <div class="pngm-post-suggest-chips" id="pngm-cat-suggest-chips" role="list"></div>
+            <p class="pngm-post-muted pngm-post-suggest-hint"><?php _e('Tap a suggestion or pick a category below.', 'epsilon'); ?></p>
+          </div>
+
           <h3 class="pngm-post-card-title"><?php _e('Select Category', 'epsilon'); ?></h3>
           <div class="pngm-post-cat-grid" role="listbox" aria-label="<?php echo osc_esc_html(__('Categories', 'epsilon')); ?>">
             <?php foreach ($root_cats as $rc) {
@@ -179,15 +194,6 @@
           <div class="pngm-post-main">
             <div class="pngm-post-card">
               <h3 class="pngm-post-card-title"><?php _e('Item Details', 'epsilon'); ?></h3>
-
-              <div class="pngm-post-field">
-                <label for="title[<?php echo $locale; ?>]"><?php _e('Title', 'epsilon'); ?> <span class="req">*</span></label>
-                <div class="input-box">
-                  <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
-                </div>
-                <p class="pngm-post-field-error is-hidden" data-for="title" hidden><?php _e('Please enter a title.', 'epsilon'); ?></p>
-                <div class="pngm-post-counter" data-counter-for="title"><span>0</span>/100</div>
-              </div>
 
               <div class="pngm-post-field">
                 <label for="description[<?php echo $locale; ?>]"><?php _e('Description', 'epsilon'); ?> <span class="req">*</span></label>
@@ -257,6 +263,7 @@
             <div class="pngm-post-card pngm-post-summary" data-summary="details">
               <h3><?php _e('Summary', 'epsilon'); ?></h3>
               <dl>
+                <div><dt><?php _e('Title', 'epsilon'); ?></dt><dd data-sum="title"><?php echo osc_esc_html(eps_post_item_title() ?: '—'); ?></dd></div>
                 <div><dt><?php _e('Category', 'epsilon'); ?></dt><dd data-sum="root"><?php echo osc_esc_html($cat_path['root_name'] ?: '—'); ?></dd></div>
                 <div><dt><?php _e('Subcategory', 'epsilon'); ?></dt><dd data-sum="leaf"><?php echo osc_esc_html($cat_path['leaf_name'] ?: '—'); ?></dd></div>
               </dl>
@@ -659,6 +666,9 @@
   </div>
 
   <script type="application/json" id="pngm-post-subcats"><?php echo json_encode($subcat_map); ?></script>
+  <script type="application/json" id="pngm-post-cat-keywords"><?php
+    echo json_encode(function_exists('pngm_category_suggest_keywords') ? pngm_category_suggest_keywords() : array(), JSON_UNESCAPED_UNICODE);
+  ?></script>
   <script type="application/json" id="pngm-post-boot"><?php echo json_encode(array(
     'root' => (int) $cat_path['root'],
     'leaf' => (int) $cat_path['leaf'],
@@ -716,6 +726,8 @@
       'noContact' => __('No contact options selected', 'epsilon'),
       'publishing' => __('Publishing…', 'epsilon'),
       'publishingHint' => __('Publishing your listing, please wait…', 'epsilon'),
+      'suggestedCats' => __('Suggested categories', 'epsilon'),
+      'suggestHint' => __('Tap a suggestion or pick a category below.', 'epsilon'),
     ),
   )); ?></script>
 

@@ -372,6 +372,66 @@ body.pngm-post-wizard .pngm-post-page-title {
   display: none !important;
 }
 
+/* Title → category suggestions */
+.pngm-post-title-field {
+  margin-bottom: 18px;
+}
+
+.pngm-post-suggest {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #d7e8d8;
+  background: #f4faf4;
+  border-radius: 12px;
+}
+
+.pngm-post-suggest[hidden] {
+  display: none !important;
+}
+
+.pngm-post-suggest-label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1b5e20;
+}
+
+.pngm-post-suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pngm-post-suggest-chip {
+  appearance: none;
+  border: 1.5px solid #a7d0aa;
+  background: #fff;
+  color: #16202a;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pngm-post-suggest-chip:hover {
+  border-color: #2e7d32;
+  background: #f7fbf7;
+}
+
+.pngm-post-suggest-chip.is-selected {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.16);
+}
+
+.pngm-post-suggest-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
 /* Fields */
 .pngm-post-field {
   margin: 0 0 14px;
