@@ -1972,3 +1972,40 @@ function pngm_ajax_im_send()
 }
 osc_add_hook('ajax_pngm_im_send', 'pngm_ajax_im_send');
 
+/**
+ * Lightweight chat board refresh — HTML fragment only (avoids full-page 500s).
+ */
+function pngm_ajax_im_refresh()
+{
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+
+    if (!osc_is_web_user_logged_in() || !class_exists('ModelIM')) {
+        http_response_code(401);
+        echo '';
+        return;
+    }
+
+    $file = osc_plugins_path() . 'instant_messenger/user/messages.php';
+    if (!is_readable($file)) {
+        http_response_code(500);
+        echo '';
+        return;
+    }
+
+    // Ensure route-style params are present for messages.php.
+    if (Params::getParam('imaction') === '') {
+        Params::setParam('imaction', 'refresh');
+    }
+
+    $GLOBALS['pngm_im_fragment_mode'] = true;
+    try {
+        include $file;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo '';
+    }
+    unset($GLOBALS['pngm_im_fragment_mode']);
+}
+osc_add_hook('ajax_pngm_im_refresh', 'pngm_ajax_im_refresh');
+

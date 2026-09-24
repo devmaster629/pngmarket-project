@@ -1,6 +1,8 @@
+<?php if (empty($GLOBALS['pngm_im_fragment_mode'])) { ?>
 <link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
 <script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/tipped.js"></script>
 <script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/user.js?v=<?php echo date('Ymdhis'); ?>"></script>
+<?php } ?>
 
 <?php 
 $secret = Params::getParam('secret');
@@ -14,6 +16,11 @@ $is_chat_refresh = (Params::getParam('imaction') == 'refresh' ? true : false);
 $thread_id = (int)Params::getParam('thread-id');
 $thread = ModelIM::newInstance()->getThreadById($thread_id);
 if(!im_is_valid_thread($thread)) {
+  if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
+    http_response_code(403);
+    echo '';
+    return;
+  }
   $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
   if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
     require $pngm_unauth;
@@ -172,6 +179,11 @@ if($thread['i_to_user_id'] > 0) {
 }
 
 if(!$result['can_view']) {
+  if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
+    http_response_code(403);
+    echo '';
+    return;
+  }
   $pngm_unauth = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_unauthorized.php';
   if (file_exists($pngm_unauth) && osc_is_web_user_logged_in()) {
     require $pngm_unauth;
@@ -184,12 +196,93 @@ if(!$result['can_view']) {
 
 $messages = ModelIM::newInstance()->getMessagesByThreadId($thread['i_thread_id']);
 
-$pngm_im_split = false;
-$pngm_im_rows = array();
 $pngm_im_ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
 if (file_exists($pngm_im_ui)) {
   require_once $pngm_im_ui;
 }
+
+// Lightweight AJAX fragment (no theme chrome) — used by pngm_ajax_im_refresh.
+if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
+  if (is_array($messages) && count($messages) > 0) {
+    ?>
+    <div class="im-table im-messages im-body">
+      <div class="im-vertical">
+        <span class="top"></span>
+        <span class="bot"></span>
+      </div>
+      <?php
+        $i = 1;
+        $show_last = 10;
+        if (count($messages) > $show_last) {
+          echo '<div class="im-show-older"><span>' . __('Show older messages', 'instant_messenger') . '</span></div>';
+        }
+        foreach ($messages as $m) {
+          if ((osc_is_web_user_logged_in() && (osc_logged_user_id() == $thread['i_from_user_id'] && $m['i_type'] == 0 || osc_logged_user_id() == $thread['i_to_user_id'] && $m['i_type'] == 1)) || ($secret == $thread['s_from_secret'] && $m['i_type'] == 0 || $secret == $thread['s_to_secret'] && $m['i_type'] == 1)) {
+            $logged_is_owner = true;
+          } else {
+            $logged_is_owner = false;
+            $identify_name = ($m['i_type'] == 0) ? __('customer', 'instant_messenger') : __('seller', 'instant_messenger');
+          }
+          if ($logged_is_owner) {
+            $u_name = osc_logged_user_name();
+            $u_id = osc_logged_user_id();
+          } else {
+            $u_name = ($thread['i_from_user_id'] == osc_logged_user_id() ? $thread['s_to_user_name'] : $thread['s_from_user_name']);
+            $u_id = ($thread['i_from_user_id'] == osc_logged_user_id() ? $thread['i_to_user_id'] : $thread['i_from_user_id']);
+          }
+          $u_img = im_profile_img_url($u_id, $u_name);
+          $avatar_user_name = ($m['i_type'] == 0 ? $thread['s_from_user_name'] : $thread['s_to_user_name']);
+          $avatar_profile_url = '';
+          if ($m['i_type'] == 0 && $from_public_url <> '') {
+            $avatar_profile_url = $from_public_url;
+          } else if ($m['i_type'] == 1 && $to_public_url <> '') {
+            $avatar_profile_url = $to_public_url;
+          }
+          $is_safe = im_text_contains_contact_info($m['s_message']);
+          ?>
+          <div class="im-table-row<?php if ($logged_is_owner) { ?> im-from<?php } else { ?> im-to<?php } ?><?php if (count($messages) - $i >= $show_last) { ?> hidden<?php } ?>" data-message-id="<?php echo $m['pk_i_id']; ?>">
+            <div class="im-horizontal">
+              <span class="left"></span>
+              <span class="right" data-user-id="<?php echo osc_esc_html($m['i_type'] == 0 ? $thread['i_from_user_id'] : $thread['i_to_user_id']); ?>" data-user-name="<?php echo osc_esc_html($avatar_user_name); ?>">
+                <?php if ($avatar_profile_url <> '') { ?><a href="<?php echo $avatar_profile_url; ?>" class="im-tooltip" title="<?php echo osc_esc_html($avatar_user_name); ?>"><?php } ?>
+                <img src="<?php echo $u_img; ?>" alt="<?php echo osc_esc_html($avatar_user_name); ?>"<?php if ($avatar_profile_url == '') { ?> class="im-tooltip" title="<?php echo osc_esc_html($avatar_user_name); ?>"<?php } ?> />
+                <?php if ($avatar_profile_url <> '') { ?></a><?php } ?>
+              </span>
+            </div>
+            <div class="im-line im-message-content">
+              <div class="im-col-24 im-align-left"><?php echo $m['s_message']; ?><?php if ($is_safe == 1) { ?><div class="im-unsafe-info"><?php echo sprintf(__('This message may contain contact information of %s. Keep communication on %s for your safety.', 'instant_messenger'), '<u>' . __('seller', 'instant_messenger') . '</u>', '<u>' . osc_page_title() . '</u>'); ?></div><?php } ?></div>
+            </div>
+            <?php if ($m['s_file'] <> '' && $att_enable == 1) {
+              $pngm_att_label = (function_exists('pngm_im_file_label') ? pngm_im_file_label((int) $m['pk_i_id'], $m['s_file']) : __('Attachment', 'instant_messenger'));
+              ?>
+              <div class="im-line im-message-extra im-box-gray">
+                <div class="im-col-10 im-align-left">
+                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($pngm_att_label); ?>">
+                    <i class="fa fa-paperclip" aria-hidden="true"></i>
+                    <span class="pngm-im-attach-name"><?php echo osc_esc_html($pngm_att_label); ?></span>
+                  </a>
+                </div>
+              </div>
+            <?php } ?>
+            <div class="im-date im-i im-gray" title="<?php echo osc_esc_html(sprintf(__('Message posted on %s', 'instant_messenger'), date('d/m/Y H:i:s', strtotime($m['d_datetime'])))); ?>">
+              <span><?php echo im_get_time_diff($m['d_datetime']); ?></span>
+              <?php if ($m['i_read'] == 1) { ?><i class="fa fa-check"></i><?php } ?>
+            </div>
+          </div>
+          <?php
+          $i++;
+        }
+      ?>
+    </div>
+    <?php
+  } else {
+    echo '<div class="im-table im-messages im-body"></div>';
+  }
+  return;
+}
+
+$pngm_im_split = false;
+$pngm_im_rows = array();
 if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im_prepare_conversations')) {
   $pngm_im_rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 50, 0);
   $pngm_im_split = true;
@@ -229,7 +322,13 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
 
   <?php if($offer) { ?>
     <a href="<?php echo osc_route_url('mo-show-offers', array('offerId' => $thread['i_offer_id'])); ?>" class="im-row im-body im-offer">
-      <div class="im-line"><?php echo sprintf(__('<b>Related offer:</b> %sx %s for %s%s', 'instant_messenger'), $offer['i_quantity'], $offer_item['s_title'], $offer['i_price']/1000000, $currency['s_description']); ?></div>
+      <div class="im-line"><?php echo sprintf(
+        __('<b>Related offer:</b> %sx %s for %s%s', 'instant_messenger'),
+        $offer['i_quantity'],
+        isset($offer_item['s_title']) ? $offer_item['s_title'] : '',
+        isset($offer['i_price']) ? ($offer['i_price'] / 1000000) : '',
+        $currency_desc
+      ); ?></div>
     </a>
   <?php } ?>
   
@@ -416,22 +515,21 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
       <form id="im-message-form" class="im-row im-body im-form-validate pngm-im-composer" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="im-action" id="im-action" value="send_message" />
 
-        <img class="im-logged-user-img im-tooltip" src="<?php echo $logged_user_img; ?>" title="<?php echo osc_esc_html(sprintf(__('You are logged in as %s', 'instant_messenger'), $logged_user_name)); ?>" alt="<?php echo osc_esc_html($logged_user_name); ?>"/>
-        <textarea name="im-message" id="im-message" class="im-textarea" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
-
-        <button type="submit" class="im-button-green"><?php _e('Send message', 'instant_messenger'); ?></button>
-        <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
-
         <?php if($att_enable == 1) { ?>
-          <div class="im-attachment">
-            <div class="im-att-box">
-              <label class="im-status">
-                <span class="im-wrap"><i class="fa fa-paperclip"></i> <span><span class="im-def-text"><?php _e('Upload file', 'instant_messenger'); ?></span></span></span>
-                <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
-              </label>
-            </div>
-          </div>
+          <label class="pngm-im-attach-btn im-attachment" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
+            <i class="fas fa-paperclip" aria-hidden="true"></i>
+            <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
+          </label>
         <?php } ?>
+
+        <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
+
+        <button type="submit" class="im-button-green pngm-im-send">
+          <i class="fas fa-paper-plane" aria-hidden="true"></i>
+          <span><?php _e('Send', 'instant_messenger'); ?></span>
+        </button>
+        <button type="submit" class="im-button-green im-button-alt" style="display:none;" aria-hidden="true"><i class="fa fa-paper-plane"></i></button>
+
         <div class="im-file-list" id="im-file-list" hidden></div>
       </form>
       <p id="pngm-composer-tip" class="pngm-composer-tip"><?php echo osc_esc_html(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?></p>
@@ -450,16 +548,19 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
 ?>
 
 <?php
-  $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+  $pngm_im_secret = (Params::getParam('secret') <> '' ? Params::getParam('secret') : 'n');
+  $pngm_im_refresh_base = osc_route_url('im-messages', array('thread-id' => $thread_id, 'secret' => $pngm_im_secret));
+  $pngm_im_refresh_url = $pngm_im_refresh_base . (strpos($pngm_im_refresh_base, '?') !== false ? '&' : '?') . 'imaction=refresh';
+  $pngm_im_refresh_ajax = osc_base_url(true) . '?page=ajax&action=pngm_im_refresh&thread-id=' . (int) $thread_id . '&secret=' . rawurlencode($pngm_im_secret);
 ?>
 
 <script>
-//var imMessageUrl = "<?php echo $actual_link; ?>";
-var imMessageUrl = "<?php echo osc_route_url('im-refresh-messages', array('thread-id' => $thread_id, 'secret' => (Params::getParam('secret') <> '' ? Params::getParam('secret') : 'n'), 'imaction' => 'refresh')); ?>";
-
-
+// Prefer lightweight AJAX refresh; full-page im-refresh-messages often 500s behind WAF/theme shell.
+var imMessageUrl = <?php echo json_encode($pngm_im_refresh_url); ?>;
+var pngmImRefreshAjax = <?php echo json_encode($pngm_im_refresh_ajax); ?>;
 var imShowOlder = 0;
 var imAjax = <?php echo $ajax; ?>;
+var pngmImRefreshFailCount = 0;
 
 $(document).ready(function() {
   $('body').click();
@@ -570,59 +671,73 @@ function imStickChatToBottom($board) {
 }
 
 function imRefreshMessages(forceBottom) {
-  $.ajax({
-    url: imMessageUrl,
-    type: "GET",
-    success: function(response){
-      //console.log('Messages loaded');
+  var url = (typeof pngmImRefreshAjax === 'string' && pngmImRefreshAjax)
+    ? pngmImRefreshAjax
+    : imMessageUrl;
 
-      if(response.length) {
-        var $board = $('.im-table.im-messages');
-        var el = $board[0];
-        var content = $(response).contents().find('.im-table.im-messages').html();
-        var messagesCount = $(response).contents().find('.im-table.im-messages .im-table-row').length;
-        var lastMessageId = $board.find('.im-table-row:last-child').attr('data-message-id');
-        var stick = !!forceBottom;
-        if(!stick && el) {
-          stick = (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
+  $.ajax({
+    url: url,
+    type: "GET",
+    dataType: "html",
+    cache: false,
+    success: function(response){
+      pngmImRefreshFailCount = 0;
+      if(!response || !response.length) {
+        return;
+      }
+
+      var $board = $('.im-table.im-messages');
+      var el = $board[0];
+      var $parsed = $('<div>').append($.parseHTML(response, document, false));
+      var $next = $parsed.find('.im-table.im-messages').first();
+      if(!$next.length) {
+        $next = $parsed.filter('.im-table.im-messages').first();
+      }
+      if(!$next.length) {
+        return;
+      }
+
+      var content = $next.html();
+      var messagesCount = $next.find('.im-table-row').length;
+      var lastMessageId = $board.find('.im-table-row:last-child').attr('data-message-id');
+      var stick = !!forceBottom;
+      if(!stick && el) {
+        stick = (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
+      }
+
+      if(
+        messagesCount != $board.find('.im-table-row').length
+        || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $next.find('.im-table-row:last-child .im-date .fa-check').length)
+      ) {
+        $board.html(content);
+        if(stick) {
+          imStickChatToBottom($board);
         }
 
-        if(
-          messagesCount != $board.find('.im-table-row').length
-          || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $(response).contents().find('.im-table.im-messages .im-table-row:last-child .im-date .fa-check').length)
-        ) {
-          $board.html(content);
+        if(typeof window.pngmLayoutChat === 'function') {
+          window.pngmLayoutChat({ pinBottom: stick });
+        }
+
+        if(imShowOlder == 1) {
+          imShowOlderMessages();
           if(stick) {
             imStickChatToBottom($board);
           }
+        }
 
-          if(typeof window.pngmLayoutChat === 'function') {
-            window.pngmLayoutChat({ pinBottom: stick });
-          }
-
-          // IF USER SEEING OLDER MESSAGES, DO NOT COLLAPSE THEM
-          if(imShowOlder == 1) {
-            imShowOlderMessages();
-            if(stick) {
-              imStickChatToBottom($board);
-            }
-          }
-
-          // IF THERE IS NEW MESSAGE AND IT'S NOT FROM SENDER
-          if(!$board.find('.im-table-row:last-child').hasClass('im-from') && $board.find('.im-table-row:last-child').attr('data-message-id') != lastMessageId) {
-            imPlayBeep();
-
-            PageTitleNotification.On('<?php echo osc_esc_js(__('You have new message!', 'instant_messenger')); ?>');
-
-            setTimeout(function(){
-              //PageTitleNotification.Off();
-            }, 3000);
-          }
+        if(!$board.find('.im-table-row:last-child').hasClass('im-from') && $board.find('.im-table-row:last-child').attr('data-message-id') != lastMessageId) {
+          imPlayBeep();
+          PageTitleNotification.On('<?php echo osc_esc_js(__('You have new message!', 'instant_messenger')); ?>');
         }
       }
-
-    }, error: function(response) {
-      console.log('Error: Messages not loaded');
+    },
+    error: function() {
+      pngmImRefreshFailCount++;
+      // Fallback once to full page URL if AJAX fragment fails; stay quiet after that.
+      if(pngmImRefreshFailCount === 1 && url === pngmImRefreshAjax && imMessageUrl) {
+        pngmImRefreshAjax = '';
+        imRefreshMessages(forceBottom);
+      }
     }
   });
 }

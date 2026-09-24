@@ -4509,7 +4509,7 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 
 .pngm-im-composer {
   display: flex !important;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
   gap: 8px;
   float: none !important;
@@ -4716,25 +4716,6 @@ body.im-chat-page #im-message-form .im-textarea {
   overflow-y: hidden;
 }
 
-.pngm-im-send.im-button-green {
-  flex: 0 0 auto;
-  height: 44px;
-  min-width: 96px;
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: #2e7d32 !important;
-  color: #fff !important;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px !important;
-  float: none !important;
-  position: static !important;
-}
-
 .pngm-im-attach-btn {
   flex: 0 0 40px;
   width: 40px;
@@ -4745,11 +4726,89 @@ body.im-chat-page #im-message-form .im-textarea {
   color: #6b7785;
   cursor: pointer;
   position: static !important;
+  top: auto !important;
+  right: auto !important;
   float: none !important;
 }
 
 .pngm-im-attach-btn input {
   display: none;
+}
+
+/* Desktop: labeled send button. Mobile: circular icon (see max-width block below). */
+@media screen and (min-width: 768px) {
+  .pngm-im-send.im-button-green,
+  body.im-chat-page #im-message-form > button.im-button-green.pngm-im-send,
+  body #im-message-form.pngm-im-composer > button.im-button-green.pngm-im-send {
+    flex: 0 0 auto;
+    height: 44px;
+    min-width: 96px;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    background: #2e7d32 !important;
+    color: #fff !important;
+    font-weight: 700;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px !important;
+    float: none !important;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+  }
+
+  .pngm-im-composer .im-button-alt,
+  body.im-chat-page #im-message-form button.im-button-alt,
+  body #im-message-form.pngm-im-composer button.im-button-alt {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body.im-chat-page #im-message-form.pngm-im-composer,
+  body.im-chat-page #im-message-form {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+  }
+
+  body.im-chat-page #im-message-form > button.im-button-green.pngm-im-send,
+  body.im-chat-page #im-message-form.pngm-im-composer > button.im-button-green.pngm-im-send,
+  body.im-chat-page #im-message-form .pngm-im-send {
+    display: inline-flex !important;
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    gap: 0 !important;
+    position: static !important;
+    float: none !important;
+  }
+
+  body.im-chat-page #im-message-form .pngm-im-send span {
+    display: none !important;
+  }
+
+  body.im-chat-page #im-message-form button.im-button-alt,
+  body.im-chat-page #im-message-form.pngm-im-composer button.im-button-alt {
+    display: none !important;
+  }
+
+  body.im-chat-page #im-message-form .im-textarea,
+  body.im-chat-page #im-message-form #im-message {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
 }
 
 .pngm-im-unauthorized {
