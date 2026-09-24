@@ -1298,12 +1298,10 @@ function pngm_auth_show_recaptcha($section = '')
         return;
     }
 
-    $label = __('Security check — confirm you are human', 'epsilon');
     // Accessible region so auditors/screen readers see CAPTCHA before the iframe loads.
-    echo '<div class="pngm-auth-captcha-label" id="pngm-recaptcha-label">'
-        . osc_esc_html($label)
-        . '</div>';
-    echo '<div class="g-recaptcha pngm-g-recaptcha" role="group" aria-labelledby="pngm-recaptcha-label" data-sitekey="'
+    echo '<div class="g-recaptcha pngm-g-recaptcha" role="group" aria-label="'
+        . osc_esc_html(__('reCAPTCHA', 'epsilon'))
+        . '" data-sitekey="'
         . osc_esc_html($key)
         . '" data-pngm-recaptcha="1"></div>';
 }
