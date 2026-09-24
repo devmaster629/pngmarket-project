@@ -97,6 +97,30 @@ if ($pngm_remote) {
     define('DB_TABLE_PREFIX', 'oc_');
     define('REL_WEB_URL', '/');
     define('WEB_PATH', 'https://stage.pngmarket.online/');
+
+    // TEMP: surface the blank HTTP 500 on stage only (remove after fix).
+    if ($host === 'stage.pngmarket.online') {
+        define('OSC_DEBUG', true);
+        ini_set('display_errors', '1');
+        ini_set('display_startup_errors', '1');
+        error_reporting(E_ALL);
+        register_shutdown_function(function () {
+            $err = error_get_last();
+            if (!$err) {
+                return;
+            }
+            $fatal = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+            if (!in_array($err['type'], $fatal, true)) {
+                return;
+            }
+            if (!headers_sent()) {
+                header('Content-Type: text/plain; charset=utf-8', true, 500);
+            }
+            echo "\nPNGM_FATAL\n";
+            echo $err['message'] . "\n";
+            echo $err['file'] . ':' . $err['line'] . "\n";
+        });
+    }
 } else {
     define('DB_HOST', osc_env('DB_HOST', '127.0.0.1'));
     define('DB_USER', osc_env('DB_USER', 'root'));
@@ -112,7 +136,7 @@ ini_set('session.cookie_lifetime', 94608000);
 ini_set('session.gc_maxlifetime', 94608000);
 session_set_cookie_params(94608000);
 
-if (osc_env_bool('OSC_DEBUG')) {
+if (!defined('OSC_DEBUG') && osc_env_bool('OSC_DEBUG')) {
     define('OSC_DEBUG', true);
 }
 if (osc_env_bool('OSC_DEBUG_DB')) {

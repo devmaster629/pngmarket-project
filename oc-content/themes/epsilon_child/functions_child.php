@@ -32,8 +32,12 @@ require_once dirname(__FILE__) . '/includes/duplicate_listings.php';
 require_once dirname(__FILE__) . '/includes/public_profile_gate.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
-require_once dirname(__FILE__) . '/includes/web_push.php';
+// Kill-switch: define('PNGM_DISABLE_WEBPUSH', true) in config.php if push code 500s the site.
+if (!defined('PNGM_DISABLE_WEBPUSH') || !PNGM_DISABLE_WEBPUSH) {
+    require_once dirname(__FILE__) . '/includes/web_push.php';
+}
 require_once dirname(__FILE__) . '/includes/notification_prefs.php';
+
 require_once dirname(__FILE__) . '/includes/pwa.php';
 require_once dirname(__FILE__) . '/includes/activity.php';
 require_once dirname(__FILE__) . '/includes/account_security.php';

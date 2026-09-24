@@ -411,7 +411,7 @@ function pngm_webpush_footer()
     $sw_url = pngm_webpush_sw_url();
     $vapid = pngm_webpush_public_key();
     $icon = osc_base_url() . 'pwa/icon-192.png';
-    $ajax = osc_base_url(true) . '?page=ajax&action=pngm_push_subscribe';
+    $ajax = osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_subscribe';
     ?>
 <script>
 (function () {
@@ -529,9 +529,9 @@ function pngm_webpush_prefs_boot_json()
     echo json_encode(array(
         'swUrl' => pngm_webpush_sw_url(),
         'vapidPublicKey' => pngm_webpush_public_key(),
-        'subscribeUrl' => osc_base_url(true) . '?page=ajax&action=pngm_push_subscribe',
-        'unsubscribeUrl' => osc_base_url(true) . '?page=ajax&action=pngm_push_unsubscribe',
-        'testUrl' => osc_base_url(true) . '?page=ajax&action=pngm_push_test',
+        'subscribeUrl' => osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_subscribe',
+        'unsubscribeUrl' => osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_unsubscribe',
+        'testUrl' => osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_test',
         'hasSubscription' => osc_is_web_user_logged_in()
             ? pngm_webpush_user_has_subscription((int) osc_logged_user_id())
             : false,
