@@ -682,3 +682,5 @@ function pngm_ajax_check_duplicate_title()
     exit;
 }
 osc_add_hook('ajax_pngm_check_duplicate_title', 'pngm_ajax_check_duplicate_title');
+
+/* pngm:duplicate_listings-ok-20260924 */

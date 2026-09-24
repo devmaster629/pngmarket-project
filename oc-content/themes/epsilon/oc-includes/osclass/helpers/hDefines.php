@@ -945,7 +945,7 @@ function osc_item_to_subdomain_param($item) {
  * @param string $locale
  * @return string
  * @throws \Exception
-*/
+ */
 function osc_premium_url($locale = '') {
   return osc_item_url_from_item(osc_premium(), $locale);
 
@@ -2177,3 +2177,4 @@ function osc_email_template_delete($internal_name) {
   
 
 /* file end: ./oc-includes/osclass/helpers/hDefines.php */
+/* pngm:hDefines-ok-20260924 */
