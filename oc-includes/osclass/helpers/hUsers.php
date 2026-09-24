@@ -203,7 +203,7 @@ function osc_logged_user_phone() {
  * @return boolean
  */
 function osc_user_public_profile_is_enabled($user) {
-  if($user === false || !isset($user['pk_i_id']) || $user['b_enabled'] = 0 || $user['b_active'] = 0) {
+  if($user === false || !isset($user['pk_i_id']) || $user['b_enabled'] == 0 || $user['b_active'] == 0) {
     return osc_apply_filter('user_public_profile_is_enabled', false, $user);
   
   } else if(osc_user_public_profile_min_items() > 0 && $user['i_items'] < osc_user_public_profile_min_items()) {
