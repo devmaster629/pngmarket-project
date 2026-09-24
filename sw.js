@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v1';
+var PNGM_SW_CACHE = 'pngm-shell-v2';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
@@ -100,9 +100,9 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
-/* Placeholder for true Web Push payloads (VAPID) when server support is added */
+/* VAPID Web Push payloads (JSON: title, body, url, icon) */
 self.addEventListener('push', function (event) {
-  var data = { title: 'PNG Market', body: '', url: '/' };
+  var data = { title: 'PNG Market', body: '', url: '/', icon: './pwa/icon-192.png' };
   try {
     if (event.data) {
       var parsed = event.data.json();
@@ -110,6 +110,7 @@ self.addEventListener('push', function (event) {
         data.title = parsed.title || data.title;
         data.body = parsed.body || '';
         data.url = parsed.url || data.url;
+        if (parsed.icon) data.icon = parsed.icon;
       }
     }
   } catch (e) {
@@ -120,7 +121,11 @@ self.addEventListener('push', function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      data: { url: data.url }
+      icon: data.icon,
+      badge: './pwa/icon-192.png',
+      data: { url: data.url },
+      renotify: true,
+      tag: 'pngm-push-' + String(data.title || '').slice(0, 32)
     })
   );
 });

@@ -78,7 +78,7 @@ $section_num = 0;
         <span class="pngm-notif-push-ico" aria-hidden="true"><i class="fas fa-bell"></i></span>
         <div>
           <h2 id="pngm-push-heading"><?php _e('Browser push notifications', 'epsilon'); ?></h2>
-          <p><?php _e('Enable browser permission so PNGMarket can show alerts on this device (messages, listing expiry, saved searches).', 'epsilon'); ?></p>
+          <p><?php _e('Allow browser permission so PNGMarket can alert you on this device — including when the site is closed (messages, listing expiry, saved searches).', 'epsilon'); ?></p>
         </div>
       </div>
 
@@ -207,8 +207,23 @@ $section_num = 0;
   var elPerm = root.querySelector('[data-push-permission]');
   var elSw = root.querySelector('[data-push-sw]');
   var elHint = root.querySelector('[data-push-hint]');
-  var swUrl = <?php echo json_encode(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>;
-  var iconUrl = <?php echo json_encode(osc_base_url()); ?>;
+  var boot = <?php
+    if (function_exists('pngm_webpush_prefs_boot_json')) {
+      pngm_webpush_prefs_boot_json();
+    } else {
+      echo json_encode(array(
+        'swUrl' => osc_base_url() . 'sw.js',
+        'vapidPublicKey' => '',
+        'subscribeUrl' => '',
+        'testUrl' => '',
+      ));
+    }
+  ?>;
+  var swUrl = boot.swUrl || <?php echo json_encode(osc_base_url() . 'sw.js'); ?>;
+  var vapidKey = boot.vapidPublicKey || '';
+  var subscribeUrl = boot.subscribeUrl || '';
+  var testUrl = boot.testUrl || '';
+  var iconUrl = <?php echo json_encode(osc_base_url() . 'pwa/icon-192.png'); ?>;
   var L = {
     yes: <?php echo json_encode(__('Supported', 'epsilon')); ?>,
     no: <?php echo json_encode(__('Not supported', 'epsilon')); ?>,
@@ -222,11 +237,15 @@ $section_num = 0;
     blocked: <?php echo json_encode(__('Notifications are blocked. Allow them in your browser site settings, then reload.', 'epsilon')); ?>,
     enableCta: <?php echo json_encode(__('Enable browser notifications', 'epsilon')); ?>,
     enabledCta: <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>,
-    hintReady: <?php echo json_encode(__('Permission granted. Use “Send test notification” to verify this device.', 'epsilon')); ?>,
+    hintReady: <?php echo json_encode(__('Permission granted and this device is subscribed. Use “Send test notification” — it should arrive even if you close this tab.', 'epsilon')); ?>,
     hintAsk: <?php echo json_encode(__('Click “Enable browser notifications” to open the browser permission prompt.', 'epsilon')); ?>,
+    hintNeedHttps: <?php echo json_encode(__('Web Push needs HTTPS (or localhost). Open the site over a secure URL to finish setup.', 'epsilon')); ?>,
+    hintSubscribing: <?php echo json_encode(__('Subscribing this device…', 'epsilon')); ?>,
+    hintSubscribeFail: <?php echo json_encode(__('Could not subscribe this device for push. Try again or check browser settings.', 'epsilon')); ?>,
     testTitle: <?php echo json_encode(__('PNGMarket test notification', 'epsilon')); ?>,
     testBody: <?php echo json_encode(__('Browser push is working on this device.', 'epsilon')); ?>,
-    testFail: <?php echo json_encode(__('Could not show a test notification. Check permission and try again.', 'epsilon')); ?>
+    testFail: <?php echo json_encode(__('Could not send a test push. Enable notifications, then try again.', 'epsilon')); ?>,
+    testOk: <?php echo json_encode(__('Test push sent. Check your system notification tray.', 'epsilon')); ?>
   };
 
   function syncAllow() {
@@ -248,7 +267,63 @@ $section_num = 0;
     if (elHint) elHint.textContent = text || '';
   }
 
-  function showTestNotification(reg) {
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = window.atob(base64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function postJsonForm(url, fields) {
+    var body = Object.keys(fields).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(fields[k]);
+    }).join('&');
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+  }
+
+  function saveSubscription(sub) {
+    if (!subscribeUrl || !sub) return Promise.resolve({ ok: false });
+    var json = sub.toJSON ? sub.toJSON() : sub;
+    return postJsonForm(subscribeUrl, { subscription: JSON.stringify(json) });
+  }
+
+  function registerSw() {
+    if (!('serviceWorker' in navigator)) {
+      return Promise.resolve(null);
+    }
+    return navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function (reg) {
+      return reg;
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function subscribePush(reg) {
+    if (!reg || !('pushManager' in reg) || !vapidKey) {
+      return Promise.reject(new Error('no_push'));
+    }
+    return reg.pushManager.getSubscription().then(function (existing) {
+      if (existing) return existing;
+      return reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+    }).then(function (sub) {
+      return saveSubscription(sub).then(function (res) {
+        if (!res || !res.ok) throw new Error('save_failed');
+        return sub;
+      });
+    });
+  }
+
+  function showLocalTest(reg) {
     var opts = {
       body: L.testBody,
       icon: iconUrl,
@@ -270,20 +345,24 @@ $section_num = 0;
   }
 
   function refreshPushStatus() {
-    var supported = ('Notification' in window);
-    var swOk = ('serviceWorker' in navigator);
+    var supported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+    var secure = window.isSecureContext === true;
     setText(elSupport, supported ? L.yes : L.no, supported ? 'is-ok' : 'is-bad');
 
     if (!supported) {
       setText(elPerm, L.no, 'is-bad');
-      setText(elSw, swOk ? L.swOff : L.no, 'is-bad');
+      setText(elSw, L.no, 'is-bad');
       if (enableBtn) {
         enableBtn.disabled = true;
         enableBtn.textContent = L.unsupported;
       }
       if (testBtn) testBtn.hidden = true;
-      setHint(L.unsupported);
+      setHint(!secure ? L.hintNeedHttps : L.unsupported);
       return;
+    }
+
+    if (!secure && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      setHint(L.hintNeedHttps);
     }
 
     var perm = Notification.permission;
@@ -313,11 +392,6 @@ $section_num = 0;
       if (testBtn) testBtn.hidden = true;
     }
 
-    if (!swOk) {
-      setText(elSw, L.no, 'is-bad');
-      return;
-    }
-
     setText(elSw, L.swChecking, 'is-warn');
     navigator.serviceWorker.getRegistration('/').then(function (reg) {
       if (reg) {
@@ -327,17 +401,6 @@ $section_num = 0;
       }
     }).catch(function () {
       setText(elSw, L.swOff, 'is-warn');
-    });
-  }
-
-  function registerSw() {
-    if (!('serviceWorker' in navigator)) {
-      return Promise.resolve(null);
-    }
-    return navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function (reg) {
-      return reg;
-    }).catch(function () {
-      return null;
     });
   }
 
@@ -358,19 +421,29 @@ $section_num = 0;
 
   if (enableBtn) {
     enableBtn.addEventListener('click', function () {
-      if (!('Notification' in window)) {
+      if (!('Notification' in window) || !('PushManager' in window)) {
         setHint(L.unsupported);
         return;
       }
+      if (!vapidKey) {
+        setHint(L.hintSubscribeFail);
+        return;
+      }
       enableBtn.disabled = true;
+      setHint(L.hintSubscribing);
       Notification.requestPermission().then(function (perm) {
-        if (perm === 'granted') {
-          return registerSw().then(function () {
-            refreshPushStatus();
-          });
+        if (perm !== 'granted') {
+          refreshPushStatus();
+          return null;
         }
-        refreshPushStatus();
+        return registerSw().then(function (reg) {
+          if (!reg) throw new Error('no_sw');
+          return subscribePush(reg);
+        }).then(function () {
+          refreshPushStatus();
+        });
       }).catch(function () {
+        setHint(L.hintSubscribeFail);
         refreshPushStatus();
       });
     });
@@ -383,10 +456,25 @@ $section_num = 0;
         return;
       }
       testBtn.disabled = true;
-      registerSw().then(function (reg) {
-        return showTestNotification(reg);
-      }).then(function () {
-        setHint(L.hintReady);
+      var chain = Promise.resolve();
+      if (testUrl) {
+        chain = postJsonForm(testUrl, {}).then(function (res) {
+          if (res && res.ok) {
+            setHint(L.testOk);
+            return true;
+          }
+          return false;
+        }).catch(function () { return false; });
+      } else {
+        chain = Promise.resolve(false);
+      }
+      chain.then(function (serverOk) {
+        if (serverOk) return;
+        return registerSw().then(function (reg) {
+          return showLocalTest(reg);
+        }).then(function () {
+          setHint(L.hintReady);
+        });
       }).catch(function () {
         setHint(L.testFail);
       }).then(function () {
@@ -397,8 +485,11 @@ $section_num = 0;
   }
 
   refreshPushStatus();
-  if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    registerSw().then(function () { refreshPushStatus(); });
+  if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted' && vapidKey) {
+    registerSw().then(function (reg) {
+      if (!reg) return;
+      return subscribePush(reg).catch(function () {});
+    }).then(function () { refreshPushStatus(); });
   }
 })();
 </script>

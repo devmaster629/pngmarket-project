@@ -288,7 +288,7 @@ function pngm_notif_pre_send_mail_filter($params, $type = '')
 osc_add_filter('pre_send_mail_filter', 'pngm_notif_pre_send_mail_filter', 10);
 
 /**
- * Queue a browser push for next page load (requires Notification permission).
+ * Deliver a browser push: VAPID Web Push when subscribed, else queue for next visit.
  *
  * @param int    $user_id
  * @param string $pref_key
@@ -304,6 +304,15 @@ function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '')
         return;
     }
 
+    // Prefer real Web Push (works while the site is closed).
+    if (function_exists('pngm_webpush_send_to_user')) {
+        $sent = (int) pngm_webpush_send_to_user($user_id, (string) $title, (string) $body, (string) $url);
+        if ($sent > 0) {
+            return;
+        }
+    }
+
+    // Fallback: show when the user next loads any page (Service Worker / Notification API).
     $raw = osc_get_preference('pushq_' . $user_id, 'pngm_notif_prefs');
     $queue = array();
     if ($raw !== '' && $raw !== null && $raw !== false) {
