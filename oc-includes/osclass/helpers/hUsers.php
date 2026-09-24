@@ -203,13 +203,17 @@ function osc_logged_user_phone() {
  * @return boolean
  */
 function osc_user_public_profile_is_enabled($user) {
-  if($user === false || !isset($user['pk_i_id']) || $user['b_enabled'] == 0 || $user['b_active'] == 0) {
+  // Use isset before reading flags — PHP 8+ warnings on missing keys can become fatals
+  // when a host converts warnings to ErrorException.
+  if($user === false || !is_array($user) || !isset($user['pk_i_id'])
+    || !isset($user['b_enabled']) || !isset($user['b_active'])
+    || (int)$user['b_enabled'] === 0 || (int)$user['b_active'] === 0) {
     return osc_apply_filter('user_public_profile_is_enabled', false, $user);
   
-  } else if(osc_user_public_profile_min_items() > 0 && $user['i_items'] < osc_user_public_profile_min_items()) {
+  } else if(osc_user_public_profile_min_items() > 0 && (!isset($user['i_items']) || $user['i_items'] < osc_user_public_profile_min_items())) {
     return osc_apply_filter('user_public_profile_is_enabled', false, $user);
     
-  } else if(osc_user_public_profile_enabled() == 'COMPANY' && $user['b_company'] == 0) {
+  } else if(osc_user_public_profile_enabled() == 'COMPANY' && (!isset($user['b_company']) || $user['b_company'] == 0)) {
     return osc_apply_filter('user_public_profile_is_enabled', false, $user);
   }
   

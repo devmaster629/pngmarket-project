@@ -39,22 +39,17 @@ function pngm_public_profile_is_enabled_gate($enabled, $user)
         return false;
     }
 
-    // Re-read from DB — core used to mutate b_enabled/b_active via assignment typo.
-    $fresh = function_exists('osc_get_user_row') ? osc_get_user_row($uid) : $user;
-    if (!is_array($fresh) || empty($fresh['pk_i_id'])) {
-        return false;
-    }
-
+    // Use the row already passed in — avoid extra DB reads on every profile URL check.
     // Inactive / disabled accounts stay private.
-    if (isset($fresh['b_enabled']) && (int) $fresh['b_enabled'] !== 1) {
+    if (!isset($user['b_enabled']) || (int) $user['b_enabled'] !== 1) {
         return false;
     }
-    if (isset($fresh['b_active']) && (int) $fresh['b_active'] !== 1) {
+    if (!isset($user['b_active']) || (int) $user['b_active'] !== 1) {
         return false;
     }
 
     // Only accounts with at least one listing are public sellers (not ID-browseable buyers).
-    $items = isset($fresh['i_items']) ? (int) $fresh['i_items'] : 0;
+    $items = isset($user['i_items']) ? (int) $user['i_items'] : 0;
     if ($items < 1) {
         return false;
     }

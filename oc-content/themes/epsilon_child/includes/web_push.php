@@ -73,31 +73,42 @@ function pngm_webpush_vapid_subject()
  */
 function pngm_webpush_vapid_keys()
 {
-    $pub = (string) osc_get_preference('vapid_public', PNGM_WEBPUSH_PREF_SECTION);
-    $pem = (string) osc_get_preference('vapid_private_pem', PNGM_WEBPUSH_PREF_SECTION);
-    $priv = (string) osc_get_preference('vapid_private', PNGM_WEBPUSH_PREF_SECTION);
+    try {
+        $pub = (string) osc_get_preference('vapid_public', PNGM_WEBPUSH_PREF_SECTION);
+        $pem = (string) osc_get_preference('vapid_private_pem', PNGM_WEBPUSH_PREF_SECTION);
+        $priv = (string) osc_get_preference('vapid_private', PNGM_WEBPUSH_PREF_SECTION);
 
-    if ($pub !== '' && $pem !== '') {
-        return array(
-            'publicKey' => $pub,
-            'privateKey' => $priv,
-            'privatePem' => $pem,
-        );
-    }
+        if ($pub !== '' && $pem !== '') {
+            return array(
+                'publicKey' => $pub,
+                'privateKey' => $priv,
+                'privatePem' => $pem,
+            );
+        }
 
-    $keys = pngm_push_generate_vapid_keys();
-    if ($keys === false) {
+        if (!function_exists('pngm_push_generate_vapid_keys')) {
+            return false;
+        }
+
+        $keys = pngm_push_generate_vapid_keys();
+        if ($keys === false || !is_array($keys)) {
+            return false;
+        }
+
+        osc_set_preference('vapid_public', $keys['publicKey'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
+        osc_set_preference('vapid_private', $keys['privateKey'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
+        osc_set_preference('vapid_private_pem', $keys['privatePem'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->toArray();
+        }
+
+        return $keys;
+    } catch (Throwable $e) {
+        if (defined('OSC_DEBUG') && OSC_DEBUG && function_exists('error_log')) {
+            error_log('pngm_webpush_vapid_keys: ' . $e->getMessage());
+        }
         return false;
     }
-
-    osc_set_preference('vapid_public', $keys['publicKey'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
-    osc_set_preference('vapid_private', $keys['privateKey'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
-    osc_set_preference('vapid_private_pem', $keys['privatePem'], PNGM_WEBPUSH_PREF_SECTION, 'STRING');
-    if (class_exists('Preference')) {
-        Preference::newInstance()->toArray();
-    }
-
-    return $keys;
 }
 
 /**
@@ -622,12 +633,9 @@ function pngm_ajax_push_test()
 }
 osc_add_hook('ajax_pngm_push_test', 'pngm_ajax_push_test');
 
-// Eagerly ensure keys exist on init (cheap once cached).
-osc_add_hook('init', function () {
-    if (function_exists('pngm_webpush_vapid_keys')) {
-        pngm_webpush_vapid_keys();
-    }
-}, 4);
+// Do NOT generate VAPID keys on every request — preference writes / OpenSSL during
+// init have caused blank HTTP 500s on some hosts. Keys are created lazily when
+// the prefs UI or a push send needs them (pngm_webpush_vapid_keys()).
 
 // Replace on-page Notification() footer with Service Worker + VAPID delivery.
 osc_add_hook('init', function () {

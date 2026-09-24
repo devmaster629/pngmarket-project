@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v2';
+var PNGM_SW_CACHE = 'pngm-shell-v3';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
@@ -44,10 +44,20 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // Navigation: network-first, fall back to cached shell.
+  // Navigation: network-first. Fall back to cache on network failure OR 5xx
+  // so a transient server error does not blank the PWA shell.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(function () {
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          return res;
+        }
+        return caches.match('./').then(function (cached) {
+          return cached || caches.match(req).then(function (c2) {
+            return c2 || res;
+          });
+        });
+      }).catch(function () {
         return caches.match('./').then(function (cached) {
           return cached || caches.match(req);
         });
