@@ -33,7 +33,7 @@ function pngm_post_wizard_steps()
             'key'   => 'photos',
             'label' => __('Photos', 'epsilon'),
             'title' => __('3. Add Photos', 'epsilon'),
-            'sub'   => __('Good photos help your listing sell faster.', 'epsilon'),
+            'sub'   => __('Photos are optional. Good photos help your listing sell faster.', 'epsilon'),
         ),
         4 => array(
             'key'   => 'location',

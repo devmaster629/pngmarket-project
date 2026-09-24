@@ -279,8 +279,7 @@
         <div class="pngm-post-layout">
           <div class="pngm-post-main">
             <div class="pngm-post-card upload-photos pngm-post-upload-card">
-              <h3 class="pngm-post-card-title"><?php _e('Add Photos', 'epsilon'); ?> <span class="req">*</span></h3>
-              <p class="pngm-post-muted pngm-post-card-intro"><?php _e('Upload clear photos of your item. First photo is the cover. At least one photo is required.', 'epsilon'); ?></p>
+              <h3 class="pngm-post-card-title"><?php _e('Add Photos', 'epsilon'); ?></h3>
               <div class="box photos photoshow drag_drop in" id="photos">
                 <?php
                   if (osc_images_enabled_at_items()) {
@@ -319,6 +318,7 @@
           </div>
           <aside class="pngm-post-side">
             <?php pngm_post_tip_card(__('Photo tips', 'epsilon'), array(
+              __('Photos are optional — you can publish without any.', 'epsilon'),
               __('First photo is your cover image.', 'epsilon'),
               __('Use bright, clear photos from multiple angles.', 'epsilon'),
               __('Show any damage honestly.', 'epsilon'),
@@ -620,6 +620,10 @@
               <h3><?php _e('Missing or incomplete', 'epsilon'); ?></h3>
               <ul id="pngm-missing-list"></ul>
             </div>
+            <div class="pngm-post-card pngm-post-recommend" id="pngm-photo-recommend" hidden>
+              <h3><?php _e('Add photos for better results', 'epsilon'); ?></h3>
+              <p class="pngm-post-muted"><?php _e('You can publish without photos, but listings with photos usually get more views and sell faster.', 'epsilon'); ?></p>
+            </div>
             <?php pngm_post_tip_card(__('Publishing tips', 'epsilon'), array(
               __('Double-check price and location.', 'epsilon'),
               __('Cover photo should be your best shot.', 'epsilon'),
@@ -684,7 +688,7 @@
       'needPrice' => __('Please enter a price, or choose Check with seller.', 'epsilon'),
       'needAttr' => __('Please complete: %s', 'epsilon'),
       'needMakeOther' => __('Please specify make / model.', 'epsilon'),
-      'needPhoto' => __('Please upload at least one photo.', 'epsilon'),
+      'needPhoto' => __('Photos are optional, but recommended for better results.', 'epsilon'),
       'requiredField' => __('Required field', 'epsilon'),
       'needTerms' => __('Please accept the Terms of Use.', 'epsilon'),
       'needRegion' => __('Please select a province / region.', 'epsilon'),

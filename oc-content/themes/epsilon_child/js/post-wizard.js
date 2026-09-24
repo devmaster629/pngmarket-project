@@ -816,13 +816,7 @@
         return ok;
       }
       if (n === 3) {
-        var photoCount = countUploadedPhotos();
-        if (photoCount < 1) {
-          var $photoCard = $form.find('#pngm-step-photos .pngm-post-upload-card, #photos').first();
-          showError($photoCard.length ? $photoCard : $form.find('#photos'), labels.needPhoto || 'Please upload at least one photo.');
-          focusFirstInvalid();
-          return false;
-        }
+        // Photos are optional — sellers can continue / publish with none.
         return true;
       }
       if (n === 4) {
@@ -1033,9 +1027,6 @@
       if ($.trim(title).length < 3) {
         missing.push(labels.needTitle || 'Title required');
       }
-      if (countUploadedPhotos() < 1) {
-        missing.push(labels.needPhoto || 'At least one photo required');
-      }
       if (!$('#regionId').val() && !$('#sRegion').val()) {
         missing.push(labels.needRegion || 'Select a province / region');
       }
@@ -1060,6 +1051,14 @@
         $box.prop('hidden', false).removeAttr('hidden');
       } else {
         $box.prop('hidden', true).attr('hidden', 'hidden');
+      }
+      var $photoTip = $('#pngm-photo-recommend');
+      if ($photoTip.length) {
+        if (countUploadedPhotos() < 1) {
+          $photoTip.prop('hidden', false).removeAttr('hidden');
+        } else {
+          $photoTip.prop('hidden', true).attr('hidden', 'hidden');
+        }
       }
     }
 
