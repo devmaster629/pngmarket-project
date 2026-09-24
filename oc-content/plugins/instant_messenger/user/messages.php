@@ -677,7 +677,7 @@ function imStickChatToBottom($board) {
   el.scrollTop = el.scrollHeight;
 }
 
-function imRefreshMessages(forceBottom) {
+function imRefreshMessages(forceBottom, forceReplace) {
   var url = (typeof pngmImRefreshAjax === 'string' && pngmImRefreshAjax)
     ? pngmImRefreshAjax
     : imMessageUrl;
@@ -717,8 +717,11 @@ function imRefreshMessages(forceBottom) {
         stick = (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
       }
 
+      // forceReplace: after optimistic file upload, counts may already match pending rows.
       if(
-        messagesCount != $board.find('.im-table-row').length
+        forceReplace
+        || $board.find('.im-table-row.is-pending').length > 0
+        || messagesCount != $board.find('.im-table-row').length
         || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $next.find('.im-table-row:last-child .im-date .fa-check').length)
       ) {
         $board.html(content);

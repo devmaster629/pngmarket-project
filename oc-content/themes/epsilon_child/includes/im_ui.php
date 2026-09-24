@@ -663,36 +663,65 @@ function pngm_im_ui_script()
     }
 
     /**
-     * Clone a real outgoing row so plugin CSS (blue bubble + avatar) applies
-     * immediately — our pngm-im-bubble markup was fighting .im-from styles.
+     * Instant outgoing bubble. For file sends, show only a compact "Uploading…"
+     * status (no fake attachment card — that was breaking the board layout).
+     *
+     * @param {string} text
+     * @param {string[]} [fileNames]
      */
-    function appendOptimistic(text) {
+    function appendOptimistic(text, fileNames) {
       var $board = $('.im-table.im-messages').first();
       if (!$board.length) {
         return $();
       }
       $board.find('.pngm-im-board-empty, .im-empty').remove();
 
-      var id = 'pending-' + Date.now();
-      var bodyHtml = escapeHtml(text).replace(/\n/g, '<br>');
-      var $tpl = $board.find('.im-table-row.im-from').last();
+      fileNames = $.isArray(fileNames) ? fileNames : [];
+      text = String(text || '');
+      var uploading = fileNames.length > 0;
+      var id = 'pending-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+      var uploadLabel = '<?php echo osc_esc_js(__('Uploading…', 'epsilon')); ?>';
+      var justNow = '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>';
+      var statusLabel = uploading ? uploadLabel : justNow;
+      var statusHtml = '<span class="pngm-im-upload-status">'
+        + '<i class="fas fa-paperclip" aria-hidden="true"></i> '
+        + escapeHtml(uploadLabel)
+        + '</span>';
+      var bodyHtml = '';
+      if (text && uploading) {
+        bodyHtml = escapeHtml(text).replace(/\n/g, '<br>') + '<div class="pngm-im-upload-status-wrap">' + statusHtml + '</div>';
+      } else if (uploading) {
+        bodyHtml = statusHtml;
+      } else if (text) {
+        bodyHtml = escapeHtml(text).replace(/\n/g, '<br>');
+      }
+
+      var $tpl = $board.find('.im-table-row.im-from').not('.is-pending').last();
+      if (!$tpl.length) {
+        $tpl = $board.find('.im-table-row.im-from').last();
+      }
       var $row;
 
       if ($tpl.length) {
         $row = $tpl.clone(false);
         $row.attr('data-message-id', id);
         $row.removeClass('hidden is-failed').addClass('is-pending');
-        $row.find('.im-message-content .im-align-left, .im-message-content .im-col-24').first().html(bodyHtml);
+        // Strip prior attachments / images so we never inherit a giant media bubble.
+        $row.find('.im-message-extra, a.im-download, a.pngm-im-attach, img.im-att-icon, .pngm-im-upload-status, .pngm-im-upload-status-wrap').remove();
         $row.find('.im-message-content .im-unsafe-info').remove();
-        $row.find('.im-message-extra').removeClass('im-box-gray').addClass('im-box-empty')
-          .find('.im-download, a.im-download').remove();
-        $row.find('.im-date span, .im-date > span, .pngm-im-bubble-meta time').first()
-          .text('<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
-        $row.find('.im-date .fa-check, .im-date .fa-check-double, .pngm-im-bubble-meta .fa-check-double').remove();
+        $row.find('.im-message-content .im-align-left, .im-message-content .im-col-24').first().html(bodyHtml);
         $row.find('.pngm-im-bubble-text').html(bodyHtml);
+        var $bubble = $row.find('.pngm-im-bubble').first();
+        if ($bubble.length && !$row.find('.pngm-im-bubble-text').length) {
+          $bubble.prepend('<div class="pngm-im-bubble-text">' + bodyHtml + '</div>');
+        }
+        $row.find('.im-date span, .im-date > span, .pngm-im-bubble-meta time').first().text(statusLabel);
+        $row.find('.im-date .fa-check, .im-date .fa-check-double, .pngm-im-bubble-meta .fa-check-double').remove();
         $row.find('.im-del-mes-box, .pngm-im-del').remove();
+        if (!$row.find('.im-message-extra').length && !$bubble.length) {
+          $row.append('<div class="im-line im-message-extra im-box-empty"></div>');
+        }
       } else {
-        // First message in the thread — match plugin outgoing markup.
         var avatar = '';
         var $formImg = $('#im-message-form img.im-logged-user-img').first();
         if ($formImg.length) {
@@ -704,7 +733,7 @@ function pngm_im_ui_script()
           +   '<div class="im-line im-name-top">'
           +     '<div class="im-col-12 im-name im-align-left"><strong></strong></div>'
           +     '<div class="im-col-12 im-date im-align-right im-i im-gray">'
-          +       '<span><?php echo osc_esc_js(__('Just now', 'epsilon')); ?></span>'
+          +       '<span>' + escapeHtml(statusLabel) + '</span>'
           +     '</div>'
           +   '</div>'
           +   '<div class="im-line im-message-content"><div class="im-col-24 im-align-left">' + bodyHtml + '</div></div>'
@@ -754,12 +783,20 @@ function pngm_im_ui_script()
       }
 
       sending = true;
-      var $btn = $form.find('button[type="submit"]').prop('disabled', true);
-      var $row = $();
+      var $btn = $form.find('button[type="submit"]').prop('disabled', true).addClass('im-btn-loading');
+      var $rows = $();
+      var fileNames = [];
+      var i;
+      for (i = 0; i < files.length; i += 1) {
+        fileNames.push(files[i] && files[i].name ? String(files[i].name) : 'file');
+      }
 
       try {
-        if (text) {
-          $row = appendOptimistic(text);
+        // One compact "Uploading…" bubble for all files (not one fake card per file).
+        if (hasFile) {
+          $rows = appendOptimistic(text, fileNames);
+        } else {
+          $rows = appendOptimistic(text);
         }
 
         // Clear the composer immediately so the next message can be typed.
@@ -774,7 +811,6 @@ function pngm_im_ui_script()
         data.append('im-message', text);
         data.append('im-action', 'send_message');
         if (hasFile) {
-          var i;
           for (i = 0; i < files.length; i += 1) {
             data.append('im-file[]', files[i]);
           }
@@ -795,33 +831,37 @@ function pngm_im_ui_script()
           dataType: 'json'
         }).done(function (res) {
           if (res && res.ok) {
-            if ($row.length) {
-              $row.attr('data-message-id', res.id || $row.attr('data-message-id'));
-              $row.removeClass('is-pending');
-              markRowTime($row, res.time || '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
+            if ($rows.length) {
+              $rows.removeClass('is-pending');
+              $rows.find('.pngm-im-uploading').remove();
+              $rows.find('a.is-uploading').removeClass('is-uploading');
+              markRowTime($rows, res.time || '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
+              if (res.id) {
+                $rows.last().attr('data-message-id', res.id);
+              }
             }
-            // Only re-pull the board when an attachment needs server HTML.
+            // Swap pending bubbles for real server HTML (links, stored names).
             if (hasFile && typeof window.imRefreshMessages === 'function') {
-              window.setTimeout(function () {
-                window.imRefreshMessages(true);
-              }, 300);
+              window.imRefreshMessages(true, true);
             }
-          } else if ($row.length) {
-            $row.addClass('is-failed');
-            markRowTime($row, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+          } else if ($rows.length) {
+            $rows.addClass('is-failed').removeClass('is-pending');
+            $rows.find('.pngm-im-uploading').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
           }
         }).fail(function () {
-          if ($row.length) {
-            $row.addClass('is-failed');
-            markRowTime($row, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+          if ($rows.length) {
+            $rows.addClass('is-failed').removeClass('is-pending');
+            $rows.find('.pngm-im-uploading').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
           }
         }).always(function () {
           sending = false;
-          $btn.prop('disabled', false);
+          $btn.prop('disabled', false).removeClass('im-btn-loading');
         });
       } catch (err) {
         sending = false;
-        $btn.prop('disabled', false);
+        $btn.prop('disabled', false).removeClass('im-btn-loading');
         if (window.console && console.error) {
           console.error('pngm im send', err);
         }
