@@ -52,6 +52,14 @@
     var $root = $('#pngm_root_cat');
     var $sub = $('#pngm_subcategory');
     var $subWrap = $('.pngm-post-subcat-wrap');
+    var $subList = $('#pngm-post-subcat-list');
+    var $subPicked = $('#pngm-post-subcat-picked');
+    var $subChange = $('#pngm-post-subcat-change');
+    var $sheet = $('#pngm-post-sheet');
+    var $sheetBackdrop = $('#pngm-post-sheet-backdrop');
+    var $sheetTitle = $('#pngm-post-sheet-title');
+    var $sheetBody = $('#pngm-post-sheet-body');
+    var sheetOpen = false;
     var $txNative = $('#sTransaction');
     var $errorList = $('#error_list');
     var $suggestBox = $('#pngm-cat-suggest');
@@ -249,17 +257,130 @@
         return;
       }
       $catId.val(String(leafId));
-      setRoot(rootId, rootName, true);
+      setRoot(rootId, rootName, true, false);
       fillSubcats(rootId, leafId);
       $sub.val(String(leafId));
       syncCatFromSubcategory();
+      updateSubcatPickedUI(leafName || ($sub.find('option:selected').text() || ''));
       $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
       $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + leafId + '"]').addClass('is-selected');
       updateSummary(rootName, leafName || ($sub.find('option:selected').text() || ''));
     }
 
+    function usesPostSubcatSheet() {
+      return !(window.matchMedia && window.matchMedia('(min-width: 768px)').matches);
+    }
+
+    function subcatRows(rootId) {
+      return map[String(rootId)] || map[rootId] || [];
+    }
+
+    function buildSubcatButtons(rootId, selectedLeaf, intoSheet) {
+      var list = subcatRows(rootId);
+      var html = '';
+      list.forEach(function (row) {
+        var selected = selectedLeaf && String(row.id) === String(selectedLeaf);
+        html += '<button type="button" class="pngm-post-subcat-item' + (selected ? ' is-selected' : '') + '"'
+          + ' data-leaf-id="' + row.id + '"'
+          + ' data-leaf-name="' + String(row.name || '').replace(/"/g, '&quot;') + '"'
+          + ' role="option" aria-selected="' + (selected ? 'true' : 'false') + '">'
+          + '<span>' + $('<div/>').text(row.name || '').html() + '</span>'
+          + '</button>';
+      });
+      if (intoSheet) {
+        $sheetBody.html(html || '<p class="pngm-post-muted">' + (labels.selectSub || 'No subcategories') + '</p>');
+      } else {
+        $subList.html(html);
+      }
+    }
+
+    function updateSubcatPickedUI(leafName) {
+      var hasLeaf = !!String($sub.val() || $catId.val() || '').trim();
+      var name = leafName || ($sub.find('option:selected').text() || '').trim();
+      if (hasLeaf && name && name !== (labels.selectSub || 'Select a subcategory')) {
+        $subPicked.text(name).prop('hidden', false).removeAttr('hidden');
+        $subChange.prop('hidden', false).removeAttr('hidden');
+        $subList.addClass('is-collapsed');
+      } else {
+        $subPicked.text('').prop('hidden', true).attr('hidden', 'hidden');
+        $subChange.prop('hidden', true).attr('hidden', 'hidden');
+        $subList.removeClass('is-collapsed');
+      }
+    }
+
+    function closePostSubcatSheet() {
+      if (!sheetOpen) {
+        return;
+      }
+      sheetOpen = false;
+      $sheet.removeClass('is-open').prop('hidden', true).attr('hidden', 'hidden');
+      $sheetBackdrop.removeClass('is-open').prop('hidden', true).attr('hidden', 'hidden');
+      document.body.style.overflow = '';
+    }
+
+    function openPostSubcatSheet(rootId, rootName) {
+      var title = rootName || ($('.pngm-post-cat-card.is-selected').data('root-name') || labels.pickSubcategory || 'Choose a subcategory');
+      $sheetTitle.text(title);
+      buildSubcatButtons(rootId, $sub.val() || $catId.val(), true);
+      $sheet.prop('hidden', false).removeAttr('hidden');
+      $sheetBackdrop.prop('hidden', false).removeAttr('hidden');
+      // Force reflow so the slide-up transition runs.
+      void $sheet[0].offsetHeight;
+      $sheet.addClass('is-open');
+      $sheetBackdrop.addClass('is-open');
+      document.body.style.overflow = 'hidden';
+      sheetOpen = true;
+    }
+
+    function openPostSubcatPicker(rootId, rootName, forceSheet) {
+      rootId = parseInt(rootId, 10) || 0;
+      if (!rootId) {
+        return;
+      }
+      if (forceSheet || usesPostSubcatSheet()) {
+        openPostSubcatSheet(rootId, rootName);
+        return;
+      }
+      closePostSubcatSheet();
+      buildSubcatButtons(rootId, $sub.val() || $catId.val(), false);
+      $subList.removeClass('is-collapsed');
+      if ($sub.val()) {
+        var picked = ($sub.find('option:selected').text() || '').trim();
+        if (picked) {
+          $subPicked.text(picked).prop('hidden', false).removeAttr('hidden');
+        }
+        $subChange.prop('hidden', false).removeAttr('hidden');
+      } else {
+        $subPicked.text('').prop('hidden', true).attr('hidden', 'hidden');
+        $subChange.prop('hidden', true).attr('hidden', 'hidden');
+      }
+    }
+
+    function pickSubcategory(leafId, leafName) {
+      leafId = parseInt(leafId, 10) || 0;
+      if (!leafId) {
+        return;
+      }
+      if (!$sub.find('option[value="' + leafId + '"]').length) {
+        var rootId = parseInt($root.val(), 10) || 0;
+        fillSubcats(rootId, leafId);
+      }
+      $sub.val(String(leafId));
+      syncCatFromSubcategory();
+      $catId.trigger('change');
+      buildSubcatButtons($root.val(), leafId, false);
+      updateSubcatPickedUI(leafName || ($sub.find('option:selected').text() || ''));
+      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+      $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + leafId + '"]').addClass('is-selected');
+      closePostSubcatSheet();
+      clearSubcategoryWarning();
+      clearErrorFor($sub);
+      clearErrorFor($form.find('.pngm-post-cat-grid'));
+      hideFieldError($form.find('.pngm-post-field-error[data-for="catId"]'));
+    }
+
     function fillSubcats(rootId, selectedLeaf) {
-      var list = map[String(rootId)] || map[rootId] || [];
+      var list = subcatRows(rootId);
       $sub.empty().append($('<option/>').val('').text(labels.selectSub || 'Select a subcategory'));
       list.forEach(function (row) {
         $sub.append($('<option/>').val(row.id).text(row.name));
@@ -268,10 +389,15 @@
         $sub.val(String(selectedLeaf));
       }
       $subWrap.toggleClass('is-hidden', !rootId);
+      buildSubcatButtons(rootId, selectedLeaf || $sub.val(), false);
+      updateSubcatPickedUI();
     }
 
-    function setRoot(rootId, rootName, keepLeaf) {
+    function setRoot(rootId, rootName, keepLeaf, openPicker) {
       rootId = parseInt(rootId, 10) || 0;
+      if (typeof openPicker === 'undefined') {
+        openPicker = !keepLeaf;
+      }
       $root.val(rootId || '');
       $('.pngm-post-cat-card').removeClass('is-selected').attr('aria-selected', 'false');
       var $card = $('.pngm-post-cat-card[data-root-id="' + rootId + '"]');
@@ -280,6 +406,7 @@
       if (!keepLeaf) {
         $catId.val('');
         $sub.val('');
+        updateSubcatPickedUI('');
       }
       clearErrorFor($form.find('.pngm-post-cat-grid'));
       $form.find('.pngm-post-cat-grid').removeClass('is-invalid');
@@ -288,6 +415,10 @@
       updateSummary(rootName || ($card.data('root-name') || ''), keepLeaf && $sub.val() ? ($sub.find('option:selected').text() || '') : '—');
       if (keepLeaf && $sub.val()) {
         updateSummary(null, $sub.find('option:selected').text());
+        updateSubcatPickedUI($sub.find('option:selected').text());
+      }
+      if (rootId && openPicker) {
+        openPostSubcatPicker(rootId, rootName || ($card.data('root-name') || ''), false);
       }
     }
 
@@ -974,6 +1105,7 @@
           $catId.val('');
           $sub.val('');
           $subWrap.addClass('is-hidden');
+          updateSubcatPickedUI('');
           clearSubcategoryWarning();
           updateSummary('—', '—');
           showError($catGrid, labels.selectCategory || 'Please select a category.');
@@ -984,8 +1116,10 @@
           if (!leafId) {
             $catId.val('');
             updateSummary(null, '—');
-            showError($sub, labels.selectSub || 'Please select a subcategory.');
+            updateSubcatPickedUI('');
+            showError($subWrap, labels.selectSub || 'Please select a subcategory.');
             $sub.addClass('is-invalid');
+            openPostSubcatPicker(parseInt(rootId, 10), $('.pngm-post-cat-card.is-selected').data('root-name') || '');
             okStep1 = false;
           } else {
             $catId.val(leafId);
@@ -1721,6 +1855,32 @@
     $form.on('click', '.pngm-post-cat-card', function () {
       setRoot($(this).data('root-id'), $(this).data('root-name'), false);
       $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+    });
+
+    $form.on('click', '.pngm-post-subcat-item', function () {
+      var $btn = $(this);
+      pickSubcategory($btn.data('leaf-id'), $btn.data('leaf-name'));
+    });
+
+    $sheetBody.on('click', '.pngm-post-subcat-item', function () {
+      var $btn = $(this);
+      pickSubcategory($btn.data('leaf-id'), $btn.data('leaf-name'));
+    });
+
+    $subChange.on('click', function () {
+      var rootId = parseInt($root.val(), 10) || 0;
+      var rootName = $('.pngm-post-cat-card.is-selected').data('root-name') || '';
+      if (rootId) {
+        openPostSubcatPicker(rootId, rootName, usesPostSubcatSheet());
+      }
+    });
+
+    $sheetBackdrop.on('click', closePostSubcatSheet);
+
+    $(document).on('keydown.pngmPostSubcat', function (event) {
+      if (event.key === 'Escape' || event.keyCode === 27) {
+        closePostSubcatSheet();
+      }
     });
 
     $form.on('click', '.pngm-post-suggest-chip', function () {

@@ -174,8 +174,13 @@
           <p class="pngm-post-field-error is-hidden" data-for="category" hidden><?php _e('Please select a category.', 'epsilon'); ?></p>
 
           <div class="pngm-post-field pngm-post-subcat-wrap<?php echo $cat_path['root'] ? '' : ' is-hidden'; ?>">
-            <label for="pngm_subcategory"><?php _e('Subcategory', 'epsilon'); ?> <span class="req">*</span></label>
-            <select id="pngm_subcategory" class="pngm-post-select">
+            <div class="pngm-post-subcat-head">
+              <label id="pngm-subcat-label"><?php _e('Subcategory', 'epsilon'); ?> <span class="req">*</span></label>
+              <button type="button" class="pngm-post-subcat-change" id="pngm-post-subcat-change" hidden><?php _e('Change', 'epsilon'); ?></button>
+            </div>
+            <p class="pngm-post-subcat-picked" id="pngm-post-subcat-picked" hidden></p>
+            <div class="pngm-post-subcat-list" id="pngm-post-subcat-list" role="listbox" aria-labelledby="pngm-subcat-label"></div>
+            <select id="pngm_subcategory" class="pngm-post-select pngm-post-subcat-native" tabindex="-1" aria-hidden="true">
               <option value=""><?php _e('Select a subcategory', 'epsilon'); ?></option>
             </select>
             <p class="pngm-post-field-error is-hidden" data-for="catId" hidden><?php _e('Please select a subcategory.', 'epsilon'); ?></p>
@@ -665,6 +670,13 @@
     </div>
   </div>
 
+  <div class="pngm-post-sheet-backdrop" id="pngm-post-sheet-backdrop" hidden></div>
+  <div class="pngm-post-sheet" id="pngm-post-sheet" role="dialog" aria-modal="true" aria-labelledby="pngm-post-sheet-title" hidden>
+    <div class="pngm-post-sheet-grip"></div>
+    <strong class="pngm-post-sheet-title" id="pngm-post-sheet-title"></strong>
+    <div class="pngm-post-sheet-body" id="pngm-post-sheet-body"></div>
+  </div>
+
   <script type="application/json" id="pngm-post-subcats"><?php echo json_encode($subcat_map); ?></script>
   <script type="application/json" id="pngm-post-cat-keywords"><?php
     echo json_encode(function_exists('pngm_category_suggest_keywords') ? pngm_category_suggest_keywords() : array(), JSON_UNESCAPED_UNICODE);
@@ -728,6 +740,8 @@
       'publishingHint' => __('Publishing your listing, please wait…', 'epsilon'),
       'suggestedCats' => __('Suggested categories', 'epsilon'),
       'suggestHint' => __('Tap a suggestion or pick a category below.', 'epsilon'),
+      'pickSubcategory' => __('Choose a subcategory', 'epsilon'),
+      'changeSubcategory' => __('Change', 'epsilon'),
     ),
   )); ?></script>
 

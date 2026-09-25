@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.12');
+    define('PNGM_CHILD_VERSION', '2.9.14');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
