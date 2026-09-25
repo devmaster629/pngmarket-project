@@ -65,7 +65,12 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
           <div class="pngm-im-more-menu" hidden>
             <?php if (im_param('remove_thread') == 1) { ?>
               <a href="<?php echo osc_esc_html(osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret))); ?>"
-                 onclick="return confirm('<?php echo osc_esc_js(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>');">
+                 class="pngm-im-remove-link"
+                 data-pngm-confirm-remove="1"
+                 data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>"
+                 data-confirm-message="<?php echo osc_esc_html(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>"
+                 data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>"
+                 data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>">
                 <?php _e('Remove conversation', 'epsilon'); ?>
               </a>
             <?php } ?>

@@ -1161,6 +1161,114 @@ function pngm_im_ui_script()
   }
 
   initOptimisticSend();
+
+  // Visual confirm for remove-thread (replaces browser confirm()).
+  (function () {
+    if (window.pngmImConfirmBound) {
+      return;
+    }
+    window.pngmImConfirmBound = true;
+
+    var pendingHref = '';
+    var lastFocus = null;
+
+    function ensureModal() {
+      var root = document.getElementById('pngm-im-confirm');
+      if (root) {
+        return root;
+      }
+      root = document.createElement('div');
+      root.id = 'pngm-im-confirm';
+      root.className = 'pngm-im-confirm';
+      root.hidden = true;
+      root.innerHTML =
+        '<div class="pngm-im-confirm-backdrop" data-pngm-confirm-dismiss="1"></div>' +
+        '<div class="pngm-im-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="pngm-im-confirm-title" aria-describedby="pngm-im-confirm-msg">' +
+          '<div class="pngm-im-confirm-icon" aria-hidden="true"><i class="fas fa-trash-alt"></i></div>' +
+          '<h3 id="pngm-im-confirm-title" class="pngm-im-confirm-title"></h3>' +
+          '<p id="pngm-im-confirm-msg" class="pngm-im-confirm-msg"></p>' +
+          '<div class="pngm-im-confirm-actions">' +
+            '<button type="button" class="pngm-im-confirm-btn is-cancel" data-pngm-confirm-dismiss="1"></button>' +
+            '<button type="button" class="pngm-im-confirm-btn is-danger" data-pngm-confirm-ok="1"></button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(root);
+      return root;
+    }
+
+    function closeModal() {
+      var root = document.getElementById('pngm-im-confirm');
+      if (!root) {
+        return;
+      }
+      root.hidden = true;
+      document.body.classList.remove('pngm-im-confirm-open');
+      pendingHref = '';
+      if (lastFocus && typeof lastFocus.focus === 'function') {
+        try { lastFocus.focus(); } catch (err) {}
+      }
+      lastFocus = null;
+    }
+
+    function openModal(link) {
+      var root = ensureModal();
+      var title = link.getAttribute('data-confirm-title') || 'Remove conversation';
+      var message = link.getAttribute('data-confirm-message') || 'Are you sure you want to remove this thread? Action cannot be undone!';
+      var okLabel = link.getAttribute('data-confirm-ok') || 'Remove';
+      var cancelLabel = link.getAttribute('data-confirm-cancel') || 'Cancel';
+      pendingHref = link.getAttribute('href') || '';
+      lastFocus = document.activeElement;
+
+      root.querySelector('.pngm-im-confirm-title').textContent = title;
+      root.querySelector('.pngm-im-confirm-msg').textContent = message;
+      root.querySelector('[data-pngm-confirm-ok]').textContent = okLabel;
+      root.querySelector('[data-pngm-confirm-dismiss].pngm-im-confirm-btn').textContent = cancelLabel;
+
+      root.hidden = false;
+      document.body.classList.add('pngm-im-confirm-open');
+      var okBtn = root.querySelector('[data-pngm-confirm-ok]');
+      if (okBtn && typeof okBtn.focus === 'function') {
+        setTimeout(function () { okBtn.focus(); }, 10);
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      var dismiss = e.target.closest ? e.target.closest('[data-pngm-confirm-dismiss]') : null;
+      if (dismiss && document.getElementById('pngm-im-confirm') && !document.getElementById('pngm-im-confirm').hidden) {
+        e.preventDefault();
+        closeModal();
+        return;
+      }
+
+      var ok = e.target.closest ? e.target.closest('[data-pngm-confirm-ok]') : null;
+      if (ok && pendingHref) {
+        e.preventDefault();
+        var href = pendingHref;
+        closeModal();
+        window.location.href = href;
+        return;
+      }
+
+      var link = e.target.closest ? e.target.closest('a[data-pngm-confirm-remove]') : null;
+      if (!link) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      openModal(link);
+    }, true);
+
+    document.addEventListener('keydown', function (e) {
+      var root = document.getElementById('pngm-im-confirm');
+      if (!root || root.hidden) {
+        return;
+      }
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        closeModal();
+      }
+    });
+  })();
 })();
 </script>
     <?php

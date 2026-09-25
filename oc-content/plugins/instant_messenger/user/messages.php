@@ -326,7 +326,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
       <?php } ?>
         
       <?php if(im_param('remove_thread') == 1) { ?>
-        <a href="<?php echo osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret)); ?>" class="im-remove-thread" onclick="return confirm('<?php echo osc_esc_js(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>');" title="<?php echo osc_esc_html(__('Remove this thread, related messages and attachments from your account', 'instant_messenger')); ?>"><i class="fa fa-trash"></i><span><?php _e('Remove', 'instant_messenger'); ?></span></a>
+        <a href="<?php echo osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret)); ?>" class="im-remove-thread" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>" title="<?php echo osc_esc_html(__('Remove this thread, related messages and attachments from your account', 'instant_messenger')); ?>"><i class="fa fa-trash"></i><span><?php _e('Remove', 'instant_messenger'); ?></span></a>
       <?php } ?>
     </div>
     
@@ -562,11 +562,11 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
 <?php if (!empty($pngm_im_split)) { ?>
   </div><!-- .pngm-im-board-pane -->
 </div><!-- .pngm-im-split -->
+<?php } ?>
 <?php
   if (function_exists('pngm_im_ui_script')) {
     pngm_im_ui_script();
   }
-}
 ?>
 
 <?php
