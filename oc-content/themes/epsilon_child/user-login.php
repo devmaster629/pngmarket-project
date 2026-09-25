@@ -32,7 +32,13 @@
             <div class="pngm-auth-field row">
               <label for="email"><?php _e('Email', 'epsilon'); ?></label>
               <div class="pngm-auth-control">
-                <?php UserForm::email_login_text(); ?>
+                <?php
+                  $pngm_login_email = '';
+                  if (class_exists('Session')) {
+                      $pngm_login_email = trim((string) Session::newInstance()->_get('pngm_login_email'));
+                  }
+                  UserForm::email_login_text($pngm_login_email !== '' ? array('s_email' => $pngm_login_email) : null);
+                ?>
                 <span class="pngm-auth-status" aria-hidden="true"></span>
               </div>
             </div>
@@ -96,10 +102,99 @@
       }
 
       $email.on('blur input', function () { mark($(this)); });
+      if ($email.val()) {
+        mark($email);
+        $pass.trigger('focus');
+      }
       $pass.on('blur input', function () {
         var $field = $(this).closest('.pngm-auth-field');
         $field.removeClass('is-ok is-error');
         if ($(this).val().length >= 1) $field.addClass('is-ok');
+      });
+
+      var failMsg = '<?php echo osc_esc_js(__('Could not sign in. Please check your email and password.', 'epsilon')); ?>';
+      var $form = $('#pngm-login-form');
+
+      function isLoginPage(url, html) {
+        try {
+          var u = new URL(url, window.location.href);
+          var page = u.searchParams.get('page') || '';
+          var action = u.searchParams.get('action') || '';
+          if (page === 'login' && action !== 'login_post') {
+            return true;
+          }
+          if (/\/login\/?$/.test(u.pathname)) {
+            return true;
+          }
+        } catch (err) {}
+        return /id=["']user-login["']/.test(html || '');
+      }
+
+      function errorTexts(html) {
+        var doc = new DOMParser().parseFromString(html || '', 'text/html');
+        var nodes = doc.querySelectorAll('.flashmessage-error');
+        var texts = [];
+        Array.prototype.forEach.call(nodes, function (el) {
+          var clone = el.cloneNode(true);
+          var closer = clone.querySelector('.ico-close, .close');
+          if (closer && closer.parentNode) {
+            closer.parentNode.removeChild(closer);
+          }
+          var text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+          if (text && texts.indexOf(text) === -1) {
+            texts.push(text);
+          }
+        });
+        return texts;
+      }
+
+      $form.on('submit', function (e) {
+        var formEl = this;
+        if (formEl.checkValidity && !formEl.checkValidity()) {
+          return;
+        }
+        e.preventDefault();
+        if ($form.data('pngm-busy')) {
+          return;
+        }
+        $form.data('pngm-busy', 1);
+        var $btn = $form.find('.pngm-auth-submit');
+        $btn.prop('disabled', true);
+
+        fetch(formEl.action, {
+          method: 'POST',
+          body: new FormData(formEl),
+          credentials: 'same-origin',
+          redirect: 'follow'
+        }).then(function (res) {
+          return res.text().then(function (html) {
+            return { url: res.url, html: html };
+          });
+        }).then(function (payload) {
+          if (!isLoginPage(payload.url, payload.html)) {
+            window.location.href = payload.url || window.location.href;
+            return;
+          }
+          var errors = errorTexts(payload.html);
+          if (!errors.length) {
+            errors = [failMsg];
+          }
+          errors.forEach(function (msg) {
+            if (typeof window.pngmShowToast === 'function') {
+              window.pngmShowToast(msg, true);
+            }
+          });
+          if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
+            try { window.grecaptcha.reset(); } catch (err) {}
+          }
+          $pass.trigger('focus');
+          $form.data('pngm-busy', 0);
+          $btn.prop('disabled', false);
+        }).catch(function () {
+          $form.data('pngm-busy', 0);
+          $btn.prop('disabled', false);
+          formEl.submit();
+        });
       });
     });
   })(jQuery);

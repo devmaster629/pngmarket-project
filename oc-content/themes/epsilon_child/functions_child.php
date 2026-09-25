@@ -1465,6 +1465,25 @@ function pngm_require_recaptcha_on_contact()
     // Contact controller verifies once — do not consume the token here.
 }
 
+/**
+ * Keep the email/username after a failed login so the seller only retypes the password.
+ */
+function pngm_login_remember_email()
+{
+    $email = trim((string) Params::getParam('email'));
+    if ($email === '') {
+        return;
+    }
+    Session::newInstance()->_set('pngm_login_email', $email);
+}
+
+function pngm_login_forget_email()
+{
+    Session::newInstance()->_drop('pngm_login_email');
+}
+
+osc_add_hook('before_validating_login', 'pngm_login_remember_email', 0);
+osc_add_hook('before_login', 'pngm_login_forget_email', 1);
 osc_add_hook('before_validating_login', 'pngm_require_recaptcha_on_login');
 osc_add_hook('before_user_register', 'pngm_require_recaptcha_on_register');
 osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
