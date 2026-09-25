@@ -77,9 +77,10 @@ function pngm_production_enforce_prefs()
     pngm_production_set('notify_new_user', '1', 'BOOLEAN');
     pngm_production_set('notify_new_item', '1', 'BOOLEAN');
 
-    // Core contact form matches the theme: guests cannot message sellers.
+    // Listing contact form still requires an account. Phone and WhatsApp stay public.
     pngm_production_set('reg_user_can_contact', '1', 'BOOLEAN');
-    pngm_production_set('reg_user_can_see_phone', '1', 'BOOLEAN');
+    // Guests can see seller phone numbers, the same as signed-in users.
+    pngm_production_set('reg_user_can_see_phone', '0', 'BOOLEAN');
 
     // Publish immediately — no email/Validate step. Redirect to the live ad.
     pngm_production_set('moderate_items', (string) PNGM_MODERATE_FIRST_ITEMS, 'INTEGER');

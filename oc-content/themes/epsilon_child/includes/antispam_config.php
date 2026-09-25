@@ -117,9 +117,9 @@ function pngm_antispam_ensure_posting_prefs()
         pngm_antispam_set_osclass('reg_user_post', '1', 'BOOLEAN');
     }
 
-    // Phone / contact details require login (Osclass core flag used by Epsilon helpers).
-    if ((string) osc_get_preference('reg_user_can_see_phone') !== '1') {
-        pngm_antispam_set_osclass('reg_user_can_see_phone', '1', 'BOOLEAN');
+    // Guests can see seller phone numbers, the same as signed-in users.
+    if ((string) osc_get_preference('reg_user_can_see_phone') !== '0') {
+        pngm_antispam_set_osclass('reg_user_can_see_phone', '0', 'BOOLEAN');
     }
 
     // Listing wait between publishes (0 = no timing limit).

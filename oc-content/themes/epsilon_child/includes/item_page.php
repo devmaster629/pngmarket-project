@@ -11,13 +11,13 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 
 /**
  * Whether the current viewer may see seller contact channels (phone, WhatsApp, chat).
- * Guests must log in first — no contact digits or messaging for logged-out users.
+ * Guests see the same contact details as signed-in users.
  *
  * @return bool
  */
 function pngm_viewer_can_contact_seller()
 {
-    return function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in();
+    return true;
 }
 
 /**
@@ -538,7 +538,7 @@ function pngm_seller_contact_channels()
 
 /**
  * Render listing contact actions: Call | WhatsApp | Chat (mockup row).
- * Guests see nothing — no contact details and no login CTA in this block.
+ * Guests see the same contact details as signed-in users.
  */
 function pngm_render_seller_contact_buttons()
 {
