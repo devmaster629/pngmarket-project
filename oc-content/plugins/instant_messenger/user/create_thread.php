@@ -17,12 +17,11 @@ if (osc_is_web_user_logged_in()) {
   $from_user_email = osc_esc_html(Params::getParam('im-from-user-email') <> '' ? Params::getParam('im-from-user-email') : '');
 }
 
-if(im_param('one_thread_per_user') == 1) {
-  $check_item_id = (in_array($result['mode'], array('item', 'user_redirect')) ? $result['item_id'] : 0);
-  $existing = im_find_existing_thread($from_user_id, $from_user_email, $result['to_user_id'], $result['to_user_email'], $check_item_id);
-  if($existing !== false && isset($existing['i_thread_id'])) {
-    im_redirect_to_thread($existing, (osc_is_web_user_logged_in() ? 'n' : $existing['s_from_secret']));
-  }
+// Always reuse buyer+listing (or one-thread profile) conversation — skip Start page.
+$check_item_id = (in_array($result['mode'], array('item', 'user_redirect')) ? (int)$result['item_id'] : 0);
+$existing = im_find_existing_thread($from_user_id, $from_user_email, $result['to_user_id'], $result['to_user_email'], $check_item_id);
+if($existing !== false && isset($existing['i_thread_id'])) {
+  im_redirect_to_thread($existing, (osc_is_web_user_logged_in() ? 'n' : $existing['s_from_secret']));
 }
 
 $store_item_id = null;
@@ -30,7 +29,7 @@ $form_url = '';
 $hook_item_id = 0;
 
 if($result['mode'] == 'item' || $result['mode'] == 'user_redirect') {
-  if($result['mode'] == 'user_redirect' && (int)$result['user_id'] > 0) {
+  if($result['mode'] == 'user_redirect' && (int)$result['user_id'] > 0 && (int)$result['item_id'] <= 0) {
     $form_url = im_create_thread_url(array('user_id' => $result['user_id']));
   } else {
     $form_url = im_create_thread_url(array('item_id' => $result['item_id']));
@@ -42,9 +41,8 @@ if($result['mode'] == 'item' || $result['mode'] == 'user_redirect') {
   $hook_item_id = 0;
 }
 
-if(im_param('one_thread_per_user') == 1 && (int)$result['to_user_id'] > 0) {
-  $store_item_id = null;
-}
+// Keep listing id on create so inbox/chat can show which listing the chat is about.
+// (Do not clear fk_i_item_id when one_thread_per_user is enabled.)
 
 $target_details = im_get_user_details($result['to_user_id'], $result['to_user_name'], $result['to_user_email']);
 
@@ -59,6 +57,12 @@ if(Params::getParam('im-action') == 'create_thread') {
   if(im_check_block($result['to_user_id'], $from_user_email) == 0) {
     header('Location: ' . osc_route_url('im-threads'));
     exit;
+  }
+
+  // Block duplicate insert on double-submit / race.
+  $existing_post = im_find_existing_thread($from_user_id, $from_user_email, $result['to_user_id'], $result['to_user_email'], $check_item_id);
+  if($existing_post !== false && isset($existing_post['i_thread_id'])) {
+    im_redirect_to_thread($existing_post, (osc_is_web_user_logged_in() ? 'n' : $existing_post['s_from_secret']));
   }
 
   $title = (im_param('autogenerate_title') == 1 ? '' : trim(osc_esc_html(Params::getParam('im-title'))));
@@ -156,25 +160,4 @@ if(Params::getParam('im-action') == 'create_thread') {
       </div>
     <?php } ?>
   </form>
-
-  <?php if($result['mode'] == 'item' && im_param('one_thread_per_user') != 1) { ?>
-    <?php $threads = ModelIM::newInstance()->getThreadsByItemId($result['item_id'], osc_logged_user_id()); ?>
-
-    <?php if(is_array($threads) && count($threads) > 0) { ?>
-      <div class="im-threads-exist im-body">
-        <h3 class="im-head"><?php _e('You have already contacted seller on this listing, you may want to continue in existing conversation', 'instant_messenger'); ?></h3>
-
-        <?php foreach($threads as $t) { ?>
-          <?php $time_diff = im_get_time_diff($t['d_datetime']); ?>
-
-          <a class="im-row im-has-tooltip-left" href="<?php echo osc_route_url('im-messages', array('thread-id' => $t['i_thread_id'], 'secret' => 'n')); ?>" title="<?php _e('Open conversation', 'instant_messenger'); ?>">
-            <div class="im-col-12 im-b im-title"><?php echo ($t['s_title'] <> '' ? osc_highlight($t['s_title'], 40) : __('No subject', 'instant_messenger')); ?></div>
-            <div class="im-col-4 im-from-to"><?php echo ($t['i_from_user_id'] == osc_logged_user_id() ? __('to', 'instant_messenger') : __('from', 'instant_messenger')); ?> <strong><?php echo $t['s_to_user_name']; ?></strong></div>
-            <div class="im-col-4 im-pms im-align-center"><?php echo $t['i_count'] . ' ' . ($t['i_count'] == 1 ? __('pm', 'instant_messenger') : __('pms', 'instant_messenger')); ?></div>
-            <div class="im-col-4 im-time im-align-right"><?php echo $time_diff; ?></div>
-          </a>
-        <?php } ?>
-      </div>
-    <?php } ?>
-  <?php } ?>
 </div>

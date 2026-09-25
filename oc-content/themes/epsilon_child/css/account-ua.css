@@ -3889,7 +3889,8 @@ body.pngm-ua-messages .pngm-im .im-vertical {
   gap: 24px;
   align-items: stretch;
   width: 100%;
-  min-height: 640px;
+  min-height: 0;
+  height: 100%;
 }
 
 .pngm-im-list-pane,
@@ -3937,15 +3938,19 @@ body.pngm-ua-messages .pngm-im .im-vertical {
 
 .pngm-im-board-pane > .im-file-messages {
   float: none !important;
-  display: block !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   max-width: 100%;
+  min-height: 0 !important;
+  height: 100%;
   margin: 0;
   padding: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden !important;
 }
 
 .pngm-im-board-pane .im-alt-head {
@@ -4133,6 +4138,95 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   font-size: 15px;
   font-weight: 800;
   color: #2e7d32;
+}
+
+.pngm-im-convo-listing-thumb {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 2px solid #fff;
+  background: #f4f6f8;
+  box-shadow: 0 1px 2px rgba(22, 32, 42, 0.12);
+  z-index: 2;
+}
+
+.pngm-im-convo-listing-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.pngm-im-convo-listing {
+  display: block;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #2e7d32;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 1px 0 2px;
+}
+
+.pngm-im-listing-card {
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+
+.pngm-im-listing-card-link {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f9fb;
+  border: 1px solid #eef1f4;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+.pngm-im-listing-card-thumb {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e8edf2;
+}
+
+.pngm-im-listing-card-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pngm-im-listing-card-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pngm-im-listing-card-meta .im-item-title {
+  font-weight: 700;
+  color: #16202a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pngm-im-listing-card-meta .im-item-price {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .pngm-im-convo-body {
@@ -4432,6 +4526,227 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   gap: 10px;
 }
 
+/* ==========================================================================
+   Chat bubbles — Telegram-like format, openant blue for sent
+   ========================================================================== */
+body.pngm-ua-messages .im-messages .im-table-row,
+body.im-chat-page .im-messages .im-table-row {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  float: none !important;
+  clear: both !important;
+  width: fit-content !important;
+  max-width: min(78%, 520px) !important;
+  min-width: 88px !important;
+  margin: 0 0 10px !important;
+  padding: 8px 12px 5px !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  box-shadow: 0 1px 2px rgba(22, 32, 42, 0.08) !important;
+  overflow: visible !important;
+}
+
+/* Sent (right) — Telegram mint green */
+body.pngm-ua-messages .im-messages .im-table-row.im-from,
+body.im-chat-page .im-messages .im-table-row.im-from {
+  align-self: flex-end !important;
+  margin-left: auto !important;
+  margin-right: 52px !important;
+  background: #effdde !important;
+  color: #16202a !important;
+  border-radius: 14px 14px 4px 14px !important;
+}
+
+/* Received (left) — original light gray */
+body.pngm-ua-messages .im-messages .im-table-row.im-to,
+body.im-chat-page .im-messages .im-table-row.im-to {
+  align-self: flex-start !important;
+  margin-left: 52px !important;
+  margin-right: auto !important;
+  background: #e8e8e8 !important;
+  color: #16202a !important;
+  border-radius: 14px 14px 14px 4px !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-message-content,
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-message-content a,
+body.im-chat-page .im-messages .im-table-row.im-from .im-message-content,
+body.im-chat-page .im-messages .im-table-row.im-from .im-message-content a,
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-message-content,
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-message-content a,
+body.im-chat-page .im-messages .im-table-row.im-to .im-message-content,
+body.im-chat-page .im-messages .im-table-row.im-to .im-message-content a {
+  color: #16202a !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row > .im-line,
+body.im-chat-page .im-messages .im-table-row > .im-line {
+  float: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  text-align: left !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-message-content,
+body.im-chat-page .im-messages .im-table-row .im-message-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  order: 1;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-message-content .im-col-24,
+body.pngm-ua-messages .im-messages .im-table-row .pngm-im-bubble-body,
+body.im-chat-page .im-messages .im-table-row .im-message-content .im-col-24,
+body.im-chat-page .im-messages .im-table-row .pngm-im-bubble-body {
+  float: none !important;
+  display: block !important;
+  width: auto !important;
+  max-width: 100% !important;
+  font-size: 14.5px !important;
+  line-height: 1.35 !important;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-message-extra,
+body.im-chat-page .im-messages .im-table-row .im-message-extra {
+  order: 2;
+  margin-top: 6px !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-message-extra.im-box-empty,
+body.im-chat-page .im-messages .im-table-row .im-message-extra.im-box-empty {
+  display: none !important;
+}
+
+/* Time + ticks inside bubble (Telegram format) */
+body.pngm-ua-messages .im-messages .im-table-row .im-name-top,
+body.pngm-ua-messages .im-messages .im-table-row .pngm-im-bubble-meta,
+body.im-chat-page .im-messages .im-table-row .im-name-top,
+body.im-chat-page .im-messages .im-table-row .pngm-im-bubble-meta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  order: 3;
+  margin: 3px 0 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  background: transparent !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-name-top .im-name,
+body.pngm-ua-messages .im-messages .im-table-row .pngm-im-bubble-meta .im-name,
+body.im-chat-page .im-messages .im-table-row .im-name-top .im-name,
+body.im-chat-page .im-messages .im-table-row .pngm-im-bubble-meta .im-name {
+  display: none !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-name-top .im-date,
+body.pngm-ua-messages .im-messages .im-table-row .pngm-im-bubble-meta .im-date,
+body.im-chat-page .im-messages .im-table-row .im-name-top .im-date,
+body.im-chat-page .im-messages .im-table-row .pngm-im-bubble-meta .im-date,
+body.pngm-ua-messages .im-messages .im-table-row .im-date,
+body.im-chat-page .im-messages .im-table-row .im-date {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  float: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  opacity: 1 !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-date,
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-date time,
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-date i,
+body.im-chat-page .im-messages .im-table-row.im-from .im-date,
+body.im-chat-page .im-messages .im-table-row.im-from .im-date time,
+body.im-chat-page .im-messages .im-table-row.im-from .im-date i {
+  color: #68b279 !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-date,
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-date time,
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-date i,
+body.im-chat-page .im-messages .im-table-row.im-to .im-date,
+body.im-chat-page .im-messages .im-table-row.im-to .im-date time,
+body.im-chat-page .im-messages .im-table-row.im-to .im-date i {
+  color: #8a94a0 !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-date i,
+body.im-chat-page .im-messages .im-table-row .im-date i {
+  font-size: 11px !important;
+  margin: 0 !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-date .fa-check-double,
+body.im-chat-page .im-messages .im-table-row .im-date .fa-check-double {
+  letter-spacing: -2px;
+}
+
+/* Avatar beside bubble */
+body.pngm-ua-messages .im-messages .im-table-row .im-horizontal,
+body.im-chat-page .im-messages .im-table-row .im-horizontal {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row.im-from .im-horizontal,
+body.im-chat-page .im-messages .im-table-row.im-from .im-horizontal {
+  right: -46px !important;
+  left: auto !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row.im-to .im-horizontal,
+body.im-chat-page .im-messages .im-table-row.im-to .im-horizontal {
+  left: -46px !important;
+  right: auto !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-horizontal .right,
+body.im-chat-page .im-messages .im-table-row .im-horizontal .right {
+  display: block !important;
+  width: 36px !important;
+  height: 36px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  background: #e8edf2 !important;
+  box-shadow: none !important;
+}
+
+body.pngm-ua-messages .im-messages .im-table-row .im-horizontal .right img,
+body.im-chat-page .im-messages .im-table-row .im-horizontal .right img {
+  width: 36px !important;
+  height: 36px !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+}
+
 .pngm-im-bubble-row {
   display: flex !important;
   float: none !important;
@@ -4451,22 +4766,24 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 }
 
 .pngm-im-bubble {
+  display: inline-block;
+  width: fit-content;
   max-width: min(78%, 420px);
-  padding: 10px 12px;
+  padding: 8px 12px 5px;
   border-radius: 14px;
   box-sizing: border-box;
 }
 
-.pngm-im-bubble-row.is-theirs .pngm-im-bubble {
-  background: #eef1f4;
-  color: #16202a;
-  border-bottom-left-radius: 4px;
-}
-
 .pngm-im-bubble-row.is-mine .pngm-im-bubble {
-  background: #e8f5e9;
+  background: #effdde;
   color: #16202a;
   border-bottom-right-radius: 4px;
+}
+
+.pngm-im-bubble-row.is-theirs .pngm-im-bubble {
+  background: #e8e8e8;
+  color: #16202a;
+  border-bottom-left-radius: 4px;
 }
 
 .pngm-im-bubble-text {
@@ -4546,7 +4863,7 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 
 .pngm-im-composer {
   display: flex !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
   align-items: flex-end;
   gap: 8px;
   float: none !important;
@@ -4638,6 +4955,27 @@ p#pngm-composer-tip,
   margin-top: 0 !important;
   border-top: 0 !important;
   order: 10;
+}
+
+.pngm-composer-dock > .pngm-composer-files,
+.pngm-composer-dock > .im-file-list,
+.pngm-composer-dock > #im-file-list {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  order: 12;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 4px 14px 0 !important;
+  box-sizing: border-box !important;
+  float: none !important;
+}
+
+.pngm-composer-dock > .pngm-composer-files[hidden],
+.pngm-composer-dock > .im-file-list[hidden],
+.pngm-composer-dock > #im-file-list[hidden] {
+  display: none !important;
 }
 
 /* File chips: no leftover avatar gutter on the left */
@@ -4847,10 +5185,18 @@ body.im-chat-page #im-message-form #im-file {
   body.im-chat-page #im-message-form.pngm-im-composer,
   body.im-chat-page #im-message-form {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     flex-direction: row !important;
     align-items: flex-end !important;
     gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  /* File chips still take a full second row when present */
+  body.im-chat-page #im-message-form .im-file-list,
+  body.im-chat-page #im-message-form #im-file-list {
+    flex: 1 0 100% !important;
+    width: 100% !important;
   }
 
   body.im-chat-page #im-message-form > button.im-button-green.pngm-im-send,
@@ -4869,6 +5215,8 @@ body.im-chat-page #im-message-form #im-file {
     float: none !important;
     z-index: 5 !important;
     pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   body.im-chat-page #im-message-form .pngm-im-attach-btn,

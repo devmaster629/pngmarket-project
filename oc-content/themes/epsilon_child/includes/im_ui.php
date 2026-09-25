@@ -216,7 +216,25 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
         $avatar = function_exists('im_profile_img_url') ? im_profile_img_url($peer_id, $peer_name) : '';
         $url = osc_route_url('im-messages', array('thread-id' => $thread_id, 'secret' => 'n'));
 
-        $hay = strtolower($peer_name . ' ' . $snippet . ' ' . (string) @$t['s_title']);
+        $item_id = isset($t['fk_i_item_id']) ? (int) $t['fk_i_item_id'] : 0;
+        $listing_title = '';
+        $listing_thumb = '';
+        $listing_url = '';
+        if ($item_id > 0) {
+            $item_row = function_exists('osc_get_item_row') ? osc_get_item_row($item_id) : false;
+            if (is_array($item_row) && !empty($item_row['pk_i_id'])) {
+                $hero = pngm_im_listing_hero($item_row);
+                $listing_title = (string) @$hero['title'];
+                $listing_thumb = (string) @$hero['thumb'];
+                $listing_url = (string) @$hero['url'];
+            }
+            if ($listing_title === '' && !empty($t['s_title'])) {
+                // Thread subject often "Inquiry: {listing title}"
+                $listing_title = preg_replace('/^Inquiry:\s*/i', '', (string) $t['s_title']);
+            }
+        }
+
+        $hay = strtolower($peer_name . ' ' . $snippet . ' ' . $listing_title . ' ' . (string) @$t['s_title']);
 
         $out[] = array(
             'thread_id' => $thread_id,
@@ -232,10 +250,42 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             'search_hay' => $hay,
             'flagged' => ((int) @$t['i_flag'] === 1),
             'offer' => (!empty($t['i_offer_id'])),
+            'item_id' => $item_id,
+            'listing_title' => $listing_title,
+            'listing_thumb' => $listing_thumb,
+            'listing_url' => $listing_url,
         );
     }
 
     return $out;
+}
+
+/**
+ * Compact listing card for chat header (thumb + title + link).
+ *
+ * @param array $item
+ * @return string
+ */
+function pngm_im_render_listing_card($item)
+{
+    $hero = pngm_im_listing_hero(is_array($item) ? $item : array());
+    if (empty($hero['ok'])) {
+        return '';
+    }
+
+    $html  = '<div class="im-row im-item-context im-body pngm-im-listing-card">';
+    $html .= '<a class="pngm-im-listing-card-link" href="' . osc_esc_html($hero['url']) . '" target="_blank" rel="noopener">';
+    if ($hero['thumb'] !== '') {
+        $html .= '<span class="pngm-im-listing-card-thumb"><img src="' . osc_esc_html($hero['thumb']) . '" alt="" width="56" height="56" loading="lazy" /></span>';
+    }
+    $html .= '<span class="pngm-im-listing-card-meta">';
+    $html .= '<span class="im-line im-item-label">' . osc_esc_html(__('Related listing', 'instant_messenger')) . '</span>';
+    $html .= '<span class="im-line im-item-title">' . osc_esc_html($hero['title']) . '</span>';
+    if ($hero['price'] !== '') {
+        $html .= '<span class="im-line im-item-price">' . osc_esc_html($hero['price']) . '</span>';
+    }
+    $html .= '</span></a></div>';
+    return $html;
 }
 
 /**
@@ -356,6 +406,11 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
               <?php } else { ?>
                 <span class="pngm-im-convo-initials"><?php echo osc_esc_html($row['initials']); ?></span>
               <?php } ?>
+              <?php if (!empty($row['listing_thumb'])) { ?>
+                <span class="pngm-im-convo-listing-thumb" aria-hidden="true">
+                  <img src="<?php echo osc_esc_html($row['listing_thumb']); ?>" alt="" width="20" height="20" loading="lazy" />
+                </span>
+              <?php } ?>
             </span>
             <span class="pngm-im-convo-body">
               <span class="pngm-im-convo-top">
@@ -364,6 +419,9 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
                   <time><?php echo osc_esc_html($row['time']); ?></time>
                 <?php } ?>
               </span>
+              <?php if (!empty($row['listing_title'])) { ?>
+                <span class="pngm-im-convo-listing"><?php echo osc_esc_html($row['listing_title']); ?></span>
+              <?php } ?>
               <span class="pngm-im-convo-bottom">
                 <em><?php echo osc_esc_html($row['snippet']); ?></em>
                 <?php
@@ -715,8 +773,9 @@ function pngm_im_ui_script()
         if ($bubble.length && !$row.find('.pngm-im-bubble-text').length) {
           $bubble.prepend('<div class="pngm-im-bubble-text">' + bodyHtml + '</div>');
         }
-        $row.find('.im-date span, .im-date > span, .pngm-im-bubble-meta time').first().text(statusLabel);
+        $row.find('.im-date time, .im-date span, .im-date > span, .pngm-im-bubble-meta time').first().text(statusLabel);
         $row.find('.im-date .fa-check, .im-date .fa-check-double, .pngm-im-bubble-meta .fa-check-double').remove();
+        $row.find('.im-date').append('<i class="fas fa-check" aria-hidden="true"></i>');
         $row.find('.im-del-mes-box, .pngm-im-del').remove();
         if (!$row.find('.im-message-extra').length && !$bubble.length) {
           $row.append('<div class="im-line im-message-extra im-box-empty"></div>');
@@ -730,14 +789,15 @@ function pngm_im_ui_script()
         $row = $(
           '<div class="im-table-row im-from is-pending" data-message-id="' + id + '">'
           +   '<div class="im-horizontal"><span class="left"></span><span class="right">' + avatar + '</span></div>'
-          +   '<div class="im-line im-name-top">'
-          +     '<div class="im-col-12 im-name im-align-left"><strong></strong></div>'
+          +   '<div class="im-line im-message-content"><div class="im-col-24 im-align-left pngm-im-bubble-body">' + bodyHtml + '</div></div>'
+          +   '<div class="im-line im-message-extra im-box-empty"></div>'
+          +   '<div class="im-line im-name-top pngm-im-bubble-meta">'
+          +     '<div class="im-col-12 im-name im-align-left"></div>'
           +     '<div class="im-col-12 im-date im-align-right im-i im-gray">'
-          +       '<span>' + escapeHtml(statusLabel) + '</span>'
+          +       '<time>' + escapeHtml(statusLabel) + '</time>'
+          +       '<i class="fas fa-check" aria-hidden="true"></i>'
           +     '</div>'
           +   '</div>'
-          +   '<div class="im-line im-message-content"><div class="im-col-24 im-align-left">' + bodyHtml + '</div></div>'
-          +   '<div class="im-line im-message-extra im-box-empty"></div>'
           + '</div>'
         );
       }
@@ -751,7 +811,7 @@ function pngm_im_ui_script()
       if (!$row || !$row.length) {
         return;
       }
-      var $t = $row.find('.im-date span, .pngm-im-bubble-meta time').first();
+      var $t = $row.find('.im-date time, .im-date span, .pngm-im-bubble-meta time').first();
       if ($t.length) {
         $t.text(label);
       }
@@ -936,16 +996,29 @@ function pngm_im_ui_script()
           dock.appendChild(formEl);
         }
 
+        // Keep attach | textarea | send on one nowrap row; file chips live below in the dock.
+        var fileList = formEl.querySelector('.im-file-list, #im-file-list');
+        if (fileList && fileList.parentNode === formEl) {
+          if (formEl.nextSibling) {
+            dock.insertBefore(fileList, formEl.nextSibling);
+          } else {
+            dock.appendChild(fileList);
+          }
+          fileList.classList.add('pngm-composer-files');
+        }
+
         var tip = document.getElementById('pngm-composer-tip');
         if (!tip) {
           tip = document.createElement('p');
           tip.id = 'pngm-composer-tip';
           tip.className = 'pngm-composer-tip';
         }
-        // Keep tip BELOW the input (after the form), same on desktop + mobile.
-        if (tip.parentNode !== dock || formEl.nextSibling !== tip) {
-          if (formEl.nextSibling) {
-            dock.insertBefore(tip, formEl.nextSibling);
+        // Keep tip BELOW the input (after the form / files), same on desktop + mobile.
+        var afterFiles = dock.querySelector('.pngm-composer-files, .im-file-list, #im-file-list');
+        var tipAnchor = afterFiles && afterFiles.parentNode === dock ? afterFiles : formEl;
+        if (tip.parentNode !== dock || tipAnchor.nextSibling !== tip) {
+          if (tipAnchor.nextSibling) {
+            dock.insertBefore(tip, tipAnchor.nextSibling);
           } else {
             dock.appendChild(tip);
           }
@@ -980,6 +1053,20 @@ function pngm_im_ui_script()
         tip.style.setProperty('text-indent', '0', 'important');
         tip.style.setProperty('transform', 'none', 'important');
         tip.style.setProperty('clip-path', 'none', 'important');
+      }
+
+      function pinComposerAboveKeyboard() {
+        if (!window.visualViewport) {
+          return;
+        }
+        var vv = window.visualViewport;
+        var kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        // Ignore tiny diffs from browser chrome; only react to real keyboard overlap.
+        if (kb < 40) {
+          kb = 0;
+        }
+        document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
+        document.documentElement.classList.toggle('pngm-kb-open', kb > 0);
       }
 
       function enhanceAttachmentLinks($root) {
@@ -1024,6 +1111,7 @@ function pngm_im_ui_script()
         if (typeof window.pngmLayoutChat === 'function') {
           window.pngmLayoutChat({ pinBottom: true });
         }
+        pinComposerAboveKeyboard();
       }
 
       // Replace plugin Ctrl+Enter=send with Enter=send / Ctrl+Enter=newline.
@@ -1045,6 +1133,20 @@ function pngm_im_ui_script()
       });
 
       wireComposer($('#im-message-form'));
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', pinComposerAboveKeyboard);
+        window.visualViewport.addEventListener('scroll', pinComposerAboveKeyboard);
+      }
+      window.addEventListener('focusin', function (e) {
+        if (e.target && (e.target.id === 'im-message' || (e.target.classList && e.target.classList.contains('im-textarea')))) {
+          setTimeout(pinComposerAboveKeyboard, 50);
+          setTimeout(pinComposerAboveKeyboard, 300);
+        }
+      });
+      window.addEventListener('focusout', function () {
+        setTimeout(pinComposerAboveKeyboard, 100);
+      });
 
       // Re-apply after AJAX board swaps.
       var prevAfter = window.pngmImAfterBoardSwap;

@@ -296,7 +296,8 @@ function im_manage_contact_seller($aItem) {
       im_redirect_to_thread($existing, $existing['s_from_secret']);
     }
 
-    $store_item_id = (im_param('one_thread_per_user') == 1 && (int)$to_user_id > 0 ? null : $item_id);
+    // Always keep listing id so the chat stays tied to this item.
+    $store_item_id = $item_id;
     $thread_id = ModelIM::newInstance()->createThread($store_item_id, $from_user_id, $from_user_name, $from_user_email, $to_user_id, $to_user_name, $to_user_email, $title, 0);
     $thread = ModelIM::newInstance()->getThreadById($thread_id); 
 

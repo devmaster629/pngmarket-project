@@ -306,15 +306,13 @@ function im_thread_context($thread, $secret = '') {
 
 
 // FIND EXISTING THREAD BEFORE CREATE
+// Prefer one thread per buyer + listing when item_id is known (keeps listing context).
+// Fall back to one_thread_per_user only for profile contacts with no listing.
 function im_find_existing_thread($from_user_id, $from_user_email, $to_user_id, $to_user_email, $item_id = null) {
   $from_user_id = (int)$from_user_id;
   $to_user_id = (int)$to_user_id;
   $item_id = (int)$item_id;
   $one_thread = (im_param('one_thread_per_user') == 1);
-
-  if($one_thread && $from_user_id > 0 && $to_user_id > 0) {
-    return ModelIM::newInstance()->getThreadBetweenUsers($from_user_id, $to_user_id);
-  }
 
   if($item_id > 0) {
     return ModelIM::newInstance()->getThreadByFromUserAndItem($from_user_id, $from_user_email, $item_id);
@@ -556,11 +554,23 @@ function im_contact_button($item = NULL, $link_only = false, $options = array())
       $meta = 'onclick="return false;"';
       $link = '#';
 
-    } else if(im_param('one_thread_per_user') == 1 && isset($item['fk_i_user_id']) && (int)$item['fk_i_user_id'] > 0) {
-      $link = im_create_thread_url(array('user_id' => (int)$item['fk_i_user_id']));
-
     } else {
-      $link = im_create_thread_url(array('item_id' => $item_id));
+      // Reuse existing buyer+listing thread so Chat opens the board, not Start conversation.
+      $existing = false;
+      if(osc_is_web_user_logged_in() && class_exists('ModelIM')) {
+        $existing = im_find_existing_thread(
+          (int)osc_logged_user_id(),
+          (string)osc_logged_user_email(),
+          (isset($item['fk_i_user_id']) ? (int)$item['fk_i_user_id'] : 0),
+          '',
+          $item_id
+        );
+      }
+      if($existing !== false && isset($existing['i_thread_id'])) {
+        $link = osc_route_url('im-messages', array('thread-id' => (int)$existing['i_thread_id'], 'secret' => 'n'));
+      } else {
+        $link = im_create_thread_url(array('item_id' => $item_id));
+      }
     }
   }
 

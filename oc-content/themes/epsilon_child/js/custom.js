@@ -3151,8 +3151,28 @@
       var pinBottom = !!(opts && opts.pinBottom);
       var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
 
-      // Desktop: CSS handles sizing; only pin scroll.
+      // Desktop: match list+board height to sidebar (no empty stretch below Logout).
       if (window.innerWidth > 767) {
+        var menu = document.getElementById('user-menu');
+        var main = document.getElementById('user-main');
+        var shell = document.querySelector('.container.primary.pngm-ua-shell, .container.primary');
+        if (menu && main) {
+          // Temporarily clear so sidebar reports its natural content height.
+          if (shell) {
+            shell.style.removeProperty('--pngm-im-shell-h');
+          }
+          main.style.height = '';
+          main.style.maxHeight = '';
+          var sideH = Math.ceil(menu.getBoundingClientRect().height);
+          if (sideH > 120) {
+            var hPx = sideH + 'px';
+            if (shell) {
+              shell.style.setProperty('--pngm-im-shell-h', hPx);
+            }
+            main.style.height = hPx;
+            main.style.maxHeight = hPx;
+          }
+        }
         board.style.maxHeight = '';
         board.style.height = '';
         board.style.overflowY = '';

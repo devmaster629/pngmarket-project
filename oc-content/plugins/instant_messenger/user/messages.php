@@ -251,7 +251,10 @@ if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
               </span>
             </div>
             <div class="im-line im-message-content">
-              <div class="im-col-24 im-align-left"><?php echo $m['s_message']; ?><?php if ($is_safe == 1) { ?><div class="im-unsafe-info"><?php echo sprintf(__('This message may contain contact information of %s. Keep communication on %s for your safety.', 'instant_messenger'), '<u>' . __('seller', 'instant_messenger') . '</u>', '<u>' . osc_page_title() . '</u>'); ?></div><?php } ?></div>
+              <?php if ($is_safe != 0 && !$logged_is_owner) { ?>
+                <div class="im-unsafe-info"><?php _e('This message may contain contact info. Be careful!', 'instant_messenger'); ?></div>
+              <?php } ?>
+              <div class="im-col-24 im-align-left pngm-im-bubble-body"><?php echo $m['s_message']; ?></div>
             </div>
             <?php if ($m['s_file'] <> '' && $att_enable == 1) {
               $pngm_att_label = (function_exists('pngm_im_file_label') ? pngm_im_file_label((int) $m['pk_i_id'], $m['s_file']) : __('Attachment', 'instant_messenger'));
@@ -265,9 +268,14 @@ if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
                 </div>
               </div>
             <?php } ?>
-            <div class="im-date im-i im-gray" title="<?php echo osc_esc_html(sprintf(__('Message posted on %s', 'instant_messenger'), date('d/m/Y H:i:s', strtotime($m['d_datetime'])))); ?>">
-              <span><?php echo im_get_time_diff($m['d_datetime']); ?></span>
-              <?php if ($m['i_read'] == 1) { ?><i class="fa fa-check"></i><?php } ?>
+            <div class="im-line im-name-top pngm-im-bubble-meta">
+              <div class="im-col-12 im-name im-align-left"></div>
+              <div class="im-col-12 im-date im-align-right im-i im-gray im-has-tooltip" title="<?php echo osc_esc_html(sprintf(__('Message posted on %s', 'instant_messenger'), date('d/m/Y H:i:s', strtotime($m['d_datetime'])))); ?>">
+                <time datetime="<?php echo osc_esc_html(date('c', strtotime($m['d_datetime']))); ?>"><?php echo osc_esc_html(date('g:i A', strtotime($m['d_datetime']))); ?></time>
+                <?php if ($logged_is_owner) { ?>
+                  <?php if ((int) $m['i_read'] === 1) { ?><i class="fas fa-check-double" aria-hidden="true"></i><?php } else { ?><i class="fas fa-check" aria-hidden="true"></i><?php } ?>
+                <?php } ?>
+              </div>
             </div>
           </div>
           <?php
@@ -284,9 +292,15 @@ if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
 
 $pngm_im_split = false;
 $pngm_im_rows = array();
-if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im_prepare_conversations')) {
-  $pngm_im_rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 50, 0);
-  $pngm_im_split = true;
+if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
+  $pngm_im_ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
+  if (file_exists($pngm_im_ui)) {
+    require_once $pngm_im_ui;
+  }
+  if (function_exists('pngm_im_prepare_conversations')) {
+    $pngm_im_rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 50, 0);
+    $pngm_im_split = true;
+  }
 }
 ?>
 
@@ -335,8 +349,12 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
   
   <?php
     $thread_item_id = isset($thread['fk_i_item_id']) ? (int) $thread['fk_i_item_id'] : 0;
-    if ($item_details !== false && isset($item['pk_i_id'])) {
-      echo im_render_item_context($thread['fk_i_item_id'], $item, $item_details);
+    if ($thread_item_id > 0 && is_array($item) && isset($item['pk_i_id'])) {
+      if (function_exists('pngm_im_render_listing_card')) {
+        echo pngm_im_render_listing_card($item);
+      } else {
+        echo im_render_item_context($thread['fk_i_item_id'], $item, $item_details);
+      }
     } elseif ($thread_item_id <= 0) {
       if (function_exists('pngm_im_render_general_inquiry')) {
         echo pngm_im_render_general_inquiry();
@@ -427,34 +445,12 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
             </span>
           </div>
 
-          <div class="im-line im-name-top">
-            <div class="im-col-12 im-name im-align-left">
-              <strong>
-                <?php 
-                  if($m['i_type'] == 0) { 
-                    echo $thread['s_from_user_name']; 
-                  } else { 
-                    echo $thread['s_to_user_name']; 
-                  } 
-                ?>
-              </strong> 
-              <span class="im-identifier"><?php if($logged_is_owner) { ?><?php _e('you', 'instant_messenger'); ?><?php } else { ?><?php echo $identify_name; ?><?php } ?></span>
-            </div>
-            <div class="im-col-12 im-date im-align-right im-i im-gray im-has-tooltip" title="<?php echo osc_esc_html(sprintf(__('Message posted on %s', 'instant_messenger'), date('d/m/Y H:i:s', strtotime($m['d_datetime'])))); ?>">
-              <span><?php echo im_get_time_diff($m['d_datetime']); ?></span>
-
-              <?php if($m['i_read'] == 1) { ?>
-                <i class="fa fa-check im-has-tooltip" title="<?php echo osc_esc_html(sprintf(__('%s has already read this message', 'instant_messenger'), ($m['i_type'] == 1 ? $thread['s_from_user_name'] : $thread['s_to_user_name']))); ?>"></i> 
-              <?php } ?>
-            </div>
-          </div>
-
           <div class="im-line im-message-content">
             <?php if($is_safe != 0 && !$logged_is_owner) { ?>
               <div class="im-unsafe-info"><?php _e('This message may contain contact info. Be careful!', 'instant_messenger'); ?></div>
             <?php } ?>
             
-            <div class="im-col-24 im-align-left"><?php echo $m['s_message']; ?></div>
+            <div class="im-col-24 im-align-left pngm-im-bubble-body"><?php echo $m['s_message']; ?></div>
           </div>
 
           <div class="im-line im-message-extra <?php if($m['s_file'] <> '' && $att_enable == 1) { ?>im-box-gray<?php } else { ?>im-box-empty<?php } ?>">
@@ -484,6 +480,30 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in() && function_exists('pngm_im
             <?php } ?>
           </div>
 
+          <div class="im-line im-name-top pngm-im-bubble-meta">
+            <div class="im-col-12 im-name im-align-left">
+              <strong>
+                <?php 
+                  if($m['i_type'] == 0) { 
+                    echo $thread['s_from_user_name']; 
+                  } else { 
+                    echo $thread['s_to_user_name']; 
+                  } 
+                ?>
+              </strong> 
+              <span class="im-identifier"><?php if($logged_is_owner) { ?><?php _e('you', 'instant_messenger'); ?><?php } else { ?><?php echo $identify_name; ?><?php } ?></span>
+            </div>
+            <div class="im-col-12 im-date im-align-right im-i im-gray im-has-tooltip" title="<?php echo osc_esc_html(sprintf(__('Message posted on %s', 'instant_messenger'), date('d/m/Y H:i:s', strtotime($m['d_datetime'])))); ?>">
+              <time datetime="<?php echo osc_esc_html(date('c', strtotime($m['d_datetime']))); ?>"><?php echo osc_esc_html(date('g:i A', strtotime($m['d_datetime']))); ?></time>
+              <?php if($logged_is_owner) { ?>
+                <?php if((int)$m['i_read'] === 1) { ?>
+                  <i class="fas fa-check-double im-has-tooltip" title="<?php echo osc_esc_html(sprintf(__('%s has already read this message', 'instant_messenger'), ($m['i_type'] == 1 ? $thread['s_from_user_name'] : $thread['s_to_user_name']))); ?>"></i>
+                <?php } else { ?>
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                <?php } ?>
+              <?php } ?>
+            </div>
+          </div>
 
           <?php if($logged_is_owner && $message_delete == 1) {?>
             <div class="im-del-mes-box">

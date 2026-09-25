@@ -464,6 +464,15 @@ function pngm_pwa_register_sw_footer()
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
+    navigator.serviceWorker.addEventListener('message', function (event) {
+      var data = event && event.data ? event.data : null;
+      if (!data || data.type !== 'pngm-navigate' || !data.url) {
+        return;
+      }
+      try {
+        window.location.href = String(data.url);
+      } catch (e) {}
+    });
   }
 })();
 </script>

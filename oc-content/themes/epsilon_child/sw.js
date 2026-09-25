@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v4';
+var PNGM_SW_CACHE = 'pngm-shell-v5';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
@@ -68,27 +68,39 @@ self.addEventListener('fetch', function (event) {
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  var url = '';
+  var url = '/';
   try {
     if (event.notification && event.notification.data && event.notification.data.url) {
-      url = String(event.notification.data.url);
+      url = String(event.notification.data.url) || url;
     }
   } catch (e) {}
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      if (url) {
-        for (var i = 0; i < clientList.length; i++) {
-          var c = clientList[i];
-          if (c.url && 'focus' in c) {
-            c.navigate(url);
-            return c.focus();
+      var i;
+      var c;
+      for (i = 0; i < clientList.length; i++) {
+        c = clientList[i];
+        if (!c || !('focus' in c)) {
+          continue;
+        }
+        try {
+          if (c.url && new URL(c.url).origin === self.location.origin) {
+            return (function (client, targetUrl) {
+              return client.focus().then(function () {
+                if (targetUrl && typeof client.navigate === 'function') {
+                  return client.navigate(targetUrl);
+                }
+                if (targetUrl && typeof client.postMessage === 'function') {
+                  client.postMessage({ type: 'pngm-navigate', url: targetUrl });
+                }
+              });
+            })(c, url);
           }
-        }
-        if (self.clients.openWindow) {
-          return self.clients.openWindow(url);
-        }
-      } else if (clientList.length && 'focus' in clientList[0]) {
-        return clientList[0].focus();
+        } catch (err) {}
+      }
+      if (url && self.clients.openWindow) {
+        return self.clients.openWindow(url);
       }
     })
   );

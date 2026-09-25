@@ -689,6 +689,9 @@ function pngm_im_on_insert_queue_push($message_id)
         $secret = ($type === 0)
             ? (isset($thread['s_to_secret']) ? (string) $thread['s_to_secret'] : '')
             : (isset($thread['s_from_secret']) ? (string) $thread['s_from_secret'] : '');
+        if ($secret === '') {
+            $secret = 'n';
+        }
         $try = osc_route_url('im-messages', array('thread-id' => $thread_id, 'secret' => $secret));
         if (is_string($try) && $try !== '') {
             $url = $try;
@@ -734,6 +737,7 @@ function pngm_notif_push_footer()
 <script>
 (function () {
   var items = <?php echo json_encode($payload); ?>;
+  var icon = <?php echo json_encode(rtrim(osc_base_url(), '/') . '/pwa/icon-192.png'); ?>;
   if (!items || !items.length || typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
   items.forEach(function (n, i) {
@@ -741,7 +745,7 @@ function pngm_notif_push_footer()
       try {
         var note = new Notification(n.title || 'PNG Market', {
           body: n.body || '',
-                        icon: <?php echo json_encode(osc_base_url()); ?>
+          icon: icon
         });
         if (n.url) {
           note.onclick = function () {
