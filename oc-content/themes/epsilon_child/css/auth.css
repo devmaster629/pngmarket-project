@@ -648,6 +648,15 @@ body.pngm-auth-v2 .pngm-auth-control input {
   }
 
   body.pngm-auth-v2 .pngm-social-login.is-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  body.pngm-auth-v2 .pngm-social-login.is-row a,
+  body.pngm-auth-v2 .pngm-social-login.is-row .pngm-btn-google-wrap a {
+    padding: 10px 8px !important;
+    font-size: 13px !important;
+    gap: 6px;
+    white-space: nowrap;
   }
 }
