@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.17');
+    define('PNGM_CHILD_VERSION', '2.9.18');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -1491,7 +1491,8 @@ osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
 /**
  * Mobile-safe reCAPTCHA loader (Android + iPhone).
  * - Prefer recaptcha.net (works when google.com is treated as a tracker)
- * - Use compact widget under ~420px so taps hit the checkbox
+ * - Always use the one-line checkbox so the login button stays on screen
+ * - Scale that row down on narrow phones so it still fits without scrolling
  * - Undo empty widgets and guard auth form submit without a token
  */
 function pngm_recaptcha_incognito_fix()
@@ -1572,17 +1573,43 @@ function pngm_recaptcha_incognito_fix()
   }
 
   function widgetSize() {
-    // Compact fits narrow Android/iPhone widths without parent CSS scale hacks.
-    try {
-      if (window.matchMedia && window.matchMedia('(max-width: 420px)').matches) {
-        return 'compact';
-      }
-    } catch (e) {}
-    return (window.innerWidth && window.innerWidth <= 420) ? 'compact' : 'normal';
+    return 'normal';
+  }
+
+  function fitAuthCaptcha(el) {
+    if (!el || !el.closest || !el.closest('.pngm-auth-captcha')) {
+      return;
+    }
+    var wrap = el.closest('.pngm-auth-captcha');
+    var available = wrap.clientWidth;
+    if (!available) {
+      return;
+    }
+    var naturalW = 304;
+    var naturalH = 78;
+    var scale = Math.min(1, available / naturalW);
+    if (scale > 0.99) {
+      el.style.removeProperty('transform');
+      el.style.removeProperty('transform-origin');
+      el.style.removeProperty('margin-left');
+      el.style.removeProperty('margin-bottom');
+      wrap.style.removeProperty('height');
+      return;
+    }
+    el.style.setProperty('transform', 'scale(' + scale + ')', 'important');
+    el.style.setProperty('transform-origin', 'left top', 'important');
+    el.style.setProperty('margin-left', ((available - naturalW * scale) / 2) + 'px', 'important');
+    el.style.setProperty('margin-bottom', (naturalH * (scale - 1)) + 'px', 'important');
+    wrap.style.height = (naturalH * scale) + 'px';
+    wrap.style.overflow = 'hidden';
   }
 
   function renderOne(el) {
-    if (!el || isRendered(el)) {
+    if (!el) {
+      return;
+    }
+    if (isRendered(el)) {
+      fitAuthCaptcha(el);
       return;
     }
     if (typeof window.grecaptcha === 'undefined' || typeof window.grecaptcha.render !== 'function') {
@@ -1602,10 +1629,12 @@ function pngm_recaptcha_incognito_fix()
         theme: 'light'
       });
       el.setAttribute('data-pngm-rendered', '1');
+      fitAuthCaptcha(el);
     } catch (err) {
       // Already rendered by another script — mark done if iframe appeared.
       if (el.querySelector('iframe')) {
         el.setAttribute('data-pngm-rendered', '1');
+        fitAuthCaptcha(el);
       }
     }
   }
@@ -1790,7 +1819,13 @@ function pngm_recaptcha_incognito_fix()
   });
 
   window.addEventListener('orientationchange', function () {
-    setTimeout(ensure, 350);
+    setTimeout(function () {
+      widgets().forEach(fitAuthCaptcha);
+      ensure();
+    }, 350);
+  });
+  window.addEventListener('resize', function () {
+    widgets().forEach(fitAuthCaptcha);
   });
 })();
 </script>
