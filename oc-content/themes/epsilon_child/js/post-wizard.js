@@ -1194,17 +1194,12 @@
         var $name = $form.find('input[name="contactName"]');
         var $phone = $form.find('input[name="contactPhone"], input[name="sPhone"], #sPhone, #contactPhone').first();
         var $email = $form.find('input[name="contactEmail"]');
-        var $avail = $('#pngm_call_availability');
         if ($name.length && $.trim($name.val() || '').length < 2) {
           showError($name, labels.needName || 'Please enter your name.');
           okContact = false;
         }
         if ($phone.length && $.trim($phone.val() || '').replace(/^\+?675\s*/, '').length < 6) {
           showError($phone, labels.needPhone || 'Please enter a phone number.');
-          okContact = false;
-        }
-        if ($avail.length && !$avail.val()) {
-          showError($avail, labels.needAvail || 'Please select call availability.');
           okContact = false;
         }
         if ($('#pngm_email_notify').is(':checked') && $email.length && $.trim($email.val() || '').indexOf('@') < 1) {
@@ -1391,9 +1386,6 @@
       }
       if ($.trim($form.find('input[name="contactPhone"], input[name="sPhone"], #sPhone, #contactPhone').first().val() || '').replace(/^\+?675\s*/, '').length < 6) {
         missing.push(labels.needPhone || 'Phone number required');
-      }
-      if ($('#pngm_call_availability').length && !$('#pngm_call_availability').val()) {
-        missing.push(labels.needAvail || 'Call availability required');
       }
       var $box = $('#pngm-missing-box');
       var $list = $('#pngm-missing-list').empty();
@@ -2008,15 +2000,16 @@
         }
         return false;
       }
-      // Final publish must still enforce Contact (step 5) + Terms (step 6).
-      if (!validateStep(5) || !validateStep(6)) {
+      // Final publish still checks Contact (step 5) and Terms (step 6).
+      // Call availability is optional.
+      if (!validateStep(5)) {
         e.preventDefault();
-        if (!$('#pngm_call_availability').val() || !$('#pngm_terms').is(':checked')) {
-          // Jump back to the step that failed so the seller can fix it.
-          if (!$('#pngm_call_availability').val()) {
-            showStep(5);
-          }
-        }
+        showStep(5);
+        return false;
+      }
+      if (!validateStep(6)) {
+        e.preventDefault();
+        showStep(6);
         return false;
       }
       // Ensure free / check pricing before submit

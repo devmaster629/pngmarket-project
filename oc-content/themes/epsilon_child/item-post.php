@@ -487,7 +487,7 @@
               </div>
 
               <div class="pngm-post-field">
-                <label for="pngm_call_availability"><?php _e('Call Availability', 'epsilon'); ?> <span class="req">*</span></label>
+                <label for="pngm_call_availability"><?php _e('Call Availability', 'epsilon'); ?></label>
                 <div class="input-box">
                   <?php
                     $pngm_call_avail = '';

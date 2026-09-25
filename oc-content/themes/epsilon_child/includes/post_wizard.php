@@ -137,7 +137,7 @@ function pngm_post_transaction_pills()
 {
     return array(
         1 => __('For Sale', 'epsilon'),
-        2 => __('Wanted', 'epsilon'),
+        2 => __('Looking to Buy', 'epsilon'),
         3 => __('For Rent', 'epsilon'),
         0 => __('Free', 'epsilon'), // special: sets price free
     );
