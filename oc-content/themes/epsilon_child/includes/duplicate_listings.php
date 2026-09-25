@@ -2,9 +2,10 @@
 /**
  * P2-004 / QA-007 — Duplicate listing prevention.
  *
- * - Score near-identical titles (same seller / email / IP)
- * - Block exact titles site-wide
- * - Throttle rapid posting
+ * Identical titles are allowed: different items often share a name.
+ * A same-seller repost is blocked only when the title and description
+ * both closely match an existing listing.
+ * Throttle rapid posting when limits are non-zero.
  *
  * Soft "moderate → pending" was removed: every successful publish stays active.
  *
@@ -431,8 +432,6 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
 
     $title = pngm_dup_primary_title(isset($aItem['title']) ? $aItem['title'] : array());
     $desc = pngm_dup_primary_description(isset($aItem['description']) ? $aItem['description'] : array());
-    $cat_id = isset($aItem['catId']) ? (int) $aItem['catId'] : 0;
-    $price = isset($aItem['price']) ? (int) $aItem['price'] : 0;
 
     // --- Throttle (0 = disabled) ---
     $max_per_hour = (int) PNGM_DUP_MAX_PER_HOUR;
@@ -466,21 +465,8 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
         return $result;
     }
 
-    // --- Site-wide exact title ---
-    $exact = pngm_dup_find_exact_title_any($title, $exclude_item_id);
-    if (is_array($exact) && !empty($exact['pk_i_id'])) {
-        $result['action'] = 'block';
-        $result['score'] = 100;
-        $result['match_id'] = (int) $exact['pk_i_id'];
-        $match_title = isset($exact['s_title']) ? (string) $exact['s_title'] : $title;
-        $result['message'] = sprintf(
-            __('A listing with the same title (“%s”) already exists. Please choose a more specific title or edit the existing listing.', 'epsilon'),
-            $match_title
-        );
-        return $result;
-    }
-
-    // --- Same seller near-duplicates ---
+    // Identical titles are allowed. Only a same-seller copy of both title
+    // and description counts as a duplicate.
     $recent = pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id);
     $best_score = 0;
     $best_id = 0;
@@ -488,27 +474,19 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
 
     foreach ($recent as $row) {
         $other_title = isset($row['s_title']) ? (string) $row['s_title'] : '';
-        $score = pngm_dup_title_score($title, $other_title);
-
-        $same_cat = ($cat_id > 0 && isset($row['fk_i_category_id']) && (int) $row['fk_i_category_id'] === $cat_id);
-        $same_price = (isset($row['i_price']) && (int) $row['i_price'] === $price && $price > 0);
-        if ($same_cat && $score >= 60) {
-            $score = min(100, $score + 5);
-        }
-        if ($same_price && $score >= 60) {
-            $score = min(100, $score + 5);
-        }
+        $title_score = pngm_dup_title_score($title, $other_title);
+        $score = 0;
 
         $other_desc = isset($row['s_description']) ? trim(strip_tags((string) $row['s_description'])) : '';
-        if ($desc !== '' && $other_desc !== '' && $score >= 50) {
+        if ($title_score >= 90 && $desc !== '' && $other_desc !== '') {
             $dscore = 0.0;
             similar_text(
                 pngm_dup_normalize_title(substr($desc, 0, 400)),
                 pngm_dup_normalize_title(substr($other_desc, 0, 400)),
                 $dscore
             );
-            if ($dscore >= 80) {
-                $score = min(100, $score + 10);
+            if ($dscore >= 85) {
+                $score = 100;
             }
         }
 
@@ -619,65 +597,12 @@ function pngm_dup_posted_item_notice($item)
 osc_add_hook('posted_item', 'pngm_dup_posted_item_notice', 8);
 
 /**
- * AJAX: early exact-title check from the post wizard Details step.
- * Skips throttle so sellers are not blocked mid-wizard for rate limits
- * (those still apply on publish).
+ * AJAX kept for older post-wizard scripts. Titles are not unique, so this
+ * no longer rejects a listing.
  */
 function pngm_ajax_check_duplicate_title()
 {
     header('Content-Type: application/json; charset=utf-8');
-
-    $title = trim((string) Params::getParam('title'));
-    $exclude = (int) Params::getParam('itemId');
-
-    if (strlen($title) < 3) {
-        echo json_encode(array('ok' => true, 'action' => 'ok'));
-        exit;
-    }
-
-    $exact = pngm_dup_find_exact_title_any($title, $exclude);
-    if (is_array($exact) && !empty($exact['pk_i_id'])) {
-        $match_title = isset($exact['s_title']) ? (string) $exact['s_title'] : $title;
-        echo json_encode(array(
-            'ok' => false,
-            'action' => 'block',
-            'match_id' => (int) $exact['pk_i_id'],
-            'message' => sprintf(
-                __('A listing with the same title (“%s”) already exists. Please choose a more specific title or edit the existing listing.', 'epsilon'),
-                $match_title
-            ),
-        ));
-        exit;
-    }
-
-    // Same-seller near-duplicate (title only — no description/price yet).
-    $user_id = 0;
-    $email = '';
-    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
-        $user_id = (int) osc_logged_user_id();
-        if (function_exists('osc_logged_user_email')) {
-            $email = strtolower(trim((string) osc_logged_user_email()));
-        }
-    }
-    $ip = function_exists('osc_get_ip') ? (string) osc_get_ip() : '';
-    $recent = pngm_dup_find_seller_items($user_id, $email, $ip, $exclude);
-    foreach ($recent as $row) {
-        $other_title = isset($row['s_title']) ? (string) $row['s_title'] : '';
-        $score = pngm_dup_title_score($title, $other_title);
-        if ($score >= (int) PNGM_DUP_BLOCK_SCORE) {
-            echo json_encode(array(
-                'ok' => false,
-                'action' => 'block',
-                'match_id' => isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0,
-                'message' => sprintf(
-                    __('This listing looks like a duplicate of one you already posted (“%s”). Please edit that listing instead of creating another.', 'epsilon'),
-                    $other_title !== '' ? $other_title : $title
-                ),
-            ));
-            exit;
-        }
-    }
-
     echo json_encode(array('ok' => true, 'action' => 'ok'));
     exit;
 }

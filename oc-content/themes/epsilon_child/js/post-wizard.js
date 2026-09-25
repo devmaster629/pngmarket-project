@@ -1956,74 +1956,6 @@
       }
     });
 
-    function checkDuplicateTitle(done) {
-      var title = $.trim($form.find('input[name^="title"]').val() || '');
-      var $titleField = $form.find('input[name^="title"]').first();
-      if (title.length < 3) {
-        done(true);
-        return;
-      }
-
-      var base = cfg.ajaxUrl || (window.location.pathname + '?');
-      $next.prop('disabled', true).addClass('is-busy');
-      if (labels.dupTitleCheck) {
-        $next.data('pngm-label', $next.text());
-        $next.text(labels.dupTitleCheck);
-      }
-
-      $.ajax({
-        url: base,
-        type: 'POST',
-        dataType: 'json',
-        data: {
-          page: 'ajax',
-          action: 'runhook',
-          hook: 'pngm_check_duplicate_title',
-          title: title,
-          itemId: cfg.itemId || 0
-        }
-      }).done(function (res) {
-        if (res && res.ok === true) {
-          done(true);
-          return;
-        }
-        var msg = (res && res.message)
-          ? res.message
-          : (labels.dupTitleFail || 'A listing with this title already exists. Please choose a different title.');
-        // Prefer the dedicated title error slot under the field.
-        var $titleErr = $form.find('.pngm-post-field-error[data-for="title"]');
-        if ($titleErr.length) {
-          $titleField.addClass('is-invalid');
-          $titleField.closest('.pngm-post-field').addClass('is-invalid');
-          showFieldError($titleErr, msg);
-          summaryMessages.push(String(msg));
-          focusFirstInvalid();
-        } else {
-          showError($titleField, msg);
-          focusFirstInvalid();
-        }
-        done(false);
-      }).fail(function () {
-        // Network error — stay on this step with a clear message (do not skip to publish).
-        var msg = labels.dupTitleFail || 'Could not verify the title. Please try again.';
-        var $titleErr = $form.find('.pngm-post-field-error[data-for="title"]');
-        if ($titleErr.length) {
-          $titleField.addClass('is-invalid');
-          $titleField.closest('.pngm-post-field').addClass('is-invalid');
-          showFieldError($titleErr, msg);
-        } else {
-          showError($titleField, msg);
-        }
-        done(false);
-      }).always(function () {
-        $next.prop('disabled', false).removeClass('is-busy');
-        if ($next.data('pngm-label')) {
-          $next.text($next.data('pngm-label'));
-          $next.removeData('pngm-label');
-        }
-      });
-    }
-
     $next.on('click', function () {
       if (!validateStep(step)) {
         return;
@@ -2034,13 +1966,8 @@
           // Do not force-reload: that wiped Make/Accessories/etc. on every Next.
           loadCategoryAttributes(leafId);
         }
-        checkDuplicateTitle(function (ok) {
-          if (!ok) {
-            return;
-          }
-          clearErrorSummary();
-          showStep(step + 1);
-        });
+        clearErrorSummary();
+        showStep(step + 1);
         return;
       }
       if (step === 2) {
