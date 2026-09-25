@@ -3134,12 +3134,95 @@
   function initChatLayout() {
     var form = document.getElementById('im-message-form');
     var board = document.querySelector('.im-table.im-messages');
+    var pinTimers = [];
 
     if (!form && !document.querySelector('.im-file-messages')) {
       return;
     }
 
     document.body.classList.add('im-chat-page');
+
+    function clearPinTimers() {
+      var i;
+      for (i = 0; i < pinTimers.length; i += 1) {
+        window.clearTimeout(pinTimers[i]);
+      }
+      pinTimers = [];
+    }
+
+    function scrollBoardToBottom(el) {
+      if (!el) {
+        return;
+      }
+      // Force layout so scrollHeight is current after flex/height changes.
+      void el.offsetHeight;
+      el.scrollTop = el.scrollHeight;
+      var last = el.querySelector('.im-table-row:not(.hidden):last-of-type, .im-table-row:last-child');
+      if (last && typeof last.scrollIntoView === 'function') {
+        try {
+          last.scrollIntoView({ block: 'end', inline: 'nearest' });
+        } catch (errView) {
+          try { last.scrollIntoView(false); } catch (errView2) {}
+        }
+      }
+      el.scrollTop = el.scrollHeight;
+    }
+
+    /**
+     * Pin chat to latest message. Retries after layout settles (flex height,
+     * images, AJAX board swap) — a single scrollTop often runs too early.
+     */
+    function pinChatBottom(opts) {
+      var immediate = !(opts && opts.deferredOnly);
+      var delays = (opts && opts.delays) ? opts.delays : [0, 50, 150, 350, 700];
+
+      function run() {
+        board = document.querySelector('.im-table.im-messages');
+        if (!board) {
+          return;
+        }
+        scrollBoardToBottom(board);
+      }
+
+      clearPinTimers();
+      if (immediate) {
+        run();
+        if (typeof window.requestAnimationFrame === 'function') {
+          window.requestAnimationFrame(function () {
+            run();
+            window.requestAnimationFrame(run);
+          });
+        }
+      }
+      var d;
+      for (d = 0; d < delays.length; d += 1) {
+        (function (ms) {
+          pinTimers.push(window.setTimeout(run, ms));
+        })(delays[d]);
+      }
+
+      // Re-pin once when bubbles' images finish loading (avatars / attachments).
+      board = document.querySelector('.im-table.im-messages');
+      if (board && !board.getAttribute('data-pngm-pin-imgs')) {
+        board.setAttribute('data-pngm-pin-imgs', '1');
+        board.addEventListener('load', function (e) {
+          if (!(e.target && e.target.tagName === 'IMG')) {
+            return;
+          }
+          var el = document.querySelector('.im-table.im-messages');
+          if (!el) {
+            return;
+          }
+          var near = (el.scrollHeight - el.scrollTop - el.clientHeight) < 120;
+          // Only follow images if user is already near the latest messages.
+          if (near) {
+            scrollBoardToBottom(el);
+          }
+        }, true);
+      }
+    }
+
+    window.pngmPinChatBottom = pinChatBottom;
 
     function layout(opts) {
       form = document.getElementById('im-message-form');
@@ -3177,7 +3260,7 @@
         board.style.height = '';
         board.style.overflowY = '';
         if (pinBottom || nearBottom) {
-          board.scrollTop = board.scrollHeight;
+          pinChatBottom({ delays: pinBottom ? [0, 50, 150, 350, 700] : [0, 50] });
         }
         return;
       }
@@ -3246,7 +3329,7 @@
       board.style.overflowY = 'auto';
 
       if (pinBottom || nearBottom) {
-        board.scrollTop = board.scrollHeight;
+        pinChatBottom({ delays: pinBottom ? [0, 50, 150, 350, 700] : [0, 50] });
       }
     }
 
@@ -3258,12 +3341,7 @@
     window.addEventListener('orientationchange', function () {
       layout({ pinBottom: true });
     });
-    window.setTimeout(function () {
-      layout({ pinBottom: true });
-    }, 50);
-    window.setTimeout(function () {
-      layout({ pinBottom: true });
-    }, 250);
+    pinChatBottom({ delays: [0, 50, 150, 350, 700] });
 
     // Plugin autosize uses a 50–85px floor, so one keystroke already grows the field
     // and can push the send-hint under the overflow clip on mobile.

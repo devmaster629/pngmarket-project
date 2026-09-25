@@ -509,9 +509,12 @@ function pngm_im_ui_script()
   function setActiveConvo(url) {
     if (!list) return;
     var cards = list.querySelectorAll('.pngm-im-convo');
+    var targetId = threadIdFromUrl(url);
     var i;
     for (i = 0; i < cards.length; i += 1) {
-      var active = cards[i].getAttribute('href') === url;
+      var href = cards[i].getAttribute('href') || '';
+      var cardId = parseInt(cards[i].getAttribute('data-thread-id') || '0', 10) || threadIdFromUrl(href);
+      var active = (targetId > 0 && cardId === targetId) || (targetId <= 0 && href === url);
       cards[i].classList.toggle('is-active', active);
       if (active) {
         cards[i].classList.remove('is-unread');
@@ -523,17 +526,63 @@ function pngm_im_ui_script()
     }
   }
 
-  function extractImMessageUrl(doc) {
+  function extractScriptVar(doc, varName) {
     var scripts = doc.querySelectorAll('script');
+    var re = new RegExp('var\\s+' + varName + '\\s*=\\s*["\']([^"\']+)["\']');
     var i;
     for (i = 0; i < scripts.length; i += 1) {
       var text = scripts[i].textContent || '';
-      var match = text.match(/var\s+imMessageUrl\s*=\s*["']([^"']+)["']/);
+      var match = text.match(re);
       if (match && match[1]) {
         return match[1];
       }
     }
     return '';
+  }
+
+  function threadIdFromUrl(url) {
+    var m = String(url || '').match(/thread-id[=\/](\d+)/i);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function secretFromUrl(url) {
+    var m = String(url || '').match(/secret[=\/]([^\/&#?]+)/i);
+    return m ? decodeURIComponent(m[1]) : 'n';
+  }
+
+  /**
+   * Keep poll/refresh endpoints on the open thread. Without this, switching
+   * conversations leaves pngmImRefreshAjax on the first hard-refreshed thread
+   * and every interval overwrite shows that same chat again.
+   */
+  function syncRefreshUrls(doc, pageUrl) {
+    var imUrl = doc ? extractScriptVar(doc, 'imMessageUrl') : '';
+    var ajaxUrl = doc ? extractScriptVar(doc, 'pngmImRefreshAjax') : '';
+    var threadId = threadIdFromUrl(pageUrl);
+    var secret = secretFromUrl(pageUrl);
+
+    if (!imUrl && threadId > 0) {
+      var base = String(pageUrl || '').split('#')[0];
+      imUrl = base + (base.indexOf('?') >= 0 ? '&' : '?') + 'imaction=refresh';
+    }
+    if (!ajaxUrl && threadId > 0) {
+      var origin = window.location.origin || '';
+      var path = window.location.pathname || '/index.php';
+      ajaxUrl = origin + path
+        + '?page=ajax&action=runhook&hook=pngm_im_refresh'
+        + '&thread-id=' + threadId
+        + '&secret=' + encodeURIComponent(secret || 'n');
+    }
+
+    if (imUrl) {
+      window.imMessageUrl = imUrl;
+    }
+    if (ajaxUrl) {
+      window.pngmImRefreshAjax = ajaxUrl;
+    }
+    if (typeof window.pngmImRefreshFailCount !== 'undefined') {
+      window.pngmImRefreshFailCount = 0;
+    }
   }
 
   function afterBoardSwap() {
@@ -559,6 +608,9 @@ function pngm_im_ui_script()
     }
     if (typeof window.pngmLayoutChat === 'function') {
       window.pngmLayoutChat({ pinBottom: true });
+    }
+    if (typeof window.pngmPinChatBottom === 'function') {
+      window.pngmPinChatBottom({ delays: [0, 50, 150, 350, 700] });
     } else {
       var board = document.querySelector('.im-table.im-messages');
       if (board) {
@@ -601,10 +653,7 @@ function pngm_im_ui_script()
       }
       boardPane.innerHTML = nextBoard ? nextBoard.innerHTML : nextMessages.outerHTML;
 
-      var refreshUrl = extractImMessageUrl(doc);
-      if (refreshUrl) {
-        window.imMessageUrl = refreshUrl;
-      }
+      syncRefreshUrls(doc, url);
 
       setActiveConvo(url);
       if (push !== false && window.history && typeof window.history.pushState === 'function') {
@@ -653,11 +702,18 @@ function pngm_im_ui_script()
       if (!url) {
         return;
       }
-      if (link.classList.contains('is-active') && !boardPane.classList.contains('is-loading')) {
+      var clickId = parseInt(link.getAttribute('data-thread-id') || '0', 10) || threadIdFromUrl(url);
+      var activeEl = list.querySelector('.pngm-im-convo.is-active');
+      var activeId = activeEl
+        ? (parseInt(activeEl.getAttribute('data-thread-id') || '0', 10) || threadIdFromUrl(activeEl.getAttribute('href') || ''))
+        : 0;
+      if (clickId > 0 && clickId === activeId && !boardPane.classList.contains('is-loading')) {
         e.preventDefault();
         return;
       }
       e.preventDefault();
+      // Point pollers at the destination thread immediately (before AJAX returns).
+      syncRefreshUrls(null, url);
       loadBoard(url, true);
     });
 
@@ -665,6 +721,7 @@ function pngm_im_ui_script()
       if (!document.querySelector('.pngm-im-split') || isMobileImLayout()) {
         return;
       }
+      syncRefreshUrls(null, window.location.href);
       loadBoard(window.location.href, false);
     });
   }
@@ -713,6 +770,9 @@ function pngm_im_ui_script()
       var $b = ($board && $board.jquery) ? $board : $('.im-table.im-messages').first();
       if (typeof window.pngmLayoutChat === 'function') {
         window.pngmLayoutChat({ pinBottom: true });
+      }
+      if (typeof window.pngmPinChatBottom === 'function') {
+        window.pngmPinChatBottom({ delays: [0, 50, 150, 350] });
       } else if (typeof window.imStickChatToBottom === 'function') {
         window.imStickChatToBottom($b);
       } else if ($b[0]) {
@@ -1122,9 +1182,25 @@ function pngm_im_ui_script()
         if (!isEnter) {
           return;
         }
+        // Ctrl/Cmd+Enter → insert newline (browsers do not do this on their own).
         if (e.ctrlKey || e.metaKey) {
-          // New line — let the browser insert it.
-          return;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          var ta = this;
+          var start = typeof ta.selectionStart === 'number' ? ta.selectionStart : ta.value.length;
+          var end = typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
+          var val = ta.value || '';
+          ta.value = val.slice(0, start) + '\n' + val.slice(end);
+          try {
+            ta.selectionStart = ta.selectionEnd = start + 1;
+          } catch (errSel) {}
+          // Trigger auto-expand / layout handlers.
+          try {
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+          } catch (errEvt) {
+            $(ta).trigger('input');
+          }
+          return false;
         }
         e.preventDefault();
         e.stopImmediatePropagation();

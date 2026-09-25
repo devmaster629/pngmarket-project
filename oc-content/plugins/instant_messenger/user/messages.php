@@ -694,10 +694,51 @@ function imStickChatToBottom($board) {
   if(!el) {
     return;
   }
+  if (typeof window.pngmPinChatBottom === 'function') {
+    window.pngmPinChatBottom({ delays: [0, 50, 150, 350] });
+    return;
+  }
+  el.scrollTop = el.scrollHeight;
+  var last = el.querySelector('.im-table-row:not(.hidden):last-of-type, .im-table-row:last-child');
+  if (last && typeof last.scrollIntoView === 'function') {
+    try { last.scrollIntoView({ block: 'end', inline: 'nearest' }); } catch (e) {}
+  }
   el.scrollTop = el.scrollHeight;
 }
 
 function imRefreshMessages(forceBottom, forceReplace) {
+  // Prefer the open thread from the address bar so a stale pngmImRefreshAjax
+  // cannot keep painting the previously hard-refreshed conversation.
+  var locThread = 0;
+  var locSecret = 'n';
+  try {
+    var locMatch = String(window.location.href || '').match(/thread-id[=\/](\d+)/i);
+    if (locMatch) {
+      locThread = parseInt(locMatch[1], 10) || 0;
+    }
+    var secMatch = String(window.location.href || '').match(/secret[=\/]([^\/&#?]+)/i);
+    if (secMatch) {
+      locSecret = decodeURIComponent(secMatch[1]);
+    }
+  } catch (eLoc) {}
+
+  if (locThread > 0) {
+    var ajaxHas = (typeof pngmImRefreshAjax === 'string' && pngmImRefreshAjax)
+      ? pngmImRefreshAjax.match(/thread-id[=\/](\d+)/i)
+      : null;
+    var ajaxThread = ajaxHas ? (parseInt(ajaxHas[1], 10) || 0) : 0;
+    if (ajaxThread !== locThread) {
+      var origin = window.location.origin || '';
+      var path = window.location.pathname || '/index.php';
+      pngmImRefreshAjax = origin + path
+        + '?page=ajax&action=runhook&hook=pngm_im_refresh'
+        + '&thread-id=' + locThread
+        + '&secret=' + encodeURIComponent(locSecret || 'n');
+      var basePage = String(window.location.href || '').split('#')[0];
+      imMessageUrl = basePage + (basePage.indexOf('?') >= 0 ? '&' : '?') + 'imaction=refresh';
+    }
+  }
+
   var url = (typeof pngmImRefreshAjax === 'string' && pngmImRefreshAjax)
     ? pngmImRefreshAjax
     : imMessageUrl;
@@ -742,6 +783,7 @@ function imRefreshMessages(forceBottom, forceReplace) {
         forceReplace
         || $board.find('.im-table-row.is-pending').length > 0
         || messagesCount != $board.find('.im-table-row').length
+        || ($board.find('.im-table-row:last-child').attr('data-message-id') != $next.find('.im-table-row:last-child').attr('data-message-id'))
         || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $next.find('.im-table-row:last-child .im-date .fa-check').length)
       ) {
         $board.html(content);
