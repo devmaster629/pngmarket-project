@@ -625,6 +625,7 @@
                     }
                 }
               ?></div>
+              <p class="pngm-post-field-error" data-for="pngm_captcha" hidden><?php _e('Please complete the reCAPTCHA before publishing.', 'epsilon'); ?></p>
             </div>
           </div>
           <aside class="pngm-post-side">
@@ -713,6 +714,7 @@
       'needPhoto' => __('Photos are optional, but recommended for better results.', 'epsilon'),
       'requiredField' => __('Required field', 'epsilon'),
       'needTerms' => __('Please accept the Terms of Use.', 'epsilon'),
+      'needCaptcha' => __('Please complete the reCAPTCHA before publishing.', 'epsilon'),
       'needRegion' => __('Please select a province / region.', 'epsilon'),
       'needCity' => __('Please select a city / town.', 'epsilon'),
       'needName' => __('Please enter your full name.', 'epsilon'),

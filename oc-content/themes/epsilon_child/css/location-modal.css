@@ -609,6 +609,14 @@ button.pngm-loc-apply:hover,
   color: #7f1d1d;
 }
 
+/* reCAPTCHA prompts — soft toast chrome; red text (error warning) */
+.pngm-loc-toast.pngm-auth-recaptcha-toast,
+.pngm-loc-toast.pngm-captcha-toast {
+  border: 1px solid #c8e6ce;
+  border-left: 4px solid #15803d;
+  color: #b91c1c;
+}
+
 .pngm-loc-toast-msg {
   flex: 1 1 auto;
   min-width: 0;

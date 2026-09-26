@@ -1626,7 +1626,19 @@ function pngm_recaptcha_incognito_fix()
       window.grecaptcha.render(el, {
         sitekey: siteKey,
         size: widgetSize(),
-        theme: 'light'
+        theme: 'light',
+        callback: function () {
+          var wrap = document.querySelector('.pngm-post-captcha');
+          if (wrap && wrap.classList) {
+            wrap.classList.remove('is-error', 'is-invalid', 'is-missing-captcha');
+          }
+          var err = document.querySelector('.pngm-post-field-error[data-for="pngm_captcha"]');
+          if (err) {
+            err.hidden = true;
+            err.classList.remove('is-visible');
+            err.classList.add('is-hidden');
+          }
+        }
       });
       el.setAttribute('data-pngm-rendered', '1');
       fitAuthCaptcha(el);
@@ -1726,7 +1738,7 @@ function pngm_recaptcha_incognito_fix()
     }
 
     var toast = document.createElement('div');
-    toast.className = 'pngm-loc-toast is-error pngm-auth-recaptcha-toast';
+    toast.className = 'pngm-loc-toast pngm-auth-recaptcha-toast';
     toast.setAttribute('role', 'alert');
     toast.innerHTML =
       '<span class="pngm-loc-toast-msg"></span>' +
@@ -1745,11 +1757,11 @@ function pngm_recaptcha_incognito_fix()
   }
 
   function guardAuthForms() {
-    if (!authRequired) {
+    if (!authRequired && !document.querySelector('form.pngm-post-form .g-recaptcha, form[name="item"] .g-recaptcha, form.pngm-post-form [data-pngm-recaptcha]')) {
       return;
     }
     var forms = document.querySelectorAll(
-      'form.pngm-auth-form, form#pngm-login-form, form#register, body.pngm-auth form[action]'
+      'form.pngm-auth-form, form#pngm-login-form, form#register, body.pngm-auth form[action], form.pngm-post-form, form[name="item"]'
     );
     Array.prototype.forEach.call(forms, function (form) {
       if (form.getAttribute('data-pngm-recaptcha-guard') === '1') {
@@ -1757,7 +1769,12 @@ function pngm_recaptcha_incognito_fix()
       }
       form.setAttribute('data-pngm-recaptcha-guard', '1');
       form.addEventListener('submit', function (e) {
-        if (!widgets().length) {
+        var formWidgets = Array.prototype.slice.call(
+          form.querySelectorAll('.g-recaptcha, [id^="anr_captcha_field_"], [data-pngm-recaptcha]')
+        ).filter(function (el) {
+          return !isCaptchaDeferredHidden(el);
+        });
+        if (!formWidgets.length) {
           return;
         }
         // Give a late-rendered widget one more chance before blocking.
@@ -1768,6 +1785,9 @@ function pngm_recaptcha_incognito_fix()
         }
         e.preventDefault();
         e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
         ensure();
 
         // Remove any leftover inline captcha error from older builds.
@@ -1775,9 +1795,16 @@ function pngm_recaptcha_incognito_fix()
         if (oldNote && oldNote.parentNode) {
           oldNote.parentNode.removeChild(oldNote);
         }
-        var wrap = form.querySelector('.pngm-auth-captcha');
+        var wrap = form.querySelector('.pngm-auth-captcha, .pngm-post-captcha');
         if (wrap && wrap.classList) {
-          wrap.classList.remove('is-error');
+          wrap.classList.add('is-missing-captcha');
+        }
+        var postErr = form.querySelector('.pngm-post-field-error[data-for="pngm_captcha"]');
+        if (postErr) {
+          postErr.hidden = false;
+          postErr.classList.add('is-visible');
+          postErr.classList.remove('is-hidden');
+          postErr.textContent = missingMsg;
         }
 
         showAuthToast(missingMsg);

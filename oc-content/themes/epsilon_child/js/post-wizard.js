@@ -1212,11 +1212,82 @@
         return okContact;
       }
       if (n === 6) {
+        var okReview = true;
         if (!$('#pngm_terms').is(':checked')) {
           showError($('#pngm_terms'), labels.needTerms);
           var $termsErr = $form.find('.pngm-post-field-error[data-for="pngm_terms"]');
           showFieldError($termsErr, labels.needTerms);
+          okReview = false;
+        }
+
+        // Block publish until reCAPTCHA is completed (do not POST and fail later).
+        var $captchaWidgets = $form.find('.g-recaptcha, [data-pngm-recaptcha]');
+        if ($captchaWidgets.length) {
+          try {
+            document.dispatchEvent(new CustomEvent('pngm:post-step'));
+          } catch (errCap) {}
+          var captchaToken = '';
+          $form.find('textarea[name="g-recaptcha-response"]').each(function () {
+            var v = $.trim($(this).val() || '');
+            if (v) {
+              captchaToken = v;
+            }
+          });
+          if (!captchaToken) {
+            var anyTa = document.querySelector('textarea[name="g-recaptcha-response"]');
+            if (anyTa && anyTa.value) {
+              captchaToken = String(anyTa.value).trim();
+            }
+          }
+          var $captchaWrap = $form.find('.pngm-post-captcha');
+          var $captchaErr = $form.find('.pngm-post-field-error[data-for="pngm_captcha"]');
+          var captchaMsg = labels.needCaptcha || 'Please complete the reCAPTCHA before publishing.';
+          if (!captchaToken) {
+            $captchaWrap.addClass('is-missing-captcha');
+            showFieldError($captchaErr, captchaMsg);
+            if (typeof window.pngmShowToast === 'function') {
+              // Soft green toast (same as login) — not the red is-error chrome.
+              var host = document.getElementById('pngm-loc-toast-host');
+              if (!host) {
+                host = document.createElement('div');
+                host.id = 'pngm-loc-toast-host';
+                host.className = 'pngm-loc-toast-host';
+                host.setAttribute('aria-live', 'assertive');
+                document.body.appendChild(host);
+              }
+              var existing = host.querySelector('.pngm-captcha-toast');
+              if (existing && existing.parentNode) {
+                existing.parentNode.removeChild(existing);
+              }
+              var toast = document.createElement('div');
+              toast.className = 'pngm-loc-toast pngm-captcha-toast';
+              toast.setAttribute('role', 'alert');
+              toast.innerHTML =
+                '<span class="pngm-loc-toast-msg"></span>' +
+                '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
+              toast.querySelector('.pngm-loc-toast-msg').textContent = captchaMsg;
+              host.appendChild(toast);
+              function dismissCapToast() {
+                if (toast.parentNode) {
+                  toast.parentNode.removeChild(toast);
+                }
+              }
+              toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismissCapToast);
+              window.setTimeout(dismissCapToast, 4800);
+            }
+            okReview = false;
+          } else {
+            $captchaWrap.removeClass('is-missing-captcha is-error is-invalid');
+            hideFieldError($captchaErr);
+          }
+        }
+
+        if (!okReview) {
           focusFirstInvalid();
+          var $cap = $form.find('.pngm-post-captcha.is-missing-captcha').first();
+          if ($cap.length && typeof $cap[0].scrollIntoView === 'function') {
+            $cap[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           return false;
         }
         return true;
@@ -2000,8 +2071,7 @@
         }
         return false;
       }
-      // Final publish still checks Contact (step 5) and Terms (step 6).
-      // Call availability is optional.
+      // Final publish still checks Contact (step 5) and Terms + reCAPTCHA (step 6).
       if (!validateStep(5)) {
         e.preventDefault();
         showStep(5);
