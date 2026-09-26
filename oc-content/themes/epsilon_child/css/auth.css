@@ -35,7 +35,8 @@ body.pngm-auth-v2.pre-account.pngm-auth {
   padding-right: 0 !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  overflow-x: hidden !important;
+  /* visible so the Google reCAPTCHA challenge popup is not clipped on phones */
+  overflow-x: visible !important;
   background: #fff !important;
 }
 
@@ -49,7 +50,7 @@ body.pngm-auth-v2.pre-account.pngm-auth:not(.has-footer) .content {
   margin-left: 0 !important;
   margin-right: 0 !important;
   background: #fff !important;
-  overflow-x: hidden !important;
+  overflow-x: visible !important;
 }
 
 body.pngm-auth-v2.pre-account.pngm-auth > .content > section.pngm-auth-wrap.container,
@@ -313,14 +314,12 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   position: relative;
   z-index: 4;
   text-align: center;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 .pngm-auth-captcha .g-recaptcha {
   display: block !important;
   width: 304px !important;
-  max-width: none !important;
+  max-width: 100% !important;
   margin: 0 auto !important;
   min-height: 78px !important;
   height: 78px !important;
@@ -330,10 +329,19 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
 /* Do not constrain challenge iframes — only the checkbox widget is in-flow */
 .pngm-auth-captcha .g-recaptcha > div {
   width: 304px !important;
+  max-width: 100% !important;
   height: 78px !important;
-  max-width: none;
-  margin-left: 0 !important;
+  margin-left: auto !important;
   margin-right: auto !important;
+}
+
+@media screen and (max-width: 340px) {
+  .pngm-auth-captcha .g-recaptcha,
+  .pngm-auth-captcha .g-recaptcha > div {
+    width: 100% !important;
+    transform: scale(0.92);
+    transform-origin: center top;
+  }
 }
 
 .pngm-auth-captcha-note {

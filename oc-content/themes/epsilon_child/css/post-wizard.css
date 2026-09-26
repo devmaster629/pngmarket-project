@@ -2420,3 +2420,15 @@ body.pngm-post-wizard #post-hooks.is-loading {
 body.pngm-post-wizard .zip.is-optional {
   display: none;
 }
+
+/* Keep Google reCAPTCHA challenge usable on narrow phones (Review step) */
+body.pngm-post-wizard .pngm-post-captcha,
+body.pngm-post-wizard .row.captcha {
+  overflow: visible !important;
+  max-width: 100%;
+}
+
+body.pngm-post-wizard .pngm-post-captcha .g-recaptcha {
+  max-width: 100% !important;
+  overflow: visible !important;
+}

@@ -6587,6 +6587,53 @@ body > div > div > iframe[src*="recaptcha"] {
   z-index: 2147483646 !important;
 }
 
+/*
+ * Mobile: Google's image-challenge popup is ~400px wide and gets clipped on
+ * narrow phones (login / register / post). Center + scale the challenge shell.
+ */
+@media screen and (max-width: 480px) {
+  body.pngm-auth-v2.pre-account.pngm-auth,
+  body.pngm-auth-v2.pre-account.pngm-auth .content,
+  body.pngm-posting,
+  body.pngm-posting .content {
+    overflow-x: visible !important;
+  }
+
+  /* Challenge backdrop + frame Google injects under body */
+  body > div[style*="z-index: 2000000000"],
+  body > div[style*="z-index: 2000000000"] > div[style*="position: absolute"],
+  body > div[style*="z-index: 2000000000"] > div[style*="position: fixed"] {
+    max-width: 100vw !important;
+  }
+
+  iframe[src*="recaptcha/api2/bframe"],
+  iframe[src*="recaptcha/enterprise/bframe"],
+  iframe[title*="recaptcha challenge" i],
+  iframe[title*="challenge" i][src*="recaptcha"] {
+    max-width: calc(100vw - 16px) !important;
+  }
+}
+
+body.pngm-auth-v2 .pngm-auth-captcha {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+.pngm-post-captcha {
+  overflow: visible !important;
+  max-width: 100%;
+}
+
+.pngm-post-captcha .g-recaptcha {
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
 @media screen and (max-width: 767px) {
   body.pngm-auth-v2.pre-account.pngm-auth,
   body.pngm-auth-v2.pre-account.pngm-auth .content {
