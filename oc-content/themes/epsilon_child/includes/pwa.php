@@ -284,6 +284,7 @@ function pngm_pwa_register_sw_footer()
         'install' => __('Install app', 'epsilon'),
         'iosTitle' => __('Add to Home Screen', 'epsilon'),
         'iosBody' => __('On iPhone/iPad: tap Share, then “Add to Home Screen”.', 'epsilon'),
+        'androidGuide' => __('Chrome could not open the install dialog on this device. In Chrome: tap the menu (⋮) → “Install app” or “Add to Home screen”. Then open PNGMarket from the home screen — “This session” will show standalone.', 'epsilon'),
         'gotIt' => __('Got it', 'epsilon'),
         'dismiss' => __('Not now', 'epsilon'),
     );
@@ -359,8 +360,9 @@ function pngm_pwa_register_sw_footer()
     try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
   }
 
-  function showBanner(mode) {
-    if (!banner || !isMobileish() || wasDismissed()) return;
+  function showBanner(mode, force) {
+    if (!banner) return;
+    if (!force && (!isMobileish() || wasDismissed())) return;
     if (mode === 'standalone') return;
     var title = banner.querySelector('[data-pngm-pwa-title]');
     var body = banner.querySelector('[data-pngm-pwa-body]');
@@ -378,13 +380,16 @@ function pngm_pwa_register_sw_footer()
     } else {
       // Android/desktop Chrome may delay beforeinstallprompt — still show guidance.
       if (title) title.textContent = L.title;
-      if (body) body.textContent = L.body;
+      if (body) body.textContent = L.androidGuide || L.body;
       if (primary) {
         primary.textContent = L.gotIt;
       }
       banner.setAttribute('data-mode', 'guide');
     }
     banner.hidden = false;
+    try {
+      banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) {}
   }
 
   function bindBanner() {
@@ -417,6 +422,10 @@ function pngm_pwa_register_sw_footer()
     var btn = e.target && e.target.closest ? e.target.closest('[data-pngm-pwa-install-btn]') : null;
     if (!btn) return;
     e.preventDefault();
+    if (detectDisplayMode() === 'standalone') {
+      window.alert(<?php echo json_encode(__('PNGMarket is already running as an installed app on this device.', 'epsilon')); ?>);
+      return;
+    }
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function () { deferredPrompt = null; }).catch(function () {});
@@ -426,7 +435,9 @@ function pngm_pwa_register_sw_footer()
       window.alert(L.iosBody);
       return;
     }
-    showBanner(detectDisplayMode());
+    // Emulators / some Android builds never fire beforeinstallprompt — always explain.
+    window.alert(L.androidGuide || L.body);
+    showBanner(detectDisplayMode(), true);
   });
 
   window.addEventListener('beforeinstallprompt', function (e) {
