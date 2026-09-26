@@ -67,6 +67,9 @@
     var summaryMessages = [];
     var suggestTimer = null;
     var lastSuggestKey = '';
+    var titleDupTimer = null;
+    var titleDupReq = 0;
+    var titleDupState = { key: '', status: 'idle', message: '' };
 
     function normalizeText(s) {
       return String(s || '')
@@ -1084,6 +1087,117 @@
       return ok;
     }
 
+    function normalizeTitleKey(title) {
+      return String(title || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s.\-]+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function titleDupAjaxUrl() {
+      var base = (cfg.ajaxUrl && String(cfg.ajaxUrl)) ||
+        (typeof window.baseAjaxUrl === 'string' && window.baseAjaxUrl) ||
+        (window.location.origin + window.location.pathname);
+      if (base.indexOf('page=') >= 0 || base.indexOf('ajaxRequest') >= 0) {
+        return base
+          .replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_check_duplicate_title')
+          .replace(/page=[^&]+/, 'page=ajax')
+          .replace(/action=[^&]+/, 'action=runhook');
+      }
+      var join = base.indexOf('?') >= 0 ? '&' : '?';
+      return base + join + 'page=ajax&action=runhook&hook=pngm_check_duplicate_title';
+    }
+
+    /**
+     * Exact duplicate title check against the seller's recent listings (step 1).
+     * @param {string} title
+     * @param {{force?:boolean}} opts
+     * @returns {JQuery.Promise}
+     */
+    function checkDuplicateTitle(title, opts) {
+      opts = opts || {};
+      var trimmed = $.trim(String(title || ''));
+      var key = normalizeTitleKey(trimmed);
+      var $titleInput = $form.find('input[name^="title"]');
+      var deferred = $.Deferred();
+
+      if (trimmed.length < 3 || !key) {
+        titleDupState = { key: key, status: 'idle', message: '' };
+        deferred.resolve(true);
+        return deferred.promise();
+      }
+
+      if (!opts.force && titleDupState.key === key && (titleDupState.status === 'ok' || titleDupState.status === 'block')) {
+        deferred.resolve(titleDupState.status === 'ok');
+        return deferred.promise();
+      }
+
+      titleDupState = { key: key, status: 'checking', message: '' };
+      var reqId = ++titleDupReq;
+      $.ajax({
+        url: titleDupAjaxUrl(),
+        method: 'GET',
+        dataType: 'json',
+        cache: false,
+        data: {
+          title: trimmed,
+          itemId: cfg.itemId || 0
+        }
+      }).done(function (res) {
+        if (reqId !== titleDupReq) {
+          return;
+        }
+        var blocked = res && (res.ok === false || res.action === 'block');
+        if (blocked) {
+          titleDupState = {
+            key: key,
+            status: 'block',
+            message: (res && res.message) || labels.dupTitleFail || 'A listing with this title already exists. Please choose a different title.'
+          };
+          showError($titleInput, titleDupState.message);
+          deferred.resolve(false);
+          return;
+        }
+        titleDupState = { key: key, status: 'ok', message: '' };
+        if (normalizeTitleKey($titleInput.val() || '') === key) {
+          clearErrorFor($titleInput);
+        }
+        deferred.resolve(true);
+      }).fail(function () {
+        if (reqId !== titleDupReq) {
+          return;
+        }
+        // Network failure: do not block the wizard; server still enforces on publish.
+        titleDupState = { key: key, status: 'idle', message: '' };
+        deferred.resolve(true);
+      });
+
+      return deferred.promise();
+    }
+
+    function scheduleDuplicateTitleCheck() {
+      window.clearTimeout(titleDupTimer);
+      titleDupTimer = window.setTimeout(function () {
+        var title = $.trim($form.find('input[name^="title"]').val() || '');
+        if (title.length < 3) {
+          titleDupState = { key: '', status: 'idle', message: '' };
+          return;
+        }
+        checkDuplicateTitle(title);
+      }, 450);
+    }
+
+    function goNextFromStep1() {
+      var leafId = String($sub.val() || $catId.val() || '').trim();
+      if (leafId) {
+        // Do not force-reload: that wiped Make/Accessories/etc. on every Next.
+        loadCategoryAttributes(leafId);
+      }
+      clearErrorSummary();
+      showStep(step + 1);
+    }
+
     function validateStep(n) {
       clearFieldErrors();
       $form.find('.control-group.is-invalid, .atr-field.is-invalid, .pngm-post-price-field.is-invalid').removeClass('is-invalid');
@@ -1091,11 +1205,15 @@
         var rootId = String($root.val() || '').trim();
         var leafId = String($sub.val() || '').trim();
         var $catGrid = $form.find('.pngm-post-cat-grid');
-        var title = $form.find('input[name^="title"]').val() || '';
+        var $titleInput = $form.find('input[name^="title"]');
+        var title = $titleInput.val() || '';
         var okStep1 = true;
 
         if ($.trim(title).length < 3) {
-          showError($form.find('input[name^="title"]'), labels.needTitle);
+          showError($titleInput, labels.needTitle);
+          okStep1 = false;
+        } else if (titleDupState.status === 'block' && titleDupState.key === normalizeTitleKey(title)) {
+          showError($titleInput, titleDupState.message || labels.dupTitleFail || 'A listing with this title already exists. Please choose a different title.');
           okStep1 = false;
         }
 
@@ -1858,7 +1976,10 @@
 
     // Live error clearing — an error disappears the moment the field is valid.
     $form.on('input.pngmPostClear', 'input[name^="title"]', function () {
-      if ($.trim($(this).val() || '').length >= 3) {
+      var t = $.trim($(this).val() || '');
+      // Title changed — invalidate any previous duplicate result.
+      titleDupState = { key: '', status: 'idle', message: '' };
+      if (t.length >= 3) {
         clearErrorFor($(this));
       }
     });
@@ -1960,6 +2081,14 @@
       var t = $.trim($(this).val() || '');
       updateSummary(null, null, t || '—');
       scheduleCategorySuggestions();
+      scheduleDuplicateTitleCheck();
+    });
+
+    $form.on('blur', 'input[name^="title"]', function () {
+      var t = $.trim($(this).val() || '');
+      if (t.length >= 3) {
+        checkDuplicateTitle(t);
+      }
     });
 
     $sub.on('change input', function () {
@@ -2020,17 +2149,27 @@
     });
 
     $next.on('click', function () {
-      if (!validateStep(step)) {
+      if (step === 1) {
+        if (!validateStep(1)) {
+          return;
+        }
+        var $titleInput = $form.find('input[name^="title"]');
+        var title = $.trim($titleInput.val() || '');
+        var $btn = $next;
+        $btn.prop('disabled', true).attr('aria-busy', 'true');
+        checkDuplicateTitle(title, { force: true }).always(function () {
+          $btn.prop('disabled', false).removeAttr('aria-busy');
+        }).done(function (ok) {
+          if (!ok) {
+            // Re-run sync validate to surface the dup error + summary.
+            validateStep(1);
+            return;
+          }
+          goNextFromStep1();
+        });
         return;
       }
-      if (step === 1) {
-        var leafId = String($sub.val() || $catId.val() || '').trim();
-        if (leafId) {
-          // Do not force-reload: that wiped Make/Accessories/etc. on every Next.
-          loadCategoryAttributes(leafId);
-        }
-        clearErrorSummary();
-        showStep(step + 1);
+      if (!validateStep(step)) {
         return;
       }
       if (step === 2) {

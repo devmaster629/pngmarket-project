@@ -2,9 +2,11 @@
 /**
  * P2-004 / QA-007 — Duplicate listing prevention.
  *
- * Identical titles are allowed: different items often share a name.
- * A same-seller repost is blocked only when the title and description
- * both closely match an existing listing.
+ * Same seller cannot reuse an identical title on a non-expired listing
+ * (case / spacing / punctuation-insensitive). Other users' titles never block.
+ * Slight differences are allowed, e.g. "Genset 3.2kw" vs "Genset 3.8kw".
+ * Expired listings are ignored so the title can be posted again.
+ * Fuzzy near-match scoring is not used for titles.
  * Throttle rapid posting when limits are non-zero.
  *
  * Soft "moderate → pending" was removed: every successful publish stays active.
@@ -20,12 +22,6 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 
 if (!defined('PNGM_DUP_WINDOW_DAYS')) {
     define('PNGM_DUP_WINDOW_DAYS', 30);
-}
-if (!defined('PNGM_DUP_BLOCK_SCORE')) {
-    define('PNGM_DUP_BLOCK_SCORE', 90);
-}
-if (!defined('PNGM_DUP_MODERATE_SCORE')) {
-    define('PNGM_DUP_MODERATE_SCORE', 75);
 }
 if (!defined('PNGM_DUP_MAX_PER_HOUR')) {
     define('PNGM_DUP_MAX_PER_HOUR', 0);
@@ -85,52 +81,39 @@ function pngm_dup_primary_description($descriptions)
 }
 
 /**
- * Normalize title for comparison.
+ * Normalize title for exact duplicate comparison.
+ * Keeps letters, numbers, dots and hyphens so "3.2kw" ≠ "3.8kw".
+ * Collapses case/spacing and strips other punctuation ("Test!" ≡ "test").
  *
  * @param string $title
  * @return string
  */
 function pngm_dup_normalize_title($title)
 {
-    $title = strtolower(trim(strip_tags((string) $title)));
+    $title = trim(strip_tags((string) $title));
     if (function_exists('mb_strtolower')) {
-        $title = mb_strtolower(trim(strip_tags((string) $title)), 'UTF-8');
+        $title = mb_strtolower($title, 'UTF-8');
+    } else {
+        $title = strtolower($title);
     }
-    $title = preg_replace('/\s+/u', ' ', $title);
-    $title = preg_replace('/[^\p{L}\p{N}\s]+/u', '', $title);
+    // Keep word characters, digits, spaces, decimal points, hyphens.
+    $title = preg_replace('/[^\p{L}\p{N}\s.\-]+/u', '', $title);
+    $title = preg_replace('/\s+/u', ' ', (string) $title);
     return trim((string) $title);
 }
 
 /**
- * Similarity 0–100 between two titles.
+ * True when two titles are the same after normalization.
  *
  * @param string $a
  * @param string $b
- * @return int
+ * @return bool
  */
-function pngm_dup_title_score($a, $b)
+function pngm_dup_titles_identical($a, $b)
 {
     $a = pngm_dup_normalize_title($a);
     $b = pngm_dup_normalize_title($b);
-    if ($a === '' || $b === '') {
-        return 0;
-    }
-    if ($a === $b) {
-        return 100;
-    }
-    $percent = 0.0;
-    similar_text($a, $b, $percent);
-    $score = (int) round($percent);
-
-    if (function_exists('levenshtein') && strlen($a) <= 255 && strlen($b) <= 255) {
-        $max = max(strlen($a), strlen($b));
-        if ($max > 0) {
-            $lev = 100 - (int) round((levenshtein($a, $b) / $max) * 100);
-            $score = max($score, $lev);
-        }
-    }
-
-    return max(0, min(100, $score));
+    return ($a !== '' && $a === $b);
 }
 
 /**
@@ -148,11 +131,15 @@ function pngm_dup_db()
 }
 
 /**
- * Recent listings by the same seller (user id and/or email and/or IP).
+ * Non-expired listings owned by this seller only.
+ *
+ * Logged-in: match by user id only (never IP — shared networks were matching
+ * other people's titles). Guest: match by contact email only.
+ * Expired ads are ignored so the same title can be reused after expiry.
  *
  * @param int    $user_id
  * @param string $email
- * @param string $ip
+ * @param string $ip  unused (kept for callers); IP is intentionally not used
  * @param int    $exclude_item_id
  * @return array
  */
@@ -160,23 +147,18 @@ function pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id = 0)
 {
     $user_id = (int) $user_id;
     $email = strtolower(trim((string) $email));
-    $ip = trim((string) $ip);
     $exclude_item_id = (int) $exclude_item_id;
     $days = (int) PNGM_DUP_WINDOW_DAYS;
     $prefix = DB_TABLE_PREFIX;
     $out = array();
 
-    $seller_bits = array();
+    // Same account only — do not OR with IP (that linked other users on the same network).
+    $seller_sql = '';
     if ($user_id > 0) {
-        $seller_bits[] = 'i.fk_i_user_id = ' . $user_id;
-    }
-    if ($email !== '') {
-        $seller_bits[] = 'LOWER(i.s_contact_email) = "' . addslashes($email) . '"';
-    }
-    if ($ip !== '' && $ip !== '127.0.0.1' && $ip !== '::1') {
-        $seller_bits[] = 'i.s_ip = "' . addslashes($ip) . '"';
-    }
-    if (empty($seller_bits)) {
+        $seller_sql = 'i.fk_i_user_id = ' . $user_id;
+    } elseif ($email !== '') {
+        $seller_sql = 'LOWER(i.s_contact_email) = "' . addslashes($email) . '"';
+    } else {
         return $out;
     }
 
@@ -188,19 +170,22 @@ function pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id = 0)
     try {
         $where = array();
         $where[] = 'i.b_spam = 0';
+        $where[] = 'i.b_enabled = 1';
+        // Soft-expired listings do not block reusing the title.
+        $where[] = '(i.dt_expiration >= NOW() OR i.dt_expiration LIKE "9999%")';
         $where[] = sprintf('i.dt_pub_date >= DATE_SUB(NOW(), INTERVAL %d DAY)', $days);
-        $where[] = '(' . implode(' OR ', $seller_bits) . ')';
+        $where[] = $seller_sql;
         if ($exclude_item_id > 0) {
             $where[] = 'i.pk_i_id <> ' . $exclude_item_id;
         }
 
         $sql = sprintf(
-            'SELECT i.pk_i_id, i.fk_i_category_id, i.i_price, i.dt_pub_date, d.s_title, d.s_description
+            'SELECT i.pk_i_id, i.fk_i_category_id, i.i_price, i.dt_pub_date, i.dt_expiration, d.s_title, d.s_description
              FROM %st_item i
              INNER JOIN %st_item_description d ON d.fk_i_item_id = i.pk_i_id
              WHERE %s
              ORDER BY i.dt_pub_date DESC
-             LIMIT 50',
+             LIMIT 80',
             $prefix,
             $prefix,
             implode(' AND ', $where)
@@ -219,6 +204,14 @@ function pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id = 0)
             if ($id <= 0 || isset($out[$id])) {
                 continue;
             }
+            // Extra safety if MySQL NOW() edge-cases slip through.
+            if (!empty($row['dt_expiration'])
+                && strpos((string) $row['dt_expiration'], '9999') !== 0
+                && function_exists('osc_isExpired')
+                && osc_isExpired($row['dt_expiration'])
+            ) {
+                continue;
+            }
             $out[$id] = $row;
         }
     } catch (Exception $e) {
@@ -229,70 +222,29 @@ function pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id = 0)
 }
 
 /**
- * Site-wide exact normalized title match (any seller).
+ * Find same-seller listing with an identical normalized title.
  *
  * @param string $title
+ * @param int    $user_id
+ * @param string $email
+ * @param string $ip
  * @param int    $exclude_item_id
  * @return array|null
  */
-function pngm_dup_find_exact_title_any($title, $exclude_item_id = 0)
+function pngm_dup_find_identical_title_for_seller($title, $user_id, $email, $ip, $exclude_item_id = 0)
 {
     $norm = pngm_dup_normalize_title($title);
     if ($norm === '') {
         return null;
     }
 
-    $exclude_item_id = (int) $exclude_item_id;
-    $days = (int) PNGM_DUP_WINDOW_DAYS;
-    $prefix = DB_TABLE_PREFIX;
-    $comm = pngm_dup_db();
-    if (!$comm) {
-        return null;
+    $recent = pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id);
+    foreach ($recent as $row) {
+        $other = isset($row['s_title']) ? (string) $row['s_title'] : '';
+        if (pngm_dup_titles_identical($title, $other)) {
+            return $row;
+        }
     }
-
-    // Pull recent non-spam titles and compare normalized in PHP (handles punctuation / case).
-    try {
-        $where = array();
-        $where[] = 'i.b_spam = 0';
-        $where[] = 'i.b_enabled = 1';
-        $where[] = sprintf('i.dt_pub_date >= DATE_SUB(NOW(), INTERVAL %d DAY)', $days);
-        if ($exclude_item_id > 0) {
-            $where[] = 'i.pk_i_id <> ' . $exclude_item_id;
-        }
-        // Cheap SQL prefilter: same length ±2 or LIKE first word.
-        $raw = addslashes(trim(strip_tags((string) $title)));
-        $where[] = '(LOWER(TRIM(d.s_title)) = "' . addslashes($norm) . '" OR LOWER(TRIM(d.s_title)) = "' . strtolower($raw) . '" OR d.s_title = "' . $raw . '")';
-
-        $sql = sprintf(
-            'SELECT i.pk_i_id, i.fk_i_user_id, d.s_title, i.dt_pub_date
-             FROM %st_item i
-             INNER JOIN %st_item_description d ON d.fk_i_item_id = i.pk_i_id
-             WHERE %s
-             ORDER BY i.dt_pub_date DESC
-             LIMIT 20',
-            $prefix,
-            $prefix,
-            implode(' AND ', $where)
-        );
-        $rs = $comm->query($sql);
-        if (!$rs) {
-            return null;
-        }
-        $rows = $rs->result();
-        if (!is_array($rows)) {
-            return null;
-        }
-
-        foreach ($rows as $row) {
-            $other = isset($row['s_title']) ? (string) $row['s_title'] : '';
-            if (pngm_dup_normalize_title($other) === $norm) {
-                return $row;
-            }
-        }
-    } catch (Exception $e) {
-        return null;
-    }
-
     return null;
 }
 
@@ -431,7 +383,6 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
     }
 
     $title = pngm_dup_primary_title(isset($aItem['title']) ? $aItem['title'] : array());
-    $desc = pngm_dup_primary_description(isset($aItem['description']) ? $aItem['description'] : array());
 
     // --- Throttle (0 = disabled) ---
     $max_per_hour = (int) PNGM_DUP_MAX_PER_HOUR;
@@ -461,55 +412,24 @@ function pngm_dup_evaluate($aItem, $exclude_item_id = 0)
         }
     }
 
-    if ($title === '') {
+    if ($title === '' || pngm_dup_normalize_title($title) === '') {
         return $result;
     }
 
-    // Identical titles are allowed. Only a same-seller copy of both title
-    // and description counts as a duplicate.
-    $recent = pngm_dup_find_seller_items($user_id, $email, $ip, $exclude_item_id);
-    $best_score = 0;
-    $best_id = 0;
-    $best_title = '';
-
-    foreach ($recent as $row) {
-        $other_title = isset($row['s_title']) ? (string) $row['s_title'] : '';
-        $title_score = pngm_dup_title_score($title, $other_title);
-        $score = 0;
-
-        $other_desc = isset($row['s_description']) ? trim(strip_tags((string) $row['s_description'])) : '';
-        if ($title_score >= 90 && $desc !== '' && $other_desc !== '') {
-            $dscore = 0.0;
-            similar_text(
-                pngm_dup_normalize_title(substr($desc, 0, 400)),
-                pngm_dup_normalize_title(substr($other_desc, 0, 400)),
-                $dscore
-            );
-            if ($dscore >= 85) {
-                $score = 100;
-            }
-        }
-
-        if ($score > $best_score) {
-            $best_score = $score;
-            $best_id = isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0;
-            $best_title = $other_title;
-        }
-    }
-
-    $result['score'] = $best_score;
-    $result['match_id'] = $best_id;
-
-    if ($best_score >= (int) PNGM_DUP_BLOCK_SCORE) {
+    // Exact title only (same seller). Slight differences are allowed.
+    $match = pngm_dup_find_identical_title_for_seller($title, $user_id, $email, $ip, $exclude_item_id);
+    if (is_array($match)) {
+        $best_title = isset($match['s_title']) ? (string) $match['s_title'] : $title;
         $result['action'] = 'block';
+        $result['score'] = 100;
+        $result['match_id'] = isset($match['pk_i_id']) ? (int) $match['pk_i_id'] : 0;
         $result['message'] = sprintf(
-            __('This listing looks like a duplicate of one you already posted (“%s”). Please edit that listing instead of creating another.', 'epsilon'),
+            __('You already have a listing with this exact title (“%s”). Please use a different title, or edit your existing listing.', 'epsilon'),
             $best_title !== '' ? $best_title : __('your earlier ad', 'epsilon')
         );
         return $result;
     }
 
-    // Near-duplicates used to force pending (b_active=0). Publish stays active now.
     return $result;
 }
 
@@ -597,15 +517,57 @@ function pngm_dup_posted_item_notice($item)
 osc_add_hook('posted_item', 'pngm_dup_posted_item_notice', 8);
 
 /**
- * AJAX kept for older post-wizard scripts. Titles are not unique, so this
- * no longer rejects a listing.
+ * AJAX: exact duplicate title check for the logged-in seller (post wizard).
  */
 function pngm_ajax_check_duplicate_title()
 {
     header('Content-Type: application/json; charset=utf-8');
+
+    $title = '';
+    if (class_exists('Params')) {
+        $title = trim((string) Params::getParam('title', false, false));
+        if ($title === '' && isset($_POST['title'])) {
+            $title = trim((string) $_POST['title']);
+        }
+    }
+    $exclude = class_exists('Params') ? (int) Params::getParam('itemId') : 0;
+
+    if ($title === '' || pngm_dup_normalize_title($title) === '') {
+        echo json_encode(array('ok' => true, 'action' => 'ok'));
+        exit;
+    }
+
+    $user_id = 0;
+    $email = '';
+    $ip = function_exists('osc_get_ip') ? (string) osc_get_ip() : '';
+    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
+        $user_id = (int) osc_logged_user_id();
+        if (function_exists('osc_logged_user_email')) {
+            $email = strtolower(trim((string) osc_logged_user_email()));
+        }
+    }
+
+    $aItem = array(
+        'userId' => $user_id,
+        'contactEmail' => $email,
+        's_ip' => $ip,
+        'title' => $title,
+    );
+    $eval = pngm_dup_evaluate($aItem, $exclude);
+
+    if ($eval['action'] === 'block') {
+        echo json_encode(array(
+            'ok' => false,
+            'action' => 'block',
+            'message' => $eval['message'],
+            'match_id' => (int) $eval['match_id'],
+        ));
+        exit;
+    }
+
     echo json_encode(array('ok' => true, 'action' => 'ok'));
     exit;
 }
 osc_add_hook('ajax_pngm_check_duplicate_title', 'pngm_ajax_check_duplicate_title');
 
-/* pngm:duplicate_listings-ok-20260924 */
+/* pngm:duplicate_listings-own-active-title-20260926 */
