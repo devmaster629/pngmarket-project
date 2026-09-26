@@ -23,9 +23,13 @@
 
           <?php if (function_exists('pngm_render_social_login')) { pngm_render_social_login('login', 'row'); } ?>
 
-          <form action="<?php echo osc_base_url(true); ?>" method="post" class="pngm-auth-form" id="pngm-login-form">
-            <input type="hidden" name="page" value="login" />
-            <input type="hidden" name="action" value="login_post" />
+          <?php
+            // Put page/action in the form URL so there is no <input name="action">.
+            // That input shadows form.action in JS and becomes "[object HTMLInputElement]".
+            $pngm_login_post = (string) osc_base_url(true);
+            $pngm_login_post .= (strpos($pngm_login_post, '?') !== false ? '&' : '?') . 'page=login&action=login_post';
+          ?>
+          <form action="<?php echo osc_esc_html($pngm_login_post); ?>" method="post" class="pngm-auth-form" id="pngm-login-form" data-pngm-post-url="<?php echo osc_esc_html($pngm_login_post); ?>">
 
             <?php osc_run_hook('user_pre_login_form'); ?>
 
@@ -113,6 +117,7 @@
       });
 
       var failMsg = '<?php echo osc_esc_js(__('Could not sign in. Please check your email and password.', 'epsilon')); ?>';
+      var homeUrl = <?php echo json_encode(osc_base_url()); ?>;
       var $form = $('#pngm-login-form');
 
       function isLoginPage(url, html) {
@@ -124,6 +129,10 @@
             return true;
           }
           if (/\/login\/?$/.test(u.pathname)) {
+            return true;
+          }
+          // Broken form.action shadowing landed on this junk path.
+          if (/HTMLInputElement/i.test(u.pathname + u.href)) {
             return true;
           }
         } catch (err) {}
@@ -161,18 +170,37 @@
         var $btn = $form.find('.pngm-auth-submit');
         $btn.prop('disabled', true);
 
-        fetch(formEl.action, {
+        // Prefer data-pngm-post-url / getAttribute — never formEl.action (can be
+        // shadowed by <input name="action"> into "[object HTMLInputElement]").
+        var postUrl = formEl.getAttribute('data-pngm-post-url')
+          || formEl.getAttribute('action')
+          || $form.attr('data-pngm-post-url')
+          || $form.attr('action')
+          || <?php echo json_encode($pngm_login_post); ?>
+          || '';
+        if (typeof postUrl !== 'string' || !postUrl || /HTMLInputElement/i.test(postUrl)) {
+          postUrl = <?php echo json_encode($pngm_login_post); ?>;
+        }
+        if (!postUrl) {
+          $form.data('pngm-busy', 0);
+          $btn.prop('disabled', false);
+          formEl.submit();
+          return;
+        }
+
+        fetch(String(postUrl), {
           method: 'POST',
           body: new FormData(formEl),
           credentials: 'same-origin',
           redirect: 'follow'
         }).then(function (res) {
           return res.text().then(function (html) {
-            return { url: res.url, html: html };
+            return { url: res.url, html: html, ok: res.ok };
           });
         }).then(function (payload) {
+          // Always land on homepage after a successful login.
           if (!isLoginPage(payload.url, payload.html)) {
-            window.location.href = payload.url || window.location.href;
+            window.location.replace(homeUrl);
             return;
           }
           var errors = errorTexts(payload.html);

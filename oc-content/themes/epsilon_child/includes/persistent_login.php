@@ -280,3 +280,18 @@ osc_add_hook('init', 'pngm_persist_force_remember_param', 2);
 osc_add_hook('init', 'pngm_persist_refresh_while_logged_in', 20);
 // After 2FA gate (priority 5): persist when login is fully accepted.
 osc_add_hook('after_login', 'pngm_persist_after_login', 9);
+
+/**
+ * After a successful login, always land on the public homepage
+ * (not dashboard / stale referer / broken JS paths).
+ *
+ * @param string $url
+ * @return string
+ */
+function pngm_login_redirect_homepage($url)
+{
+    unset($url);
+    return osc_base_url();
+}
+
+osc_add_filter('correct_login_url_redirect', 'pngm_login_redirect_homepage');
