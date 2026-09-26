@@ -513,10 +513,17 @@ function pngm_listing_expiry_warn_notify_inapp($aItem)
         );
 
     // Activity feed (bell) — same channel as other listing events.
-    pngm_activity_add($user_id, 'listing_expiring', $subject, $body, $listings_url);
+    $email_ok = function_exists('pngm_notif_user_allows')
+        && pngm_notif_user_allows($user_id, 'listing_expiring', 'email');
+    $push_ok = function_exists('pngm_notif_user_allows')
+        && pngm_notif_user_allows($user_id, 'listing_expiring', 'push');
+
+    if ($email_ok || $push_ok) {
+        pngm_activity_add($user_id, 'listing_expiring', $subject, $body, $listings_url);
+    }
 
     // Browser push when the user allows “Listing expiring” push.
-    if (function_exists('pngm_notif_queue_push')) {
+    if ($push_ok && function_exists('pngm_notif_queue_push')) {
         pngm_notif_queue_push($user_id, 'listing_expiring', $subject, $body, $listings_url);
     }
 }
@@ -677,8 +684,84 @@ function pngm_listing_expiry_cron_warn()
 }
 
 /**
+ * How far back to look for never-notified expired listings (missed cron still delivers).
+ */
+if (!defined('PNGM_LISTING_EXPIRED_LOOKBACK_DAYS')) {
+    define('PNGM_LISTING_EXPIRED_LOOKBACK_DAYS', 14);
+}
+
+/**
+ * Notify one listing owner that their ad expired (email + Activity + push per prefs).
+ *
+ * @param array $item
+ * @return bool true when a notification attempt was made (and dedupe flag set)
+ */
+function pngm_listing_expiry_notify_expired_item($item)
+{
+    if (!is_array($item) || empty($item['pk_i_id']) || empty($item['s_contact_email'])) {
+        return false;
+    }
+    if (!function_exists('pngm_notif_notify_user') || !function_exists('pngm_notif_item_owner_id')) {
+        return false;
+    }
+
+    $id = (int) $item['pk_i_id'];
+    if ($id <= 0 || pngm_listing_expiry_expired_was_notified($id)) {
+        return false;
+    }
+
+    $user_id = pngm_notif_item_owner_id($item);
+    if ($user_id <= 0) {
+        return false;
+    }
+
+    $title = function_exists('pngm_notif_item_title') ? pngm_notif_item_title($item) : __('Listing', 'epsilon');
+    View::newInstance()->_exportVariableToView('item', $item);
+    $item_url = function_exists('osc_item_url') ? osc_item_url() : osc_base_url();
+    $renew_url = pngm_listing_renew_url($item);
+    $listings_url = function_exists('osc_user_items_url') ? osc_user_items_url() : osc_base_url();
+    $days_label = (string) PNGM_LISTING_ACTIVE_DAYS;
+    $name = !empty($item['s_contact_name']) ? $item['s_contact_name'] : __('there', 'epsilon');
+
+    $subject = sprintf(__('Listing expired: %s', 'epsilon'), $title);
+
+    $body  = '<p>' . sprintf(__('Hi %s,', 'epsilon'), osc_esc_html($name)) . '</p>';
+    $body .= '<p>' . sprintf(
+        __('Your listing “%s” has expired. It is now Expired/Inactive and was not deleted.', 'epsilon'),
+        osc_esc_html($title)
+    ) . '</p>';
+    $body .= '<p>' . sprintf(
+        __('You can renew it for another %s days.', 'epsilon'),
+        osc_esc_html($days_label)
+    ) . '</p>';
+    if ($renew_url !== '') {
+        $body .= '<p><a href="' . osc_esc_html($renew_url) . '"><strong>'
+            . osc_esc_html(__('Renew listing', 'epsilon')) . '</strong></a></p>';
+    }
+    $body .= '<p><a href="' . osc_esc_html($item_url) . '">' . osc_esc_html($item_url) . '</a></p>';
+    $body .= '<p><a href="' . osc_esc_html($listings_url) . '">'
+        . osc_esc_html(__('Open My Listings', 'epsilon')) . '</a></p>';
+
+    // Mark before SMTP so a hung mailer cannot leave the listing unmarked forever.
+    pngm_listing_expiry_expired_mark_notified($id);
+
+    pngm_notif_notify_user(
+        $user_id,
+        'listing_expired',
+        $item['s_contact_email'],
+        isset($item['s_contact_name']) ? $item['s_contact_name'] : '',
+        $subject,
+        $body,
+        $renew_url !== '' ? $renew_url : $item_url,
+        'pngm_listing_expired'
+    );
+
+    return true;
+}
+
+/**
  * Hourly: notify owners of listings that expired recently (with Renew CTA).
- * Looks back up to 48h and dedupes so a missed cron still delivers once.
+ * Looks back up to PNGM_LISTING_EXPIRED_LOOKBACK_DAYS and dedupes so a missed cron still delivers once.
  * Replaces pngm_notif_cron_listing_expired.
  */
 function pngm_listing_expiry_cron_expired()
@@ -686,8 +769,12 @@ function pngm_listing_expiry_cron_expired()
     if (!function_exists('pngm_notif_notify_user') || !function_exists('pngm_notif_item_owner_id')) {
         return;
     }
+    if (!defined('DB_TABLE_PREFIX') || !class_exists('Item')) {
+        return;
+    }
 
-    $from = date('Y-m-d H:i:s', time() - (48 * 3600));
+    $lookback = max(2, (int) PNGM_LISTING_EXPIRED_LOOKBACK_DAYS) * 86400;
+    $from = date('Y-m-d H:i:s', time() - $lookback);
     $to = date('Y-m-d H:i:s');
     $prefix = DB_TABLE_PREFIX;
 
@@ -697,7 +784,10 @@ function pngm_listing_expiry_cron_expired()
         $comm = new DBCommandClass($data);
         // Include recently demoted premium (b_premium cleared when expired).
         $sql = sprintf(
-            'SELECT pk_i_id FROM %st_item WHERE dt_expiration BETWEEN "%s" AND "%s"',
+            'SELECT pk_i_id FROM %st_item
+             WHERE dt_expiration BETWEEN "%s" AND "%s"
+             ORDER BY dt_expiration DESC
+             LIMIT 300',
             $prefix,
             $from,
             $to
@@ -715,64 +805,56 @@ function pngm_listing_expiry_cron_expired()
         return;
     }
 
-    $listings_url = function_exists('osc_user_items_url') ? osc_user_items_url() : osc_base_url();
-    $days_label = (string) PNGM_LISTING_ACTIVE_DAYS;
-
     foreach ($rows as $row) {
         $id = isset($row['pk_i_id']) ? (int) $row['pk_i_id'] : 0;
         if ($id <= 0 || pngm_listing_expiry_expired_was_notified($id)) {
             continue;
         }
         $item = Item::newInstance()->findByPrimaryKey($id);
-        if (!is_array($item) || empty($item['s_contact_email'])) {
+        if (!is_array($item)) {
             continue;
         }
-
-        $user_id = pngm_notif_item_owner_id($item);
-        if ($user_id <= 0) {
-            continue;
-        }
-
-        $title = function_exists('pngm_notif_item_title') ? pngm_notif_item_title($item) : __('Listing', 'epsilon');
-        View::newInstance()->_exportVariableToView('item', $item);
-        $item_url = function_exists('osc_item_url') ? osc_item_url() : osc_base_url();
-        $renew_url = pngm_listing_renew_url($item);
-        $name = !empty($item['s_contact_name']) ? $item['s_contact_name'] : __('there', 'epsilon');
-
-        $subject = sprintf(__('Listing expired: %s', 'epsilon'), $title);
-
-        $body  = '<p>' . sprintf(__('Hi %s,', 'epsilon'), osc_esc_html($name)) . '</p>';
-        $body .= '<p>' . sprintf(
-            __('Your listing “%s” has expired. It is now Expired/Inactive and was not deleted.', 'epsilon'),
-            osc_esc_html($title)
-        ) . '</p>';
-        $body .= '<p>' . sprintf(
-            __('You can renew it for another %s days.', 'epsilon'),
-            osc_esc_html($days_label)
-        ) . '</p>';
-        if ($renew_url !== '') {
-            $body .= '<p><a href="' . osc_esc_html($renew_url) . '"><strong>'
-                . osc_esc_html(__('Renew listing', 'epsilon')) . '</strong></a></p>';
-        }
-        $body .= '<p><a href="' . osc_esc_html($item_url) . '">' . osc_esc_html($item_url) . '</a></p>';
-        $body .= '<p><a href="' . osc_esc_html($listings_url) . '">'
-            . osc_esc_html(__('Open My Listings', 'epsilon')) . '</a></p>';
-
-        pngm_notif_notify_user(
-            $user_id,
-            'listing_expired',
-            $item['s_contact_email'],
-            isset($item['s_contact_name']) ? $item['s_contact_name'] : '',
-            $subject,
-            $body,
-            $renew_url !== '' ? $renew_url : $item_url,
-            'pngm_listing_expired'
-        );
-        pngm_listing_expiry_expired_mark_notified($id);
+        pngm_listing_expiry_notify_expired_item($item);
     }
 }
 
+/**
+ * Front-end safety net when server crontab / hourly cron is late or missing.
+ * Throttled so normal page views stay cheap.
+ */
+function pngm_listing_expiry_catchup_on_init()
+{
+    if (!function_exists('osc_get_preference') || !function_exists('osc_set_preference')) {
+        return;
+    }
+    // Skip Oc-Admin and the dedicated cron endpoint (those already run hooks).
+    if (defined('OC_ADMIN') && OC_ADMIN) {
+        return;
+    }
+    if (class_exists('Params')) {
+        $page = (string) Params::getParam('page');
+        if ($page === 'cron') {
+            return;
+        }
+    }
+
+    $now = time();
+    $last = (int) osc_get_preference('pngm_expiry_catchup_ts', 'epsilon_child');
+    if ($last > 0 && ($now - $last) < 600) {
+        return;
+    }
+    osc_set_preference('pngm_expiry_catchup_ts', (string) $now, 'epsilon_child', 'STRING');
+
+    // Always demote premium that crossed expiry, then deliver missed reminders/expired mails.
+    pngm_listing_expiry_demote_expired_premium();
+    if (function_exists('pngm_listing_expiry_cron_warn')) {
+        pngm_listing_expiry_cron_warn();
+    }
+    pngm_listing_expiry_cron_expired();
+}
+
 osc_add_hook('init', 'pngm_listing_expiry_apply_policy', 4);
+osc_add_hook('init', 'pngm_listing_expiry_catchup_on_init', 25);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_enforce_category_days', 5);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_demote_expired_premium', 6);
 osc_add_hook('cron_hourly', 'pngm_listing_expiry_cron_warn', 7);

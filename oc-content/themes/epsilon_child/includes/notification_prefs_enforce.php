@@ -419,7 +419,10 @@ function pngm_notif_notify_user($user_id, $pref_key, $to_email, $to_name, $subje
         return;
     }
 
-    if (pngm_notif_user_allows($user_id, $pref_key, 'email')) {
+    $email_ok = pngm_notif_user_allows($user_id, $pref_key, 'email');
+    $push_ok = pngm_notif_user_allows($user_id, $pref_key, 'push');
+
+    if ($email_ok) {
         $emailParams = array(
             'from' => function_exists('_osc_from_email_aux') ? _osc_from_email_aux() : osc_contact_email(),
             'to' => $to_email,
@@ -431,12 +434,14 @@ function pngm_notif_notify_user($user_id, $pref_key, $to_email, $to_name, $subje
         osc_sendMail($emailParams, $mail_type);
     }
 
-    // Activity bell (never for chat — filtered inside pngm_activity_add).
-    if (function_exists('pngm_activity_add')) {
+    // Activity bell when the user opted into email and/or push for this event.
+    if (($email_ok || $push_ok) && function_exists('pngm_activity_add')) {
         pngm_activity_add($user_id, $pref_key, $subject, strip_tags($body), $url);
     }
 
-    pngm_notif_queue_push($user_id, $pref_key, $subject, strip_tags($body), $url);
+    if ($push_ok) {
+        pngm_notif_queue_push($user_id, $pref_key, $subject, strip_tags($body), $url);
+    }
 }
 
 /**
@@ -708,6 +713,210 @@ function pngm_im_on_insert_queue_push($message_id)
 osc_add_hook('im_insert_message', 'pngm_im_on_insert_queue_push', 8);
 
 /**
+ * Send IM notification email for a stored message (respects thread notify + prefs).
+ * Used when deferred mail is enabled so chat stays fast but email still delivers
+ * without waiting for minutely cron.
+ *
+ * @param int $message_id
+ * @return bool
+ */
+function pngm_im_deliver_email_for_message($message_id)
+{
+    $message_id = (int) $message_id;
+    if ($message_id <= 0 || !class_exists('ModelIM') || !function_exists('im_email_message_notify_from_row')) {
+        return false;
+    }
+
+    $msg = ModelIM::newInstance()->getMessageById($message_id);
+    if (!is_array($msg) || empty($msg['fk_i_thread_id'])) {
+        return false;
+    }
+    // Already emailed or already read — nothing to do.
+    if (!empty($msg['i_email_sent']) || !empty($msg['i_read'])) {
+        return false;
+    }
+
+    $thread_id = (int) $msg['fk_i_thread_id'];
+    $type = isset($msg['i_type']) ? (int) $msg['i_type'] : 0;
+    $thread = ModelIM::newInstance()->getThreadById($thread_id);
+    if (!is_array($thread) || (function_exists('im_is_valid_thread') && !im_is_valid_thread($thread))) {
+        return false;
+    }
+
+    if ($type === 0 && (int) @$thread['i_to_user_notify'] !== 1) {
+        return false;
+    }
+    if ($type === 1 && (int) @$thread['i_from_user_notify'] !== 1) {
+        return false;
+    }
+
+    // Same rule as plugin: notify_once skips if an earlier unread was already emailed.
+    if (function_exists('im_param') && (int) im_param('notify_once') === 1
+        && method_exists(ModelIM::newInstance(), 'hasUnreadNotifiedEmail')
+        && ModelIM::newInstance()->hasUnreadNotifiedEmail($thread_id, $type)
+    ) {
+        // Mark this row emailed so deferred cron does not keep retrying forever.
+        if (method_exists(ModelIM::newInstance(), 'updateEmailSent')) {
+            $dt = isset($msg['d_datetime']) ? (string) $msg['d_datetime'] : date('Y-m-d H:i:s');
+            ModelIM::newInstance()->updateEmailSent($thread_id, $type, $dt);
+        }
+        return false;
+    }
+
+    // Pref gate (email channel) — push is handled separately on insert.
+    $to_email = ($type === 0)
+        ? (isset($thread['s_to_user_email']) ? (string) $thread['s_to_user_email'] : '')
+        : (isset($thread['s_from_user_email']) ? (string) $thread['s_from_user_email'] : '');
+    $user_id = ($type === 0)
+        ? (int) @$thread['i_to_user_id']
+        : (int) @$thread['i_from_user_id'];
+    if ($user_id <= 0 && $to_email !== '' && function_exists('pngm_notif_user_id_by_email')) {
+        $user_id = pngm_notif_user_id_by_email($to_email);
+    }
+    if ($user_id > 0 && function_exists('pngm_notif_user_allows')) {
+        $rows = ModelIM::newInstance()->getMessagesByThreadId($thread_id);
+        $count = is_array($rows) ? count($rows) : 0;
+        $pref_key = ($count <= 1) ? 'msg_new' : 'msg_reply';
+        if (!pngm_notif_user_allows($user_id, $pref_key, 'email')) {
+            return false;
+        }
+    }
+
+    if (!im_email_message_notify_from_row($thread, $msg, $type)) {
+        return false;
+    }
+
+    $dt = isset($msg['d_datetime']) ? (string) $msg['d_datetime'] : date('Y-m-d H:i:s');
+    if (method_exists(ModelIM::newInstance(), 'updateEmailSent')) {
+        ModelIM::newInstance()->updateEmailSent($thread_id, $type, $dt);
+    }
+    return true;
+}
+
+/**
+ * After IM insert: deliver email in shutdown so AJAX/chat responses are not blocked by SMTP.
+ *
+ * @param int $message_id
+ */
+function pngm_im_on_insert_deliver_email($message_id)
+{
+    $message_id = (int) $message_id;
+    if ($message_id <= 0) {
+        return;
+    }
+    // Immediate path already set i_email_sent=1 when deferred is off.
+    if (function_exists('im_param') && (int) im_param('email_deferred') !== 1) {
+        return;
+    }
+
+    if (!empty($GLOBALS['pngm_im_email_shutdown_registered'][$message_id])) {
+        return;
+    }
+    if (!isset($GLOBALS['pngm_im_email_shutdown_registered'])) {
+        $GLOBALS['pngm_im_email_shutdown_registered'] = array();
+    }
+    $GLOBALS['pngm_im_email_shutdown_registered'][$message_id] = 1;
+
+    register_shutdown_function(function () use ($message_id) {
+        if (function_exists('fastcgi_finish_request')) {
+            @fastcgi_finish_request();
+        }
+        try {
+            pngm_im_deliver_email_for_message($message_id);
+        } catch (Exception $e) {
+            // Never break the page for mail failures.
+        }
+    });
+}
+osc_add_hook('im_insert_message', 'pngm_im_on_insert_deliver_email', 10);
+
+/**
+ * Flush any leftover deferred IM emails (cron miss / process killed before shutdown).
+ * Uses delay=0 so pending rows send immediately (plugin treats 0 as 5 minutes).
+ */
+function pngm_im_flush_pending_emails()
+{
+    if (!function_exists('im_param') || (int) im_param('email_deferred') !== 1) {
+        return;
+    }
+    if (!class_exists('ModelIM') || !function_exists('im_email_message_notify_from_row')) {
+        return;
+    }
+    if (!method_exists(ModelIM::newInstance(), 'getPendingEmailNotifications')) {
+        return;
+    }
+
+    // Anything still pending (no artificial delay) — chat already returned to the sender.
+    $date = date('Y-m-d H:i:s');
+    $list = ModelIM::newInstance()->getPendingEmailNotifications($date);
+    if (!is_array($list) || empty($list)) {
+        return;
+    }
+
+    foreach ($list as $l) {
+        $thread_id = isset($l['fk_i_thread_id']) ? (int) $l['fk_i_thread_id'] : 0;
+        $type = isset($l['i_type']) ? (int) $l['i_type'] : 0;
+        $dt_datetime = isset($l['dt_datetime']) ? (string) $l['dt_datetime'] : '';
+        if ($thread_id <= 0 || $dt_datetime === '') {
+            continue;
+        }
+
+        $thread = ModelIM::newInstance()->getThreadById($thread_id);
+        if (!is_array($thread) || (function_exists('im_is_valid_thread') && !im_is_valid_thread($thread))) {
+            continue;
+        }
+        if ($type === 0 && (int) @$thread['i_to_user_notify'] !== 1) {
+            continue;
+        }
+        if ($type === 1 && (int) @$thread['i_from_user_notify'] !== 1) {
+            continue;
+        }
+        if ((int) im_param('notify_once') === 1
+            && method_exists(ModelIM::newInstance(), 'hasUnreadNotifiedEmail')
+            && ModelIM::newInstance()->hasUnreadNotifiedEmail($thread_id, $type)
+        ) {
+            continue;
+        }
+
+        $message = ModelIM::newInstance()->getNotificationMessage($thread_id, $type, $dt_datetime);
+        if (!is_array($message) || empty($message['pk_i_id'])) {
+            continue;
+        }
+        if (pngm_im_deliver_email_for_message((int) $message['pk_i_id'])) {
+            // already marked inside deliver
+        }
+    }
+}
+
+/**
+ * Throttled catch-up for deferred IM mail when minutely cron is missing.
+ */
+function pngm_im_email_catchup_on_init()
+{
+    if (!function_exists('osc_get_preference') || !function_exists('osc_set_preference')) {
+        return;
+    }
+    if (defined('OC_ADMIN') && OC_ADMIN) {
+        return;
+    }
+    if (class_exists('Params') && (string) Params::getParam('page') === 'cron') {
+        return;
+    }
+    if (!function_exists('im_param') || (int) im_param('email_deferred') !== 1) {
+        return;
+    }
+
+    $now = time();
+    $last = (int) osc_get_preference('pngm_im_email_catchup_ts', 'epsilon_child');
+    if ($last > 0 && ($now - $last) < 90) {
+        return;
+    }
+    osc_set_preference('pngm_im_email_catchup_ts', (string) $now, 'epsilon_child', 'STRING');
+    pngm_im_flush_pending_emails();
+}
+osc_add_hook('init', 'pngm_im_email_catchup_on_init', 26);
+
+/**
  * Deliver queued browser notifications for the logged-in user.
  */
 function pngm_notif_push_footer()
@@ -787,6 +996,14 @@ function pngm_notif_on_saved_search_alert($user, $ads = '', $s_search = array(),
         $totalItems = count($items);
     }
     if ($totalItems <= 0) {
+        return;
+    }
+
+    $email_ok = function_exists('pngm_notif_user_allows')
+        && pngm_notif_user_allows($user_id, 'saved_search', 'email');
+    $push_ok = function_exists('pngm_notif_user_allows')
+        && pngm_notif_user_allows($user_id, 'saved_search', 'push');
+    if (!$email_ok && !$push_ok) {
         return;
     }
 

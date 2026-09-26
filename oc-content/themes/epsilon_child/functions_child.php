@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.24');
+    define('PNGM_CHILD_VERSION', '2.9.25');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -1954,19 +1954,27 @@ osc_add_hook('ajax_pngm_report_item', 'pngm_ajax_report_item');
 
 /**
  * Prefer deferred IM emails so SMTP does not block the chat send request.
- * The plugin cron still delivers the mail a few minutes later.
+ * Delivery is handled by notification_prefs_enforce.php (shutdown + init catch-up)
+ * so mail still sends when minutely cron is missing. Preference toggles still apply.
  */
 function pngm_im_enable_deferred_email()
 {
     if (!function_exists('im_param')) {
         return;
     }
-    if ((int) im_param('email_deferred') === 1) {
-        return;
+    if ((int) im_param('email_deferred') !== 1) {
+        osc_set_preference('email_deferred', '1', 'plugin-instant_messenger', 'INTEGER');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set('email_deferred', '1', 'plugin-instant_messenger');
+        }
     }
-    osc_set_preference('email_deferred', '1', 'plugin-instant_messenger', 'INTEGER');
-    if (class_exists('Preference')) {
-        Preference::newInstance()->set('email_deferred', '1', 'plugin-instant_messenger');
+    // Allow each unread message to email when prefs say so (msg_new / msg_reply).
+    // Plugin default notify_once=1 would skip replies until the thread is read.
+    if ((int) im_param('notify_once') !== 0) {
+        osc_set_preference('notify_once', '0', 'plugin-instant_messenger', 'INTEGER');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set('notify_once', '0', 'plugin-instant_messenger');
+        }
     }
 }
 osc_add_hook('init', 'pngm_im_enable_deferred_email', 8);
