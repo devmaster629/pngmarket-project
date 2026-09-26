@@ -453,8 +453,15 @@ function pngm_ua_render_sidebar($active = '')
         echo '<i class="' . osc_esc_html($icon) . '" aria-hidden="true"></i>';
         echo '<span>' . osc_esc_html($label) . '</span>';
         if ($badge !== '') {
-            echo '<em class="pngm-ua-nav-count" data-pngm-badge="' . osc_esc_html($badge) . '"'
-                . ((int) $counter > 0 ? '' : ' hidden') . '>' . (int) $counter . '</em>';
+            $count = (int) $counter;
+            $hidden = ($count > 0) ? '' : ' hidden';
+            echo '<em class="pngm-ua-nav-count" data-pngm-badge="'
+                . osc_esc_html($badge)
+                . '"'
+                . $hidden
+                . '>'
+                . $count
+                . '</em>';
         } elseif ($counter !== null && (int) $counter > 0) {
             echo '<em class="pngm-ua-nav-count">' . (int) $counter . '</em>';
         }

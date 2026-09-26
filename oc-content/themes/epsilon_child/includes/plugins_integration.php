@@ -431,12 +431,9 @@ function pngm_hide_duplicate_wac_item_form()
 
 osc_add_hook('init', 'pngm_hide_duplicate_wac_item_form', 10);
 
-/**
- * Bridge theme Facebook button → facebook_js_login SDK (P1-003).
- *
- * The Instant Login plugin normally hooks .social a.facebook via jQuery; our styled
- * button must still call fjlCheckLoginState() once the FB SDK is ready.
- */
+// Bridge theme Facebook button to facebook_js_login SDK (P1-003).
+// Instant Login normally hooks .social a.facebook; our styled button must
+// still call fjlCheckLoginState() once the FB SDK is ready.
 function pngm_facebook_login_bridge_script()
 {
     if (osc_is_web_user_logged_in() || !pngm_facebook_login_available()) {
