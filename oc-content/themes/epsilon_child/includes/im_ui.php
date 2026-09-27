@@ -634,8 +634,61 @@ function pngm_im_ui_script()
     }
   }
 
+  function showBoardLoading() {
+    if (!boardPane) {
+      return;
+    }
+    boardPane.classList.add('is-loading');
+    boardPane.setAttribute('aria-busy', 'true');
+    var existing = boardPane.querySelector('.pngm-im-board-loading');
+    if (existing) {
+      return;
+    }
+    var el = document.createElement('div');
+    el.className = 'pngm-im-board-loading';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.innerHTML =
+      '<div class="pngm-im-board-loading-card">'
+      + '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>'
+      + '<span><?php echo osc_esc_js(__('Loading conversation…', 'epsilon')); ?></span>'
+      + '</div>';
+    boardPane.appendChild(el);
+  }
+
+  function hideBoardLoading() {
+    if (!boardPane) {
+      return;
+    }
+    boardPane.classList.remove('is-loading');
+    boardPane.removeAttribute('aria-busy');
+    var el = boardPane.querySelector('.pngm-im-board-loading');
+    if (el && el.parentNode) {
+      el.parentNode.removeChild(el);
+    }
+  }
+
+  function showPageLoading() {
+    var root = document.getElementById('pngm-im-page-loading');
+    if (root) {
+      root.hidden = false;
+      return;
+    }
+    root = document.createElement('div');
+    root.id = 'pngm-im-page-loading';
+    root.className = 'pngm-im-page-loading';
+    root.setAttribute('role', 'status');
+    root.innerHTML =
+      '<div class="pngm-im-page-loading-card">'
+      + '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>'
+      + '<span><?php echo osc_esc_js(__('Loading conversation…', 'epsilon')); ?></span>'
+      + '</div>';
+    document.body.appendChild(root);
+  }
+
   function loadBoard(url, push) {
     if (!boardPane || !url || !window.jQuery) {
+      showPageLoading();
       window.location.href = url;
       return;
     }
@@ -643,7 +696,7 @@ function pngm_im_ui_script()
       return;
     }
     loadingUrl = url;
-    boardPane.classList.add('is-loading');
+    showBoardLoading();
 
     if (loadReq && typeof loadReq.abort === 'function') {
       loadReq.abort();
@@ -660,6 +713,7 @@ function pngm_im_ui_script()
       var nextBoard = doc.querySelector('.pngm-im-board-pane');
       var nextMessages = doc.querySelector('.im-file-messages');
       if (!nextBoard && !nextMessages) {
+        showPageLoading();
         window.location.href = url;
         return;
       }
@@ -680,11 +734,12 @@ function pngm_im_ui_script()
       afterBoardSwap();
     }).fail(function (xhr, status) {
       if (status !== 'abort') {
+        showPageLoading();
         window.location.href = url;
       }
     }).always(function () {
       loadingUrl = '';
-      boardPane.classList.remove('is-loading');
+      hideBoardLoading();
       loadReq = null;
     });
   }
@@ -706,12 +761,13 @@ function pngm_im_ui_script()
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
         return;
       }
-      // Mobile: full page navigation to chat details
-      if (isMobileImLayout()) {
-        return;
-      }
       var url = link.getAttribute('href');
       if (!url) {
+        return;
+      }
+      // Mobile: full page navigation — show loading overlay until the next page paints.
+      if (isMobileImLayout()) {
+        showPageLoading();
         return;
       }
       var clickId = parseInt(link.getAttribute('data-thread-id') || '0', 10) || threadIdFromUrl(url);
@@ -793,8 +849,8 @@ function pngm_im_ui_script()
     }
 
     /**
-     * Instant outgoing bubble. For file sends, show only a compact "Uploading…"
-     * status (no fake attachment card — that was breaking the board layout).
+     * Instant outgoing bubble. One loading indicator only (meta spinner +
+     * "Sending…"), never a second badge inside the bubble text.
      *
      * @param {string} text
      * @param {string[]} [fileNames]
@@ -811,19 +867,20 @@ function pngm_im_ui_script()
       var uploading = fileNames.length > 0;
       var id = 'pending-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
       var uploadLabel = '<?php echo osc_esc_js(__('Uploading…', 'epsilon')); ?>';
-      var justNow = '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>';
-      var statusLabel = uploading ? uploadLabel : justNow;
-      var statusHtml = '<span class="pngm-im-upload-status">'
-        + '<i class="fas fa-paperclip" aria-hidden="true"></i> '
-        + escapeHtml(uploadLabel)
-        + '</span>';
-      var bodyHtml = '';
-      if (text && uploading) {
-        bodyHtml = escapeHtml(text).replace(/\n/g, '<br>') + '<div class="pngm-im-upload-status-wrap">' + statusHtml + '</div>';
-      } else if (uploading) {
-        bodyHtml = statusHtml;
-      } else if (text) {
-        bodyHtml = escapeHtml(text).replace(/\n/g, '<br>');
+      var sendingLabel = '<?php echo osc_esc_js(__('Sending…', 'epsilon')); ?>';
+      var statusLabel = uploading ? uploadLabel : sendingLabel;
+      var textHtml = text ? escapeHtml(text).replace(/\n/g, '<br>') : '';
+      var bodyHtml = textHtml;
+      if (uploading) {
+        var statusHtml = '<span class="pngm-im-upload-status">'
+          + '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> '
+          + escapeHtml(uploadLabel)
+          + '</span>';
+        if (textHtml) {
+          bodyHtml = textHtml + '<div class="pngm-im-upload-status-wrap">' + statusHtml + '</div>';
+        } else {
+          bodyHtml = statusHtml;
+        }
       }
 
       var $tpl = $board.find('.im-table-row.im-from').not('.is-pending').last();
@@ -837,19 +894,36 @@ function pngm_im_ui_script()
         $row.attr('data-message-id', id);
         $row.removeClass('hidden is-failed').addClass('is-pending');
         // Strip prior attachments / images so we never inherit a giant media bubble.
-        $row.find('.im-message-extra, a.im-download, a.pngm-im-attach, img.im-att-icon, .pngm-im-upload-status, .pngm-im-upload-status-wrap').remove();
+        $row.find('.im-message-extra, a.im-download, a.pngm-im-attach, img.im-att-icon, .pngm-im-upload-status, .pngm-im-upload-status-wrap, .pngm-im-sending-status, .pngm-im-sending-wrap').remove();
         $row.find('.im-message-content .im-unsafe-info').remove();
-        $row.find('.im-message-content .im-align-left, .im-message-content .im-col-24').first().html(bodyHtml);
-        $row.find('.pngm-im-bubble-text').html(bodyHtml);
-        var $bubble = $row.find('.pngm-im-bubble').first();
-        if ($bubble.length && !$row.find('.pngm-im-bubble-text').length) {
-          $bubble.prepend('<div class="pngm-im-bubble-text">' + bodyHtml + '</div>');
+        // Set message text in exactly one place (avoid duplicate Sending… in body).
+        var $bubbleText = $row.find('.pngm-im-bubble-text').first();
+        if ($bubbleText.length) {
+          $bubbleText.html(bodyHtml);
+        } else {
+          var $body = $row.find('.pngm-im-bubble-body, .im-message-content .im-col-24, .im-message-content .im-align-left').first();
+          if ($body.length) {
+            $body.html(bodyHtml);
+          } else {
+            var $bubble = $row.find('.pngm-im-bubble').first();
+            if ($bubble.length) {
+              $bubble.prepend('<div class="pngm-im-bubble-text">' + bodyHtml + '</div>');
+            }
+          }
         }
-        $row.find('.im-date time, .im-date span, .im-date > span, .pngm-im-bubble-meta time').first().text(statusLabel);
-        $row.find('.im-date .fa-check, .im-date .fa-check-double, .pngm-im-bubble-meta .fa-check-double').remove();
-        $row.find('.im-date').append('<i class="fas fa-check" aria-hidden="true"></i>');
+        // Single loading indicator in the meta line (theme uses .pngm-im-bubble-meta; plugin uses .im-date).
+        var $meta = $row.find('.pngm-im-bubble-meta').first();
+        var $date = $row.find('.im-date').first();
+        $row.find('.fa-check, .fa-check-double, .pngm-im-sending-icon').remove();
+        if ($meta.length) {
+          $meta.find('time').first().text(statusLabel);
+          $meta.append('<i class="fas fa-spinner fa-spin pngm-im-sending-icon" aria-hidden="true"></i>');
+        } else if ($date.length) {
+          $date.find('time, span').first().text(statusLabel);
+          $date.append('<i class="fas fa-spinner fa-spin pngm-im-sending-icon" aria-hidden="true"></i>');
+        }
         $row.find('.im-del-mes-box, .pngm-im-del').remove();
-        if (!$row.find('.im-message-extra').length && !$bubble.length) {
+        if (!$row.find('.im-message-extra').length && !$row.find('.pngm-im-bubble').length) {
           $row.append('<div class="im-line im-message-extra im-box-empty"></div>');
         }
       } else {
@@ -867,7 +941,7 @@ function pngm_im_ui_script()
           +     '<div class="im-col-12 im-name im-align-left"></div>'
           +     '<div class="im-col-12 im-date im-align-right im-i im-gray">'
           +       '<time>' + escapeHtml(statusLabel) + '</time>'
-          +       '<i class="fas fa-check" aria-hidden="true"></i>'
+          +       '<i class="fas fa-spinner fa-spin pngm-im-sending-icon" aria-hidden="true"></i>'
           +     '</div>'
           +   '</div>'
           + '</div>'
@@ -916,6 +990,7 @@ function pngm_im_ui_script()
 
       sending = true;
       var $btn = $form.find('button[type="submit"]').prop('disabled', true).addClass('im-btn-loading');
+      $form.addClass('is-sending');
       var $rows = $();
       var fileNames = [];
       var i;
@@ -965,8 +1040,20 @@ function pngm_im_ui_script()
           if (res && res.ok) {
             if ($rows.length) {
               $rows.removeClass('is-pending');
-              $rows.find('.pngm-im-uploading').remove();
+              $rows.find('.pngm-im-uploading, .pngm-im-sending-status, .pngm-im-sending-wrap, .pngm-im-upload-status-wrap').remove();
               $rows.find('a.is-uploading').removeClass('is-uploading');
+              // Spinner → single check (poll upgrades to double when seen).
+              var $spin = $rows.find('.pngm-im-sending-icon');
+              if ($spin.length) {
+                $spin.removeClass('fa-spinner fa-spin pngm-im-sending-icon').addClass('fa-check');
+              } else {
+                var $metaDone = $rows.find('.pngm-im-bubble-meta').first();
+                if ($metaDone.length) {
+                  $metaDone.append('<i class="fas fa-check" aria-hidden="true"></i>');
+                } else {
+                  $rows.find('.im-date').first().append('<i class="fas fa-check" aria-hidden="true"></i>');
+                }
+              }
               markRowTime($rows, res.time || '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>');
               if (res.id) {
                 $rows.last().attr('data-message-id', res.id);
@@ -978,21 +1065,25 @@ function pngm_im_ui_script()
             }
           } else if ($rows.length) {
             $rows.addClass('is-failed').removeClass('is-pending');
-            $rows.find('.pngm-im-uploading').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            $rows.find('.pngm-im-uploading, .pngm-im-sending-status').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            $rows.find('.pngm-im-sending-icon').removeClass('fa-spinner fa-spin').addClass('fa-times');
             markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
           }
         }).fail(function () {
           if ($rows.length) {
             $rows.addClass('is-failed').removeClass('is-pending');
-            $rows.find('.pngm-im-uploading').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            $rows.find('.pngm-im-uploading, .pngm-im-sending-status').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            $rows.find('.pngm-im-sending-icon').removeClass('fa-spinner fa-spin').addClass('fa-times');
             markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
           }
         }).always(function () {
           sending = false;
+          $form.removeClass('is-sending');
           $btn.prop('disabled', false).removeClass('im-btn-loading');
         });
       } catch (err) {
         sending = false;
+        $form.removeClass('is-sending');
         $btn.prop('disabled', false).removeClass('im-btn-loading');
         if (window.console && console.error) {
           console.error('pngm im send', err);

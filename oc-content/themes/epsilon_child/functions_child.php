@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.29');
+    define('PNGM_CHILD_VERSION', '2.9.31');
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -2054,6 +2054,15 @@ function pngm_im_enable_deferred_email()
         osc_set_preference('notify_once', '0', 'plugin-instant_messenger', 'INTEGER');
         if (class_exists('Preference')) {
             Preference::newInstance()->set('notify_once', '0', 'plugin-instant_messenger');
+        }
+    }
+    // Peer delivery is poll-based (no sockets). Default 3000ms feels like ~5s lag;
+    // keep refresh near 1s while the chat page is open.
+    $im_interval = (int) im_param('interval');
+    if ($im_interval !== 1000) {
+        osc_set_preference('interval', '1000', 'plugin-instant_messenger', 'INTEGER');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set('interval', '1000', 'plugin-instant_messenger');
         }
     }
 }

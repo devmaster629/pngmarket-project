@@ -10,7 +10,14 @@ $att_enable = im_param('att_enable');
 $message_delete = im_param('message_delete');
 
 $ajax = (im_param('ajax') <> '' ? im_param('ajax') : 1);
-$interval = (im_param('interval') <> '' ? im_param('interval') : 3000);
+$interval = (im_param('interval') <> '' ? (int) im_param('interval') : 3000);
+// Cap for snappier peer delivery (theme also enforces preference to 1000ms).
+if ($interval > 1200) {
+  $interval = 1200;
+}
+if ($interval < 800) {
+  $interval = 800;
+}
 $is_chat_refresh = (Params::getParam('imaction') == 'refresh' ? true : false); 
 
 $thread_id = (int)Params::getParam('thread-id');
@@ -810,10 +817,16 @@ function imRefreshMessages(forceBottom, forceReplace) {
       var seenBefore = $board.find('.im-date .fa-check-double').length;
       var seenAfter = $next.find('.im-date .fa-check-double').length;
 
-      // forceReplace: after optimistic file upload, counts may already match pending rows.
+      // Never clobber an in-flight optimistic send — that caused Sending… to vanish,
+      // then reappear on the next poll, then flip to sent. Wait until AJAX finishes
+      // (is-pending is cleared) unless forceReplace (file upload confirm).
+      if (!forceReplace && $board.find('.im-table-row.is-pending').length > 0) {
+        return;
+      }
+
+      // forceReplace: after optimistic file upload, swap pending for server HTML.
       if(
         forceReplace
-        || $board.find('.im-table-row.is-pending').length > 0
         || messagesCount != $board.find('.im-table-row').length
         || ($board.find('.im-table-row:last-child').attr('data-message-id') != $next.find('.im-table-row:last-child').attr('data-message-id'))
         || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $next.find('.im-table-row:last-child .im-date .fa-check').length)

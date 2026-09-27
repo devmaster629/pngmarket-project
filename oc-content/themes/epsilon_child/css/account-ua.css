@@ -3917,23 +3917,78 @@ body.pngm-ua-messages .pngm-im .im-vertical {
 }
 
 .pngm-im-board-pane.is-loading {
-  opacity: 0.65;
   pointer-events: none;
 }
 
-.pngm-im-board-pane.is-loading::after {
-  content: '';
+.pngm-im-board-pane.is-loading > *:not(.pngm-im-board-loading) {
+  opacity: 0.35;
+  filter: grayscale(0.05);
+}
+
+.pngm-im-board-loading {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
-  animation: pngm-im-shimmer 1.1s linear infinite;
-  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(1px);
   border-radius: inherit;
+  pointer-events: none;
 }
 
-@keyframes pngm-im-shimmer {
-  from { transform: translateX(-40%); }
-  to { transform: translateX(40%); }
+.pngm-im-board-loading-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  box-shadow: 0 8px 24px rgba(16, 32, 42, 0.08);
+  color: #243447;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pngm-im-board-loading-card .fa-spinner {
+  color: #16a34a;
+  font-size: 16px;
+}
+
+.pngm-im-page-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(246, 248, 250, 0.82);
+  backdrop-filter: blur(2px);
+}
+
+.pngm-im-page-loading[hidden] {
+  display: none !important;
+}
+
+.pngm-im-page-loading-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  box-shadow: 0 10px 28px rgba(16, 32, 42, 0.1);
+  color: #243447;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pngm-im-page-loading-card .fa-spinner {
+  color: #16a34a;
 }
 
 .pngm-im-board-pane > .im-file-messages {
@@ -4997,7 +5052,19 @@ body.im-chat-page .im-messages .im-table-row .im-horizontal .right img {
 
 .pngm-im-bubble-row.is-pending .pngm-im-bubble,
 .im-table-row.im-from.is-pending {
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+.im-table-row.im-from.is-pending .pngm-im-sending-status,
+.pngm-im-sending-status,
+.im-table-row.im-from.is-pending .pngm-im-sending-wrap {
+  display: none !important;
+}
+
+.im-table-row.im-from.is-pending .pngm-im-sending-icon {
+  margin-left: 6px;
+  color: #16a34a;
+  font-size: 11px;
 }
 
 /* Compact upload status — never a giant attachment card. */
@@ -5035,6 +5102,30 @@ body.im-chat-page .im-messages .im-table-row .im-horizontal .right img {
 .pngm-im-send.im-btn-loading {
   opacity: 0.7;
   cursor: wait;
+  position: relative;
+}
+
+.pngm-im-send.im-btn-loading i.fa-paper-plane,
+.pngm-im-send.im-btn-loading .fa-paper-plane {
+  visibility: hidden;
+}
+
+.pngm-im-send.im-btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pngm-im-btn-spin 0.7s linear infinite;
+}
+
+@keyframes pngm-im-btn-spin {
+  to { transform: rotate(360deg); }
 }
 
 .pngm-im-bubble-row.is-failed .pngm-im-bubble,
