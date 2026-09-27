@@ -315,11 +315,39 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
 <?php } ?>
 
 <div class="im-html im-file-messages im-theme-<?php echo osc_current_web_theme(); ?>">
-  <h2 class="im-head"><?php echo $t_title; ?></h2>
+  <?php
+    $pngm_owns_listing = is_array($item) && !empty($item['fk_i_user_id'])
+      && function_exists('osc_logged_user_id')
+      && (int) $item['fk_i_user_id'] === (int) osc_logged_user_id();
+    $pngm_listing_title = '';
+    if (is_array($item) && !empty($item['s_title'])) {
+      $pngm_listing_title = strip_tags((string) $item['s_title']);
+    } elseif ($t_title !== '') {
+      // Thread title is often "Inquiry: {listing}" — strip that prefix for display.
+      $pngm_listing_title = preg_replace('/^Inquiry:\s*/i', '', strip_tags((string) $t_title));
+    }
+  ?>
+  <h2 class="im-head"><?php echo osc_esc_html($thread_target_name); ?></h2>
 
   <div class="im-alt-head" style="display:none;">
     <div class="im-head2">
-      <span><?php echo $thread_target_name; ?> - <?php echo $t_title; ?></span>
+      <span class="pngm-im-chat-title">
+        <strong class="pngm-im-chat-peer"><?php echo osc_esc_html($thread_target_name); ?></strong>
+        <?php if ($pngm_listing_title !== '') { ?>
+          <span class="pngm-im-chat-role<?php echo $pngm_owns_listing ? ' is-seller' : ' is-buyer'; ?>">
+            <?php if ($pngm_owns_listing) { ?>
+              <?php echo osc_esc_html(__('Your listing', 'epsilon')); ?>
+            <?php } else { ?>
+              <?php echo osc_esc_html(__('You’re asking about', 'epsilon')); ?>
+            <?php } ?>
+            <span class="pngm-im-chat-listing" title="<?php echo osc_esc_html($pngm_listing_title); ?>">
+              <?php echo osc_esc_html(function_exists('osc_highlight') ? osc_highlight($pngm_listing_title, 48) : $pngm_listing_title); ?>
+            </span>
+          </span>
+        <?php } else { ?>
+          <span class="pngm-im-chat-role is-general"><?php echo osc_esc_html(__('Direct message', 'epsilon')); ?></span>
+        <?php } ?>
+      </span>
       
       <?php if($target_is_null) { ?>
         <em><?php echo sprintf(__('%s has removed this thread, you cannot reply back.', 'instant_messenger'), $thread_target_name); ?></em>
@@ -351,7 +379,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
     $thread_item_id = isset($thread['fk_i_item_id']) ? (int) $thread['fk_i_item_id'] : 0;
     if ($thread_item_id > 0 && is_array($item) && isset($item['pk_i_id'])) {
       if (function_exists('pngm_im_render_listing_card')) {
-        echo pngm_im_render_listing_card($item);
+        echo pngm_im_render_listing_card($item, !empty($pngm_owns_listing));
       } else {
         echo im_render_item_context($thread['fk_i_item_id'], $item, $item_details);
       }
@@ -778,6 +806,10 @@ function imRefreshMessages(forceBottom, forceReplace) {
         stick = (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
       }
 
+      // Read receipts: peer may mark messages seen without new rows — still replace board.
+      var seenBefore = $board.find('.im-date .fa-check-double').length;
+      var seenAfter = $next.find('.im-date .fa-check-double').length;
+
       // forceReplace: after optimistic file upload, counts may already match pending rows.
       if(
         forceReplace
@@ -785,6 +817,7 @@ function imRefreshMessages(forceBottom, forceReplace) {
         || messagesCount != $board.find('.im-table-row').length
         || ($board.find('.im-table-row:last-child').attr('data-message-id') != $next.find('.im-table-row:last-child').attr('data-message-id'))
         || (!$board.find('.im-table-row:last-child .im-date .fa-check').length && $next.find('.im-table-row:last-child .im-date .fa-check').length)
+        || seenBefore !== seenAfter
       ) {
         $board.html(content);
         if(stick) {

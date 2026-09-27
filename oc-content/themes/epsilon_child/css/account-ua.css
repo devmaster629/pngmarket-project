@@ -4086,6 +4086,86 @@ body.pngm-im-confirm-open {
 
 .pngm-im-board-pane .im-alt-head .im-head2 {
   margin: 0 0 6px 0 !important;
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pngm-im-chat-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-right: 8px;
+}
+
+.pngm-im-chat-peer {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  color: #16202a;
+  line-height: 1.25;
+}
+
+.pngm-im-chat-role {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #5a6570;
+}
+
+.pngm-im-chat-role.is-seller {
+  color: #0e6e40;
+}
+
+.pngm-im-chat-role.is-buyer {
+  color: #1d4ed8;
+}
+
+.pngm-im-chat-role.is-general {
+  color: #5a6570;
+  font-weight: 500;
+}
+
+.pngm-im-chat-listing {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #16202a;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pngm-im-chat-role.is-seller .pngm-im-chat-listing {
+  background: #e7f7ef;
+  color: #0e6e40;
+}
+
+.pngm-im-chat-role.is-buyer .pngm-im-chat-listing {
+  background: #e8effc;
+  color: #1d4ed8;
+}
+
+.pngm-im-listing-card.is-seller .im-item-label {
+  color: #0e6e40 !important;
+  font-weight: 700;
+}
+
+.pngm-im-listing-card.is-buyer .im-item-label {
+  color: #1d4ed8 !important;
+  font-weight: 700;
 }
 
 .pngm-im-board-pane .im-alt-head .im-subhead2 {

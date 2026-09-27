@@ -264,22 +264,34 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
  * Compact listing card for chat header (thumb + title + link).
  *
  * @param array $item
+ * @param bool  $owns_listing current viewer owns this listing
  * @return string
  */
-function pngm_im_render_listing_card($item)
+function pngm_im_render_listing_card($item, $owns_listing = null)
 {
     $hero = pngm_im_listing_hero(is_array($item) ? $item : array());
     if (empty($hero['ok'])) {
         return '';
     }
 
-    $html  = '<div class="im-row im-item-context im-body pngm-im-listing-card">';
+    if ($owns_listing === null) {
+        $owns_listing = !empty($item['fk_i_user_id'])
+            && function_exists('osc_logged_user_id')
+            && (int) $item['fk_i_user_id'] === (int) osc_logged_user_id();
+    }
+
+    $role_label = $owns_listing
+        ? __('Your listing', 'epsilon')
+        : __('Listing you’re asking about', 'epsilon');
+
+    $html  = '<div class="im-row im-item-context im-body pngm-im-listing-card'
+        . ($owns_listing ? ' is-seller' : ' is-buyer') . '">';
     $html .= '<a class="pngm-im-listing-card-link" href="' . osc_esc_html($hero['url']) . '" target="_blank" rel="noopener">';
     if ($hero['thumb'] !== '') {
         $html .= '<span class="pngm-im-listing-card-thumb"><img src="' . osc_esc_html($hero['thumb']) . '" alt="" width="56" height="56" loading="lazy" /></span>';
     }
     $html .= '<span class="pngm-im-listing-card-meta">';
-    $html .= '<span class="im-line im-item-label">' . osc_esc_html(__('Related listing', 'instant_messenger')) . '</span>';
+    $html .= '<span class="im-line im-item-label">' . osc_esc_html($role_label) . '</span>';
     $html .= '<span class="im-line im-item-title">' . osc_esc_html($hero['title']) . '</span>';
     if ($hero['price'] !== '') {
         $html .= '<span class="im-line im-item-price">' . osc_esc_html($hero['price']) . '</span>';
