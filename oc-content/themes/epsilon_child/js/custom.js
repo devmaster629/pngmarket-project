@@ -3272,6 +3272,11 @@
 
     window.pngmPinChatBottom = pinChatBottom;
 
+    // While the keyboard is open, freeze where the message list starts. Remeasuring
+    // getBoundingClientRect + scrollTo(0,0) on every keystroke is what walked the
+    // listing/thread header down the screen character by character.
+    var frozenBoardTop = null;
+
     function layout(opts) {
       form = document.getElementById('im-message-form');
       board = document.querySelector('.im-table.im-messages');
@@ -3280,6 +3285,7 @@
       }
 
       var pinBottom = !!(opts && opts.pinBottom);
+      var typing = !!(opts && opts.typing);
       var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
 
       // Desktop: match list+board height to sidebar (no empty stretch below Logout).
@@ -3307,6 +3313,7 @@
         board.style.maxHeight = '';
         board.style.height = '';
         board.style.overflowY = '';
+        frozenBoardTop = null;
         if (pinBottom || nearBottom) {
           pinChatBottom({ delays: pinBottom ? [0, 50, 150, 350, 700] : [0, 50] });
         }
@@ -3315,7 +3322,9 @@
 
       // Mobile: measure against the VISIBLE viewport (visualViewport), so the
       // composer stays above the soft keyboard on both Android and iOS.
-      measureShellChrome();
+      if (!typing) {
+        measureShellChrome();
+      }
 
       var kbOpen = document.documentElement.classList.contains('pngm-kb-open');
       var tip = document.getElementById('pngm-composer-tip');
@@ -3358,21 +3367,34 @@
         dockH = 56;
       }
 
-      var top = board.getBoundingClientRect().top - viewTop;
+      if (!kbOpen) {
+        frozenBoardTop = null;
+      } else if (frozenBoardTop == null) {
+        // Capture once when the keyboard opens — never remeasure while typing.
+        frozenBoardTop = board.getBoundingClientRect().top - viewTop;
+      }
+
+      var top = (kbOpen && frozenBoardTop != null)
+        ? frozenBoardTop
+        : (board.getBoundingClientRect().top - viewTop);
       var available = Math.floor(viewH - top - dockH - naviH - 8);
       if (available < 120) {
         available = 120;
       }
 
-      board.style.flex = '1 1 auto';
+      board.style.flex = '0 0 auto';
       board.style.minHeight = '0';
       board.style.height = available + 'px';
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
 
-      lockPageScroll();
+      // Never scroll the page while typing — that walks the thread header down.
+      if (!typing) {
+        lockPageScroll();
+      }
 
-      if (pinBottom || nearBottom) {
+      // Typing only changes composer height; keep the message scroll position.
+      if (!typing && (pinBottom || nearBottom)) {
         pinChatBottom({ delays: pinBottom ? [0, 80, 200] : [0, 50] });
       }
     }
@@ -3384,12 +3406,13 @@
       // While the keyboard is open the visualViewport handler owns the layout;
       // reacting to resize here re-measures a shrunken viewport and jumps.
       if (document.documentElement.classList.contains('pngm-kb-open')) {
-        lockPageScroll();
         return;
       }
+      frozenBoardTop = null;
       layout();
     });
     window.addEventListener('orientationchange', function () {
+      frozenBoardTop = null;
       layout({ pinBottom: true });
     });
     pinChatBottom({ delays: [0, 80, 200] });
@@ -3400,6 +3423,7 @@
       var BASE = 44;
       var MAX = 120;
       var fitTimer = null;
+      var lastNeeded = BASE;
 
       function fit() {
         var ta = document.getElementById('im-message');
@@ -3411,17 +3435,21 @@
         var needed = Math.max(BASE, Math.min(MAX, ta.scrollHeight));
         ta.style.height = needed + 'px';
         ta.style.overflowY = needed >= MAX ? 'auto' : 'hidden';
-        lockPageScroll();
-        // Debounced: a relayout on every keystroke is what nudged the view.
+        // Only relayout when the composer actually changed height (line wrap).
+        // Same-height keystrokes must not touch the thread header at all.
+        if (needed === lastNeeded) {
+          return;
+        }
+        lastNeeded = needed;
         if (fitTimer) {
           window.clearTimeout(fitTimer);
         }
         fitTimer = window.setTimeout(function () {
           fitTimer = null;
           if (typeof window.pngmLayoutChat === 'function') {
-            window.pngmLayoutChat();
+            window.pngmLayoutChat({ typing: true });
           }
-        }, 90);
+        }, 50);
       }
 
       window.imResetComposerHeight = function () {
@@ -3431,8 +3459,9 @@
         }
         ta.style.height = BASE + 'px';
         ta.style.overflowY = 'hidden';
+        lastNeeded = BASE;
         if (typeof window.pngmLayoutChat === 'function') {
-          window.pngmLayoutChat();
+          window.pngmLayoutChat({ typing: true });
         }
       };
 

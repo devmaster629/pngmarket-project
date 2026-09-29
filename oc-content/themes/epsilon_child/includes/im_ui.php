@@ -1279,17 +1279,10 @@ function pngm_im_ui_script()
         if (typeof window.pngmLayoutChat !== 'function') {
           return;
         }
+        // Full relayout only when the keyboard opens/closes — never on every
+        // visualViewport tick while typing (that walked the thread header down).
         if (wasOpen !== open) {
           window.pngmLayoutChat({ pinBottom: true });
-          return;
-        }
-        if (open && !window.__pngmKbLayoutT) {
-          window.__pngmKbLayoutT = window.setTimeout(function () {
-            window.__pngmKbLayoutT = null;
-            if (typeof window.pngmLayoutChat === 'function') {
-              window.pngmLayoutChat({ pinBottom: true });
-            }
-          }, 120);
         }
       }
 
