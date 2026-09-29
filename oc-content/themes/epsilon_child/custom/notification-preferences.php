@@ -78,7 +78,7 @@ $section_num = 0;
         <span class="pngm-notif-push-ico" aria-hidden="true"><i class="fas fa-bell"></i></span>
         <div>
           <h2 id="pngm-push-heading"><?php _e('Browser push notifications', 'epsilon'); ?></h2>
-          <p><?php _e('Allow browser permission so PNGMarket can alert you on this device — including when the site is closed (messages, listing expiry, saved searches).', 'epsilon'); ?></p>
+          <p><?php _e('Allow browser permission so PNGMarket can alert you on this device — including when the site is closed (messages, listing expiry).', 'epsilon'); ?></p>
         </div>
       </div>
 

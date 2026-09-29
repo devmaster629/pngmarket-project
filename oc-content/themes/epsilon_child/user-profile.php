@@ -218,7 +218,7 @@
               <i class="fas fa-chevron-down" aria-hidden="true"></i>
             </summary>
             <div class="pngm-profile-accord-body">
-              <p><?php _e('Choose which email and push alerts you receive about messages, listings and saved searches.', 'epsilon'); ?></p>
+              <p><?php _e('Choose which email and push alerts you receive about messages and listings.', 'epsilon'); ?></p>
               <a class="pngm-ua-btn is-ghost" href="<?php echo osc_esc_html($notif_url); ?>"><?php _e('Open notification preferences', 'epsilon'); ?></a>
             </div>
           </details>

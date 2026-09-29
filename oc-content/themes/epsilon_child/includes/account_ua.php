@@ -489,7 +489,6 @@ function pngm_ua_render_sidebar($active = '')
         'notifications'
     );
     $item('subscriptions', function_exists('pngm_sub_url') ? pngm_sub_url() : osc_route_url('pngm-subscriptions'), __('Subscriptions', 'epsilon'), 'fas fa-credit-card');
-    $item('alerts', osc_user_alerts_url(), __('Saved Searches', 'epsilon'), 'fas fa-bookmark');
     echo '</div>';
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Profile', 'epsilon')) . '</div>';

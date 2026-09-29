@@ -102,17 +102,6 @@ function pngm_notif_prefs_schema()
             ),
         ),
         array(
-            'title' => __('Marketplace activity', 'epsilon'),
-            'items' => array(
-                array(
-                    'id' => 'saved_search',
-                    'label' => __('Saved search matches', 'epsilon'),
-                    'icon' => 'fas fa-search',
-                    'default_on' => true,
-                ),
-            ),
-        ),
-        array(
             'title' => __('Account and security', 'epsilon'),
             'items' => array(
                 array(

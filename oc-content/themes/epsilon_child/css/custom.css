@@ -4154,11 +4154,6 @@
     margin-bottom: 16px;
   }
   
-  body.body-ua .alerts-box .alert {
-    box-shadow: none;
-    border-color: #e6e8ec;
-  }
-  
   body.body-ua .profile-box .right-block {
     background: #f8f9fb;
     border: 1px solid #e6e8ec;

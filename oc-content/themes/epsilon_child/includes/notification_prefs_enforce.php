@@ -1011,8 +1011,8 @@ function pngm_notif_on_saved_search_alert($user, $ads = '', $s_search = array(),
         _n('%d new listing matches your saved search', '%d new listings match your saved search', $totalItems, 'epsilon'),
         $totalItems
     );
-    $body = __('Open Saved Searches to review matching listings.', 'epsilon');
-    $url = function_exists('osc_user_alerts_url') ? osc_user_alerts_url() : osc_base_url();
+    $body = __('Open Activity to review matching listings.', 'epsilon');
+    $url = function_exists('pngm_activity_url') ? pngm_activity_url() : (function_exists('osc_user_dashboard_url') ? osc_user_dashboard_url() : osc_base_url());
     pngm_activity_add($user_id, 'saved_search', $subject, $body, $url);
 }
 osc_add_hook('hook_alert_email_instant', 'pngm_notif_on_saved_search_alert', 8);
