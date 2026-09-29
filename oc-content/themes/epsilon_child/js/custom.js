@@ -3142,6 +3142,51 @@
 
     document.body.classList.add('im-chat-page');
 
+    /**
+     * Ask the browser to shrink the LAYOUT viewport for the soft keyboard.
+     * Without this, Chrome/Android only shrinks the visual viewport: 100dvh stays
+     * full-screen and the composer ends up underneath the keyboard.
+     * Chat pages only — other pages keep the default behaviour.
+     */
+    (function useResizesContentViewport() {
+      try {
+        var metas = document.querySelectorAll('meta[name="viewport"]');
+        var i;
+        for (i = 0; i < metas.length; i += 1) {
+          var content = metas[i].getAttribute('content') || '';
+          if (content.indexOf('interactive-widget') === -1) {
+            metas[i].setAttribute('content', content + ', interactive-widget=resizes-content');
+          }
+        }
+      } catch (errVp) {}
+    })();
+
+    /**
+     * Publish the two heights the CSS shell needs: site header height and bottom
+     * nav height. Measured only while the keyboard is closed so a shrunken
+     * viewport can never poison them.
+     */
+    function measureShellChrome() {
+      if (document.documentElement.classList.contains('pngm-kb-open')) {
+        return;
+      }
+      var shell = document.querySelector('.container.primary');
+      if (shell) {
+        var top = Math.round(shell.getBoundingClientRect().top + (window.scrollY || window.pageYOffset || 0));
+        if (top >= 0 && top < 400) {
+          document.documentElement.style.setProperty('--pngm-chat-top', top + 'px');
+        }
+      }
+      var navi = document.getElementById('navi-bar');
+      var naviH = 56;
+      if (navi && window.getComputedStyle(navi).display !== 'none') {
+        naviH = Math.round(navi.getBoundingClientRect().height) || 56;
+      }
+      document.documentElement.style.setProperty('--pngm-chat-navh', naviH + 'px');
+    }
+
+    window.pngmMeasureChatChrome = measureShellChrome;
+
     function clearPinTimers() {
       var i;
       for (i = 0; i < pinTimers.length; i += 1) {
@@ -3150,31 +3195,37 @@
       pinTimers = [];
     }
 
+    function lockPageScroll() {
+      try {
+        if (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop) {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }
+      } catch (errLock) {}
+    }
+
+    window.pngmLockChatPageScroll = lockPageScroll;
+
     function scrollBoardToBottom(el) {
       if (!el) {
         return;
       }
-      // Force layout so scrollHeight is current after flex/height changes.
+      // Scroll the message list only. scrollIntoView() would scroll the page
+      // itself on Android Chrome, which is what pushed the composer and the
+      // listing header out of view after every send/keystroke.
       void el.offsetHeight;
       el.scrollTop = el.scrollHeight;
-      var last = el.querySelector('.im-table-row:not(.hidden):last-of-type, .im-table-row:last-child');
-      if (last && typeof last.scrollIntoView === 'function') {
-        try {
-          last.scrollIntoView({ block: 'end', inline: 'nearest' });
-        } catch (errView) {
-          try { last.scrollIntoView(false); } catch (errView2) {}
-        }
-      }
-      el.scrollTop = el.scrollHeight;
+      lockPageScroll();
     }
 
     /**
-     * Pin chat to latest message. Retries after layout settles (flex height,
-     * images, AJAX board swap) — a single scrollTop often runs too early.
+     * Pin chat to the latest message. Short retries only — long chains keep
+     * firing while the keyboard animates and fight the user.
      */
     function pinChatBottom(opts) {
       var immediate = !(opts && opts.deferredOnly);
-      var delays = (opts && opts.delays) ? opts.delays : [0, 50, 150, 350, 700];
+      var delays = (opts && opts.delays) ? opts.delays : [0, 80, 200];
 
       function run() {
         board = document.querySelector('.im-table.im-messages');
@@ -3188,10 +3239,7 @@
       if (immediate) {
         run();
         if (typeof window.requestAnimationFrame === 'function') {
-          window.requestAnimationFrame(function () {
-            run();
-            window.requestAnimationFrame(run);
-          });
+          window.requestAnimationFrame(run);
         }
       }
       var d;
@@ -3214,7 +3262,7 @@
             return;
           }
           var near = (el.scrollHeight - el.scrollTop - el.clientHeight) < 120;
-          // Only follow images if user is already near the latest messages.
+          // Only follow images if the user is already near the latest messages.
           if (near) {
             scrollBoardToBottom(el);
           }
@@ -3265,8 +3313,17 @@
         return;
       }
 
-      // Mobile: give the message list an explicit height so it scrolls, and keep
-      // the composer dock (tip + input) pinned below it above the bottom nav.
+      // Mobile: measure against the VISIBLE viewport (visualViewport), so the
+      // composer stays above the soft keyboard on both Android and iOS.
+      measureShellChrome();
+
+      var kbOpen = document.documentElement.classList.contains('pngm-kb-open');
+      var tip = document.getElementById('pngm-composer-tip');
+      if (tip) {
+        // ensureSendHint() writes inline !important, so mirror the state here.
+        tip.style.setProperty('display', kbOpen ? 'none' : 'block', 'important');
+      }
+
       if (form) {
         form.style.display = 'flex';
         form.style.visibility = 'visible';
@@ -3278,76 +3335,71 @@
       }
 
       var dock = document.querySelector('.pngm-composer-dock');
-      var tip = document.getElementById('pngm-composer-tip');
       if (dock) {
         dock.style.display = 'flex';
         dock.style.flexDirection = 'column';
         dock.style.flex = '0 0 auto';
         dock.style.overflow = 'visible';
       }
-      if (tip) {
-        tip.style.setProperty('display', 'block', 'important');
-        tip.style.setProperty('visibility', 'visible', 'important');
-        tip.style.setProperty('opacity', '1', 'important');
-        tip.style.setProperty('color', '#6b7785', 'important');
-        tip.style.setProperty('-webkit-text-fill-color', '#6b7785', 'important');
-        tip.style.setProperty('background', 'transparent', 'important');
-        tip.style.setProperty('font-size', '12px', 'important');
-        tip.style.setProperty('min-height', '0', 'important');
-      }
+
+      var vv = window.visualViewport || null;
+      var viewH = vv ? vv.height : window.innerHeight;
+      var viewTop = vv ? (vv.offsetTop || 0) : 0;
 
       var navi = document.getElementById('navi-bar');
       var naviH = 0;
-      if (navi && window.getComputedStyle(navi).display !== 'none') {
+      if (!kbOpen && navi && window.getComputedStyle(navi).display !== 'none') {
         naviH = navi.offsetHeight;
       }
 
-      // Reserve the whole dock (tip above input + form), not just the form.
-      var formH = 0;
-      if (dock) {
-        formH = dock.offsetHeight;
-      } else if (form) {
-        formH = form.offsetHeight;
-        if (tip) {
-          formH += tip.offsetHeight;
-        }
-      }
-      if (formH < 110) {
-        formH = 110;
+      // Reserve the whole dock (input row + hint + file chips).
+      var dockH = dock ? dock.offsetHeight : (form ? form.offsetHeight : 0);
+      if (dockH < 56) {
+        dockH = 56;
       }
 
-      var top = board.getBoundingClientRect().top;
-      var available = Math.floor(window.innerHeight - top - formH - naviH - 12);
-      if (available < 140) {
-        available = 140;
+      var top = board.getBoundingClientRect().top - viewTop;
+      var available = Math.floor(viewH - top - dockH - naviH - 8);
+      if (available < 120) {
+        available = 120;
       }
 
       board.style.flex = '1 1 auto';
-      board.style.minHeight = '120px';
+      board.style.minHeight = '0';
       board.style.height = available + 'px';
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
 
+      lockPageScroll();
+
       if (pinBottom || nearBottom) {
-        pinChatBottom({ delays: pinBottom ? [0, 50, 150, 350, 700] : [0, 50] });
+        pinChatBottom({ delays: pinBottom ? [0, 80, 200] : [0, 50] });
       }
     }
 
     window.pngmLayoutChat = layout;
+    measureShellChrome();
     layout({ pinBottom: true });
     window.addEventListener('resize', function () {
+      // While the keyboard is open the visualViewport handler owns the layout;
+      // reacting to resize here re-measures a shrunken viewport and jumps.
+      if (document.documentElement.classList.contains('pngm-kb-open')) {
+        lockPageScroll();
+        return;
+      }
       layout();
     });
     window.addEventListener('orientationchange', function () {
       layout({ pinBottom: true });
     });
-    pinChatBottom({ delays: [0, 50, 150, 350, 700] });
+    pinChatBottom({ delays: [0, 80, 200] });
 
     // Plugin autosize uses a 50–85px floor, so one keystroke already grows the field
     // and can push the send-hint under the overflow clip on mobile.
     (function initComposerAutosize() {
       var BASE = 44;
       var MAX = 120;
+      var fitTimer = null;
 
       function fit() {
         var ta = document.getElementById('im-message');
@@ -3359,9 +3411,17 @@
         var needed = Math.max(BASE, Math.min(MAX, ta.scrollHeight));
         ta.style.height = needed + 'px';
         ta.style.overflowY = needed >= MAX ? 'auto' : 'hidden';
-        if (typeof window.pngmLayoutChat === 'function') {
-          window.pngmLayoutChat();
+        lockPageScroll();
+        // Debounced: a relayout on every keystroke is what nudged the view.
+        if (fitTimer) {
+          window.clearTimeout(fitTimer);
         }
+        fitTimer = window.setTimeout(function () {
+          fitTimer = null;
+          if (typeof window.pngmLayoutChat === 'function') {
+            window.pngmLayoutChat();
+          }
+        }, 90);
       }
 
       window.imResetComposerHeight = function () {

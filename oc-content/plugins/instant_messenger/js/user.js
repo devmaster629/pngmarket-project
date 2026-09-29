@@ -3,7 +3,24 @@ $(document).ready(function(){
     $('body').addClass('im-chat-page');
     var box = document.querySelector('.im-table.im-messages');
     if(box) {
-      box.scrollTop = box.scrollHeight;
+      requestAnimationFrame(function(){
+        box.scrollTop = box.scrollHeight;
+      });
+    }
+
+    // Mobile keyboard handling: keep the browser viewport stable.
+    // Do not move the composer with keyboard height. Let the browser resize
+    // naturally (works better on Android Chrome and iOS Safari).
+    function imKeyboardRefresh() {
+      if(window.visualViewport) {
+        document.documentElement.style.setProperty('--im-visual-height', window.visualViewport.height + 'px');
+      }
+    }
+
+    imKeyboardRefresh();
+    if(window.visualViewport) {
+      window.visualViewport.addEventListener('resize', imKeyboardRefresh);
+      window.visualViewport.addEventListener('orientationchange', imKeyboardRefresh);
     }
   }
 
@@ -12,6 +29,12 @@ $(document).ready(function(){
   }
 
   function imFitComposerHeight() {
+    // The theme chat layout owns composer autosize (44-120px). Running both
+    // grew the box and re-laid out the chat on every keystroke.
+    if(typeof window.pngmLayoutChat === 'function' && document.body.classList.contains('im-chat-page')) {
+      return;
+    }
+
     var ta = document.getElementById('im-message');
     if(!ta) {
       return;
@@ -314,6 +337,12 @@ $(document).ready(function(){
       wrapper: "li",
       errorLabelContainer: "#im-error-list",
       invalidHandler: function(form, validator) {
+        // Chat composer never surfaces validation errors, and scrolling the page
+        // here would push the input and thread header out of view.
+        if(document.body.classList.contains('im-chat-page')) {
+          $('#im-error-list').empty().hide();
+          return;
+        }
         $('html,body').animate({ scrollTop: $('#im-error-list').offset().top - 100 }, { duration: 250, easing: 'swing'});
       },
       submitHandler: function(form){
@@ -340,3 +369,36 @@ function imSubmitButtonLoading(button, loading) {
   }
 }
 
+
+// PNGM mobile keyboard fix: visual viewport + composer offset
+(function(){
+  function pngmUpdateKeyboardOffset(){
+    var vv = window.visualViewport;
+    var keyboard = 0;
+    if(vv){
+      keyboard = Math.max(0, window.innerHeight - vv.height);
+    }
+    document.documentElement.style.setProperty('--im-keyboard-height', keyboard + 'px');
+  }
+
+  pngmUpdateKeyboardOffset();
+
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', pngmUpdateKeyboardOffset);
+    window.visualViewport.addEventListener('scroll', pngmUpdateKeyboardOffset);
+  }
+  window.addEventListener('resize', pngmUpdateKeyboardOffset);
+  window.addEventListener('orientationchange', pngmUpdateKeyboardOffset);
+
+  $(document).on('focus', '#im-message', function(){
+    setTimeout(function(){
+      pngmUpdateKeyboardOffset();
+    }, 250);
+  });
+
+  $(document).on('blur', '#im-message', function(){
+    setTimeout(function(){
+      pngmUpdateKeyboardOffset();
+    }, 250);
+  });
+})();

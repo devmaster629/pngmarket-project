@@ -836,11 +836,15 @@ function pngm_im_ui_script()
 
     function pinBoard($board) {
       var $b = ($board && $board.jquery) ? $board : $('.im-table.im-messages').first();
+      if (typeof window.pngmLockChatPageScroll === 'function') {
+        window.pngmLockChatPageScroll();
+      }
       if (typeof window.pngmLayoutChat === 'function') {
         window.pngmLayoutChat({ pinBottom: true });
       }
       if (typeof window.pngmPinChatBottom === 'function') {
-        window.pngmPinChatBottom({ delays: [0, 50, 150, 350] });
+        // Short retries only — long chains keep firing while the keyboard moves.
+        window.pngmPinChatBottom({ delays: [0, 80, 200] });
       } else if (typeof window.imStickChatToBottom === 'function') {
         window.imStickChatToBottom($b);
       } else if ($b[0]) {
@@ -1117,28 +1121,27 @@ function pngm_im_ui_script()
         }
         try {
           if ($form.data('validator')) {
-            $form.find('[name="im-message"]').rules('remove', 'minlength');
-            $form.find('[name="im-message"]').rules('add', {
-              required: {
-                depends: function () {
-                  if (typeof window.imGetComposerFiles === 'function' && window.imGetComposerFiles().length) {
-                    return false;
-                  }
-                  var fileInput = document.getElementById('im-file');
-                  return !(fileInput && fileInput.files && fileInput.files.length);
-                }
-              },
-              messages: {
-                required: '<?php echo osc_esc_js(__('Message: please enter your message.', 'epsilon')); ?>'
-              }
-            });
+            // No required/minlength: an empty send is ignored silently instead of
+            // showing "please enter your message".
+            $form.find('[name="im-message"]').rules('remove', 'minlength required');
           }
         } catch (err) {}
         $('#im-error-list').empty().hide();
       }
 
+      function isNarrowViewport() {
+        try {
+          return window.matchMedia('(max-width: 767px)').matches;
+        } catch (err) {
+          return window.innerWidth <= 767;
+        }
+      }
+
       function ensureSendHint($form) {
-        var tipText = '<?php echo osc_esc_js(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?>';
+        // Ctrl+Enter has no meaning on a touch keyboard — mobile gets its own line.
+        var tipText = isNarrowViewport()
+          ? '<?php echo osc_esc_js(__('Tap the green button to send', 'epsilon')); ?>'
+          : '<?php echo osc_esc_js(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?>';
         var formEl = $form[0];
         if (!formEl) {
           return;
@@ -1190,7 +1193,10 @@ function pngm_im_ui_script()
         tip.removeAttribute('hidden');
         tip.setAttribute('aria-hidden', 'false');
 
-        tip.style.setProperty('display', 'block', 'important');
+        // Inline !important outranks the stylesheet, so the keyboard state has to
+        // be honoured here too — otherwise the hint keeps a row above the keyboard.
+        var kbOpenNow = document.documentElement.classList.contains('pngm-kb-open');
+        tip.style.setProperty('display', kbOpenNow ? 'none' : 'block', 'important');
         tip.style.setProperty('visibility', 'visible', 'important');
         tip.style.setProperty('opacity', '1', 'important');
         tip.style.setProperty('color', '#6b7785', 'important');
@@ -1218,18 +1224,73 @@ function pngm_im_ui_script()
         tip.style.setProperty('clip-path', 'none', 'important');
       }
 
+      function isComposerFocused() {
+        try {
+          var ae = document.activeElement;
+          return !!(ae && (ae.id === 'im-message' || (ae.classList && ae.classList.contains('im-textarea'))));
+        } catch (err) {
+          return false;
+        }
+      }
+
+      /**
+       * Keep the composer above the soft keyboard.
+       *
+       * Two browser families to satisfy:
+       *  - Chrome/Android with interactive-widget=resizes-content: the layout
+       *    viewport (and 100dvh) shrinks on its own, so the measured inset is ~0
+       *    and there is nothing left to subtract.
+       *  - iOS Safari: only the visual viewport shrinks, so we must subtract the
+       *    measured keyboard height via --pngm-kb.
+       * Either way the bottom nav has to go while typing, and the page itself must
+       * never scroll — that is what hid the input and the listing header.
+       */
       function pinComposerAboveKeyboard() {
-        if (!window.visualViewport) {
+        var focused = isComposerFocused();
+        var narrow = isNarrowViewport();
+        var vv = window.visualViewport || null;
+        var kb = 0;
+
+        if (vv) {
+          var inset = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+          if (vv.offsetTop > 40) {
+            inset = Math.max(inset, Math.round(vv.offsetTop));
+          }
+          if (inset >= 40) {
+            kb = inset;
+          }
+        }
+
+        // Focus is the only reliable keyboard signal when the layout viewport
+        // shrinks with the keyboard (measured inset stays 0 there).
+        var open = (kb > 0) || (focused && narrow);
+
+        document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
+        var wasOpen = document.documentElement.classList.contains('pngm-kb-open');
+        document.documentElement.classList.toggle('pngm-kb-open', open);
+
+        if (!open && typeof window.pngmMeasureChatChrome === 'function') {
+          window.pngmMeasureChatChrome();
+        }
+        if (open && narrow && typeof window.pngmLockChatPageScroll === 'function') {
+          window.pngmLockChatPageScroll();
+        }
+
+        if (typeof window.pngmLayoutChat !== 'function') {
           return;
         }
-        var vv = window.visualViewport;
-        var kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-        // Ignore tiny diffs from browser chrome; only react to real keyboard overlap.
-        if (kb < 40) {
-          kb = 0;
+        if (wasOpen !== open) {
+          window.pngmLayoutChat({ pinBottom: true });
+          return;
         }
-        document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
-        document.documentElement.classList.toggle('pngm-kb-open', kb > 0);
+        if (open && !window.__pngmKbLayoutT) {
+          window.__pngmKbLayoutT = window.setTimeout(function () {
+            window.__pngmKbLayoutT = null;
+            if (typeof window.pngmLayoutChat === 'function') {
+              window.pngmLayoutChat({ pinBottom: true });
+            }
+          }, 120);
+        }
       }
 
       function enhanceAttachmentLinks($root) {
@@ -1317,14 +1378,30 @@ function pngm_im_ui_script()
         window.visualViewport.addEventListener('resize', pinComposerAboveKeyboard);
         window.visualViewport.addEventListener('scroll', pinComposerAboveKeyboard);
       }
+      window.addEventListener('resize', pinComposerAboveKeyboard);
       window.addEventListener('focusin', function (e) {
         if (e.target && (e.target.id === 'im-message' || (e.target.classList && e.target.classList.contains('im-textarea')))) {
+          // Toggle immediately so the nav is gone before the keyboard finishes.
+          pinComposerAboveKeyboard();
           setTimeout(pinComposerAboveKeyboard, 50);
-          setTimeout(pinComposerAboveKeyboard, 300);
+          setTimeout(pinComposerAboveKeyboard, 250);
+          setTimeout(pinComposerAboveKeyboard, 500);
         }
       });
-      window.addEventListener('focusout', function () {
-        setTimeout(pinComposerAboveKeyboard, 100);
+      // Keyboard dismissed (tap elsewhere / back): restore nav + full-height shell.
+      window.addEventListener('focusout', function (e) {
+        if (!(e.target && (e.target.id === 'im-message' || (e.target.classList && e.target.classList.contains('im-textarea'))))) {
+          return;
+        }
+        setTimeout(pinComposerAboveKeyboard, 50);
+        setTimeout(pinComposerAboveKeyboard, 300);
+        setTimeout(pinComposerAboveKeyboard, 600);
+      });
+      // Rotating can cross the mobile/desktop breakpoint — refresh the hint text.
+      window.addEventListener('orientationchange', function () {
+        setTimeout(function () {
+          ensureSendHint($('#im-message-form'));
+        }, 250);
       });
 
       // Re-apply after AJAX board swaps.

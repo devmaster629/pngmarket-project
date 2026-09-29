@@ -190,7 +190,7 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
             <button type="submit" class="im-button-green im-button-alt" style="display:none;"><i class="fa fa-paper-plane"></i></button>
             <div class="im-file-list" id="im-file-list" hidden></div>
           </form>
-          <p id="pngm-composer-tip" class="pngm-composer-tip"><?php echo osc_esc_html(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?></p>
+          <p id="pngm-composer-tip" class="pngm-composer-tip"><span class="desktop-tip"><?php echo osc_esc_html(__('Enter to send · Ctrl+Enter for a new line', 'epsilon')); ?></span><span class="mobile-tip"><?php echo osc_esc_html(__('Tap send button to send', 'epsilon')); ?></span></p>
         </div>
       <?php } ?>
     </section>

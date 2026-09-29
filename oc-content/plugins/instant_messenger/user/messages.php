@@ -730,14 +730,15 @@ function imStickChatToBottom($board) {
     return;
   }
   if (typeof window.pngmPinChatBottom === 'function') {
-    window.pngmPinChatBottom({ delays: [0, 50, 150, 350] });
+    window.pngmPinChatBottom({ delays: [0, 80, 200] });
     return;
   }
-  el.scrollTop = el.scrollHeight;
-  var last = el.querySelector('.im-table-row:not(.hidden):last-of-type, .im-table-row:last-child');
-  if (last && typeof last.scrollIntoView === 'function') {
-    try { last.scrollIntoView({ block: 'end', inline: 'nearest' }); } catch (e) {}
-  }
+  // Scroll the list only — scrollIntoView() scrolls the page on Android Chrome.
+  try {
+    if (window.scrollY || window.pageYOffset) {
+      window.scrollTo(0, 0);
+    }
+  } catch (e) {}
   el.scrollTop = el.scrollHeight;
 }
 
