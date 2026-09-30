@@ -725,10 +725,6 @@
   </div>
 <?php } ?>
 
-<?php if (osc_is_admin_user_logged_in() && ((defined('OSC_DEBUG') && OSC_DEBUG == true) || (defined('OSC_DEBUG_DB') && OSC_DEBUG_DB == true))) { ?>
-  <div id="debug-mode" class="noselect"><?php _e('Debug mode enabled in config.php.', 'epsilon'); ?></div>
-<?php } ?>
-
 <style>
 a.fi_img-link.fi-no-image > img {content:url("<?php echo osc_base_url(); ?>/oc-content/themes/epsilon/images/no-image.png");}
 </style>
