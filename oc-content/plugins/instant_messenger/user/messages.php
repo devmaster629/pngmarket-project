@@ -706,18 +706,11 @@ $(document).ready(function() {
     PageTitleNotification.Off();
   });
 
-  // UNLOCK AUDIO PLAYBACK AFTER FIRST USER GESTURE (AUToplay POLICY)
+  // Unlock playback after a tap without playing the message beep.
+  // Playing beep.mp3 here made a sound every time a thread was opened,
+  // because each conversation page armed this listener again.
   $(document).one('click keydown touchstart', function() {
-    imInitBeepAudio();
-    if(imBeepAudio) {
-      var unlock = imBeepAudio.play();
-      if(unlock && typeof unlock.then === 'function') {
-        unlock.then(function() {
-          imBeepAudio.pause();
-          imBeepAudio.currentTime = 0;
-        }).catch(function() {});
-      }
-    }
+    imUnlockAudio();
   });
 });
 
@@ -852,7 +845,15 @@ function imRefreshMessages(forceBottom, forceReplace) {
           }
         }
 
-        if(!$board.find('.im-table-row:last-child').hasClass('im-from') && $board.find('.im-table-row:last-child').attr('data-message-id') != lastMessageId) {
+        var nextMessageId = $board.find('.im-table-row:last-child').attr('data-message-id');
+        var incoming = !$board.find('.im-table-row:last-child').hasClass('im-from');
+        var sameThread = (imBeepThreadId > 0 && imBeepThreadId === locThread);
+        if(locThread > 0) {
+          imBeepThreadId = locThread;
+        }
+        // Only beep for a new incoming message in the thread already on screen.
+        // Opening another conversation also changes the last message id.
+        if(sameThread && incoming && nextMessageId && nextMessageId != lastMessageId) {
           imPlayBeep();
           PageTitleNotification.On('<?php echo osc_esc_js(__('You have new message!', 'instant_messenger')); ?>');
         }
@@ -886,6 +887,25 @@ function imClearForm() {
 // PLAY BEEP SOUND ON NEW MESSAGE (requires prior user interaction on modern browsers)
 var imBeepUrl = "<?php echo osc_esc_js(osc_base_url() . 'oc-content/plugins/instant_messenger/audio/beep.mp3'); ?>";
 var imBeepAudio = null;
+var imBeepThreadId = 0;
+
+function imUnlockAudio() {
+  try {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) {
+      return;
+    }
+    var ctx = new Ctx();
+    var buffer = ctx.createBuffer(1, 1, 22050);
+    var source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    if(ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+      ctx.resume();
+    }
+    source.start(0);
+  } catch(e) {}
+}
 
 function imInitBeepAudio() {
   if(imBeepAudio || !imBeepUrl) {
