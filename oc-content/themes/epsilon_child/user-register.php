@@ -137,6 +137,11 @@
       $('input[name="s_email"]').attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true).prop('type', 'email');
       $pass.removeAttr('placeholder').attr('required', true).attr('minlength', minLen);
       $pass2.removeAttr('placeholder').attr('required', true).attr('minlength', minLen);
+      // See user-login.php: autocomplete="off" from the core form makes iOS
+      // treat these as AutoFill fields and the keyboard can come up blank.
+      $('input[name="s_email"]').attr('autocomplete', 'email');
+      $pass.attr('autocomplete', 'new-password');
+      $pass2.attr('autocomplete', 'new-password');
 
       if ($form.length && $.fn.validate && $form.data('validator')) {
         $form.validate().settings.rules.s_password = $.extend({}, $form.validate().settings.rules.s_password, {

@@ -91,6 +91,11 @@
       var $pass = $('input[name="password"]');
       $email.attr('placeholder', '<?php echo osc_esc_js(__('your.email@dot.com', 'epsilon')); ?>').attr('required', true).attr('type', 'email');
       $pass.removeAttr('placeholder').attr('required', true);
+      // The core form prints autocomplete="off". iOS ignores that on a password
+      // field and falls back to its AutoFill handling, which is where the
+      // keyboard came up blank. Name the fields so it uses the normal keyboard.
+      $email.attr('autocomplete', 'username');
+      $pass.attr('autocomplete', 'current-password');
 
       function mark($input) {
         var $field = $input.closest('.pngm-auth-field');
