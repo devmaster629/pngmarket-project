@@ -413,15 +413,21 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
              data-unread="<?php echo (int) (!empty($row['unread_count']) ? $row['unread_count'] : ($row['unread'] ? 1 : 0)); ?>"
              data-search="<?php echo osc_esc_html($row['search_hay']); ?>">
             <span class="pngm-im-convo-av">
-              <?php if ($row['avatar'] !== '') { ?>
+              <?php if (!empty($row['listing_thumb'])) { ?>
+                <img src="<?php echo osc_esc_html($row['listing_thumb']); ?>" alt="" width="48" height="48" loading="lazy" />
+                <?php if ($row['avatar'] !== '') { ?>
+                  <span class="pngm-im-convo-listing-thumb" aria-hidden="true">
+                    <img src="<?php echo osc_esc_html($row['avatar']); ?>" alt="" width="20" height="20" loading="lazy" />
+                  </span>
+                <?php } elseif ($row['initials'] !== '') { ?>
+                  <span class="pngm-im-convo-listing-thumb" aria-hidden="true">
+                    <span class="pngm-im-convo-initials"><?php echo osc_esc_html($row['initials']); ?></span>
+                  </span>
+                <?php } ?>
+              <?php } elseif ($row['avatar'] !== '') { ?>
                 <img src="<?php echo osc_esc_html($row['avatar']); ?>" alt="" width="48" height="48" loading="lazy" />
               <?php } else { ?>
                 <span class="pngm-im-convo-initials"><?php echo osc_esc_html($row['initials']); ?></span>
-              <?php } ?>
-              <?php if (!empty($row['listing_thumb'])) { ?>
-                <span class="pngm-im-convo-listing-thumb" aria-hidden="true">
-                  <img src="<?php echo osc_esc_html($row['listing_thumb']); ?>" alt="" width="20" height="20" loading="lazy" />
-                </span>
               <?php } ?>
             </span>
             <span class="pngm-im-convo-body">
