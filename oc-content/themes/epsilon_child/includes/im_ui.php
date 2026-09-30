@@ -889,15 +889,16 @@ function pngm_im_ui_script()
       var textHtml = text ? escapeHtml(text).replace(/\n/g, '<br>') : '';
       var bodyHtml = textHtml;
       if (uploading) {
-        var statusHtml = '<span class="pngm-im-upload-status">'
-          + '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> '
-          + escapeHtml(uploadLabel)
-          + '</span>';
-        if (textHtml) {
-          bodyHtml = textHtml + '<div class="pngm-im-upload-status-wrap">' + statusHtml + '</div>';
-        } else {
-          bodyHtml = statusHtml;
+        // The meta line below is the only "Uploading…" indicator. A second copy
+        // inside the bubble was stacking two spinners on the same message.
+        var nameBits = [];
+        var ni;
+        for (ni = 0; ni < fileNames.length; ni += 1) {
+          nameBits.push(escapeHtml(fileNames[ni]));
         }
+        var filesLine = '<span class="pngm-im-upload-names"><i class="fas fa-paperclip" aria-hidden="true"></i> '
+          + nameBits.join(', ') + '</span>';
+        bodyHtml = textHtml ? (textHtml + '<br>' + filesLine) : filesLine;
       }
 
       var $tpl = $board.find('.im-table-row.im-from').not('.is-pending').last();
@@ -1264,7 +1265,7 @@ function pngm_im_ui_script()
        * listing header back, so a close is held briefly and applied once.
        */
       var kbCloseTimer = null;
-      var kbLastPx = -1;
+      var kbLastPx = 0;
 
       function pinComposerAboveKeyboard(forceClose) {
         var focused = isComposerFocused();
@@ -1307,11 +1308,21 @@ function pngm_im_ui_script()
         if (!open) {
           kb = 0;
         }
-        if (kb !== kbLastPx) {
+        var kbMoved = (kb !== kbLastPx);
+        if (kbMoved) {
           kbLastPx = kb;
           document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
         }
         document.documentElement.classList.toggle('pngm-kb-open', open);
+
+        // iOS only: the keyboard covers the layout viewport and Safari pans
+        // the visual viewport to chase the focused field, which hid the input
+        // and then, once typing started, pushed the thread header off screen.
+        // Android reports kb ≈ 0 (the layout viewport already shrank), so this
+        // frame is never applied there.
+        var iosFrame = !!(open && narrow && kb >= 40);
+        var hadIos = document.documentElement.classList.contains('pngm-kb-ios');
+        syncIosKeyboardFrame(iosFrame);
 
         if (!open && typeof window.pngmMeasureChatChrome === 'function') {
           window.pngmMeasureChatChrome();
@@ -1323,11 +1334,52 @@ function pngm_im_ui_script()
         if (typeof window.pngmLayoutChat !== 'function') {
           return;
         }
-        // Full relayout only when the keyboard opens/closes — never on every
-        // visualViewport tick while typing (that walked the thread header down).
-        if (wasOpen !== open) {
-          window.pngmLayoutChat({ pinBottom: true });
+        // Relayout when the keyboard opens, closes, or its height changes.
+        // Skip plain visualViewport scroll ticks — those walked the header.
+        // A mid-keyboard height change must not pin the message list, or a
+        // scroll the user just made snaps away.
+        if (wasOpen !== open || kbMoved || hadIos !== iosFrame) {
+          window.pngmLayoutChat(wasOpen === open ? { typing: true } : { pinBottom: true });
         }
+      }
+
+      /**
+       * Pin the page to the visible area while the iOS keyboard is up.
+       * top follows visualViewport.offsetTop so Safari's pan can't slide the
+       * thread header out, and height is the visible area so the composer sits
+       * on the keyboard instead of underneath it.
+       */
+      var iosFrameOffset = -1;
+      var iosFrameHeight = -1;
+
+      function syncIosKeyboardFrame(active) {
+        var root = document.documentElement;
+        var body = document.body;
+        var vv = window.visualViewport;
+        if (!active) {
+          iosFrameOffset = -1;
+          iosFrameHeight = -1;
+          if (!root.classList.contains('pngm-kb-ios')) {
+            return;
+          }
+          root.classList.remove('pngm-kb-ios');
+          body.style.top = '';
+          body.style.height = '';
+          body.style.transform = '';
+          return;
+        }
+        var offset = vv ? Math.round(vv.offsetTop || 0) : 0;
+        var visible = vv ? Math.round(vv.height) : window.innerHeight;
+        if (offset === iosFrameOffset && visible === iosFrameHeight && root.classList.contains('pngm-kb-ios')) {
+          return;
+        }
+        iosFrameOffset = offset;
+        iosFrameHeight = visible;
+        root.classList.add('pngm-kb-ios');
+        body.style.top = '0px';
+        body.style.height = visible + 'px';
+        body.style.transform = offset ? ('translateY(' + offset + 'px)') : '';
+        root.style.setProperty('--pngm-vv-h', visible + 'px');
       }
 
       function enhanceAttachmentLinks($root) {

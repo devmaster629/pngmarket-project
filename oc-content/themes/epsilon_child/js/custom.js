@@ -3367,39 +3367,51 @@
         dockH = 56;
       }
 
-      if (!kbOpen) {
+      if (!kbOpen || document.documentElement.classList.contains('pngm-kb-ios')) {
         frozenBoardTop = null;
       } else if (frozenBoardTop == null) {
         // Capture once when the keyboard opens — never remeasure while typing.
-        // Stored WITHOUT viewTop: on iOS the visual viewport keeps sliding while
-        // the keyboard is up, so a frozen viewport-relative value drifts and the
-        // list is sized short, leaving a dead white strip under the composer.
-        // Android reports viewTop 0 throughout, so this is the same value there.
+        // Android reports viewTop 0 throughout, so this is the on-screen position.
         frozenBoardTop = board.getBoundingClientRect().top;
       }
 
-      var top = ((kbOpen && frozenBoardTop != null)
-        ? frozenBoardTop
-        : board.getBoundingClientRect().top) - viewTop;
+      // iOS pins the page to the visual viewport, so the rect is already the
+      // visible position. Subtracting viewTop there doubles the pan and either
+      // hides the composer or slides the thread header off the top.
+      var rectTop = board.getBoundingClientRect().top;
+      var top = document.documentElement.classList.contains('pngm-kb-ios')
+        ? rectTop
+        : (((kbOpen && frozenBoardTop != null) ? frozenBoardTop : rectTop) - viewTop);
       var available = Math.floor(viewH - top - dockH - naviH - 8);
       if (available < 120) {
-        available = 120;
+        // On iOS the keyboard already consumed the space. Forcing 120px here
+        // pushed the composer under the keyboard whenever the thread header
+        // and listing card left less than that. Android keeps the floor.
+        available = document.documentElement.classList.contains('pngm-kb-ios')
+          ? Math.max(64, available)
+          : 120;
       }
 
+      var prevScroll = board.scrollTop;
       board.style.flex = '0 0 auto';
       board.style.minHeight = '0';
       board.style.height = available + 'px';
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
 
-      // Never scroll the page while typing — that walks the thread header down.
-      if (!typing) {
+      // Keep the page from following the caret. On Android this is a no-op
+      // while scroll is already 0; on iOS it stops the thread header sliding away
+      // as soon as the first character is typed.
+      if (!typing || kbOpen) {
         lockPageScroll();
       }
 
       // Typing only changes composer height; keep the message scroll position.
+      // Restoring it also stops a height change from jumping the list back to the top.
       if (!typing && (pinBottom || nearBottom)) {
         pinChatBottom({ delays: pinBottom ? [0, 80, 200] : [0, 50] });
+      } else {
+        board.scrollTop = prevScroll;
       }
     }
 

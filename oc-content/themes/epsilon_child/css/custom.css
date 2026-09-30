@@ -6994,6 +6994,23 @@
       height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-kb, 0px)) !important;
       max-height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-kb, 0px)) !important;
     }
+
+    /* iOS: the page itself is pinned to the visual viewport (see pngm-kb-ios),
+       so the shell fills that visible area. Subtracting --pngm-kb again would
+       leave a gap under the composer and hide the thread header. */
+    html.pngm-kb-ios body.im-chat-page {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+    }
+
+    html.pngm-kb-ios body.im-chat-page .container.primary {
+      height: calc(var(--pngm-vv-h, 100dvh) - var(--pngm-chat-top, 102px)) !important;
+      max-height: calc(var(--pngm-vv-h, 100dvh) - var(--pngm-chat-top, 102px)) !important;
+    }
   
     html.pngm-kb-open body.im-chat-page .pngm-im-board-pane {
       margin-bottom: 0 !important;

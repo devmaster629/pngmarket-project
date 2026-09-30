@@ -5082,6 +5082,17 @@ body.im-chat-page .im-messages .im-table-row .im-horizontal .right img {
   color: #6b7785;
 }
 
+.pngm-im-upload-names {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16202a;
+  word-break: break-all;
+}
+
 .im-table-row.im-from.is-pending .im-message-extra,
 .im-table-row.im-from.is-pending a.im-download,
 .im-table-row.im-from.is-pending a.pngm-im-attach {
