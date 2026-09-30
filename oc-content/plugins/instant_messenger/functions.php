@@ -1423,7 +1423,7 @@ function im_insert_message($thread_id, $message, $type, $file = array(), $notify
   }
 
   // MANAGE FILE UPLOAD
-  $allowed_extensions = (im_param('att_extension') <> '' ? im_param('att_extension') : 'jpg, jpeg, gif, png');
+  $allowed_extensions = (im_param('att_extension') <> '' ? im_param('att_extension') : 'jpg, jpeg, png, gif, webp, heic, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, mp3, m4a, wav, ogg, mp4, mov, webm, zip');
   $allowed_extensions = array_map('strtolower', array_filter(array_map('trim', explode(',', $allowed_extensions))));
 
   $upload_name = (isset($file['name']) ? im_str($file['name']) : '');

@@ -74,6 +74,103 @@ function pngm_im_file_label($message_id, $stored_file)
 }
 
 /**
+ * Chat attachments: photos, documents, audio, and short video.
+ *
+ * @return string Comma-separated extensions, no dots.
+ */
+function pngm_im_allowed_extensions()
+{
+    return 'jpg, jpeg, png, gif, webp, heic, heif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, mp4, mov, m4v, webm, 3gp, zip';
+}
+
+/**
+ * accept="" value for the chat file input.
+ *
+ * @return string
+ */
+function pngm_im_file_accept()
+{
+    $parts = array('image/*', 'audio/*', 'video/*', 'application/pdf');
+    foreach (explode(',', pngm_im_allowed_extensions()) as $ext) {
+        $ext = strtolower(trim($ext));
+        if ($ext !== '') {
+            $parts[] = '.' . $ext;
+        }
+    }
+    return implode(',', $parts);
+}
+
+/**
+ * ini size (upload_max_filesize / post_max_size) in kilobytes.
+ *
+ * @param string $name
+ * @return int
+ */
+function pngm_im_ini_kb($name)
+{
+    $raw = trim((string) ini_get($name));
+    if ($raw === '') {
+        return 0;
+    }
+    $unit = strtolower(substr($raw, -1));
+    $num = (float) $raw;
+    if ($unit === 'g') {
+        $num *= 1024 * 1024;
+    } elseif ($unit === 'm') {
+        $num *= 1024;
+    } elseif ($unit === 'k') {
+        $num *= 1;
+    } else {
+        $num = $num / 1024;
+    }
+    return (int) floor($num);
+}
+
+/**
+ * Write the attachment allow-list once, and raise the size cap so a voice
+ * note or a short video is not rejected at the old 512kb photo limit.
+ * Never exceeds PHP's own upload limit.
+ */
+function pngm_im_ensure_attachment_types()
+{
+    if (!function_exists('im_param')) {
+        return;
+    }
+    $wanted = pngm_im_allowed_extensions();
+    $current = strtolower((string) im_param('att_extension'));
+    $norm = function ($value) {
+        $bits = array_filter(array_map('trim', explode(',', strtolower((string) $value))));
+        sort($bits);
+        return implode(',', $bits);
+    };
+    if ($norm($current) !== $norm($wanted)) {
+        osc_set_preference('att_extension', $wanted, 'plugin-instant_messenger', 'STRING');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set('att_extension', $wanted, 'plugin-instant_messenger');
+        }
+    }
+
+    $capKb = 20480;
+    $uploadKb = pngm_im_ini_kb('upload_max_filesize');
+    $postKb = pngm_im_ini_kb('post_max_size');
+    if ($uploadKb > 256) {
+        $capKb = min($capKb, $uploadKb);
+    }
+    if ($postKb > 512) {
+        $capKb = min($capKb, $postKb - 256);
+    }
+    if ($capKb < 512) {
+        $capKb = 512;
+    }
+    if ((int) im_param('att_max_size') < $capKb) {
+        osc_set_preference('att_max_size', (string) $capKb, 'plugin-instant_messenger', 'INTEGER');
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set('att_max_size', (string) $capKb, 'plugin-instant_messenger');
+        }
+    }
+}
+
+/**
  * Unread inbound message count for one thread.
  *
  * @param int $thread_id
@@ -1327,7 +1424,9 @@ function pngm_im_ui_script()
         if (!open && typeof window.pngmMeasureChatChrome === 'function') {
           window.pngmMeasureChatChrome();
         }
-        if (open && narrow && typeof window.pngmLockChatPageScroll === 'function') {
+        // scrollTo(0) while the iPhone keyboard is up forces Safari to keep its
+        // domain bar in the gap under the composer. The page is already pinned.
+        if (open && narrow && !iosFrame && typeof window.pngmLockChatPageScroll === 'function') {
           window.pngmLockChatPageScroll();
         }
 
@@ -1370,6 +1469,16 @@ function pngm_im_ui_script()
         }
         var offset = vv ? Math.round(vv.offsetTop || 0) : 0;
         var visible = vv ? Math.round(vv.height) : window.innerHeight;
+        // Safari parks "stage.pngmarket.online" in a short band between the
+        // visual viewport and the keyboard. Stretch the page through that band
+        // so the chat panel meets the keyboard and the band is gone. A real
+        // keyboard is far taller than 72px, so this never swallows the keys.
+        if (vv) {
+          var barGap = Math.round(window.innerHeight - offset - vv.height);
+          if (barGap > 8 && barGap < 72) {
+            visible += barGap;
+          }
+        }
         if (offset === iosFrameOffset && visible === iosFrameHeight && root.classList.contains('pngm-kb-ios')) {
           return;
         }

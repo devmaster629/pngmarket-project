@@ -3150,6 +3150,15 @@
      */
     (function useResizesContentViewport() {
       try {
+        // iPhone already draws a domain bar in any leftover slot above the
+        // keyboard. resizes-content keeps that slot open. Android needs the
+        // flag so the layout viewport (and 100dvh) shrinks with the keyboard.
+        var ua = navigator.userAgent || '';
+        var ios = /iPhone|iPad|iPod/i.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (ios) {
+          return;
+        }
         var metas = document.querySelectorAll('meta[name="viewport"]');
         var i;
         for (i = 0; i < metas.length; i += 1) {
@@ -3399,10 +3408,9 @@
       board.style.maxHeight = available + 'px';
       board.style.overflowY = 'auto';
 
-      // Keep the page from following the caret. On Android this is a no-op
-      // while scroll is already 0; on iOS it stops the thread header sliding away
-      // as soon as the first character is typed.
-      if (!typing || kbOpen) {
+      // Keep the page from following the caret. Skip this on iPhone while the
+      // keyboard is up: scrollTo(0) is what pins Safari's domain bar under the input.
+      if ((!typing || kbOpen) && !document.documentElement.classList.contains('pngm-kb-ios')) {
         lockPageScroll();
       }
 

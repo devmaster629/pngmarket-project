@@ -2069,6 +2069,21 @@ function pngm_im_enable_deferred_email()
 osc_add_hook('init', 'pngm_im_enable_deferred_email', 8);
 
 /**
+ * Keep messenger uploads open to documents, audio, and video, not photos only.
+ */
+function pngm_im_open_attachment_types()
+{
+    $ui = dirname(__FILE__) . '/includes/im_ui.php';
+    if (!function_exists('pngm_im_ensure_attachment_types') && file_exists($ui)) {
+        require_once $ui;
+    }
+    if (function_exists('pngm_im_ensure_attachment_types')) {
+        pngm_im_ensure_attachment_types();
+    }
+}
+osc_add_hook('init', 'pngm_im_open_attachment_types', 9);
+
+/**
  * Lightweight AJAX send — inserts the message without a full page redirect.
  */
 function pngm_ajax_im_send()
@@ -2114,6 +2129,23 @@ function pngm_ajax_im_send()
     if (trim(strip_tags($message_text)) === '' && count($files) === 0) {
         echo json_encode(array('ok' => 0, 'error' => 'empty'));
         return;
+    }
+
+    $allowed_ext = array();
+    if (function_exists('pngm_im_allowed_extensions')) {
+        $allowed_ext = array_filter(array_map('trim', explode(',', strtolower(pngm_im_allowed_extensions()))));
+    }
+    $max_bytes = (((int) im_param('att_max_size') > 0) ? (int) im_param('att_max_size') : 20480) * 1000;
+    foreach ($files as $file) {
+        $ext = strtolower(pathinfo((string) (isset($file['name']) ? $file['name'] : ''), PATHINFO_EXTENSION));
+        if ($allowed_ext && !in_array($ext, $allowed_ext, true)) {
+            echo json_encode(array('ok' => 0, 'error' => 'type'));
+            return;
+        }
+        if (isset($file['size']) && (int) $file['size'] > $max_bytes) {
+            echo json_encode(array('ok' => 0, 'error' => 'size'));
+            return;
+        }
     }
 
     $id = 0;

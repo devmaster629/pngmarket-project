@@ -179,7 +179,7 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
             <?php if ($att_enable == 1) { ?>
               <label class="pngm-im-attach-btn im-attachment" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
                 <i class="fas fa-paperclip" aria-hidden="true"></i>
-                <input type="file" name="im-file[]" id="im-file" class="im-file" multiple />
+                <input type="file" name="im-file[]" id="im-file" class="im-file" multiple accept="<?php echo osc_esc_html(function_exists('pngm_im_file_accept') ? pngm_im_file_accept() : 'image/*,audio/*,video/*,.pdf,.doc,.docx,.mp3,.mp4,.zip'); ?>" />
               </label>
             <?php } ?>
             <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_html(__('Type a message…', 'epsilon')); ?>"></textarea>
