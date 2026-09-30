@@ -3371,12 +3371,16 @@
         frozenBoardTop = null;
       } else if (frozenBoardTop == null) {
         // Capture once when the keyboard opens — never remeasure while typing.
-        frozenBoardTop = board.getBoundingClientRect().top - viewTop;
+        // Stored WITHOUT viewTop: on iOS the visual viewport keeps sliding while
+        // the keyboard is up, so a frozen viewport-relative value drifts and the
+        // list is sized short, leaving a dead white strip under the composer.
+        // Android reports viewTop 0 throughout, so this is the same value there.
+        frozenBoardTop = board.getBoundingClientRect().top;
       }
 
-      var top = (kbOpen && frozenBoardTop != null)
+      var top = ((kbOpen && frozenBoardTop != null)
         ? frozenBoardTop
-        : (board.getBoundingClientRect().top - viewTop);
+        : board.getBoundingClientRect().top) - viewTop;
       var available = Math.floor(viewH - top - dockH - naviH - 8);
       if (available < 120) {
         available = 120;

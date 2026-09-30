@@ -5313,13 +5313,49 @@ body #im-message-form .im-file-remove {
     text-overflow: unset;
     word-break: break-all;
   }
+
+  /* 16px minimum: iOS Safari zooms the page into any focused field with a smaller
+     font, which is what distorted the composer as soon as it was tapped. */
+  .pngm-im-composer .im-textarea,
+  .pngm-im-composer #im-message,
+  body.im-chat-page #im-message,
+  body.im-chat-page #im-message-form .im-textarea,
+  body.pngm-ua-messages #im-message {
+    font-size: 16px !important;
+  }
+
+  .pngm-im-search input,
+  .pngm-im-search input#pngm-im-search-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Outgoing bubbles are pale green, so the plugin's inherited white text made
+   attachment names invisible. Match the message text instead. */
+.pngm-im-bubble-row.is-mine .pngm-im-attach,
+.im-table-row.im-from .pngm-im-attach,
+.im-table-row.im-from a.im-download,
+.im-table-row.im-from .pngm-im-attach .pngm-im-attach-name,
+.im-table-row.im-from a.im-download .pngm-im-attach-name,
+.im-table-row.im-from .pngm-im-attach i,
+.im-table-row.im-from a.im-download i {
+  color: #16202a !important;
+  -webkit-text-fill-color: #16202a !important;
 }
 
 .pngm-im-bubble-row.is-mine .pngm-im-attach,
 .im-table-row.im-from .pngm-im-attach,
 .im-table-row.im-from a.im-download {
-  color: #fff !important;
-  background: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(22, 32, 42, 0.06) !important;
+}
+
+/* On phones the plugin draws "Remove file" as a bare 24px teal square pinned
+   outside the bubble (user.css: a.im-hide:before, background #00BCD4), which
+   landed on top of the attachment name. The chat has no use for it. */
+.im-messages .im-message-extra a.im-hide,
+.im-messages .im-table-row:hover .im-message-extra a.im-hide,
+body .im-messages .im-message-extra a.im-hide {
+  display: none !important;
 }
 
 .pngm-im-bubble-row.is-theirs .pngm-im-attach,

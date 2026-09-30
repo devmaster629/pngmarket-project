@@ -842,6 +842,14 @@ function pngm_im_ui_script()
 
     function pinBoard($board) {
       var $b = ($board && $board.jquery) ? $board : $('.im-table.im-messages').first();
+      var el = $b[0];
+      // Send blurs the textarea while iOS is still animating the keyboard away.
+      // Relaying out here scrolled the page back to the listing header and
+      // flashed the bottom nav over the keyboard, so only follow the list.
+      if (document.documentElement.classList.contains('pngm-kb-open') && el) {
+        el.scrollTop = el.scrollHeight;
+        return;
+      }
       if (typeof window.pngmLockChatPageScroll === 'function') {
         window.pngmLockChatPageScroll();
       }
@@ -849,12 +857,11 @@ function pngm_im_ui_script()
         window.pngmLayoutChat({ pinBottom: true });
       }
       if (typeof window.pngmPinChatBottom === 'function') {
-        // Short retries only — long chains keep firing while the keyboard moves.
-        window.pngmPinChatBottom({ delays: [0, 80, 200] });
+        window.pngmPinChatBottom({ delays: [0, 80] });
       } else if (typeof window.imStickChatToBottom === 'function') {
         window.imStickChatToBottom($b);
-      } else if ($b[0]) {
-        $b[0].scrollTop = $b[0].scrollHeight;
+      } else if (el) {
+        el.scrollTop = el.scrollHeight;
       }
     }
 
@@ -1250,8 +1257,16 @@ function pngm_im_ui_script()
        *    measured keyboard height via --pngm-kb.
        * Either way the bottom nav has to go while typing, and the page itself must
        * never scroll — that is what hid the input and the listing header.
+       *
+       * Send blurs the textarea before iOS finishes closing the keyboard, and the
+       * inset reads 0 on that first tick. Dropping pngm-kb-open straight away
+       * flashed the bottom nav over the still-visible keyboard and yanked the
+       * listing header back, so a close is held briefly and applied once.
        */
-      function pinComposerAboveKeyboard() {
+      var kbCloseTimer = null;
+      var kbLastPx = -1;
+
+      function pinComposerAboveKeyboard(forceClose) {
         var focused = isComposerFocused();
         var narrow = isNarrowViewport();
         var vv = window.visualViewport || null;
@@ -1270,9 +1285,32 @@ function pngm_im_ui_script()
         // Focus is the only reliable keyboard signal when the layout viewport
         // shrinks with the keyboard (measured inset stays 0 there).
         var open = (kb > 0) || (focused && narrow);
-
-        document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
         var wasOpen = document.documentElement.classList.contains('pngm-kb-open');
+
+        if (!forceClose && wasOpen && !open && narrow) {
+          if (!kbCloseTimer) {
+            kbCloseTimer = setTimeout(function () {
+              kbCloseTimer = null;
+              pinComposerAboveKeyboard(true);
+            }, 400);
+          }
+          return;
+        }
+        if (kbCloseTimer) {
+          clearTimeout(kbCloseTimer);
+          kbCloseTimer = null;
+        }
+
+        // iOS fires visualViewport scroll constantly, and --pngm-kb feeds the
+        // shell height — rewriting it every tick resized the chat under the
+        // user's finger. Only publish real changes.
+        if (!open) {
+          kb = 0;
+        }
+        if (kb !== kbLastPx) {
+          kbLastPx = kb;
+          document.documentElement.style.setProperty('--pngm-kb', kb + 'px');
+        }
         document.documentElement.classList.toggle('pngm-kb-open', open);
 
         if (!open && typeof window.pngmMeasureChatChrome === 'function') {
@@ -1373,28 +1411,36 @@ function pngm_im_ui_script()
 
       wireComposer($('#im-message-form'));
 
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', pinComposerAboveKeyboard);
-        window.visualViewport.addEventListener('scroll', pinComposerAboveKeyboard);
+      // Wrapped: these hand the event object to the first argument, which would
+      // read as forceClose and skip the keyboard-close debounce.
+      function onViewportChange() {
+        pinComposerAboveKeyboard();
       }
-      window.addEventListener('resize', pinComposerAboveKeyboard);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onViewportChange);
+        window.visualViewport.addEventListener('scroll', onViewportChange);
+      }
+      window.addEventListener('resize', onViewportChange);
       window.addEventListener('focusin', function (e) {
         if (e.target && (e.target.id === 'im-message' || (e.target.classList && e.target.classList.contains('im-textarea')))) {
           // Toggle immediately so the nav is gone before the keyboard finishes.
           pinComposerAboveKeyboard();
-          setTimeout(pinComposerAboveKeyboard, 50);
-          setTimeout(pinComposerAboveKeyboard, 250);
-          setTimeout(pinComposerAboveKeyboard, 500);
+          setTimeout(onViewportChange, 50);
+          setTimeout(onViewportChange, 250);
+          setTimeout(onViewportChange, 500);
         }
       });
       // Keyboard dismissed (tap elsewhere / back): restore nav + full-height shell.
+      // One check is enough — each extra timer relaid the shell again and showed
+      // up as a flicker right after Send.
       window.addEventListener('focusout', function (e) {
         if (!(e.target && (e.target.id === 'im-message' || (e.target.classList && e.target.classList.contains('im-textarea'))))) {
           return;
         }
-        setTimeout(pinComposerAboveKeyboard, 50);
-        setTimeout(pinComposerAboveKeyboard, 300);
-        setTimeout(pinComposerAboveKeyboard, 600);
+        setTimeout(function () {
+          pinComposerAboveKeyboard();
+        }, 50);
       });
       // Rotating can cross the mobile/desktop breakpoint — refresh the hint text.
       window.addEventListener('orientationchange', function () {
