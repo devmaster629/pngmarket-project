@@ -20,7 +20,7 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 function pngm_pwa_colors()
 {
     return array(
-        'theme' => '#059669',
+        'theme' => '#006b24',
         'background' => '#ffffff',
     );
 }
@@ -46,12 +46,16 @@ function pngm_pwa_root_url()
 }
 
 /**
- * Theme source icons (Epsilon favicons pack).
+ * Preferred source for home-screen icons (logo mark), then parent favicons.
  *
  * @return string
  */
 function pngm_pwa_source_favicon_dir()
 {
+    $child = WebThemes::newInstance()->getCurrentThemePath() . 'images/pwa/';
+    if (is_dir($child) && is_readable($child . 'icon-192.png')) {
+        return $child;
+    }
     $parent = dirname(WebThemes::newInstance()->getCurrentThemePath()) . '/epsilon/images/favicons/';
     if (is_dir($parent)) {
         return $parent;
@@ -60,7 +64,7 @@ function pngm_pwa_source_favicon_dir()
 }
 
 /**
- * Ensure /pwa icons exist (copy from theme favicons when missing).
+ * Ensure /pwa icons exist. Prefer theme logo-mark icons; refresh when newer.
  */
 function pngm_pwa_ensure_icons()
 {
@@ -71,29 +75,42 @@ function pngm_pwa_ensure_icons()
 
     $src_dir = pngm_pwa_source_favicon_dir();
     $map = array(
-        'icon-192.png' => 'android-chrome-192x192.png',
-        'icon-512.png' => 'android-chrome-512x512.png',
-        'apple-touch-icon.png' => 'apple-touch-icon.png',
+        'icon-192.png' => array('icon-192.png', 'android-chrome-192x192.png'),
+        'icon-512.png' => array('icon-512.png', 'android-chrome-512x512.png'),
+        'icon-512-maskable.png' => array('icon-512-maskable.png', 'icon-512.png', 'android-chrome-512x512.png'),
+        'apple-touch-icon.png' => array('apple-touch-icon.png'),
     );
 
-    foreach ($map as $dest_name => $src_name) {
+    foreach ($map as $dest_name => $candidates) {
         $dest = $dir . $dest_name;
-        $src = $src_dir . $src_name;
-        if (is_readable($dest)) {
+        $src = '';
+        foreach ($candidates as $src_name) {
+            $try = $src_dir . $src_name;
+            if (is_readable($try)) {
+                $src = $try;
+                break;
+            }
+        }
+        if ($src === '') {
+            // Fallback: solid brand green square if GD is available.
+            if (!is_readable($dest) && extension_loaded('gd') && function_exists('imagecreatetruecolor')) {
+                $size = (strpos($dest_name, '512') !== false) ? 512 : ((strpos($dest_name, '192') !== false) ? 192 : 180);
+                $im = imagecreatetruecolor($size, $size);
+                $green = imagecolorallocate($im, 0, 107, 36);
+                imagefilledrectangle($im, 0, 0, $size, $size, $green);
+                imagepng($im, $dest);
+                imagedestroy($im);
+            }
             continue;
         }
-        if (is_readable($src)) {
+        $need = !is_readable($dest);
+        if (!$need) {
+            $src_m = @filemtime($src);
+            $dst_m = @filemtime($dest);
+            $need = ($src_m && $dst_m && $src_m > $dst_m);
+        }
+        if ($need) {
             @copy($src, $dest);
-            continue;
-        }
-        // Fallback: generate a solid green square if GD is available.
-        if (extension_loaded('gd') && function_exists('imagecreatetruecolor')) {
-            $size = (strpos($dest_name, '512') !== false) ? 512 : ((strpos($dest_name, '192') !== false) ? 192 : 180);
-            $im = imagecreatetruecolor($size, $size);
-            $green = imagecolorallocate($im, 5, 150, 105);
-            imagefilledrectangle($im, 0, 0, $size, $size, $green);
-            imagepng($im, $dest);
-            imagedestroy($im);
         }
     }
 }
@@ -122,6 +139,9 @@ function pngm_pwa_ensure_manifest()
     $scope = '/';
     $icon_192 = '/pwa/icon-192.png';
     $icon_512 = '/pwa/icon-512.png';
+    $icon_mask = is_readable(pngm_pwa_root_dir() . 'icon-512-maskable.png')
+        ? '/pwa/icon-512-maskable.png'
+        : $icon_512;
 
     $manifest = array(
         'id' => $scope,
@@ -151,7 +171,7 @@ function pngm_pwa_ensure_manifest()
                 'purpose' => 'any',
             ),
             array(
-                'src' => $icon_512,
+                'src' => $icon_mask,
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable',
@@ -278,15 +298,25 @@ function pngm_pwa_register_sw_footer()
     if ($name === '') {
         $name = 'PNGMarket';
     }
+    // Keep short brand for titles — never say “PWA” to shoppers.
+    $brand = preg_replace('/\s+/', '', $name);
+    if ($brand === '') {
+        $brand = 'PNGMarket';
+    }
     $L = array(
-        'title' => sprintf(__('Install %s', 'epsilon'), $name),
-        'body' => __('Add to your home screen for a faster, full-screen app experience.', 'epsilon'),
-        'install' => __('Install app', 'epsilon'),
-        'iosTitle' => __('Add to Home Screen', 'epsilon'),
-        'iosBody' => __('On iPhone/iPad: tap Share, then “Add to Home Screen”.', 'epsilon'),
-        'androidGuide' => __('Chrome could not open the install dialog on this device. In Chrome: tap the menu (⋮) → “Install app” or “Add to Home screen”. Then open PNGMarket from the home screen — “This session” will show standalone.', 'epsilon'),
+        'title' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
+        'body' => __('Open it like an app from your home screen — faster, and full screen.', 'epsilon'),
+        'install' => __('Add to phone', 'epsilon'),
+        'iosTitle' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
+        'iosBody' => __('iPhone: tap the Share button, then “Add to Home Screen”, then Add.', 'epsilon'),
+        'iosSteps' => __('1) Tap Share (□↑) at the bottom of Safari\n2) Scroll and tap “Add to Home Screen”\n3) Tap Add', 'epsilon'),
+        'androidTitle' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
+        'androidBody' => __('Android: tap Add to phone, or open the browser menu (⋮) and choose “Install app” / “Add to Home screen”.', 'epsilon'),
+        'androidGuide' => __('Android: tap the browser menu (⋮), then “Install app” or “Add to Home screen”. Open PNGMarket from your home screen afterward.', 'epsilon'),
+        'androidSteps' => __('1) Tap the menu (⋮) in Chrome\n2) Tap “Install app” or “Add to Home screen”\n3) Confirm, then open it from your home screen', 'epsilon'),
         'gotIt' => __('Got it', 'epsilon'),
         'dismiss' => __('Not now', 'epsilon'),
+        'how' => __('How to add', 'epsilon'),
     );
     ?>
 <div id="pngm-pwa-install" class="pngm-pwa-install" hidden data-pngm-pwa-install>
@@ -295,6 +325,7 @@ function pngm_pwa_register_sw_footer()
     <div class="pngm-pwa-install-copy">
       <strong data-pngm-pwa-title><?php echo osc_esc_html($L['title']); ?></strong>
       <em data-pngm-pwa-body><?php echo osc_esc_html($L['body']); ?></em>
+      <ol class="pngm-pwa-install-steps" data-pngm-pwa-steps hidden></ol>
     </div>
     <div class="pngm-pwa-install-actions">
       <button type="button" class="pngm-pwa-install-btn" data-pngm-pwa-primary><?php echo osc_esc_html($L['install']); ?></button>
@@ -308,7 +339,7 @@ function pngm_pwa_register_sw_footer()
   var L = <?php echo json_encode($L); ?>;
   var deferredPrompt = null;
   var banner = document.querySelector('[data-pngm-pwa-install]');
-  var storageKey = 'pngm_pwa_install_dismissed_v1';
+  var storageKey = 'pngm_home_add_dismissed_v2';
 
   function detectDisplayMode() {
     var mode = 'browser';
@@ -360,6 +391,24 @@ function pngm_pwa_register_sw_footer()
     try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
   }
 
+  function fillSteps(text) {
+    var list = banner ? banner.querySelector('[data-pngm-pwa-steps]') : null;
+    if (!list) return;
+    list.innerHTML = '';
+    var lines = String(text || '').split(/\n+/);
+    var i;
+    for (i = 0; i < lines.length; i += 1) {
+      var line = lines[i].replace(/^\s+|\s+$/g, '');
+      if (!line) continue;
+      // Strip leading "1) " numbering — <ol> adds numbers.
+      line = line.replace(/^\d+\)\s*/, '');
+      var li = document.createElement('li');
+      li.textContent = line;
+      list.appendChild(li);
+    }
+    list.hidden = list.children.length === 0;
+  }
+
   function showBanner(mode, force) {
     if (!banner) return;
     if (!force && (!isMobileish() || wasDismissed())) return;
@@ -368,28 +417,25 @@ function pngm_pwa_register_sw_footer()
     var body = banner.querySelector('[data-pngm-pwa-body]');
     var primary = banner.querySelector('[data-pngm-pwa-primary]');
     if (isIos()) {
-      if (title) title.textContent = L.iosTitle;
+      if (title) title.textContent = L.iosTitle || L.title;
       if (body) body.textContent = L.iosBody;
+      fillSteps(L.iosSteps || '');
       if (primary) primary.textContent = L.gotIt;
       banner.setAttribute('data-mode', 'ios');
     } else if (deferredPrompt) {
-      if (title) title.textContent = L.title;
+      if (title) title.textContent = L.androidTitle || L.title;
       if (body) body.textContent = L.body;
+      fillSteps('');
       if (primary) primary.textContent = L.install;
       banner.setAttribute('data-mode', 'android');
     } else {
-      // Android/desktop Chrome may delay beforeinstallprompt — still show guidance.
-      if (title) title.textContent = L.title;
-      if (body) body.textContent = L.androidGuide || L.body;
-      if (primary) {
-        primary.textContent = L.gotIt;
-      }
+      if (title) title.textContent = L.androidTitle || L.title;
+      if (body) body.textContent = L.androidGuide || L.androidBody || L.body;
+      fillSteps(L.androidSteps || '');
+      if (primary) primary.textContent = L.gotIt;
       banner.setAttribute('data-mode', 'guide');
     }
     banner.hidden = false;
-    try {
-      banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } catch (e) {}
   }
 
   function bindBanner() {
@@ -417,13 +463,13 @@ function pngm_pwa_register_sw_footer()
     }
   }
 
-  // Account & Security / any page install buttons
+  // Account screen / any “Add to phone” buttons
   document.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest ? e.target.closest('[data-pngm-pwa-install-btn]') : null;
     if (!btn) return;
     e.preventDefault();
     if (detectDisplayMode() === 'standalone') {
-      window.alert(<?php echo json_encode(__('PNGMarket is already running as an installed app on this device.', 'epsilon')); ?>);
+      window.alert(<?php echo json_encode(__('PNGMarket is already on this phone’s home screen.', 'epsilon')); ?>);
       return;
     }
     if (deferredPrompt) {
@@ -431,12 +477,6 @@ function pngm_pwa_register_sw_footer()
       deferredPrompt.userChoice.then(function () { deferredPrompt = null; }).catch(function () {});
       return;
     }
-    if (isIos()) {
-      window.alert(L.iosBody);
-      return;
-    }
-    // Emulators / some Android builds never fire beforeinstallprompt — always explain.
-    window.alert(L.androidGuide || L.body);
     showBanner(detectDisplayMode(), true);
   });
 
@@ -455,13 +495,13 @@ function pngm_pwa_register_sw_footer()
 
   var mode = detectDisplayMode();
   bindBanner();
-  // iOS never fires beforeinstallprompt — show A2HS guide after a short delay.
+  // iPhone never gets an install prompt — show short how-to after a beat.
   if (isIos() && mode !== 'standalone') {
-    window.setTimeout(function () { showBanner(mode); }, 1800);
+    window.setTimeout(function () { showBanner(mode); }, 1600);
   } else if (!isIos() && mode !== 'standalone') {
     window.setTimeout(function () {
       if (!deferredPrompt) showBanner(detectDisplayMode());
-    }, 4000);
+    }, 3500);
   }
 
   try {
@@ -502,30 +542,36 @@ function pngm_pwa_install_css()
 <style id="pngm-pwa-install-css">
 .pngm-pwa-install[hidden]{display:none!important}
 .pngm-pwa-install{
-  position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));
-  z-index:10050;pointer-events:none
+  position:fixed;left:12px;right:12px;
+  bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  z-index:10060;pointer-events:none
 }
 .pngm-pwa-install-inner{
-  pointer-events:auto;display:flex;align-items:center;gap:12px;
-  padding:12px;border-radius:14px;background:#fff;border:1px solid #e6eaf0;
-  box-shadow:0 10px 28px rgba(22,32,42,.16)
+  pointer-events:auto;display:flex;align-items:flex-start;gap:12px;
+  padding:14px;border-radius:16px;background:#fff;border:1px solid #e6eaf0;
+  box-shadow:0 12px 32px rgba(22,32,42,.18)
 }
-.pngm-pwa-install-icon{width:48px;height:48px;border-radius:12px;flex:0 0 48px;object-fit:cover}
-.pngm-pwa-install-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
-.pngm-pwa-install-copy strong{font-size:14px;color:#16202a;line-height:1.3}
-.pngm-pwa-install-copy em{font-style:normal;font-size:12px;color:#5a6570;line-height:1.35}
-.pngm-pwa-install-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.pngm-pwa-install-icon{width:48px;height:48px;border-radius:12px;flex:0 0 48px;object-fit:cover;background:#fff}
+.pngm-pwa-install-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
+.pngm-pwa-install-copy strong{font-size:15px;color:#16202a;line-height:1.3;font-weight:700}
+.pngm-pwa-install-copy em{font-style:normal;font-size:13px;color:#5a6570;line-height:1.4}
+.pngm-pwa-install-steps{
+  margin:6px 0 0;padding:0 0 0 1.15em;color:#3a4550;font-size:12.5px;line-height:1.45
+}
+.pngm-pwa-install-steps[hidden]{display:none!important}
+.pngm-pwa-install-steps li{margin:0 0 3px}
+.pngm-pwa-install-actions{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}
 .pngm-pwa-install-btn{
-  appearance:none;border:0;border-radius:10px;background:#059669;color:#fff;
+  appearance:none;border:0;border-radius:10px;background:#006b24;color:#fff;
   font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap
 }
 .pngm-pwa-install-dismiss{
   appearance:none;border:0;background:transparent;color:#8a94a0;
-  font-size:22px;line-height:1;padding:4px 6px;cursor:pointer
+  font-size:22px;line-height:1;padding:2px 4px;cursor:pointer
 }
 html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
 @media (min-width:901px){
-  .pngm-pwa-install{left:auto;right:20px;bottom:20px;width:380px;max-width:calc(100vw - 40px)}
+  .pngm-pwa-install{left:auto;right:20px;bottom:20px;width:400px;max-width:calc(100vw - 40px)}
 }
 </style>
     <?php

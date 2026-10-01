@@ -563,22 +563,22 @@ if ($show_pass && $show_email) {
       ?>
       <section class="pngm-sec-card" id="pngm-sec-pwa">
         <div class="pngm-sec-card-top">
-          <h2><?php _e('App mode (PWA)', 'epsilon'); ?></h2>
-          <span class="pngm-sec-badge<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-ok' : ''; ?>">
-            <?php echo !empty($pngm_pwa['standalone_configured']) ? __('Standalone ready', 'epsilon') : __('Not ready', 'epsilon'); ?>
+          <h2><?php _e('Add to your phone', 'epsilon'); ?></h2>
+          <span class="pngm-sec-badge<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-ok' : ''; ?>" data-pngm-pwa-live>
+            <?php echo !empty($pngm_pwa['standalone_configured']) ? __('Ready', 'epsilon') : __('Not ready', 'epsilon'); ?>
           </span>
         </div>
-        <p class="pngm-sec-help"><?php _e('This is a Progressive Web App — not only a responsive mobile site. Install it on iPhone or Android for a full-screen app.', 'epsilon'); ?></p>
+        <p class="pngm-sec-help"><?php _e('Put PNGMarket on your home screen so it opens full screen, like other apps. No app store needed.', 'epsilon'); ?></p>
 
         <div class="pngm-sec-limits">
           <article class="pngm-sec-limit<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-on' : ''; ?>">
             <span class="pngm-sec-limit-ico" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
             <div class="pngm-sec-limit-body">
               <div class="pngm-sec-limit-top">
-                <strong><?php _e('Configured display', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo osc_esc_html((string) $pngm_pwa['display']); ?></span>
+                <strong><?php _e('Home screen ready', 'epsilon'); ?></strong>
+                <span class="pngm-sec-limit-pill"><?php echo !empty($pngm_pwa['standalone_configured']) ? __('Yes', 'epsilon') : __('No', 'epsilon'); ?></span>
               </div>
-              <em><?php _e('From web app manifest', 'epsilon'); ?></em>
+              <em><?php _e('Works on iPhone (Safari) and Android (Chrome).', 'epsilon'); ?></em>
             </div>
           </article>
 
@@ -589,7 +589,7 @@ if ($show_pass && $show_email) {
                 <strong><?php _e('This session', 'epsilon'); ?></strong>
                 <span class="pngm-sec-limit-pill" data-pngm-display-mode-label>browser</span>
               </div>
-              <em><?php _e('Updates to “standalone” after Add to Home Screen', 'epsilon'); ?></em>
+              <em><?php _e('Shows “standalone” after you open PNGMarket from your home screen.', 'epsilon'); ?></em>
             </div>
           </article>
 
@@ -597,11 +597,11 @@ if ($show_pass && $show_email) {
             <span class="pngm-sec-limit-ico is-msg" aria-hidden="true"><i class="fas fa-download"></i></span>
             <div class="pngm-sec-limit-body">
               <div class="pngm-sec-limit-top">
-                <strong><?php _e('Install on this device', 'epsilon'); ?></strong>
+                <strong><?php _e('How to add', 'epsilon'); ?></strong>
               </div>
-              <em><?php _e('Android: Install app prompt. iPhone: Share → Add to Home Screen.', 'epsilon'); ?></em>
+              <em><?php _e('iPhone: Share → Add to Home Screen. Android: browser menu (⋮) → Install app / Add to Home screen.', 'epsilon'); ?></em>
               <div class="pngm-sec-actions" style="margin-top:10px">
-                <button type="button" class="pngm-ua-btn" data-pngm-pwa-install-btn><?php _e('Install / Add to Home Screen', 'epsilon'); ?></button>
+                <button type="button" class="pngm-ua-btn" data-pngm-pwa-install-btn><?php _e('Add PNGMarket to your phone', 'epsilon'); ?></button>
               </div>
             </div>
           </article>

@@ -1,10 +1,11 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v5';
+var PNGM_SW_CACHE = 'pngm-shell-v6';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
   './pwa/icon-192.png',
   './pwa/icon-512.png',
+  './pwa/icon-512-maskable.png',
   './pwa/apple-touch-icon.png'
 ];
 
