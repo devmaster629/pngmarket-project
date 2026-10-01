@@ -55,8 +55,8 @@ function im_call_after_install() {
   osc_set_preference('email_deferred', 0, 'plugin-instant_messenger', 'INTEGER');
   osc_set_preference('email_deferred_minutes', 5, 'plugin-instant_messenger', 'INTEGER');
   osc_set_preference('att_enable', 1, 'plugin-instant_messenger', 'INTEGER');
-  osc_set_preference('att_max_size', 20480, 'plugin-instant_messenger', 'INTEGER');
-  osc_set_preference('att_extension', 'jpg, jpeg, png, gif, webp, heic, heif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, mp4, mov, m4v, webm, 3gp, zip', 'plugin-instant_messenger', 'STRING');
+  osc_set_preference('att_max_size', 51200, 'plugin-instant_messenger', 'INTEGER');
+  osc_set_preference('att_extension', 'jpg, jpeg, png, gif, webp, heic, heif, avif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, opus, mp4, mov, m4v, webm, 3gp, zip', 'plugin-instant_messenger', 'STRING');
   osc_set_preference('threads_per_page', 20, 'plugin-instant_messenger', 'INTEGER');
   osc_set_preference('thread_days', 360, 'plugin-instant_messenger', 'INTEGER');
   osc_set_preference('att_days', 360, 'plugin-instant_messenger', 'INTEGER');

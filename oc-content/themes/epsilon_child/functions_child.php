@@ -2135,7 +2135,9 @@ function pngm_ajax_im_send()
     if (function_exists('pngm_im_allowed_extensions')) {
         $allowed_ext = array_filter(array_map('trim', explode(',', strtolower(pngm_im_allowed_extensions()))));
     }
-    $max_bytes = (((int) im_param('att_max_size') > 0) ? (int) im_param('att_max_size') : 20480) * 1000;
+    $max_bytes = function_exists('pngm_im_max_file_bytes')
+      ? (int) pngm_im_max_file_bytes()
+      : ((((int) im_param('att_max_size') > 0) ? (int) im_param('att_max_size') : 51200) * 1000);
     foreach ($files as $file) {
         $ext = strtolower(pathinfo((string) (isset($file['name']) ? $file['name'] : ''), PATHINFO_EXTENSION));
         if ($allowed_ext && !in_array($ext, $allowed_ext, true)) {

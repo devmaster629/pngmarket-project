@@ -1416,12 +1416,12 @@ function im_insert_message($thread_id, $message, $type, $file = array(), $notify
   }
 
   // MANAGE FILE UPLOAD
-  $allowed_extensions = (im_param('att_extension') <> '' ? im_param('att_extension') : 'jpg, jpeg, png, gif, webp, heic, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, mp3, m4a, wav, ogg, mp4, mov, webm, zip');
+  $allowed_extensions = (im_param('att_extension') <> '' ? im_param('att_extension') : 'jpg, jpeg, png, gif, webp, heic, heif, avif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, opus, mp4, mov, m4v, webm, 3gp, zip');
   $allowed_extensions = array_map('strtolower', array_filter(array_map('trim', explode(',', $allowed_extensions))));
 
   $upload_name = (isset($file['name']) ? im_str($file['name']) : '');
   $extension = strtolower(pathinfo($upload_name, PATHINFO_EXTENSION));
-  $max_file_size = (im_param('att_max_size') <> '' ? im_param('att_max_size') : 512) * 1000;  //(in bytes)
+  $max_file_size = (im_param('att_max_size') <> '' ? im_param('att_max_size') : 51200) * 1000;  //(in bytes)
   $file_size = @$file['size'];
   $file_name = $thread_id . '_' . date('Ymd') . '_' . mb_generate_rand_int(6) . '.' . $extension;
 

@@ -259,8 +259,35 @@ $(document).ready(function(){
       return false;
     }
 
+    function maxFileBytes() {
+      var input = fileInput();
+      var raw = input ? input.getAttribute('data-max-bytes') : '';
+      var n = parseInt(raw, 10);
+      if(n > 0) {
+        return n;
+      }
+      return 51200000;
+    }
+
+    function fileWithinSize(file) {
+      var size = file && typeof file.size === 'number' ? file.size : 0;
+      return size <= maxFileBytes();
+    }
+
     function warnUnsupported(fileName) {
       var msg = 'File type not supported: ' + (fileName || 'attachment');
+      if(typeof window.pngmShowToast === 'function') {
+        window.pngmShowToast(msg, true);
+        return;
+      }
+      try {
+        window.alert(msg);
+      } catch (errAlert) {}
+    }
+
+    function warnTooLarge(fileName) {
+      var mb = Math.round(maxFileBytes() / 1000000);
+      var msg = 'File is too large (max ' + mb + 'MB): ' + (fileName || 'attachment');
       if(typeof window.pngmShowToast === 'function') {
         window.pngmShowToast(msg, true);
         return;
@@ -276,10 +303,15 @@ $(document).ready(function(){
       }
 
       var added = this.files ? Array.prototype.slice.call(this.files) : [];
-      var rejected = [];
+      var rejectedType = [];
+      var rejectedSize = [];
       added.forEach(function(file) {
         if(!fileAllowed(file)) {
-          rejected.push(file && file.name ? file.name : 'file');
+          rejectedType.push(file && file.name ? file.name : 'file');
+          return;
+        }
+        if(!fileWithinSize(file)) {
+          rejectedSize.push(file && file.name ? file.name : 'file');
           return;
         }
         var exists = pending.some(function(current) {
@@ -295,8 +327,10 @@ $(document).ready(function(){
       $('#im-message').removeAttr('required').removeClass('error');
       $('#im-message-form').find('label.error, .error[for="im-file"]').remove();
       $('#im-error-list').empty().hide();
-      if(rejected.length) {
-        warnUnsupported(rejected[0] + (rejected.length > 1 ? (' (+' + (rejected.length - 1) + ' more)') : ''));
+      if(rejectedType.length) {
+        warnUnsupported(rejectedType[0] + (rejectedType.length > 1 ? (' (+' + (rejectedType.length - 1) + ' more)') : ''));
+      } else if(rejectedSize.length) {
+        warnTooLarge(rejectedSize[0] + (rejectedSize.length > 1 ? (' (+' + (rejectedSize.length - 1) + ' more)') : ''));
       }
       if(typeof window.pngmLayoutChat === 'function') {
         window.pngmLayoutChat();

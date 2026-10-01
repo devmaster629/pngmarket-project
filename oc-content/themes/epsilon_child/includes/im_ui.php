@@ -74,13 +74,39 @@ function pngm_im_file_label($message_id, $stored_file)
 }
 
 /**
- * Chat attachments: photos, documents, audio, and short video.
+ * Chat attachments: original allow-list plus any missing media types
+ * (AVIF images, Opus audio). Documents like PDF/DOC/TXT stay supported.
  *
  * @return string Comma-separated extensions, no dots.
  */
 function pngm_im_allowed_extensions()
 {
-    return 'jpg, jpeg, png, gif, webp, heic, heif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, mp4, mov, m4v, webm, 3gp, zip';
+    return 'jpg, jpeg, png, gif, webp, heic, heif, avif, bmp, pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, rtf, mp3, m4a, aac, wav, ogg, opus, mp4, mov, m4v, webm, 3gp, zip';
+}
+
+/**
+ * Soft ceiling for chat attachments (kilobytes). Plugin stores size in KB and
+ * converts with ×1000, so 51200 ≈ 50MB. Files under this always pass.
+ *
+ * @return int
+ */
+function pngm_im_max_file_kb()
+{
+    return 51200;
+}
+
+/**
+ * Effective max attachment size in bytes (matches plugin im_insert_message math).
+ *
+ * @return int
+ */
+function pngm_im_max_file_bytes()
+{
+    $kb = pngm_im_max_file_kb();
+    if (function_exists('im_param') && (int) im_param('att_max_size') > 0) {
+        $kb = (int) im_param('att_max_size');
+    }
+    return $kb * 1000;
 }
 
 /**
@@ -90,14 +116,30 @@ function pngm_im_allowed_extensions()
  */
 function pngm_im_file_accept()
 {
-    $parts = array('image/*', 'audio/*', 'video/*', 'application/pdf');
+    $parts = array(
+        'image/*',
+        'audio/*',
+        'video/*',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'text/csv',
+        'application/zip',
+        'image/avif',
+        'audio/opus',
+    );
     foreach (explode(',', pngm_im_allowed_extensions()) as $ext) {
         $ext = strtolower(trim($ext));
         if ($ext !== '') {
             $parts[] = '.' . $ext;
         }
     }
-    return implode(',', $parts);
+    return implode(',', array_unique($parts));
 }
 
 /**
@@ -127,9 +169,8 @@ function pngm_im_ini_kb($name)
 }
 
 /**
- * Write the attachment allow-list once, and raise the size cap so a voice
- * note or a short video is not rejected at the old 512kb photo limit.
- * Never exceeds PHP's own upload limit.
+ * Keep the IM allow-list and size cap in sync. Target is 50MB; never above
+ * that, and never above PHP's own upload/post limits. Smaller files are fine.
  */
 function pngm_im_ensure_attachment_types()
 {
@@ -150,7 +191,7 @@ function pngm_im_ensure_attachment_types()
         }
     }
 
-    $capKb = 20480;
+    $capKb = pngm_im_max_file_kb();
     $uploadKb = pngm_im_ini_kb('upload_max_filesize');
     $postKb = pngm_im_ini_kb('post_max_size');
     if ($uploadKb > 256) {
@@ -162,7 +203,7 @@ function pngm_im_ensure_attachment_types()
     if ($capKb < 512) {
         $capKb = 512;
     }
-    if ((int) im_param('att_max_size') < $capKb) {
+    if ((int) im_param('att_max_size') !== (int) $capKb) {
         osc_set_preference('att_max_size', (string) $capKb, 'plugin-instant_messenger', 'INTEGER');
         if (class_exists('Preference')) {
             Preference::newInstance()->set('att_max_size', (string) $capKb, 'plugin-instant_messenger');
