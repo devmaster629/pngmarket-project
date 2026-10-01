@@ -98,7 +98,7 @@ $section_num = 0;
       </ul>
 
       <div class="pngm-notif-push-actions">
-        <button type="button" class="pngm-ua-btn" id="pngm-notif-push-enable">
+        <button type="button" class="pngm-ua-btn" id="pngm-notif-push-enable" formnovalidate>
           <i class="fas fa-bell" aria-hidden="true"></i>
           <span><?php _e('Enable push notifications', 'epsilon'); ?></span>
         </button>
@@ -252,6 +252,7 @@ $section_num = 0;
     hintAsk: <?php echo json_encode(__('Click “Enable push notifications” to open the browser permission prompt.', 'epsilon')); ?>,
     hintIosInstall: <?php echo json_encode(__('On iPhone and iPad, push alerts work only from the Home Screen app. In Safari tap Share, then Add to Home Screen. Open PNGMarket from that icon and tap Enable again.', 'epsilon')); ?>,
     hintNoPrompt: <?php echo json_encode(__('Your browser did not show a permission prompt. Allow notifications for this site from the address-bar lock icon, then try again.', 'epsilon')); ?>,
+    hintAndroid: <?php echo json_encode(__('Allow the notification request at the top of Chrome. If you do not see one, tap the lock icon in the address bar, set Notifications to Allow, then tap Enable again. Also turn on notifications for the Chrome app in Android Settings.', 'epsilon')); ?>,
     hintSwWait: <?php echo json_encode(__('This device is still starting notifications. Tap Enable push notifications again.', 'epsilon')); ?>,
     hintNeedHttps: <?php echo json_encode(__('Web Push needs HTTPS (or localhost). Open the site over a secure URL to finish setup.', 'epsilon')); ?>,
     hintSubscribing: <?php echo json_encode(__('Subscribing this device…', 'epsilon')); ?>,
@@ -314,31 +315,8 @@ $section_num = 0;
     return isIosDevice() && !isStandaloneApp();
   }
 
-  function askNotificationPermission() {
-    return new Promise(function (resolve, reject) {
-      if (typeof Notification === 'undefined' || typeof Notification.requestPermission !== 'function') {
-        reject(new Error('unsupported'));
-        return;
-      }
-      var settled = false;
-      function done(perm) {
-        if (settled) return;
-        settled = true;
-        resolve(perm || 'default');
-      }
-      try {
-        var pending = Notification.requestPermission();
-        if (pending && typeof pending.then === 'function') {
-          pending.then(done, reject);
-          return;
-        }
-      } catch (err) {}
-      try {
-        Notification.requestPermission(done);
-      } catch (err2) {
-        reject(err2);
-      }
-    });
+  function isAndroid() {
+    return /Android/i.test(navigator.userAgent || '');
   }
 
   function ensureSwReady() {
@@ -489,8 +467,8 @@ $section_num = 0;
       setText(elPerm, L.default, 'is-warn');
       if (iosNeedsHomeScreen()) {
         setHint(L.hintIosInstall);
-      } else if (!elHint || !elHint.textContent || elHint.textContent === L.hintAsk || elHint.textContent === L.hintSubscribing) {
-        setHint(L.hintAsk);
+      } else if (!elHint || !elHint.textContent || elHint.textContent === L.hintSubscribing) {
+        setHint(iosNeedsHomeScreen() ? L.hintIosInstall : L.hintAsk);
       }
       setEnabledUi(false);
       if (enableBtn) {
@@ -548,61 +526,116 @@ $section_num = 0;
     }, 4000);
   }
 
-  if (enableBtn) {
-    enableBtn.addEventListener('click', function () {
-      if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
-        setHint(L.unsupported);
-        return;
+  var pushBusy = false;
+
+  function armPushEnable(permPromise) {
+    if (!permPromise || typeof permPromise.then !== 'function') {
+      setHint(isAndroid() ? L.hintAndroid : L.hintNoPrompt);
+      if (enableBtn) enableBtn.disabled = false;
+      pushBusy = false;
+      return;
+    }
+    pushBusy = true;
+    if (enableBtn) enableBtn.disabled = true;
+    setHint(L.hintSubscribing);
+    window.setTimeout(function () {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') return;
+      pushBusy = false;
+      if (enableBtn) enableBtn.disabled = false;
+      if (elHint && elHint.textContent === L.hintSubscribing) {
+        setHint(isAndroid() ? L.hintAndroid : L.hintNoPrompt);
       }
-      if (iosNeedsHomeScreen()) {
-        setHint(L.hintIosInstall);
-        return;
-      }
-      if (!vapidKey) {
-        setHint(L.hintSubscribeFail);
-        return;
-      }
-      if (Notification.permission === 'denied') {
-        setHint(L.blocked);
-        refreshPushStatus();
-        return;
-      }
-      // Ask in this tap, before disabling the button. Mobile browsers drop the
-      // permission prompt if the control loses the user gesture first.
-      var permPromise = Notification.permission === 'granted'
-        ? Promise.resolve('granted')
-        : askNotificationPermission();
-      enableBtn.disabled = true;
-      setHint(L.hintSubscribing);
-      permPromise.then(function (perm) {
-        if (perm === 'denied') {
-          refreshPushStatus();
-          return null;
-        }
-        if (perm !== 'granted') {
-          setHint(L.hintNoPrompt);
-          refreshPushStatus();
-          return null;
-        }
+    }, 8000);
+    permPromise.then(function (perm) {
+      if (perm === 'granted') {
         return ensureSwReady().then(function (reg) {
           if (!reg || !reg.pushManager) throw new Error('no_sw');
           return subscribePush(reg);
         }).then(function () {
           setHint('');
+          setEnabledUi(true);
           refreshPushStatus();
         });
-      }).catch(function (err) {
-        var name = err && (err.name || err.message) ? (err.name || err.message) : '';
-        if (name === 'NotAllowedError' && iosNeedsHomeScreen()) {
-          setHint(L.hintIosInstall);
-        } else if (name === 'InvalidStateError' || name === 'AbortError' || name === 'no_sw') {
-          setHint(L.hintSwWait);
-        } else {
-          setHint(L.hintSubscribeFail);
-        }
+      }
+      if (perm === 'denied') {
+        setHint(L.blocked);
         refreshPushStatus();
-      });
+        return null;
+      }
+      setHint(isAndroid() ? L.hintAndroid : L.hintNoPrompt);
+      refreshPushStatus();
+      return null;
+    }).catch(function (err) {
+      var name = err && (err.name || err.message) ? (err.name || err.message) : '';
+      if (name === 'NotAllowedError' && iosNeedsHomeScreen()) {
+        setHint(L.hintIosInstall);
+      } else if (name === 'InvalidStateError' || name === 'AbortError' || name === 'no_sw') {
+        setHint(L.hintSwWait);
+      } else {
+        setHint(L.hintSubscribeFail);
+      }
+      refreshPushStatus();
+    }).then(function () {
+      pushBusy = false;
     });
+  }
+
+  function onEnableActivate(e) {
+    if (pushBusy) {
+      if (e && e.preventDefault) e.preventDefault();
+      return false;
+    }
+    if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+      setHint(L.unsupported);
+      if (e && e.preventDefault) e.preventDefault();
+      return false;
+    }
+    if (iosNeedsHomeScreen()) {
+      setHint(L.hintIosInstall);
+      if (e && e.preventDefault) e.preventDefault();
+      return false;
+    }
+    if (!vapidKey) {
+      setHint(L.hintSubscribeFail);
+      if (e && e.preventDefault) e.preventDefault();
+      return false;
+    }
+    if (Notification.permission === 'denied') {
+      setHint(L.blocked);
+      if (e && e.preventDefault) e.preventDefault();
+      refreshPushStatus();
+      return false;
+    }
+    // First line that matters on Android: ask while this tap is still a user gesture.
+    var permPromise = Notification.permission === 'granted'
+      ? Promise.resolve('granted')
+      : Notification.requestPermission();
+    if (e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    armPushEnable(permPromise);
+    return false;
+  }
+
+  if (enableBtn) {
+    enableBtn.addEventListener('click', onEnableActivate, true);
+  }
+
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'notifications' }).then(function (status) {
+      function onChange() {
+        if (!status || status.state !== 'granted') return;
+        if (Notification.permission !== 'granted') return;
+        if (pushBusy) return;
+        onEnableActivate(null);
+      }
+      if (typeof status.addEventListener === 'function') {
+        status.addEventListener('change', onChange);
+      } else {
+        status.onchange = onChange;
+      }
+    }).catch(function () {});
   }
 
   if (disableBtn) {
@@ -667,6 +700,7 @@ $section_num = 0;
     });
   }
 
+  document.body.classList.add('pngm-notif-page');
   refreshPushStatus();
   if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted' && vapidKey) {
     registerSw().then(function (reg) {

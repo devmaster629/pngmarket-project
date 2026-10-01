@@ -1635,6 +1635,14 @@ button.pngm-notif-card {
   display: none !important;
 }
 
+.pngm-notif-push-actions.is-push-on .pngm-notif-push-enabled {
+  display: flex !important;
+}
+
+body.pngm-notif-page .pngm-pwa-install {
+  display: none !important;
+}
+
 .pngm-notif-push-on {
   display: inline-flex;
   align-items: center;
@@ -1914,15 +1922,31 @@ button.pngm-notif-card {
     width: 100%;
   }
 
-  .pngm-notif-push-actions {
-    flex-direction: column;
-    align-items: stretch;
+  #pngm-notif-push-enable {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+    position: relative;
+    z-index: 6;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
-  #pngm-notif-push-enable,
-  .pngm-notif-push-enabled,
-  .pngm-notif-push-enabled .pngm-ua-btn {
+  .pngm-notif-push-actions.is-push-on {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .pngm-notif-push-actions.is-push-on .pngm-notif-push-enabled {
     width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pngm-notif-push-actions.is-push-on .pngm-ua-btn {
+    width: auto;
   }
 
   .pngm-notif-table-head,

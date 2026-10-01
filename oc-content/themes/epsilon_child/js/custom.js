@@ -4680,29 +4680,6 @@
       return false;
     }
 
-    function askNotificationPermission() {
-      return new Promise(function (resolve, reject) {
-        var settled = false;
-        function done(perm) {
-          if (settled) return;
-          settled = true;
-          resolve(perm || 'default');
-        }
-        try {
-          var pending = Notification.requestPermission();
-          if (pending && typeof pending.then === 'function') {
-            pending.then(done, reject);
-            return;
-          }
-        } catch (err) {}
-        try {
-          Notification.requestPermission(done);
-        } catch (err2) {
-          reject(err2);
-        }
-      });
-    }
-
     function urlBase64ToUint8Array(base64String) {
       var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
       var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -4726,9 +4703,6 @@
     }
 
     enableBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-
       if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
         setError('Not supported in this browser');
         return;
@@ -4750,8 +4724,10 @@
 
       var permPromise = Notification.permission === 'granted'
         ? Promise.resolve('granted')
-        : askNotificationPermission();
+        : Notification.requestPermission();
 
+      e.preventDefault();
+      e.stopPropagation();
       setBusy(true, 'Enabling…');
 
       permPromise.then(function (perm) {
