@@ -363,7 +363,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
           ? ModelIM::newInstance()->checkUserBlocks((int)osc_logged_user_id(), $thread_target_email)
           : array();
       ?>
-      <span class="pngm-im-thread-actions">
+      <div class="pngm-im-thread-actions">
         <?php if(trim((string)$thread_target_email) !== '') { ?>
           <?php if(!empty($pngm_block_row['pk_i_id'])) { ?>
             <a href="<?php echo osc_esc_html($pngm_threads_url . $pngm_threads_sep . 'remove-id=' . (int)$pngm_block_row['pk_i_id']); ?>" class="im-block-user" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Unblock user', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('Allow this person to message you again?', 'epsilon')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Unblock', 'epsilon')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>"><i class="fa fa-ban"></i><span><?php _e('Unblock', 'epsilon'); ?></span></a>
@@ -374,7 +374,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
         <?php if(im_param('remove_thread') == 1) { ?>
           <a href="<?php echo osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret)); ?>" class="im-remove-thread" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('This removes the conversation from your messages only. The other person can still reply, and it will show up again if they message you.', 'epsilon')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>" title="<?php echo osc_esc_html(__('Remove this conversation from your messages', 'epsilon')); ?>"><i class="fa fa-trash"></i><span><?php _e('Remove', 'instant_messenger'); ?></span></a>
         <?php } ?>
-      </span>
+      </div>
     </div>
     
     <?php if($last_seen <> '') { ?>

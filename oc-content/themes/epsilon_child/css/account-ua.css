@@ -4130,10 +4130,8 @@ body.pngm-im-confirm-open {
 
 .pngm-im-board-pane .im-alt-head .im-head2 {
   margin: 0 0 6px 0 !important;
-  display: flex !important;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  position: relative !important;
+  padding-right: 200px !important;
 }
 
 .pngm-im-chat-title {
@@ -4142,8 +4140,8 @@ body.pngm-im-confirm-open {
   align-items: flex-start;
   gap: 4px;
   min-width: 0;
-  flex: 1 1 auto;
-  padding-right: 8px;
+  width: 100%;
+  padding-right: 0;
 }
 
 .pngm-im-chat-peer {
@@ -4628,32 +4626,33 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   background: #f3faf4;
 }
 
-.pngm-im-thread-actions {
-  display: inline-flex;
+/* Keep the original absolute Remove button layout; sit Block beside it. */
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
-  margin-left: auto;
+  z-index: 2;
 }
 
 .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user,
-.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread,
-a.im-block-user,
-a.im-remove-thread {
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread {
   position: static !important;
   right: auto !important;
   top: auto !important;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 13px;
-  padding: 7px 10px;
-  text-decoration: none !important;
-  line-height: 1.2;
+  padding: 6px 10px;
+  line-height: 18px;
   font-weight: 700;
   color: #444;
-  background: #e8ebef;
-  border-radius: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  text-decoration: none !important;
   white-space: nowrap;
   width: auto;
   height: auto;
@@ -4661,22 +4660,19 @@ a.im-remove-thread {
 }
 
 .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user:hover,
-.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread:hover,
-a.im-block-user:hover,
-a.im-remove-thread:hover {
-  background: #d9dee5;
-  color: #222;
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread:hover {
+  background: #d0d0d0;
+  color: #333;
 }
 
-.pngm-im-thread-actions a.im-block-user i,
-.pngm-im-thread-actions a.im-remove-thread i {
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a i {
   margin: 0;
 }
 
 .pngm-im-blocked-notice,
 body.im-chat-page .pngm-im-blocked-notice {
   flex: 0 0 auto;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid #f0c2c2;
@@ -4687,23 +4683,22 @@ body.im-chat-page .pngm-im-blocked-notice {
   box-sizing: border-box;
 }
 
-body.im-chat-page .pngm-im-board-pane .pngm-im-blocked-notice,
-body.im-chat-page .pngm-im-thread-pane .pngm-im-blocked-notice {
-  margin: 8px 0 0;
-}
-
 @media screen and (max-width: 767px) {
-  .pngm-im-thread-actions a.im-block-user span,
-  .pngm-im-thread-actions a.im-remove-thread span {
-    display: none;
+  .pngm-im-board-pane .im-alt-head .im-head2 {
+    padding-right: 84px !important;
   }
 
-  .pngm-im-thread-actions a.im-block-user,
-  .pngm-im-thread-actions a.im-remove-thread {
-    width: 34px;
-    height: 34px;
+  .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user,
+  .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread {
+    width: 32px;
+    height: 32px;
     padding: 0;
     justify-content: center;
+  }
+
+  .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user span,
+  .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread span {
+    display: none;
   }
 }
 
