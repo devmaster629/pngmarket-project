@@ -337,6 +337,7 @@ function pngm_pwa_register_sw_footer()
 (function () {
   var swUrl = <?php echo json_encode($sw); ?>;
   var L = <?php echo json_encode($L); ?>;
+  var loggedIn = <?php echo (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) ? 'true' : 'false'; ?>;
   var deferredPrompt = null;
   var banner = document.querySelector('[data-pngm-pwa-install]');
   var storageKey = 'pngm_home_add_dismissed_v2';
@@ -411,6 +412,8 @@ function pngm_pwa_register_sw_footer()
 
   function showBanner(mode, force) {
     if (!banner) return;
+    // Signed-in phones get the one-time intro modal instead of this banner.
+    if (!force && loggedIn && (isIos() || /Android/i.test(navigator.userAgent || ''))) return;
     if (!force && (!isMobileish() || wasDismissed())) return;
     if (mode === 'standalone') return;
     var title = banner.querySelector('[data-pngm-pwa-title]');
@@ -528,6 +531,249 @@ function pngm_pwa_register_sw_footer()
 })();
 </script>
     <?php
+    if (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) {
+        pngm_pwa_phone_intro_markup($sw, $brand);
+    }
+}
+
+/**
+ * One-time phone modal after login. iPhone adds to Home Screen; Android enables push.
+ * Not shown on Windows or Mac desktops.
+ *
+ * @param string $sw
+ * @param string $brand
+ */
+function pngm_pwa_phone_intro_markup($sw, $brand)
+{
+    $vapid = function_exists('pngm_webpush_public_key') ? pngm_webpush_public_key() : '';
+    $subscribe = osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_subscribe';
+    $copy = array(
+        'iosTitle' => sprintf(__('Add %s to your iPhone', 'epsilon'), $brand),
+        'ipadTitle' => sprintf(__('Add %s to your iPad', 'epsilon'), $brand),
+        'iosBody' => __('Add to Home Screen to receive notifications and get a better experience.', 'epsilon'),
+        'showHow' => __('Show me how', 'epsilon'),
+        'gotIt' => __('Got it', 'epsilon'),
+        'iosSteps' => __('Tap the Share button (□↑) in Safari\nTap “Add to Home Screen”\nTap Add, then open PNGMarket from that icon', 'epsilon'),
+        'pushTitle' => __('Enable push notifications', 'epsilon'),
+        'pushBody' => __('Get notified when someone messages you or when your listing status changes.', 'epsilon'),
+        'enable' => __('Enable notifications', 'epsilon'),
+        'later' => __('Not now', 'epsilon'),
+        'enabling' => __('Enabling…', 'epsilon'),
+        'enabled' => __('Notifications are on', 'epsilon'),
+        'denied' => __('Notifications are blocked in your browser settings.', 'epsilon'),
+        'missed' => __('Allow notifications from the lock icon in the address bar, then try again from Notification Preferences.', 'epsilon'),
+        'failed' => __('Could not enable notifications on this phone. You can turn them on later in Notification Preferences.', 'epsilon'),
+    );
+    ?>
+<div id="pngm-phone-intro" class="pngm-phone-intro" hidden>
+  <div class="pngm-phone-intro-card" role="dialog" aria-modal="true" aria-labelledby="pngm-phone-intro-title">
+    <div class="pngm-phone-intro-ico" data-ico="phone" hidden>
+      <svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><rect x="14" y="6" width="20" height="36" rx="4" fill="none" stroke="#148a38" stroke-width="2.4"/><circle cx="24" cy="36" r="1.6" fill="#148a38"/></svg>
+    </div>
+    <div class="pngm-phone-intro-ico" data-ico="bell" hidden>
+      <svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><path fill="#148a38" d="M24 8a10 10 0 0 0-10 10v6.2c0 2.2-.7 4.4-2 6.2L10 33.2A2 2 0 0 0 11.6 36.5h24.8a2 2 0 0 0 1.6-3.3l-2-2.8a9.6 9.6 0 0 1-2-6.2V18A10 10 0 0 0 24 8zm0 32a4 4 0 0 0 3.8-2.7h-7.6A4 4 0 0 0 24 40z"/></svg>
+    </div>
+    <h2 id="pngm-phone-intro-title"></h2>
+    <p data-pngm-intro-body></p>
+    <ol data-pngm-intro-steps hidden></ol>
+    <button type="button" class="pngm-phone-intro-go" data-pngm-intro-go>
+      <svg class="pngm-phone-intro-btn-ico" data-btn-bell hidden viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7v4.2c0 1.4-.5 2.8-1.3 3.9L2.8 18.4A1 1 0 0 0 3.6 20h16.8a1 1 0 0 0 .8-1.6l-.9-1.3c-.8-1.1-1.3-2.5-1.3-3.9V9a7 7 0 0 0-7-7zm0 20a3 3 0 0 0 2.8-2H9.2A3 3 0 0 0 12 22z"/></svg>
+      <span data-pngm-intro-go-label></span>
+    </button>
+    <button type="button" class="pngm-phone-intro-later" data-pngm-intro-later><?php echo osc_esc_html($copy['later']); ?></button>
+  </div>
+</div>
+<script>
+(function () {
+  var root = document.getElementById('pngm-phone-intro');
+  if (!root) return;
+  var storageKey = 'pngm_phone_notice_once_v1';
+  var copy = <?php echo json_encode($copy); ?>;
+  var swUrl = <?php echo json_encode($sw); ?>;
+  var vapid = <?php echo json_encode($vapid); ?>;
+  var subscribeUrl = <?php echo json_encode($subscribe); ?>;
+  var titleEl = document.getElementById('pngm-phone-intro-title');
+  var bodyEl = root.querySelector('[data-pngm-intro-body]');
+  var stepsEl = root.querySelector('[data-pngm-intro-steps]');
+  var goBtn = root.querySelector('[data-pngm-intro-go]');
+  var goLabel = root.querySelector('[data-pngm-intro-go-label]');
+  var laterBtn = root.querySelector('[data-pngm-intro-later]');
+  var btnBell = root.querySelector('[data-btn-bell]');
+  var mode = 'push';
+  var stepsOpen = false;
+  var busy = false;
+
+  function seen() {
+    try { return window.localStorage.getItem(storageKey) === '1'; } catch (e) { return true; }
+  }
+  function mark() {
+    try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
+  }
+  function isIpad() {
+    var ua = navigator.userAgent || '';
+    return /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && !/iPhone/.test(ua));
+  }
+  function deviceKind() {
+    var ua = navigator.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios) return 'ios';
+    if (/Android/i.test(ua)) return 'android';
+    return 'desktop';
+  }
+  function isStandalone() {
+    try {
+      if (window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+      if (navigator.standalone === true) return true;
+    } catch (e) {}
+    return false;
+  }
+  function showIco(name) {
+    var nodes = root.querySelectorAll('[data-ico]');
+    Array.prototype.forEach.call(nodes, function (el) {
+      el.hidden = el.getAttribute('data-ico') !== name;
+    });
+  }
+  function fillSteps(text) {
+    if (!stepsEl) return;
+    stepsEl.innerHTML = '';
+    String(text || '').split(/\n+/).forEach(function (line) {
+      line = line.replace(/^\s+|\s+$/g, '').replace(/^\d+\)\s*/, '');
+      if (!line) return;
+      var li = document.createElement('li');
+      li.textContent = line;
+      stepsEl.appendChild(li);
+    });
+  }
+  function closeIntro() {
+    root.hidden = true;
+    document.body.classList.remove('pngm-phone-intro-open');
+  }
+  function openIntro() {
+    root.hidden = false;
+    document.body.classList.add('pngm-phone-intro-open');
+    mark();
+    if (goBtn && goBtn.focus) {
+      try { goBtn.focus(); } catch (e) {}
+    }
+  }
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = window.atob(base64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function enablePush() {
+    if (busy) return;
+    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      if (bodyEl) bodyEl.textContent = copy.failed;
+      return;
+    }
+    var permPromise = Notification.permission === 'granted'
+      ? Promise.resolve('granted')
+      : Notification.requestPermission();
+    busy = true;
+    if (goBtn) goBtn.disabled = true;
+    if (goLabel) goLabel.textContent = copy.enabling;
+    permPromise.then(function (perm) {
+      if (perm === 'denied') {
+        if (bodyEl) bodyEl.textContent = copy.denied;
+        return null;
+      }
+      if (perm !== 'granted') {
+        if (bodyEl) bodyEl.textContent = copy.missed;
+        return null;
+      }
+      if (!vapid || !subscribeUrl) throw new Error('no_vapid');
+      return navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function () {
+        return navigator.serviceWorker.ready;
+      }).then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (existing) {
+          if (existing) return existing;
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapid)
+          });
+        });
+      }).then(function (sub) {
+        var json = sub && sub.toJSON ? sub.toJSON() : null;
+        if (!json || !json.endpoint) throw new Error('bad_sub');
+        return fetch(subscribeUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          body: 'subscription=' + encodeURIComponent(JSON.stringify(json))
+        }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+      }).then(function (res) {
+        if (!res || !res.ok) throw new Error('save_failed');
+        if (goLabel) goLabel.textContent = copy.enabled;
+        window.setTimeout(closeIntro, 700);
+      });
+    }).catch(function () {
+      if (bodyEl) bodyEl.textContent = copy.failed;
+    }).then(function () {
+      busy = false;
+      if (goBtn && (typeof Notification === 'undefined' || Notification.permission !== 'granted')) {
+        goBtn.disabled = false;
+        if (goLabel) goLabel.textContent = copy.enable;
+      }
+    });
+  }
+
+  var kind = deviceKind();
+  if (kind === 'desktop' || seen()) return;
+  mode = (kind === 'ios' && !isStandalone()) ? 'home' : 'push';
+  if (mode === 'push' && (typeof Notification === 'undefined' || Notification.permission !== 'default')) {
+    mark();
+    return;
+  }
+
+  if (mode === 'home') {
+    showIco('phone');
+    if (titleEl) titleEl.textContent = isIpad() ? copy.ipadTitle : copy.iosTitle;
+    if (bodyEl) bodyEl.textContent = copy.iosBody;
+    if (goLabel) goLabel.textContent = copy.showHow;
+    if (btnBell) btnBell.hidden = true;
+    fillSteps(copy.iosSteps);
+  } else {
+    showIco('bell');
+    if (titleEl) titleEl.textContent = copy.pushTitle;
+    if (bodyEl) bodyEl.textContent = copy.pushBody;
+    if (goLabel) goLabel.textContent = copy.enable;
+    if (btnBell) btnBell.hidden = false;
+  }
+
+  if (goBtn) {
+    goBtn.addEventListener('click', function () {
+      if (mode === 'home' && !stepsOpen) {
+        stepsOpen = true;
+        if (bodyEl) bodyEl.hidden = true;
+        if (stepsEl) stepsEl.hidden = false;
+        if (goLabel) goLabel.textContent = copy.gotIt;
+        if (laterBtn) laterBtn.hidden = true;
+        return;
+      }
+      if (mode === 'home') {
+        closeIntro();
+        return;
+      }
+      enablePush();
+    });
+  }
+  if (laterBtn) laterBtn.addEventListener('click', closeIntro);
+  root.addEventListener('click', function (e) {
+    if (e.target === root) closeIntro();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!root.hidden && e.key === 'Escape') closeIntro();
+  });
+
+  window.setTimeout(openIntro, 600);
+})();
+</script>
+    <?php
 }
 
 /**
@@ -570,6 +816,46 @@ function pngm_pwa_install_css()
   font-size:22px;line-height:1;padding:2px 4px;cursor:pointer
 }
 html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
+.pngm-phone-intro[hidden]{display:none!important}
+.pngm-phone-intro{
+  position:fixed;inset:0;z-index:10240;display:flex;align-items:center;justify-content:center;
+  padding:24px 18px;background:rgba(16,24,32,.48);box-sizing:border-box
+}
+.pngm-phone-intro-card{
+  width:100%;max-width:360px;background:#fff;border-radius:22px;
+  padding:28px 22px 18px;text-align:center;
+  box-shadow:0 18px 50px rgba(16,24,32,.22);box-sizing:border-box
+}
+.pngm-phone-intro-ico{
+  width:72px;height:72px;margin:0 auto;border-radius:18px;background:#e7f8ec;
+  display:flex;align-items:center;justify-content:center
+}
+.pngm-phone-intro-ico[hidden]{display:none!important}
+.pngm-phone-intro-card h2{
+  margin:16px 0 8px;font-size:22px;line-height:1.25;font-weight:800;color:#1c1f24
+}
+.pngm-phone-intro-card p{
+  margin:0 0 22px;color:#8b939c;font-size:15px;line-height:1.45
+}
+.pngm-phone-intro-card p[hidden]{display:none!important}
+.pngm-phone-intro-card ol{
+  margin:0 0 18px;padding:0 0 0 1.2em;text-align:left;color:#3a4550;font-size:14px;line-height:1.45
+}
+.pngm-phone-intro-card ol[hidden]{display:none!important}
+.pngm-phone-intro-card ol li{margin:0 0 6px}
+.pngm-phone-intro-go{
+  appearance:none;width:100%;min-height:50px;border:0;border-radius:12px;
+  background:#129438;color:#fff;font-size:16px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px
+}
+.pngm-phone-intro-go:disabled{opacity:.7;cursor:wait}
+.pngm-phone-intro-btn-ico[hidden]{display:none!important}
+.pngm-phone-intro-later{
+  appearance:none;display:block;width:100%;margin-top:12px;border:0;background:transparent;
+  color:#9aa1aa;font-size:15px;font-weight:600;padding:8px;cursor:pointer
+}
+.pngm-phone-intro-later[hidden]{display:none!important}
+body.pngm-phone-intro-open{overflow:hidden}
 @media (min-width:901px){
   .pngm-pwa-install{left:auto;right:20px;bottom:20px;width:400px;max-width:calc(100vw - 40px)}
 }
