@@ -1059,16 +1059,9 @@ function im_remove_thread($thread_id, $user_id, $email, $secret) {
     return false; 
   }
   
-  if(
-    $remove_type == 'FROM' && $thread['i_to_user_id'] == NULL && $thread['s_to_user_email'] == NULL
-    || $remove_type == 'TO' && $thread['i_from_user_id'] == NULL && $thread['s_from_user_email'] == NULL
- ) {
-    im_delete_thread_attachments($thread_id);
-    ModelIM::newInstance()->removeMessagesByThreadId($thread_id);
-    ModelIM::newInstance()->removeThreadById($thread_id);
-  } else {
-    ModelIM::newInstance()->cleanThreadUser($thread_id, $remove_type);
-  }
+  // Hide it from this person only. The other participant keeps the thread
+  // and can still reply; their next message brings it back onto this list.
+  ModelIM::newInstance()->hideThreadSide($thread_id, $remove_type);
   
   return true;
 }
@@ -1529,6 +1522,9 @@ function im_insert_message($thread_id, $message, $type, $file = array(), $notify
 
   // INSERT MESSAGE INTO DATABASE
   $id = ModelIM::newInstance()->insertMessage($thread['i_thread_id'], $type, 0, $message, $update_file_name, $email_sent);
+  if((int)$id > 0) {
+    ModelIM::newInstance()->revealThread($thread['i_thread_id']);
+  }
   osc_run_hook('im_insert_message', $id);
 
   if($redirect === false) {

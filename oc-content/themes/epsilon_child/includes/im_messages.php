@@ -27,9 +27,13 @@ $status_line = $last_seen !== ''
     : __('Active now', 'epsilon');
 $back_url = osc_route_url('im-threads');
 $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
-    && $target_is_null === false
     && $blocked_by_you != 0
     && $blocked_you != 0;
+$pngm_threads_url = osc_route_url('im-threads');
+$pngm_threads_sep = (strpos($pngm_threads_url, '?') === false ? '?' : '&');
+$pngm_block_row = (trim((string) $thread_target_email) !== '' && class_exists('ModelIM'))
+    ? ModelIM::newInstance()->checkUserBlocks((int) osc_logged_user_id(), $thread_target_email)
+    : array();
 ?>
 
 <link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
@@ -63,12 +67,33 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
             <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
           </button>
           <div class="pngm-im-more-menu" hidden>
+            <?php if (trim((string) $thread_target_email) !== '') { ?>
+              <?php if (!empty($pngm_block_row['pk_i_id'])) { ?>
+                <a href="<?php echo osc_esc_html($pngm_threads_url . $pngm_threads_sep . 'remove-id=' . (int) $pngm_block_row['pk_i_id']); ?>"
+                   data-pngm-confirm-remove="1"
+                   data-confirm-title="<?php echo osc_esc_html(__('Unblock user', 'epsilon')); ?>"
+                   data-confirm-message="<?php echo osc_esc_html(__('Allow this person to message you again?', 'epsilon')); ?>"
+                   data-confirm-ok="<?php echo osc_esc_html(__('Unblock', 'epsilon')); ?>"
+                   data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>">
+                  <?php _e('Unblock user', 'epsilon'); ?>
+                </a>
+              <?php } else { ?>
+                <a href="<?php echo osc_esc_html($pngm_threads_url . $pngm_threads_sep . 'action=block_email&block-email=' . rawurlencode(base64_encode($thread_target_email))); ?>"
+                   data-pngm-confirm-remove="1"
+                   data-confirm-title="<?php echo osc_esc_html(__('Block user', 'epsilon')); ?>"
+                   data-confirm-message="<?php echo osc_esc_html(__('They will not be able to send you any more messages. You can unblock them later.', 'epsilon')); ?>"
+                   data-confirm-ok="<?php echo osc_esc_html(__('Block', 'epsilon')); ?>"
+                   data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>">
+                  <?php _e('Block user', 'epsilon'); ?>
+                </a>
+              <?php } ?>
+            <?php } ?>
             <?php if (im_param('remove_thread') == 1) { ?>
               <a href="<?php echo osc_esc_html(osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret))); ?>"
                  class="pngm-im-remove-link"
                  data-pngm-confirm-remove="1"
                  data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>"
-                 data-confirm-message="<?php echo osc_esc_html(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>"
+                 data-confirm-message="<?php echo osc_esc_html(__('This removes the conversation from your messages only. The other person can still reply, and it will show up again if they message you.', 'epsilon')); ?>"
                  data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>"
                  data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>">
                 <?php _e('Remove conversation', 'epsilon'); ?>
@@ -104,10 +129,6 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
         <a href="<?php echo osc_route_url('mo-show-offers', array('offerId' => $thread['i_offer_id'])); ?>" class="pngm-im-offer-banner">
           <?php echo sprintf(__('Related offer: %sx %s for %s%s', 'instant_messenger'), $offer['i_quantity'], @$offer_item['s_title'], $offer['i_price'] / 1000000, @$currency_desc); ?>
         </a>
-      <?php } ?>
-
-      <?php if ($target_is_null) { ?>
-        <div class="pngm-im-notice"><?php echo sprintf(__('%s has removed this thread, you cannot reply back.', 'instant_messenger'), osc_esc_html($thread_target_name)); ?></div>
       <?php } ?>
 
       <ul id="im-error-list" class="error-list im-error-list pngm-im-errors"></ul>
@@ -162,16 +183,14 @@ $can_send = (im_param('only_logged') != 1 || osc_is_web_user_logged_in())
         <?php } else { ?>
           <div class="pngm-im-board-empty"><?php _e('You do not have any messages', 'instant_messenger'); ?></div>
         <?php } ?>
-
-        <?php if ($blocked_by_you == 0) { ?>
-          <div class="im-err im-err-blocked-by-you"><?php echo $blocked_by_you_msg; ?></div>
-        <?php } elseif ($blocked_you == 0) { ?>
-          <div class="im-err im-err-blocked-you"><?php echo $blocked_you_msg; ?></div>
-        <?php } ?>
       </div>
 
       <?php if (im_param('only_logged') == 1 && !osc_is_web_user_logged_in()) { ?>
         <div class="pngm-im-notice"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
+      <?php } elseif ($blocked_by_you == 0) { ?>
+        <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+      <?php } elseif ($blocked_you == 0) { ?>
+        <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
       <?php } elseif ($can_send) { ?>
         <div class="pngm-composer-dock">
           <form id="im-message-form" class="pngm-im-composer im-row im-body im-form-validate" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">

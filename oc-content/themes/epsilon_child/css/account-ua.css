@@ -4628,6 +4628,85 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   background: #f3faf4;
 }
 
+.pngm-im-thread-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user,
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread,
+a.im-block-user,
+a.im-remove-thread {
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 7px 10px;
+  text-decoration: none !important;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #444;
+  background: #e8ebef;
+  border-radius: 8px;
+  white-space: nowrap;
+  width: auto;
+  height: auto;
+  max-height: none;
+}
+
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user:hover,
+.pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread:hover,
+a.im-block-user:hover,
+a.im-remove-thread:hover {
+  background: #d9dee5;
+  color: #222;
+}
+
+.pngm-im-thread-actions a.im-block-user i,
+.pngm-im-thread-actions a.im-remove-thread i {
+  margin: 0;
+}
+
+.pngm-im-blocked-notice,
+body.im-chat-page .pngm-im-blocked-notice {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #f0c2c2;
+  background: #ffd7d7;
+  color: #590000;
+  font-size: 14px;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+body.im-chat-page .pngm-im-board-pane .pngm-im-blocked-notice,
+body.im-chat-page .pngm-im-thread-pane .pngm-im-blocked-notice {
+  margin: 8px 0 0;
+}
+
+@media screen and (max-width: 767px) {
+  .pngm-im-thread-actions a.im-block-user span,
+  .pngm-im-thread-actions a.im-remove-thread span {
+    display: none;
+  }
+
+  .pngm-im-thread-actions a.im-block-user,
+  .pngm-im-thread-actions a.im-remove-thread {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
 .pngm-im-listing-hero {
   display: flex;
   gap: 12px;

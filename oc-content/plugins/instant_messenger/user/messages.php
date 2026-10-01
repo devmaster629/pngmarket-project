@@ -356,13 +356,25 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
         <?php } ?>
       </span>
       
-      <?php if($target_is_null) { ?>
-        <em><?php echo sprintf(__('%s has removed this thread, you cannot reply back.', 'instant_messenger'), $thread_target_name); ?></em>
-      <?php } ?>
-        
-      <?php if(im_param('remove_thread') == 1) { ?>
-        <a href="<?php echo osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret)); ?>" class="im-remove-thread" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('Are you sure you want to remove this thread? Action cannot be undone!', 'instant_messenger')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>" title="<?php echo osc_esc_html(__('Remove this thread, related messages and attachments from your account', 'instant_messenger')); ?>"><i class="fa fa-trash"></i><span><?php _e('Remove', 'instant_messenger'); ?></span></a>
-      <?php } ?>
+      <?php
+        $pngm_threads_url = osc_route_url('im-threads');
+        $pngm_threads_sep = (strpos($pngm_threads_url, '?') === false ? '?' : '&');
+        $pngm_block_row = (trim((string)$thread_target_email) !== '' && class_exists('ModelIM'))
+          ? ModelIM::newInstance()->checkUserBlocks((int)osc_logged_user_id(), $thread_target_email)
+          : array();
+      ?>
+      <span class="pngm-im-thread-actions">
+        <?php if(trim((string)$thread_target_email) !== '') { ?>
+          <?php if(!empty($pngm_block_row['pk_i_id'])) { ?>
+            <a href="<?php echo osc_esc_html($pngm_threads_url . $pngm_threads_sep . 'remove-id=' . (int)$pngm_block_row['pk_i_id']); ?>" class="im-block-user" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Unblock user', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('Allow this person to message you again?', 'epsilon')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Unblock', 'epsilon')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>"><i class="fa fa-ban"></i><span><?php _e('Unblock', 'epsilon'); ?></span></a>
+          <?php } else { ?>
+            <a href="<?php echo osc_esc_html($pngm_threads_url . $pngm_threads_sep . 'action=block_email&block-email=' . rawurlencode(base64_encode($thread_target_email))); ?>" class="im-block-user" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Block user', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('They will not be able to send you any more messages. You can unblock them later.', 'epsilon')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Block', 'epsilon')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>"><i class="fa fa-ban"></i><span><?php _e('Block', 'epsilon'); ?></span></a>
+          <?php } ?>
+        <?php } ?>
+        <?php if(im_param('remove_thread') == 1) { ?>
+          <a href="<?php echo osc_route_url('im-thread-remove', array('thread-remove-id' => $thread_id, 'secret' => $secret)); ?>" class="im-remove-thread" data-pngm-confirm-remove="1" data-confirm-title="<?php echo osc_esc_html(__('Remove conversation', 'epsilon')); ?>" data-confirm-message="<?php echo osc_esc_html(__('This removes the conversation from your messages only. The other person can still reply, and it will show up again if they message you.', 'epsilon')); ?>" data-confirm-ok="<?php echo osc_esc_html(__('Remove', 'instant_messenger')); ?>" data-confirm-cancel="<?php echo osc_esc_html(__('Cancel', 'epsilon')); ?>" title="<?php echo osc_esc_html(__('Remove this conversation from your messages', 'epsilon')); ?>"><i class="fa fa-trash"></i><span><?php _e('Remove', 'instant_messenger'); ?></span></a>
+        <?php } ?>
+      </span>
     </div>
     
     <?php if($last_seen <> '') { ?>
@@ -550,15 +562,9 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
         <?php $i++; ?>
       <?php } ?>
     </div>
-    
-    <?php if($blocked_by_you == 0) { ?>
-      <div class="im-table im-messages im-errors"><div class="im-err im-err-blocked-by-you"><?php echo $blocked_by_you_msg; ?></div></div>
-
-    <?php } else if($blocked_you == 0) { ?>
-      <div class="im-table im-messages im-errors"><div class="im-err im-err-blocked-you"><?php echo $blocked_you_msg; ?></div></div>
-    <?php } ?>
 
   <?php } else { ?>
+    <div class="im-table im-messages im-body"></div>
     <div class="im-empty flashmessage flashmessage-warning"><?php _e('You do not have any messages', 'instant_messenger'); ?></div>
   <?php } ?>
 
@@ -566,7 +572,13 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
   <?php if(im_param('only_logged') == 1 && !osc_is_web_user_logged_in()) { ?>
     <div class="im-empty flashmessage flashmessage-warning"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
 
-  <?php } else if($target_is_null === false && $blocked_by_you != 0 && $blocked_you != 0) { ?>
+  <?php } else if($blocked_by_you == 0) { ?>
+    <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+
+  <?php } else if($blocked_you == 0) { ?>
+    <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
+
+  <?php } else { ?>
     <div class="pngm-composer-dock">
       <form id="im-message-form" class="im-row im-body im-form-validate pngm-im-composer" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="im-action" id="im-action" value="send_message" />
@@ -788,12 +800,12 @@ function imRefreshMessages(forceBottom, forceReplace) {
         return;
       }
 
-      var $board = $('.im-table.im-messages');
+      var $board = $('.im-table.im-messages').not('.im-errors').first();
       var el = $board[0];
       var $parsed = $('<div>').append($.parseHTML(response, document, false));
-      var $next = $parsed.find('.im-table.im-messages').first();
+      var $next = $parsed.find('.im-table.im-messages').not('.im-errors').first();
       if(!$next.length) {
-        $next = $parsed.filter('.im-table.im-messages').first();
+        $next = $parsed.filter('.im-table.im-messages').not('.im-errors').first();
       }
       if(!$next.length) {
         return;

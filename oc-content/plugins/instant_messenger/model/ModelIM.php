@@ -92,6 +92,11 @@ public function versionUpdate($ignore_error = false) {
     $version = 103;
   }
 
+  if($version < 104) {
+    $this->ensureThreadHideColumns();
+    $version = 104;
+  }
+
   osc_set_preference('version', $current_version, 'plugin-instant_messenger', 'INTEGER');
   osc_reset_preferences();
 
@@ -264,6 +269,7 @@ public function countThreadsByUserId($user_id = NULL) {
   $user_id = (int)$user_id;
   if($user_id > 0) {
     $this->dao->where('t2.i_from_user_id = ' . $user_id . ' OR t2.i_to_user_id = ' . $user_id);
+    $this->dao->where($this->threadVisibleSql($user_id, 't2'));
   }
 
   $result = $this->dao->get();
@@ -279,6 +285,7 @@ public function getThreadsByUserId($user_id = NULL, $limit = NULL, $offset = NUL
 
   if($user_id > 0) {
     $this->dao->where('(i_from_user_id = ' . $user_id . ' OR i_to_user_id = ' . $user_id . ')');
+    $this->dao->where($this->threadVisibleSql($user_id, ''));
   }
 
   if($limit > 0) {
@@ -736,6 +743,47 @@ public function deleteMessageAttachment($message_id) {
   $this->dao->query('UPDATE '. $this->getTable_messages() . ' SET s_file = "" WHERE pk_i_id = ' . $message_id);
 }
 
+
+/**
+ * Per-user hide columns. A deleted conversation stays intact for the other person.
+ */
+public function ensureThreadHideColumns() {
+  $table = $this->getTable_threads();
+  if(!$this->columnExists($table, 'dt_from_hidden')) {
+    $this->dao->query('ALTER TABLE ' . $table . ' ADD COLUMN dt_from_hidden DATETIME NULL');
+  }
+  if(!$this->columnExists($table, 'dt_to_hidden')) {
+    $this->dao->query('ALTER TABLE ' . $table . ' ADD COLUMN dt_to_hidden DATETIME NULL');
+  }
+}
+
+/**
+ * Hide a thread from one participant's list without removing the other participant.
+ *
+ * @param int $user_id
+ * @param string $alias table alias including nothing, or "t2"
+ */
+public function threadVisibleSql($user_id, $alias = '') {
+  $user_id = (int)$user_id;
+  $p = ($alias !== '' ? $alias . '.' : '');
+  return 'NOT ((' . $p . 'i_from_user_id = ' . $user_id . ' AND ' . $p . 'dt_from_hidden IS NOT NULL) OR (' . $p . 'i_to_user_id = ' . $user_id . ' AND ' . $p . 'dt_to_hidden IS NOT NULL))';
+}
+
+public function hideThreadSide($thread_id, $side) {
+  $thread_id = (int)$thread_id;
+  $col = ($side === 'FROM' ? 'dt_from_hidden' : 'dt_to_hidden');
+  $this->ensureThreadHideColumns();
+  $this->dao->query('UPDATE ' . $this->getTable_threads() . ' SET ' . $col . ' = "' . date('Y-m-d H:i:s') . '" WHERE i_thread_id = ' . $thread_id);
+}
+
+public function revealThread($thread_id) {
+  $thread_id = (int)$thread_id;
+  if($thread_id <= 0) {
+    return;
+  }
+  $this->ensureThreadHideColumns();
+  $this->dao->query('UPDATE ' . $this->getTable_threads() . ' SET dt_from_hidden = NULL, dt_to_hidden = NULL WHERE i_thread_id = ' . $thread_id);
+}
 
 public function cleanThreadUser($thread_id, $type) {
   if($type == 'FROM') {
