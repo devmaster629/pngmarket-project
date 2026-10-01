@@ -4530,6 +4530,228 @@
     start();
   }
 
+  /**
+   * Header bell: this-browser push off → enable dropdown; push on → Activity.
+   */
+  function initNotifyMenu() {
+    var wrap = document.querySelector('[data-pngm-notify-wrap]');
+    if (!wrap) return;
+
+    var toggle = document.getElementById('pngm-notify-toggle');
+    var menu = wrap.querySelector('[data-pngm-notify-menu]');
+    var enableBtn = wrap.querySelector('[data-pngm-notify-enable]');
+    if (!toggle || !menu) return;
+
+    var activityUrl = wrap.getAttribute('data-activity-url') || '';
+    var swUrl = wrap.getAttribute('data-sw-url') || '/sw.js';
+    var vapid = wrap.getAttribute('data-vapid') || '';
+    var subscribeUrl = wrap.getAttribute('data-subscribe-url') || '';
+    var pushReadyCache = null;
+
+    var menuHost = null;
+
+    function openMenu() {
+      menu.hidden = false;
+      wrap.classList.add('is-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      try {
+        var rect = toggle.getBoundingClientRect();
+        var width = Math.min(320, Math.max(260, window.innerWidth - 24));
+        var left = Math.min(Math.max(12, rect.right - width), window.innerWidth - width - 12);
+        if (menu.parentNode !== document.body) {
+          menuHost = menu.parentNode;
+          document.body.appendChild(menu);
+        }
+        menu.style.position = 'fixed';
+        menu.style.top = Math.round(rect.bottom + 10) + 'px';
+        menu.style.left = Math.round(left) + 'px';
+        menu.style.right = 'auto';
+        menu.style.width = width + 'px';
+        menu.style.zIndex = '10050';
+      } catch (e) {}
+    }
+
+    function closeMenu() {
+      menu.hidden = true;
+      wrap.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      menu.style.position = '';
+      menu.style.top = '';
+      menu.style.left = '';
+      menu.style.right = '';
+      menu.style.width = '';
+      menu.style.zIndex = '';
+      if (menuHost && menu.parentNode === document.body) {
+        menuHost.appendChild(menu);
+      }
+    }
+
+    function isOpen() {
+      return !menu.hidden;
+    }
+
+    function menuContains(node) {
+      return !!(node && (wrap.contains(node) || menu.contains(node)));
+    }
+
+    function checkPushReady() {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        return Promise.resolve(false);
+      }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return Promise.resolve(false);
+      }
+      return navigator.serviceWorker.getRegistration('/').then(function (reg) {
+        if (!reg || !reg.pushManager) return false;
+        return reg.pushManager.getSubscription().then(function (sub) {
+          return !!sub;
+        });
+      }).catch(function () {
+        return false;
+      });
+    }
+
+    function refreshPushReady() {
+      return checkPushReady().then(function (ready) {
+        pushReadyCache = ready;
+        return ready;
+      });
+    }
+
+    refreshPushReady();
+
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      function handle(ready) {
+        if (ready) {
+          closeMenu();
+          if (activityUrl) {
+            window.location.href = activityUrl;
+          }
+          return;
+        }
+        if (isOpen()) closeMenu();
+        else openMenu();
+      }
+
+      if (pushReadyCache === true) {
+        handle(true);
+        return;
+      }
+      if (pushReadyCache === false) {
+        handle(false);
+        refreshPushReady();
+        return;
+      }
+      // First click (cache unknown): resolve, then open or navigate.
+      refreshPushReady().then(handle);
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!isOpen()) return;
+      if (menuContains(e.target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen()) closeMenu();
+    });
+
+    window.addEventListener('resize', function () {
+      if (isOpen()) openMenu();
+    });
+
+    if (!enableBtn) return;
+
+    function urlBase64ToUint8Array(base64String) {
+      var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      var raw = window.atob(base64);
+      var out = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+      return out;
+    }
+
+    var enableLabel = enableBtn.querySelector('[data-pngm-notify-enable-label]') || enableBtn;
+
+    function setBusy(on, label) {
+      enableBtn.disabled = !!on;
+      if (label) enableLabel.textContent = label;
+    }
+
+    function setError(msg) {
+      enableBtn.classList.add('is-error');
+      enableBtn.disabled = false;
+      enableLabel.textContent = msg || 'Could not enable notifications';
+    }
+
+    enableBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setError('Not supported in this browser');
+        return;
+      }
+      if (!vapid || !subscribeUrl) {
+        setError('Push is not configured');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        setError('Blocked in browser settings');
+        return;
+      }
+
+      setBusy(true, 'Enabling…');
+      enableBtn.classList.remove('is-error');
+
+      var permPromise = Notification.permission === 'granted'
+        ? Promise.resolve('granted')
+        : Notification.requestPermission();
+
+      permPromise.then(function (perm) {
+        if (perm !== 'granted') {
+          throw new Error('denied');
+        }
+        return navigator.serviceWorker.register(swUrl, { scope: '/' });
+      }).then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (existing) {
+          if (existing) return existing;
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapid)
+          });
+        });
+      }).then(function (sub) {
+        var json = null;
+        try { json = sub.toJSON ? sub.toJSON() : null; } catch (err) {}
+        if (!json || !json.endpoint) throw new Error('bad_sub');
+        var body = 'subscription=' + encodeURIComponent(JSON.stringify(json));
+        return fetch(subscribeUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          body: body
+        }).then(function (r) {
+          return r.json().catch(function () { return { ok: false }; });
+        });
+      }).then(function (res) {
+        if (!res || !res.ok) throw new Error('save_failed');
+        pushReadyCache = true;
+        setBusy(true, 'Enabled');
+        window.location.href = activityUrl || window.location.href;
+      }).catch(function (err) {
+        if (err && err.message === 'denied') {
+          setError('Permission denied');
+          return;
+        }
+        setError('Could not enable notifications');
+      });
+    });
+  }
+
   function init() {
     try {
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
@@ -4563,6 +4785,7 @@
     initFlashToasts();
     initBadgePoller();
     initOwnListingChat();
+    initNotifyMenu();
   }
 
   if (document.readyState === 'loading') {

@@ -99,13 +99,22 @@ $section_num = 0;
 
       <div class="pngm-notif-push-actions">
         <button type="button" class="pngm-ua-btn" id="pngm-notif-push-enable">
-          <i class="fas fa-unlock-alt" aria-hidden="true"></i>
-          <?php _e('Enable browser notifications', 'epsilon'); ?>
+          <i class="fas fa-bell" aria-hidden="true"></i>
+          <span><?php _e('Enable push notifications', 'epsilon'); ?></span>
         </button>
-        <button type="button" class="pngm-ua-btn is-secondary" id="pngm-notif-push-test" hidden>
-          <i class="fas fa-paper-plane" aria-hidden="true"></i>
-          <?php _e('Send test notification', 'epsilon'); ?>
-        </button>
+        <div class="pngm-notif-push-enabled" id="pngm-notif-push-enabled" hidden>
+          <span class="pngm-notif-push-on" aria-live="polite">
+            <i class="fas fa-check" aria-hidden="true"></i>
+            <?php _e('Push notifications enabled', 'epsilon'); ?>
+          </span>
+          <button type="button" class="pngm-ua-btn is-secondary" id="pngm-notif-push-test">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            <?php _e('Send test notification', 'epsilon'); ?>
+          </button>
+          <button type="button" class="pngm-notif-push-off" id="pngm-notif-push-disable">
+            <?php _e('Turn off', 'epsilon'); ?>
+          </button>
+        </div>
       </div>
       <p class="pngm-notif-push-hint" data-push-hint></p>
     </section>
@@ -202,7 +211,9 @@ $section_num = 0;
   var allow = document.getElementById('pngm_notif_allow');
   var toast = document.getElementById('pngm-notif-toast');
   var enableBtn = document.getElementById('pngm-notif-push-enable');
+  var enabledWrap = document.getElementById('pngm-notif-push-enabled');
   var testBtn = document.getElementById('pngm-notif-push-test');
+  var disableBtn = document.getElementById('pngm-notif-push-disable');
   var elSupport = root.querySelector('[data-push-support]');
   var elPerm = root.querySelector('[data-push-permission]');
   var elSw = root.querySelector('[data-push-sw]');
@@ -215,6 +226,7 @@ $section_num = 0;
         'swUrl' => osc_base_url() . 'sw.js',
         'vapidPublicKey' => '',
         'subscribeUrl' => '',
+        'unsubscribeUrl' => '',
         'testUrl' => '',
       ));
     }
@@ -222,6 +234,7 @@ $section_num = 0;
   var swUrl = boot.swUrl || <?php echo json_encode(osc_base_url() . 'sw.js'); ?>;
   var vapidKey = boot.vapidPublicKey || '';
   var subscribeUrl = boot.subscribeUrl || '';
+  var unsubscribeUrl = boot.unsubscribeUrl || '';
   var testUrl = boot.testUrl || '';
   var iconUrl = <?php echo json_encode(osc_base_url() . 'pwa/icon-192.png'); ?>;
   var L = {
@@ -235,13 +248,14 @@ $section_num = 0;
     swChecking: <?php echo json_encode(__('Checking…', 'epsilon')); ?>,
     unsupported: <?php echo json_encode(__('Push notifications are not supported in this browser.', 'epsilon')); ?>,
     blocked: <?php echo json_encode(__('Notifications are blocked. Allow them in your browser site settings, then reload.', 'epsilon')); ?>,
-    enableCta: <?php echo json_encode(__('Enable browser notifications', 'epsilon')); ?>,
-    enabledCta: <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>,
-    hintReady: <?php echo json_encode(__('Permission granted and this device is subscribed. Use “Send test notification” — it should arrive even if you close this tab.', 'epsilon')); ?>,
-    hintAsk: <?php echo json_encode(__('Click “Enable browser notifications” to open the browser permission prompt.', 'epsilon')); ?>,
+    enableCta: <?php echo json_encode(__('Enable push notifications', 'epsilon')); ?>,
+    hintAsk: <?php echo json_encode(__('Click “Enable push notifications” to open the browser permission prompt.', 'epsilon')); ?>,
     hintNeedHttps: <?php echo json_encode(__('Web Push needs HTTPS (or localhost). Open the site over a secure URL to finish setup.', 'epsilon')); ?>,
     hintSubscribing: <?php echo json_encode(__('Subscribing this device…', 'epsilon')); ?>,
     hintSubscribeFail: <?php echo json_encode(__('Could not subscribe this device for push. Try again or check browser settings.', 'epsilon')); ?>,
+    hintTurningOff: <?php echo json_encode(__('Turning off push on this device…', 'epsilon')); ?>,
+    hintTurnOffFail: <?php echo json_encode(__('Could not turn off push on this device. Try again.', 'epsilon')); ?>,
+    hintTurnedOff: <?php echo json_encode(__('Push notifications turned off on this device.', 'epsilon')); ?>,
     testTitle: <?php echo json_encode(__('PNGMarket test notification', 'epsilon')); ?>,
     testBody: <?php echo json_encode(__('Browser push is working on this device.', 'epsilon')); ?>,
     testFail: <?php echo json_encode(__('Could not send a test push. Enable notifications, then try again.', 'epsilon')); ?>,
@@ -265,6 +279,16 @@ $section_num = 0;
 
   function setHint(text) {
     if (elHint) elHint.textContent = text || '';
+  }
+
+  function setEnabledUi(isOn) {
+    if (enableBtn) enableBtn.hidden = !!isOn;
+    if (enabledWrap) enabledWrap.hidden = !isOn;
+  }
+
+  function setEnableLabel(htmlIconClass, label) {
+    if (!enableBtn) return;
+    enableBtn.innerHTML = '<i class="' + htmlIconClass + '" aria-hidden="true"></i> <span>' + label + '</span>';
   }
 
   function urlBase64ToUint8Array(base64String) {
@@ -294,6 +318,20 @@ $section_num = 0;
     return postJsonForm(subscribeUrl, { subscription: JSON.stringify(json) });
   }
 
+  function removeSubscription(sub) {
+    if (!unsubscribeUrl) return Promise.resolve({ ok: false });
+    var json = null;
+    try { json = sub && sub.toJSON ? sub.toJSON() : sub; } catch (e) { json = null; }
+    var fields = {};
+    if (json && json.endpoint) {
+      fields.subscription = JSON.stringify(json);
+      fields.endpoint = json.endpoint;
+    } else if (typeof sub === 'string') {
+      fields.endpoint = sub;
+    }
+    return postJsonForm(unsubscribeUrl, fields);
+  }
+
   function registerSw() {
     if (!('serviceWorker' in navigator)) {
       return Promise.resolve(null);
@@ -303,6 +341,11 @@ $section_num = 0;
     }).catch(function () {
       return null;
     });
+  }
+
+  function getPushSubscription(reg) {
+    if (!reg || !('pushManager' in reg)) return Promise.resolve(null);
+    return reg.pushManager.getSubscription().catch(function () { return null; });
   }
 
   function subscribePush(reg) {
@@ -352,11 +395,11 @@ $section_num = 0;
     if (!supported) {
       setText(elPerm, L.no, 'is-bad');
       setText(elSw, L.no, 'is-bad');
+      setEnabledUi(false);
       if (enableBtn) {
         enableBtn.disabled = true;
-        enableBtn.textContent = L.unsupported;
+        setEnableLabel('fas fa-ban', L.unsupported);
       }
-      if (testBtn) testBtn.hidden = true;
       setHint(!secure ? L.hintNeedHttps : L.unsupported);
       return;
     }
@@ -368,28 +411,22 @@ $section_num = 0;
     var perm = Notification.permission;
     if (perm === 'granted') {
       setText(elPerm, L.granted, 'is-ok');
-      setHint(L.hintReady);
-      if (enableBtn) {
-        enableBtn.disabled = true;
-        enableBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> ' + L.enabledCta;
-      }
-      if (testBtn) testBtn.hidden = false;
     } else if (perm === 'denied') {
       setText(elPerm, L.denied, 'is-bad');
       setHint(L.blocked);
+      setEnabledUi(false);
       if (enableBtn) {
         enableBtn.disabled = true;
-        enableBtn.innerHTML = '<i class="fas fa-ban" aria-hidden="true"></i> ' + L.denied;
+        setEnableLabel('fas fa-ban', L.denied);
       }
-      if (testBtn) testBtn.hidden = true;
     } else {
       setText(elPerm, L.default, 'is-warn');
       setHint(L.hintAsk);
+      setEnabledUi(false);
       if (enableBtn) {
         enableBtn.disabled = false;
-        enableBtn.innerHTML = '<i class="fas fa-unlock-alt" aria-hidden="true"></i> ' + L.enableCta;
+        setEnableLabel('fas fa-bell', L.enableCta);
       }
-      if (testBtn) testBtn.hidden = true;
     }
 
     setText(elSw, L.swChecking, 'is-warn');
@@ -399,8 +436,30 @@ $section_num = 0;
       } else {
         setText(elSw, L.swOff, 'is-warn');
       }
+      if (perm !== 'granted') return null;
+      return getPushSubscription(reg).then(function (sub) {
+        if (sub) {
+          setEnabledUi(true);
+          setHint('');
+          if (enableBtn) enableBtn.disabled = true;
+        } else {
+          setEnabledUi(false);
+          if (enableBtn) {
+            enableBtn.disabled = false;
+            setEnableLabel('fas fa-bell', L.enableCta);
+          }
+          if (!elHint || !elHint.textContent) setHint(L.hintAsk);
+        }
+      });
     }).catch(function () {
       setText(elSw, L.swOff, 'is-warn');
+      if (perm === 'granted') {
+        setEnabledUi(false);
+        if (enableBtn) {
+          enableBtn.disabled = false;
+          setEnableLabel('fas fa-bell', L.enableCta);
+        }
+      }
     });
   }
 
@@ -431,7 +490,10 @@ $section_num = 0;
       }
       enableBtn.disabled = true;
       setHint(L.hintSubscribing);
-      Notification.requestPermission().then(function (perm) {
+      var permPromise = Notification.permission === 'granted'
+        ? Promise.resolve('granted')
+        : Notification.requestPermission();
+      permPromise.then(function (perm) {
         if (perm !== 'granted') {
           refreshPushStatus();
           return null;
@@ -445,6 +507,33 @@ $section_num = 0;
       }).catch(function () {
         setHint(L.hintSubscribeFail);
         refreshPushStatus();
+      });
+    });
+  }
+
+  if (disableBtn) {
+    disableBtn.addEventListener('click', function () {
+      disableBtn.disabled = true;
+      setHint(L.hintTurningOff);
+      registerSw().then(function (reg) {
+        return getPushSubscription(reg).then(function (sub) {
+          if (!sub) return { ok: true };
+          return removeSubscription(sub).then(function () {
+            return sub.unsubscribe().then(function () {
+              return { ok: true };
+            }).catch(function () {
+              return { ok: true };
+            });
+          });
+        });
+      }).then(function () {
+        setHint(L.hintTurnedOff);
+        refreshPushStatus();
+      }).catch(function () {
+        setHint(L.hintTurnOffFail);
+        refreshPushStatus();
+      }).then(function () {
+        disableBtn.disabled = false;
       });
     });
   }
@@ -473,7 +562,7 @@ $section_num = 0;
         return registerSw().then(function (reg) {
           return showLocalTest(reg);
         }).then(function () {
-          setHint(L.hintReady);
+          setHint(L.testOk);
         });
       }).catch(function () {
         setHint(L.testFail);
@@ -488,7 +577,11 @@ $section_num = 0;
   if ('serviceWorker' in navigator && typeof Notification !== 'undefined' && Notification.permission === 'granted' && vapidKey) {
     registerSw().then(function (reg) {
       if (!reg) return;
-      return subscribePush(reg).catch(function () {});
+      return getPushSubscription(reg).then(function (sub) {
+        // Only auto-resync an existing browser subscription — never auto-create one.
+        if (!sub) return null;
+        return saveSubscription(sub).catch(function () {});
+      });
     }).then(function () { refreshPushStatus(); });
   }
 })();

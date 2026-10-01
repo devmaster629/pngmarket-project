@@ -33,11 +33,42 @@
       </a>
 
       <?php if (osc_is_web_user_logged_in()) { ?>
-        <?php $pngm_notif_count = function_exists('pngm_notification_count') ? pngm_notification_count() : 0; ?>
-        <a class="pngm-notify btn btn-white isMobile isTablet isDesktop" href="<?php echo function_exists('pngm_notification_url') ? pngm_notification_url() : osc_user_alerts_url(); ?>" title="<?php echo osc_esc_html(__('Activity', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Activity', 'epsilon')); ?>">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V51.2C119 66 64 130.6 64 208v18.8c0 47-17.3 92.4-48.5 127.6l-7.4 8.3c-8.4 9.4-10.4 22.9-5.3 34.4S19.3 416 32 416H416c12.7 0 24.2-7.7 29.2-19.3s3.1-25-5.3-34.4l-7.4-8.3C401.3 319.2 384 273.9 384 226.8V208c0-77.4-55-142-128-156.8V32c0-17.7-14.3-32-32-32zm45.3 493.3c12-12 18.7-28.3 18.7-45.3H160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7z"/></svg>
-          <span class="counter" data-pngm-badge="notifications"<?php echo $pngm_notif_count > 0 ? '' : ' hidden'; ?>><?php echo (int) $pngm_notif_count; ?></span>
-        </a>
+        <?php
+          $pngm_notif_count = function_exists('pngm_notification_count') ? pngm_notification_count() : 0;
+          $pngm_notif_href = function_exists('pngm_notification_url') ? pngm_notification_url() : osc_user_alerts_url();
+          $pngm_prefs_href = function_exists('pngm_notif_prefs_url') ? pngm_notif_prefs_url() : $pngm_notif_href;
+        ?>
+        <div class="pngm-notify-wrap isMobile isTablet isDesktop" data-pngm-notify-wrap
+          data-activity-url="<?php echo osc_esc_html($pngm_notif_href); ?>"
+          data-prefs-url="<?php echo osc_esc_html($pngm_prefs_href); ?>"
+          data-sw-url="<?php echo osc_esc_html(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>"
+          data-vapid="<?php echo osc_esc_html(function_exists('pngm_webpush_public_key') ? pngm_webpush_public_key() : ''); ?>"
+          data-subscribe-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_push_subscribe'); ?>">
+          <button type="button" class="pngm-notify btn btn-white" id="pngm-notify-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="pngm-notify-menu" title="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>" aria-label="<?php echo osc_esc_html(__('Notifications', 'epsilon')); ?>">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18" aria-hidden="true"><path d="M224 0c-17.7 0-32 14.3-32 32V51.2C119 66 64 130.6 64 208v18.8c0 47-17.3 92.4-48.5 127.6l-7.4 8.3c-8.4 9.4-10.4 22.9-5.3 34.4S19.3 416 32 416H416c12.7 0 24.2-7.7 29.2-19.3s3.1-25-5.3-34.4l-7.4-8.3C401.3 319.2 384 273.9 384 226.8V208c0-77.4-55-142-128-156.8V32c0-17.7-14.3-32-32-32zm45.3 493.3c12-12 18.7-28.3 18.7-45.3H160c0 17 6.7 33.3 18.7 45.3s28.3 18.7 45.3 18.7s33.3-6.7 45.3-18.7z"/></svg>
+            <span class="counter" data-pngm-badge="notifications"<?php echo $pngm_notif_count > 0 ? '' : ' hidden'; ?>><?php echo (int) $pngm_notif_count; ?></span>
+          </button>
+          <div class="pngm-notify-menu" id="pngm-notify-menu" hidden role="menu" data-pngm-notify-menu>
+            <div class="pngm-notify-menu-head">
+              <strong><?php _e('Browser notifications are off.', 'epsilon'); ?></strong>
+              <em><?php _e('Enable notifications to get alerts for new messages, listing updates and more.', 'epsilon'); ?></em>
+              <button type="button" class="pngm-ua-btn pngm-notify-enable" data-pngm-notify-enable>
+                <i class="fas fa-bell" aria-hidden="true"></i>
+                <span data-pngm-notify-enable-label><?php _e('Enable push notifications', 'epsilon'); ?></span>
+              </button>
+            </div>
+            <a class="pngm-notify-menu-link" role="menuitem" href="<?php echo osc_esc_html($pngm_prefs_href); ?>">
+              <i class="fas fa-cog" aria-hidden="true"></i>
+              <span><?php _e('Notification Preferences', 'epsilon'); ?></span>
+              <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </a>
+            <a class="pngm-notify-menu-link" role="menuitem" href="<?php echo osc_esc_html($pngm_notif_href); ?>">
+              <i class="fas fa-bell" aria-hidden="true"></i>
+              <span><?php _e('View all notifications', 'epsilon'); ?></span>
+              <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
       <?php } ?>
       
       <a class="account btn btn-white" href="<?php echo (!osc_is_web_user_logged_in() ? osc_user_login_url() : osc_user_dashboard_url()); ?>">

@@ -8397,6 +8397,22 @@
   }
   
   /* Header notification bell (logged-in only) */
+  header .links {
+    overflow: visible !important;
+  }
+
+  header .links .pngm-notify-wrap {
+    position: relative;
+    display: inline-flex !important;
+    align-items: center;
+    vertical-align: middle;
+    z-index: 30;
+  }
+
+  header .links .pngm-notify-wrap.is-open {
+    z-index: 80;
+  }
+
   header .links .pngm-notify {
     position: relative;
     display: inline-flex !important;
@@ -8405,9 +8421,11 @@
     width: 44px;
     height: 44px;
     padding: 0 !important;
+    border: 0;
     border-radius: 9px;
     background: transparent;
     box-shadow: none;
+    cursor: pointer;
   }
   
   header .links .pngm-notify svg {
@@ -8417,8 +8435,241 @@
     fill: #3d4651;
   }
   
-  header .links .pngm-notify:hover svg {
+  header .links .pngm-notify:hover svg,
+  header .links .pngm-notify-wrap.is-open .pngm-notify svg {
     fill: #006b24;
+  }
+
+  header .links .pngm-notify-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 1200;
+    width: min(320px, calc(100vw - 24px));
+    padding: 0;
+    background: #fff;
+    border: 1px solid #e6eaf0;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(22, 32, 42, 0.14);
+    overflow: visible;
+  }
+
+  body > .pngm-notify-menu {
+    position: fixed;
+    z-index: 10050;
+    width: min(320px, calc(100vw - 24px));
+    padding: 0;
+    background: #fff;
+    border: 1px solid #e6eaf0;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(22, 32, 42, 0.14);
+  }
+
+  body > .pngm-notify-menu[hidden] {
+    display: none !important;
+  }
+
+  header .links .pngm-notify-menu::before,
+  body > .pngm-notify-menu::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 16px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-left: 1px solid #e6eaf0;
+    border-top: 1px solid #e6eaf0;
+    transform: rotate(45deg);
+  }
+
+  /* Keep menu content clipped to the card, not the caret */
+  header .links .pngm-notify-menu-head,
+  header .links .pngm-notify-menu-link,
+  body > .pngm-notify-menu .pngm-notify-menu-head,
+  body > .pngm-notify-menu .pngm-notify-menu-link {
+    position: relative;
+    z-index: 1;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 16px 14px;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-head strong {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16202a;
+    line-height: 1.3;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-head em {
+    font-style: normal;
+    font-size: 13px;
+    color: #8a94a0;
+    line-height: 1.45;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-enable {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    margin-top: 4px;
+    padding: 0 14px;
+    border: 1px solid #2e7d32;
+    border-radius: 10px;
+    background: #2e7d32;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-enable:hover,
+  body > .pngm-notify-menu .pngm-notify-enable:focus {
+    background: #256628;
+    border-color: #256628;
+    outline: none;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-enable:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-enable.is-error {
+    background: #c62828;
+    border-color: #c62828;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid #eef1f5;
+    color: #16202a !important;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-link > i:first-child {
+    width: 18px;
+    color: #5c6570;
+    text-align: center;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-link span {
+    flex: 1 1 auto;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-link > i:last-child {
+    color: #b0b8c2;
+    font-size: 12px;
+  }
+
+  body > .pngm-notify-menu .pngm-notify-menu-link:hover {
+    background: #f6f8fa;
+  }
+
+  header .links .pngm-notify-menu[hidden] {
+    display: none !important;
+  }
+
+  header .links .pngm-notify-menu-head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 16px 14px;
+  }
+
+  header .links .pngm-notify-menu-head strong {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16202a;
+    line-height: 1.3;
+  }
+
+  header .links .pngm-notify-menu-head em {
+    font-style: normal;
+    font-size: 13px;
+    color: #8a94a0;
+    line-height: 1.45;
+  }
+
+  header .links .pngm-notify-enable {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    margin-top: 4px;
+    padding: 0 14px;
+    border: 1px solid #2e7d32;
+    border-radius: 10px;
+    background: #2e7d32;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  header .links .pngm-notify-enable:hover,
+  header .links .pngm-notify-enable:focus {
+    background: #256628;
+    border-color: #256628;
+    outline: none;
+  }
+
+  header .links .pngm-notify-enable:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  header .links .pngm-notify-enable.is-error {
+    background: #c62828;
+    border-color: #c62828;
+  }
+
+  header .links .pngm-notify-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid #eef1f5;
+    color: #16202a !important;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  header .links .pngm-notify-menu-link > i:first-child {
+    width: 18px;
+    color: #5c6570;
+    text-align: center;
+  }
+
+  header .links .pngm-notify-menu-link span {
+    flex: 1 1 auto;
+  }
+
+  header .links .pngm-notify-menu-link > i:last-child {
+    color: #b0b8c2;
+    font-size: 12px;
+  }
+
+  header .links .pngm-notify-menu-link:hover {
+    background: #f6f8fa;
   }
   
   /* Poller-managed badges render at zero and toggle [hidden]; the badge classes
@@ -8558,7 +8809,8 @@
       font-size: 14px !important;
     }
   
-    header .links .pngm-notify {
+    header .links .pngm-notify,
+    header .links .pngm-notify-wrap .pngm-notify {
       width: 36px;
       height: 36px;
     }
@@ -8571,7 +8823,8 @@
   }
   
   @media screen and (max-width: 767px) {
-    header .links .pngm-notify.btn-white {
+    header .links .pngm-notify.btn-white,
+    header .links .pngm-notify-wrap .pngm-notify.btn-white {
       display: inline-flex !important;
       width: 34px;
       height: 34px;
@@ -8579,6 +8832,11 @@
       padding: 0 !important;
       background: transparent !important;
       box-shadow: none !important;
+    }
+
+    header .links .pngm-notify-menu {
+      right: -8px;
+      width: min(300px, calc(100vw - 16px));
     }
   
     header .links .pngm-notify svg {
