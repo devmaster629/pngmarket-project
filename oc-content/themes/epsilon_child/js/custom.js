@@ -4620,16 +4620,30 @@
 
     refreshPushReady();
 
+    function isIosDevice() {
+      var ua = navigator.userAgent || '';
+      if (/iPad|iPhone|iPod/i.test(ua)) return true;
+      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    }
+
+    function openActivity() {
+      closeMenu();
+      if (activityUrl) window.location.href = activityUrl;
+    }
+
     toggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
 
+      // iPhone and iPad never offer browser push, so the bell always opens the list.
+      if (isIosDevice()) {
+        openActivity();
+        return;
+      }
+
       function handle(ready) {
         if (ready) {
-          closeMenu();
-          if (activityUrl) {
-            window.location.href = activityUrl;
-          }
+          openActivity();
           return;
         }
         if (isOpen()) closeMenu();
@@ -4664,12 +4678,6 @@
     });
 
     if (!enableBtn) return;
-
-    function isIosDevice() {
-      var ua = navigator.userAgent || '';
-      if (/iPad|iPhone|iPod/i.test(ua)) return true;
-      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-    }
 
     function isStandaloneApp() {
       try {
