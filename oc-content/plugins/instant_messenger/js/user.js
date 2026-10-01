@@ -329,13 +329,21 @@ $(document).ready(function(){
       $('#im-error-list').empty().hide();
       if(rejectedType.length) {
         warnUnsupported(rejectedType[0] + (rejectedType.length > 1 ? (' (+' + (rejectedType.length - 1) + ' more)') : ''));
-      } else if(rejectedSize.length) {
+      }
+      if(rejectedSize.length) {
         warnTooLarge(rejectedSize[0] + (rejectedSize.length > 1 ? (' (+' + (rejectedSize.length - 1) + ' more)') : ''));
       }
       if(typeof window.pngmLayoutChat === 'function') {
         window.pngmLayoutChat();
       }
     });
+
+    // Shared helpers for the optimistic send path (im_ui.php).
+    window.pngmImFileMaxBytes = maxFileBytes;
+    window.pngmImWarnUnsupportedFile = warnUnsupported;
+    window.pngmImWarnFileTooLarge = warnTooLarge;
+    window.pngmImFileAllowed = fileAllowed;
+    window.pngmImFileWithinSize = fileWithinSize;
   })();
 
   // Whole conversation row opens the thread

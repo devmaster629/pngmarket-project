@@ -1139,6 +1139,40 @@ function pngm_im_ui_script()
         return;
       }
 
+      // Same toast style as the file-picker rejects (type / oversize).
+      if (hasFile) {
+        var badType = [];
+        var badSize = [];
+        var fi;
+        for (fi = 0; fi < files.length; fi += 1) {
+          var f = files[fi];
+          var fname = (f && f.name) ? String(f.name) : 'file';
+          if (typeof window.pngmImFileAllowed === 'function' && !window.pngmImFileAllowed(f)) {
+            badType.push(fname);
+            continue;
+          }
+          if (typeof window.pngmImFileWithinSize === 'function' && !window.pngmImFileWithinSize(f)) {
+            badSize.push(fname);
+          }
+        }
+        if (badType.length) {
+          if (typeof window.pngmImWarnUnsupportedFile === 'function') {
+            window.pngmImWarnUnsupportedFile(badType[0] + (badType.length > 1 ? (' (+' + (badType.length - 1) + ' more)') : ''));
+          } else if (typeof window.pngmShowToast === 'function') {
+            window.pngmShowToast('File type not supported: ' + badType[0], true);
+          }
+          return;
+        }
+        if (badSize.length) {
+          if (typeof window.pngmImWarnFileTooLarge === 'function') {
+            window.pngmImWarnFileTooLarge(badSize[0] + (badSize.length > 1 ? (' (+' + (badSize.length - 1) + ' more)') : ''));
+          } else if (typeof window.pngmShowToast === 'function') {
+            window.pngmShowToast('File is too large: ' + badSize[0], true);
+          }
+          return;
+        }
+      }
+
       var meta = threadMeta($form);
       if (!meta.threadId) {
         return;
@@ -1224,6 +1258,22 @@ function pngm_im_ui_script()
             $rows.find('.pngm-im-uploading, .pngm-im-sending-status').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
             $rows.find('.pngm-im-sending-icon').removeClass('fa-spinner fa-spin').addClass('fa-times');
             markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            var errCode = (res && res.error) ? String(res.error) : '';
+            if (errCode === 'size') {
+              if (typeof window.pngmImWarnFileTooLarge === 'function') {
+                window.pngmImWarnFileTooLarge(fileNames[0] || 'attachment');
+              } else if (typeof window.pngmShowToast === 'function') {
+                window.pngmShowToast('<?php echo osc_esc_js(__('File is too large', 'epsilon')); ?>', true);
+              }
+            } else if (errCode === 'type') {
+              if (typeof window.pngmImWarnUnsupportedFile === 'function') {
+                window.pngmImWarnUnsupportedFile(fileNames[0] || 'attachment');
+              } else if (typeof window.pngmShowToast === 'function') {
+                window.pngmShowToast('<?php echo osc_esc_js(__('File type not supported', 'epsilon')); ?>', true);
+              }
+            } else if (typeof window.pngmShowToast === 'function') {
+              window.pngmShowToast('<?php echo osc_esc_js(__('Message could not be sent', 'epsilon')); ?>', true);
+            }
           }
         }).fail(function () {
           if ($rows.length) {
@@ -1231,6 +1281,9 @@ function pngm_im_ui_script()
             $rows.find('.pngm-im-uploading, .pngm-im-sending-status').text('<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
             $rows.find('.pngm-im-sending-icon').removeClass('fa-spinner fa-spin').addClass('fa-times');
             markRowTime($rows, '<?php echo osc_esc_js(__('Not sent', 'epsilon')); ?>');
+            if (typeof window.pngmShowToast === 'function') {
+              window.pngmShowToast('<?php echo osc_esc_js(__('Message could not be sent', 'epsilon')); ?>', true);
+            }
           }
         }).always(function () {
           sending = false;
