@@ -1617,6 +1617,13 @@ button.pngm-notif-card {
   gap: 8px;
 }
 
+/* .pngm-ua-btn { display: inline-flex } beats the default [hidden] style. */
+.pngm-notif-push-actions .pngm-ua-btn[hidden],
+#pngm-notif-push-enable[hidden],
+.pngm-notif-push-actions.is-push-on > #pngm-notif-push-enable {
+  display: none !important;
+}
+
 .pngm-notif-push-enabled {
   display: flex;
   flex-wrap: wrap;
@@ -1904,6 +1911,17 @@ button.pngm-notif-card {
   }
 
   .pngm-notif-save {
+    width: 100%;
+  }
+
+  .pngm-notif-push-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #pngm-notif-push-enable,
+  .pngm-notif-push-enabled,
+  .pngm-notif-push-enabled .pngm-ua-btn {
     width: 100%;
   }
 

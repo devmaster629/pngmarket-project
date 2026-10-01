@@ -11,7 +11,7 @@
         "minimal-ui"
     ],
     "orientation": "any",
-    "theme_color": "#059669",
+    "theme_color": "#006b24",
     "background_color": "#ffffff",
     "lang": "en",
     "dir": "ltr",
@@ -29,7 +29,7 @@
             "purpose": "any"
         },
         {
-            "src": "/pwa/icon-512.png",
+            "src": "/pwa/icon-512-maskable.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

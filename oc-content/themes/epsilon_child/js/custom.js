@@ -4665,6 +4665,44 @@
 
     if (!enableBtn) return;
 
+    function isIosDevice() {
+      var ua = navigator.userAgent || '';
+      if (/iPad|iPhone|iPod/i.test(ua)) return true;
+      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    }
+
+    function isStandaloneApp() {
+      try {
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+        if (navigator.standalone === true) return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function askNotificationPermission() {
+      return new Promise(function (resolve, reject) {
+        var settled = false;
+        function done(perm) {
+          if (settled) return;
+          settled = true;
+          resolve(perm || 'default');
+        }
+        try {
+          var pending = Notification.requestPermission();
+          if (pending && typeof pending.then === 'function') {
+            pending.then(done, reject);
+            return;
+          }
+        } catch (err) {}
+        try {
+          Notification.requestPermission(done);
+        } catch (err2) {
+          reject(err2);
+        }
+      });
+    }
+
     function urlBase64ToUint8Array(base64String) {
       var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
       var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -4703,19 +4741,26 @@
         setError('Blocked in browser settings');
         return;
       }
+      if (isIosDevice() && !isStandaloneApp()) {
+        setError('Add PNGMarket to your Home Screen, then open it from that icon');
+        return;
+      }
 
-      setBusy(true, 'Enabling…');
       enableBtn.classList.remove('is-error');
 
       var permPromise = Notification.permission === 'granted'
         ? Promise.resolve('granted')
-        : Notification.requestPermission();
+        : askNotificationPermission();
+
+      setBusy(true, 'Enabling…');
 
       permPromise.then(function (perm) {
         if (perm !== 'granted') {
-          throw new Error('denied');
+          throw new Error(perm === 'denied' ? 'denied' : 'noprompt');
         }
-        return navigator.serviceWorker.register(swUrl, { scope: '/' });
+        return navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function () {
+          return navigator.serviceWorker.ready;
+        });
       }).then(function (reg) {
         return reg.pushManager.getSubscription().then(function (existing) {
           if (existing) return existing;
@@ -4743,8 +4788,13 @@
         setBusy(true, 'Enabled');
         window.location.href = activityUrl || window.location.href;
       }).catch(function (err) {
-        if (err && err.message === 'denied') {
+        var msg = err && err.message ? err.message : '';
+        if (msg === 'denied') {
           setError('Permission denied');
+          return;
+        }
+        if (msg === 'noprompt') {
+          setError('Allow notifications in the address-bar lock icon');
           return;
         }
         setError('Could not enable notifications');

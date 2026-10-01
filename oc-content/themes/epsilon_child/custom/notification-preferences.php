@@ -250,6 +250,9 @@ $section_num = 0;
     blocked: <?php echo json_encode(__('Notifications are blocked. Allow them in your browser site settings, then reload.', 'epsilon')); ?>,
     enableCta: <?php echo json_encode(__('Enable push notifications', 'epsilon')); ?>,
     hintAsk: <?php echo json_encode(__('Click “Enable push notifications” to open the browser permission prompt.', 'epsilon')); ?>,
+    hintIosInstall: <?php echo json_encode(__('On iPhone and iPad, push alerts work only from the Home Screen app. In Safari tap Share, then Add to Home Screen. Open PNGMarket from that icon and tap Enable again.', 'epsilon')); ?>,
+    hintNoPrompt: <?php echo json_encode(__('Your browser did not show a permission prompt. Allow notifications for this site from the address-bar lock icon, then try again.', 'epsilon')); ?>,
+    hintSwWait: <?php echo json_encode(__('This device is still starting notifications. Tap Enable push notifications again.', 'epsilon')); ?>,
     hintNeedHttps: <?php echo json_encode(__('Web Push needs HTTPS (or localhost). Open the site over a secure URL to finish setup.', 'epsilon')); ?>,
     hintSubscribing: <?php echo json_encode(__('Subscribing this device…', 'epsilon')); ?>,
     hintSubscribeFail: <?php echo json_encode(__('Could not subscribe this device for push. Try again or check browser settings.', 'epsilon')); ?>,
@@ -282,8 +285,71 @@ $section_num = 0;
   }
 
   function setEnabledUi(isOn) {
-    if (enableBtn) enableBtn.hidden = !!isOn;
+    var actions = root.querySelector('.pngm-notif-push-actions');
+    if (actions) actions.classList.toggle('is-push-on', !!isOn);
+    if (enableBtn) {
+      enableBtn.hidden = !!isOn;
+      enableBtn.style.display = isOn ? 'none' : '';
+    }
     if (enabledWrap) enabledWrap.hidden = !isOn;
+  }
+
+  function isIosDevice() {
+    var ua = navigator.userAgent || '';
+    if (/iPad|iPhone|iPod/i.test(ua)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  function isStandaloneApp() {
+    try {
+      if (window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+      if (window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+      if (navigator.standalone === true) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function iosNeedsHomeScreen() {
+    return isIosDevice() && !isStandaloneApp();
+  }
+
+  function askNotificationPermission() {
+    return new Promise(function (resolve, reject) {
+      if (typeof Notification === 'undefined' || typeof Notification.requestPermission !== 'function') {
+        reject(new Error('unsupported'));
+        return;
+      }
+      var settled = false;
+      function done(perm) {
+        if (settled) return;
+        settled = true;
+        resolve(perm || 'default');
+      }
+      try {
+        var pending = Notification.requestPermission();
+        if (pending && typeof pending.then === 'function') {
+          pending.then(done, reject);
+          return;
+        }
+      } catch (err) {}
+      try {
+        Notification.requestPermission(done);
+      } catch (err2) {
+        reject(err2);
+      }
+    });
+  }
+
+  function ensureSwReady() {
+    if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+    return navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {
+      return null;
+    }).then(function () {
+      return navigator.serviceWorker.ready;
+    }).catch(function () {
+      return navigator.serviceWorker.getRegistration('/').catch(function () { return null; });
+    });
   }
 
   function setEnableLabel(htmlIconClass, label) {
@@ -421,7 +487,11 @@ $section_num = 0;
       }
     } else {
       setText(elPerm, L.default, 'is-warn');
-      setHint(L.hintAsk);
+      if (iosNeedsHomeScreen()) {
+        setHint(L.hintIosInstall);
+      } else if (!elHint || !elHint.textContent || elHint.textContent === L.hintAsk || elHint.textContent === L.hintSubscribing) {
+        setHint(L.hintAsk);
+      }
       setEnabledUi(false);
       if (enableBtn) {
         enableBtn.disabled = false;
@@ -448,7 +518,7 @@ $section_num = 0;
             enableBtn.disabled = false;
             setEnableLabel('fas fa-bell', L.enableCta);
           }
-          if (!elHint || !elHint.textContent) setHint(L.hintAsk);
+          if (!elHint || !elHint.textContent) setHint(iosNeedsHomeScreen() ? L.hintIosInstall : L.hintAsk);
         }
       });
     }).catch(function () {
@@ -480,32 +550,56 @@ $section_num = 0;
 
   if (enableBtn) {
     enableBtn.addEventListener('click', function () {
-      if (!('Notification' in window) || !('PushManager' in window)) {
+      if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
         setHint(L.unsupported);
+        return;
+      }
+      if (iosNeedsHomeScreen()) {
+        setHint(L.hintIosInstall);
         return;
       }
       if (!vapidKey) {
         setHint(L.hintSubscribeFail);
         return;
       }
-      enableBtn.disabled = true;
-      setHint(L.hintSubscribing);
+      if (Notification.permission === 'denied') {
+        setHint(L.blocked);
+        refreshPushStatus();
+        return;
+      }
+      // Ask in this tap, before disabling the button. Mobile browsers drop the
+      // permission prompt if the control loses the user gesture first.
       var permPromise = Notification.permission === 'granted'
         ? Promise.resolve('granted')
-        : Notification.requestPermission();
+        : askNotificationPermission();
+      enableBtn.disabled = true;
+      setHint(L.hintSubscribing);
       permPromise.then(function (perm) {
-        if (perm !== 'granted') {
+        if (perm === 'denied') {
           refreshPushStatus();
           return null;
         }
-        return registerSw().then(function (reg) {
-          if (!reg) throw new Error('no_sw');
+        if (perm !== 'granted') {
+          setHint(L.hintNoPrompt);
+          refreshPushStatus();
+          return null;
+        }
+        return ensureSwReady().then(function (reg) {
+          if (!reg || !reg.pushManager) throw new Error('no_sw');
           return subscribePush(reg);
         }).then(function () {
+          setHint('');
           refreshPushStatus();
         });
-      }).catch(function () {
-        setHint(L.hintSubscribeFail);
+      }).catch(function (err) {
+        var name = err && (err.name || err.message) ? (err.name || err.message) : '';
+        if (name === 'NotAllowedError' && iosNeedsHomeScreen()) {
+          setHint(L.hintIosInstall);
+        } else if (name === 'InvalidStateError' || name === 'AbortError' || name === 'no_sw') {
+          setHint(L.hintSwWait);
+        } else {
+          setHint(L.hintSubscribeFail);
+        }
         refreshPushStatus();
       });
     });
