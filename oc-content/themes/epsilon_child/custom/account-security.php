@@ -456,7 +456,7 @@ if ($show_pass && $show_email) {
 
     <div class="pngm-sec-col">
       <section class="pngm-sec-card" id="pngm-sec-sessions">
-        <h2><span>5.</span> <?php _e('Active sessions', 'epsilon'); ?></h2>
+        <h2><span>4.</span> <?php _e('Active sessions', 'epsilon'); ?></h2>
         <ul class="pngm-sec-list">
           <?php foreach ($sessions as $s) {
               if (!is_array($s)) {
@@ -495,75 +495,12 @@ if ($show_pass && $show_email) {
       </section>
 
       <?php
-        $pngm_limits = function_exists('pngm_antispam_public_status') ? pngm_antispam_public_status() : null;
-        if (is_array($pngm_limits)) {
-          $reg = $pngm_limits['registration'];
-          $post = $pngm_limits['posting'];
-          $msg = $pngm_limits['messaging'];
-      ?>
-      <section class="pngm-sec-card" id="pngm-sec-rate-limits">
-        <div class="pngm-sec-card-top">
-          <h2><?php _e('Rate limits & abuse protection', 'epsilon'); ?></h2>
-          <span class="pngm-sec-badge is-ok"><?php _e('Active', 'epsilon'); ?></span>
-        </div>
-        <p class="pngm-sec-help"><?php _e('These protections run on registration, listing publish, and messaging.', 'epsilon'); ?></p>
-
-        <div class="pngm-sec-limits">
-          <article class="pngm-sec-limit<?php echo !empty($reg['active']) ? ' is-on' : ''; ?>">
-            <span class="pngm-sec-limit-ico" aria-hidden="true"><i class="fas fa-user-plus"></i></span>
-            <div class="pngm-sec-limit-body">
-              <div class="pngm-sec-limit-top">
-                <strong><?php _e('Registration', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo (int) $reg['max_per_hour']; ?>/hr</span>
-              </div>
-              <em><?php _e('Per IP address', 'epsilon'); ?><?php echo !empty($reg['captcha']) ? ' · CAPTCHA' : ''; ?></em>
-            </div>
-          </article>
-
-          <article class="pngm-sec-limit<?php echo !empty($post['active']) ? ' is-on' : ''; ?>">
-            <span class="pngm-sec-limit-ico is-post" aria-hidden="true"><i class="fas fa-clipboard-list"></i></span>
-            <div class="pngm-sec-limit-body">
-              <div class="pngm-sec-limit-top">
-                <strong><?php _e('Posting', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo !empty($post['active']) ? ((int) $post['max_per_hour'] . '/hr') : __('Off', 'epsilon'); ?></span>
-              </div>
-              <em><?php echo !empty($post['active'])
-                  ? osc_esc_html(sprintf(
-                      __('Wait %d–%d seconds between listings', 'epsilon'),
-                      (int) $post['items_wait'],
-                      (int) $post['min_seconds']
-                  ))
-                  : osc_esc_html(__('No timing limit between listings', 'epsilon')); ?></em>
-            </div>
-          </article>
-
-          <article class="pngm-sec-limit<?php echo !empty($msg['active']) ? ' is-on' : ''; ?>">
-            <span class="pngm-sec-limit-ico is-msg" aria-hidden="true"><i class="fas fa-comments"></i></span>
-            <div class="pngm-sec-limit-body">
-              <div class="pngm-sec-limit-top">
-                <strong><?php _e('Messaging', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill"><?php echo !empty($msg['active']) ? ((int) $msg['period_hours'] . 'h') : __('Off', 'epsilon'); ?></span>
-              </div>
-              <em><?php echo !empty($msg['active'])
-                  ? osc_esc_html(sprintf(
-                      __('%d messages or %d contacts (new accounts)', 'epsilon'),
-                      (int) $msg['max_messages'],
-                      (int) $msg['max_users']
-                  ))
-                  : osc_esc_html(__('No message or contact rate limit', 'epsilon')); ?></em>
-            </div>
-          </article>
-        </div>
-      </section>
-      <?php } ?>
-
-      <?php
         $pngm_pwa = function_exists('pngm_pwa_public_status') ? pngm_pwa_public_status() : null;
         if (is_array($pngm_pwa)) {
       ?>
       <section class="pngm-sec-card" id="pngm-sec-pwa">
         <div class="pngm-sec-card-top">
-          <h2><?php _e('Add to your phone', 'epsilon'); ?></h2>
+          <h2><span>5.</span> <?php _e('Add PNGMarket to your phone', 'epsilon'); ?></h2>
           <span class="pngm-sec-badge<?php echo !empty($pngm_pwa['standalone_configured']) ? ' is-ok' : ''; ?>" data-pngm-pwa-live>
             <?php echo !empty($pngm_pwa['standalone_configured']) ? __('Ready', 'epsilon') : __('Not ready', 'epsilon'); ?>
           </span>
@@ -582,27 +519,13 @@ if ($show_pass && $show_email) {
             </div>
           </article>
 
-          <article class="pngm-sec-limit">
-            <span class="pngm-sec-limit-ico is-post" aria-hidden="true"><i class="fas fa-desktop"></i></span>
-            <div class="pngm-sec-limit-body">
-              <div class="pngm-sec-limit-top">
-                <strong><?php _e('This session', 'epsilon'); ?></strong>
-                <span class="pngm-sec-limit-pill" data-pngm-display-mode-label>browser</span>
-              </div>
-              <em><?php _e('Shows “standalone” after you open PNGMarket from your home screen.', 'epsilon'); ?></em>
-            </div>
-          </article>
-
           <article class="pngm-sec-limit is-on">
             <span class="pngm-sec-limit-ico is-msg" aria-hidden="true"><i class="fas fa-download"></i></span>
             <div class="pngm-sec-limit-body">
               <div class="pngm-sec-limit-top">
                 <strong><?php _e('How to add', 'epsilon'); ?></strong>
               </div>
-              <em><?php _e('iPhone: Share → Add to Home Screen. Android: browser menu (⋮) → Install app / Add to Home screen.', 'epsilon'); ?></em>
-              <div class="pngm-sec-actions" style="margin-top:10px">
-                <button type="button" class="pngm-ua-btn" data-pngm-pwa-install-btn><?php _e('Add PNGMarket to your phone', 'epsilon'); ?></button>
-              </div>
+              <em class="pngm-sec-add-steps"><?php echo __('iPhone: Share → Add to Home Screen.', 'epsilon'); ?><br><?php echo __('Android: browser menu (⋮) → Install app / Add to Home screen.', 'epsilon'); ?></em>
             </div>
           </article>
         </div>
@@ -610,7 +533,7 @@ if ($show_pass && $show_email) {
       <?php } ?>
 
       <section class="pngm-sec-card" id="pngm-sec-activity">
-        <h2><?php _e('Recent security activity', 'epsilon'); ?></h2>
+        <h2><span>6.</span> <?php _e('Recent security activity', 'epsilon'); ?></h2>
         <?php if (empty($activity)) { ?>
           <p class="pngm-sec-help"><?php _e('No recent security events yet. Password changes and sign-in updates will show up here.', 'epsilon'); ?></p>
         <?php } else { ?>
@@ -646,7 +569,7 @@ if ($show_pass && $show_email) {
       </section>
 
       <section class="pngm-sec-card is-danger" id="pngm-sec-danger">
-        <h2><?php _e('Danger zone', 'epsilon'); ?></h2>
+        <h2><span>7.</span> <?php _e('Danger zone', 'epsilon'); ?></h2>
         <div class="pngm-sec-row">
           <div class="pngm-sec-row-copy">
             <strong><?php _e('Delete account', 'epsilon'); ?></strong>
