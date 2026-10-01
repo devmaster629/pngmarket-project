@@ -221,13 +221,67 @@ $(document).ready(function(){
       renderList();
     };
 
+    function fileAllowed(file) {
+      var input = fileInput();
+      var accept = (input && input.getAttribute('accept')) ? String(input.getAttribute('accept')) : '';
+      if(!accept) {
+        return true;
+      }
+
+      var name = String(file && file.name ? file.name : '');
+      var mime = String(file && file.type ? file.type : '').toLowerCase();
+      var ext = '';
+      var dot = name.lastIndexOf('.');
+      if(dot >= 0) {
+        ext = name.slice(dot + 1).toLowerCase();
+      }
+
+      var parts = accept.split(',');
+      var i;
+      for(i = 0; i < parts.length; i += 1) {
+        var rule = parts[i].replace(/^\s+|\s+$/g, '').toLowerCase();
+        if(!rule) {
+          continue;
+        }
+        if(rule.charAt(0) === '.' && ext && rule === ('.' + ext)) {
+          return true;
+        }
+        if(rule.indexOf('/*') > 0 && mime) {
+          var group = rule.split('/')[0];
+          if(mime.indexOf(group + '/') === 0) {
+            return true;
+          }
+        }
+        if(rule.indexOf('/') > 0 && mime && rule === mime) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function warnUnsupported(fileName) {
+      var msg = 'File type not supported: ' + (fileName || 'attachment');
+      if(typeof window.pngmShowToast === 'function') {
+        window.pngmShowToast(msg, true);
+        return;
+      }
+      try {
+        window.alert(msg);
+      } catch (errAlert) {}
+    }
+
     $('body').off('change.imFiles', '#im-file').on('change.imFiles', '#im-file', function() {
       if(syncing) {
         return;
       }
 
       var added = this.files ? Array.prototype.slice.call(this.files) : [];
+      var rejected = [];
       added.forEach(function(file) {
+        if(!fileAllowed(file)) {
+          rejected.push(file && file.name ? file.name : 'file');
+          return;
+        }
         var exists = pending.some(function(current) {
           return sameFile(current, file);
         });
@@ -239,6 +293,11 @@ $(document).ready(function(){
       syncInput();
       renderList();
       $('#im-message').removeAttr('required').removeClass('error');
+      $('#im-message-form').find('label.error, .error[for="im-file"]').remove();
+      $('#im-error-list').empty().hide();
+      if(rejected.length) {
+        warnUnsupported(rejected[0] + (rejected.length > 1 ? (' (+' + (rejected.length - 1) + ' more)') : ''));
+      }
       if(typeof window.pngmLayoutChat === 'function') {
         window.pngmLayoutChat();
       }

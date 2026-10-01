@@ -587,8 +587,8 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
           <label for="im-file" class="pngm-im-attach-btn im-attachment" id="pngm-im-attach-trigger" title="<?php echo osc_esc_html(__('Upload file', 'instant_messenger')); ?>">
             <i class="fas fa-paperclip" aria-hidden="true"></i>
             <span class="sr-only"><?php _e('Upload file', 'instant_messenger'); ?></span>
+            <input type="file" name="im-file[]" id="im-file" class="im-file pngm-im-file-input" multiple accept="<?php echo osc_esc_html(function_exists('pngm_im_file_accept') ? pngm_im_file_accept() : 'image/*,.pdf,.doc,.docx,.txt,.gif,.png,.jpg,.jpeg,.zip,.mp3,.mp4'); ?>" />
           </label>
-          <input type="file" name="im-file[]" id="im-file" class="im-file pngm-im-file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt,.gif,.png,.jpg,.jpeg" />
         <?php } ?>
 
         <textarea name="im-message" id="im-message" class="im-textarea" rows="1" placeholder="<?php echo osc_esc_js(__('Type your message...', 'instant_messenger')); ?>"></textarea>
