@@ -6998,6 +6998,15 @@
     /* iOS: the page itself is pinned to the visual viewport (see pngm-kb-ios),
        so the shell fills that visible area. Subtracting --pngm-kb again would
        leave a gap under the composer and hide the thread header. */
+    /* The body is pinned, so the root is what Safari paints around it. With
+       no background here Safari tints that area with theme-color (brand
+       green); keep it white so a stray pan can never flash green under the
+       composer. */
+    html.pngm-kb-ios {
+      height: 100%;
+      background: #fff;
+    }
+
     html.pngm-kb-ios body.im-chat-page {
       position: fixed !important;
       left: 0 !important;
@@ -7005,6 +7014,7 @@
       width: 100% !important;
       margin: 0 !important;
       overflow: hidden !important;
+      background: #fff;
     }
 
     html.pngm-kb-ios body.im-chat-page .container.primary {

@@ -1491,6 +1491,93 @@ function pngm_im_ui_script()
         root.style.setProperty('--pngm-vv-h', visible + 'px');
       }
 
+      /**
+       * While the iOS keyboard is up the layout viewport is still full height,
+       * so any drag the page does not consume lets Safari pan the visual
+       * viewport around inside it. That pan slides the pinned body and leaves
+       * Safari's own (theme-colour) canvas showing between the chat and the
+       * keyboard. The transform above can only chase it a frame late.
+       *
+       * Stop the pan at the source instead: swallow touchmove unless the finger
+       * is on a scroller that can still move in that direction (message list,
+       * overgrown textarea). iOS latches a gesture to the scroller it starts
+       * on, so deciding on the first move is enough — the classic
+       * body-scroll-lock approach. Only ever active with pngm-kb-ios.
+       */
+      var kbTouchStartY = null;
+      var kbTouchScroller = null;
+
+      function iosKeyboardFrameActive() {
+        return document.documentElement.classList.contains('pngm-kb-ios');
+      }
+
+      function findTouchScroller(node) {
+        var el = node;
+        var limit = document.body;
+        while (el && el !== limit && el.nodeType === 1) {
+          var cs;
+          try {
+            cs = window.getComputedStyle(el);
+          } catch (errCs) {
+            cs = null;
+          }
+          var oy = cs ? cs.overflowY : '';
+          if ((oy === 'auto' || oy === 'scroll') && (el.scrollHeight - el.clientHeight) > 1) {
+            return el;
+          }
+          el = el.parentNode;
+        }
+        return null;
+      }
+
+      function onKbTouchStart(e) {
+        if (!iosKeyboardFrameActive() || !e.touches || e.touches.length !== 1) {
+          kbTouchStartY = null;
+          kbTouchScroller = null;
+          return;
+        }
+        kbTouchStartY = e.touches[0].clientY;
+        kbTouchScroller = findTouchScroller(e.target);
+      }
+
+      function onKbTouchMove(e) {
+        if (!iosKeyboardFrameActive() || !e.cancelable) {
+          return;
+        }
+        // Two fingers = pinch; letting it through would zoom-pan the pinned page.
+        if (e.touches && e.touches.length > 1) {
+          e.preventDefault();
+          return;
+        }
+        var el = kbTouchScroller;
+        if (!el) {
+          e.preventDefault();
+          return;
+        }
+        var y = (e.touches && e.touches[0]) ? e.touches[0].clientY : kbTouchStartY;
+        var dy = (kbTouchStartY == null) ? 0 : (y - kbTouchStartY);
+        var atTop = el.scrollTop <= 0;
+        var atBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 1);
+        // Finger moving down at the top, or up at the bottom, has nothing left
+        // to scroll and would chain into Safari's viewport pan.
+        if ((dy > 0 && atTop) || (dy < 0 && atBottom)) {
+          e.preventDefault();
+        }
+      }
+
+      function onKbTouchEnd() {
+        kbTouchStartY = null;
+        kbTouchScroller = null;
+      }
+
+      if (!window.pngmImKbTouchGuard) {
+        window.pngmImKbTouchGuard = true;
+        document.addEventListener('touchstart', onKbTouchStart, { passive: true });
+        document.addEventListener('touchmove', onKbTouchMove, { passive: false });
+        document.addEventListener('touchend', onKbTouchEnd, { passive: true });
+        document.addEventListener('touchcancel', onKbTouchEnd, { passive: true });
+      }
+
       function enhanceAttachmentLinks($root) {
         var $scope = ($root && $root.jquery) ? $root : $(document);
         $scope.find('a.im-download').each(function () {
