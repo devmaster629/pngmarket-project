@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v8';
+var PNGM_SW_CACHE = 'pngm-shell-v12';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',

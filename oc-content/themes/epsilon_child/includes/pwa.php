@@ -113,6 +113,24 @@ function pngm_pwa_ensure_icons()
             @copy($src, $dest);
         }
     }
+
+    // iOS looks for /apple-touch-icon.png at the site root when adding to Home Screen.
+    $apple_src = $dir . 'apple-touch-icon.png';
+    if (is_readable($apple_src)) {
+        $root = rtrim(ABS_PATH, '/\\') . DIRECTORY_SEPARATOR;
+        foreach (array('apple-touch-icon.png', 'apple-touch-icon-precomposed.png', 'apple-touch-icon-180x180.png') as $root_name) {
+            $root_dest = $root . $root_name;
+            $need_root = !is_readable($root_dest);
+            if (!$need_root) {
+                $src_m = @filemtime($apple_src);
+                $dst_m = @filemtime($root_dest);
+                $need_root = ($src_m && $dst_m && $src_m > $dst_m);
+            }
+            if ($need_root) {
+                @copy($apple_src, $root_dest);
+            }
+        }
+    }
 }
 
 /**
@@ -263,6 +281,14 @@ function pngm_pwa_head()
     $icon_base = pngm_pwa_root_url();
     $manifest = pngm_pwa_manifest_url();
 
+    $apple = $icon_base . 'apple-touch-icon.png';
+    $apple_file = pngm_pwa_root_dir() . 'apple-touch-icon.png';
+    $ver = defined('PNGM_CHILD_VERSION') ? PNGM_CHILD_VERSION : '1';
+    if (is_readable($apple_file)) {
+        $ver .= '.' . (int) filemtime($apple_file);
+    }
+    $apple .= '?v=' . rawurlencode($ver);
+
     echo '<link rel="manifest" href="' . osc_esc_html($manifest) . '">' . "\n";
     echo '<meta name="theme-color" content="' . osc_esc_html($colors['theme']) . '">' . "\n";
     echo '<meta name="mobile-web-app-capable" content="yes">' . "\n";
@@ -272,8 +298,12 @@ function pngm_pwa_head()
     echo '<meta name="apple-mobile-web-app-capable" content="yes">' . "\n";
     echo '<meta name="apple-mobile-web-app-status-bar-style" content="default">' . "\n";
     echo '<meta name="apple-mobile-web-app-title" content="' . osc_esc_html($name) . '">' . "\n";
-    echo '<link rel="apple-touch-icon" href="' . osc_esc_html($icon_base . 'apple-touch-icon.png') . '">' . "\n";
-    echo '<link rel="apple-touch-icon" sizes="180x180" href="' . osc_esc_html($icon_base . 'apple-touch-icon.png') . '">' . "\n";
+    echo '<link rel="apple-touch-icon" href="' . osc_esc_html($apple) . '">' . "\n";
+    echo '<link rel="apple-touch-icon" sizes="120x120" href="' . osc_esc_html($apple) . '">' . "\n";
+    echo '<link rel="apple-touch-icon" sizes="152x152" href="' . osc_esc_html($apple) . '">' . "\n";
+    echo '<link rel="apple-touch-icon" sizes="167x167" href="' . osc_esc_html($apple) . '">' . "\n";
+    echo '<link rel="apple-touch-icon" sizes="180x180" href="' . osc_esc_html($apple) . '">' . "\n";
+    echo '<link rel="apple-touch-icon-precomposed" href="' . osc_esc_html($apple) . '">' . "\n";
 }
 
 /**
