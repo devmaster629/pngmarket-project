@@ -112,7 +112,7 @@
               </span>
             </label>
 
-            <div class="pngm-auth-push" data-pngm-reg-push
+            <div class="pngm-auth-push" data-pngm-reg-push hidden
               data-sw-url="<?php echo osc_esc_html(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>"
               data-vapid="<?php echo osc_esc_html(function_exists('pngm_webpush_public_key') ? pngm_webpush_public_key() : ''); ?>">
               <button type="button" class="pngm-auth-push-btn" data-pngm-reg-push-btn>
@@ -199,17 +199,18 @@
       var label = wrap ? wrap.querySelector('[data-pngm-reg-push-label]') : null;
       var hint = wrap ? wrap.querySelector('[data-pngm-reg-push-hint]') : null;
       if (btn && wrap) {
-        var swUrl = wrap.getAttribute('data-sw-url') || '/sw.js';
-        if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        var ua = navigator.userAgent || '';
+        var isIos = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var canAsk = !isIos
+          && typeof Notification !== 'undefined'
+          && ('serviceWorker' in navigator)
+          && ('PushManager' in window)
+          && Notification.permission === 'default';
+        if (!canAsk) {
           wrap.hidden = true;
-        } else if (Notification.permission === 'granted') {
-          btn.disabled = true;
-          if (label) label.textContent = <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>;
-          if (hint) hint.textContent = <?php echo json_encode(__('This browser will receive alerts after you create your account.', 'epsilon')); ?>;
-        } else if (Notification.permission === 'denied') {
-          btn.disabled = true;
-          if (hint) hint.textContent = <?php echo json_encode(__('Notifications are blocked in your browser settings.', 'epsilon')); ?>;
         } else {
+          wrap.hidden = false;
+          var swUrl = wrap.getAttribute('data-sw-url') || '/sw.js';
           btn.addEventListener('click', function () {
             var pending = Notification.requestPermission();
             btn.disabled = true;
@@ -221,8 +222,7 @@
                 if (hint) hint.textContent = <?php echo json_encode(__('Allow notifications in the browser prompt to continue.', 'epsilon')); ?>;
                 return;
               }
-              if (label) label.textContent = <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>;
-              if (hint) hint.textContent = <?php echo json_encode(__('This browser will receive alerts after you create your account.', 'epsilon')); ?>;
+              wrap.hidden = true;
               try { window.localStorage.setItem('pngm_push_after_login', '1'); } catch (e) {}
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
