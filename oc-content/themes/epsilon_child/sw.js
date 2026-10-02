@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v6';
+var PNGM_SW_CACHE = 'pngm-shell-v8';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
@@ -131,8 +131,16 @@ self.addEventListener('push', function (event) {
       icon: data.icon,
       badge: './pwa/icon-192.png',
       data: { url: data.url },
+      tag: 'pngm-push-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       renotify: true,
-      tag: 'pngm-push-' + String(data.title || '').slice(0, 32)
+      silent: false,
+      vibrate: [200, 100, 200]
+    }).then(function () {
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+        list.forEach(function (client) {
+          try { client.postMessage({ type: 'pngm-push-sound' }); } catch (e) {}
+        });
+      });
     })
   );
 });

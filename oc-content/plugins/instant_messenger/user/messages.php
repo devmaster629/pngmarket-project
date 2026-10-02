@@ -268,7 +268,7 @@ if (!empty($GLOBALS['pngm_im_fragment_mode'])) {
               ?>
               <div class="im-line im-message-extra im-box-gray">
                 <div class="im-col-10 im-align-left">
-                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($pngm_att_label); ?>">
+                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>"<?php echo (function_exists('pngm_im_is_image_file') && (pngm_im_is_image_file($m['s_file']) || pngm_im_is_image_file($pngm_att_label))) ? ' data-pngm-image="1"' : ''; ?> title="<?php echo osc_esc_html($pngm_att_label); ?>">
                     <i class="fa fa-paperclip" aria-hidden="true"></i>
                     <span class="pngm-im-attach-name"><?php echo osc_esc_html($pngm_att_label); ?></span>
                   </a>
@@ -511,7 +511,7 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
                     $pngm_att_label = __('Attachment', 'instant_messenger');
                   }
                 ?>
-                <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($pngm_att_label); ?>">
+                <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>"<?php echo (function_exists('pngm_im_is_image_file') && (pngm_im_is_image_file($m['s_file']) || pngm_im_is_image_file($pngm_att_label))) ? ' data-pngm-image="1"' : ''; ?> title="<?php echo osc_esc_html($pngm_att_label); ?>">
                   <i class="fa fa-paperclip" aria-hidden="true"></i>
                   <span class="pngm-im-attach-name"><?php echo osc_esc_html($pngm_att_label); ?></span>
                 </a>

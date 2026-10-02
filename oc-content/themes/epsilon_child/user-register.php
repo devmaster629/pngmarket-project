@@ -112,6 +112,16 @@
               </span>
             </label>
 
+            <div class="pngm-auth-push" data-pngm-reg-push
+              data-sw-url="<?php echo osc_esc_html(function_exists('pngm_webpush_sw_url') ? pngm_webpush_sw_url() : (osc_base_url() . 'sw.js')); ?>"
+              data-vapid="<?php echo osc_esc_html(function_exists('pngm_webpush_public_key') ? pngm_webpush_public_key() : ''); ?>">
+              <button type="button" class="pngm-auth-push-btn" data-pngm-reg-push-btn>
+                <i class="fas fa-bell" aria-hidden="true"></i>
+                <span data-pngm-reg-push-label><?php _e('Enable push notifications', 'epsilon'); ?></span>
+              </button>
+              <p class="pngm-auth-push-hint" data-pngm-reg-push-hint><?php _e('Get alerts for messages and listing updates. You can change this later.', 'epsilon'); ?></p>
+            </div>
+
             <button type="submit" class="btn pngm-auth-submit"><?php _e('Create account', 'epsilon'); ?></button>
           </form>
 
@@ -183,6 +193,47 @@
       $pass2.on('blur input', function () {
         mark($(this), $(this).val() !== '' && $(this).val() === $pass.val());
       });
+
+      var wrap = document.querySelector('[data-pngm-reg-push]');
+      var btn = wrap ? wrap.querySelector('[data-pngm-reg-push-btn]') : null;
+      var label = wrap ? wrap.querySelector('[data-pngm-reg-push-label]') : null;
+      var hint = wrap ? wrap.querySelector('[data-pngm-reg-push-hint]') : null;
+      if (btn && wrap) {
+        var swUrl = wrap.getAttribute('data-sw-url') || '/sw.js';
+        if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+          wrap.hidden = true;
+        } else if (Notification.permission === 'granted') {
+          btn.disabled = true;
+          if (label) label.textContent = <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>;
+          if (hint) hint.textContent = <?php echo json_encode(__('This browser will receive alerts after you create your account.', 'epsilon')); ?>;
+        } else if (Notification.permission === 'denied') {
+          btn.disabled = true;
+          if (hint) hint.textContent = <?php echo json_encode(__('Notifications are blocked in your browser settings.', 'epsilon')); ?>;
+        } else {
+          btn.addEventListener('click', function () {
+            var pending = Notification.requestPermission();
+            btn.disabled = true;
+            if (label) label.textContent = <?php echo json_encode(__('Enabling…', 'epsilon')); ?>;
+            Promise.resolve(pending).then(function (perm) {
+              if (perm !== 'granted') {
+                btn.disabled = false;
+                if (label) label.textContent = <?php echo json_encode(__('Enable push notifications', 'epsilon')); ?>;
+                if (hint) hint.textContent = <?php echo json_encode(__('Allow notifications in the browser prompt to continue.', 'epsilon')); ?>;
+                return;
+              }
+              if (label) label.textContent = <?php echo json_encode(__('Notifications enabled', 'epsilon')); ?>;
+              if (hint) hint.textContent = <?php echo json_encode(__('This browser will receive alerts after you create your account.', 'epsilon')); ?>;
+              try { window.localStorage.setItem('pngm_push_after_login', '1'); } catch (e) {}
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
+              }
+            }).catch(function () {
+              btn.disabled = false;
+              if (label) label.textContent = <?php echo json_encode(__('Enable push notifications', 'epsilon')); ?>;
+            });
+          });
+        }
+      }
     });
   })(jQuery);
   </script>

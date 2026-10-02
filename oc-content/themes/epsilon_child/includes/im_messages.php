@@ -160,7 +160,7 @@ $pngm_block_row = (trim((string) $thread_target_email) !== '' && class_exists('M
                       ? pngm_im_file_label((int) $m['pk_i_id'], $m['s_file'])
                       : basename((string) $m['s_file']);
                   ?>
-                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>" target="_blank" title="<?php echo osc_esc_html($att_label); ?>">
+                  <a class="im-download pngm-im-attach" href="<?php echo im_attachment_url($thread['i_thread_id'], $m['s_file']); ?>"<?php echo (function_exists('pngm_im_is_image_file') && (pngm_im_is_image_file($m['s_file']) || pngm_im_is_image_file($att_label))) ? ' data-pngm-image="1"' : ''; ?> title="<?php echo osc_esc_html($att_label); ?>">
                     <i class="fas fa-paperclip" aria-hidden="true"></i>
                     <span class="pngm-im-attach-name"><?php echo osc_esc_html($att_label); ?></span>
                   </a>

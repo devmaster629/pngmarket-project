@@ -74,6 +74,17 @@ function pngm_im_file_label($message_id, $stored_file)
 }
 
 /**
+ * True when a stored IM filename looks like a photo (in-app preview, not a new tab).
+ *
+ * @param string $name
+ * @return bool
+ */
+function pngm_im_is_image_file($name)
+{
+    return (bool) preg_match('/\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)$/i', basename((string) $name));
+}
+
+/**
  * Chat attachments: original allow-list plus any missing media types
  * (AVIF images, Opus audio). Documents like PDF/DOC/TXT stay supported.
  *

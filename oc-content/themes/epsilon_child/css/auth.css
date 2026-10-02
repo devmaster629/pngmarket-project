@@ -459,6 +459,46 @@ body.pngm-auth-v2 .pngm-auth-meta .pngm-auth-check,
   text-decoration: underline;
 }
 
+.pngm-auth-push {
+  margin: 0 0 14px;
+}
+
+.pngm-auth-push-btn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1.5px solid #1b5e20;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b5e20;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pngm-auth-push-btn:hover,
+.pngm-auth-push-btn:focus {
+  background: #e8f5e9;
+}
+
+.pngm-auth-push-btn:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.pngm-auth-push-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7785;
+}
+
 .pngm-auth-link {
   color: #1b5e20 !important;
   font-size: 13px;

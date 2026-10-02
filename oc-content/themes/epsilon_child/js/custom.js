@@ -4415,6 +4415,191 @@
   }
 
   /**
+   * Chat image attachments were plain links, so tapping one left the thread for
+   * the raw file URL — on iOS that view has no close control. Open them in an
+   * overlay with an explicit Close button instead.
+   */
+  function initChatPhotoViewer() {
+    var IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(\?.*)?$/i;
+    var overlay = null;
+    var imgEl = null;
+    var openerFocus = null;
+
+    function isImageLink(link) {
+      if (!link) return false;
+      if (link.getAttribute('data-pngm-image') === '1') return true;
+      var href = link.getAttribute('href') || '';
+      var title = link.getAttribute('title') || '';
+      var name = '';
+      var label = link.querySelector('.pngm-im-attach-name');
+      if (label) name = label.textContent || '';
+      return IMAGE_RE.test(href) || IMAGE_RE.test(title) || IMAGE_RE.test(name);
+    }
+
+    function build() {
+      overlay = document.createElement('div');
+      overlay.className = 'pngm-im-photo-viewer';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.hidden = true;
+      overlay.innerHTML =
+        '<button type="button" class="pngm-im-photo-x" data-close aria-label="Close">' +
+          '<i class="fas fa-times" aria-hidden="true"></i>' +
+        '</button>' +
+        '<div class="pngm-im-photo-stage"><img alt="" /></div>' +
+        '<div class="pngm-im-photo-dock">' +
+          '<button type="button" class="pngm-im-photo-close" data-close>' +
+            '<i class="fas fa-times" aria-hidden="true"></i>' +
+            '<span>Close</span>' +
+          '</button>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      imgEl = overlay.querySelector('img');
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target.closest('[data-close]')) {
+          e.preventDefault();
+          close();
+          return;
+        }
+        if (e.target === overlay || (e.target.closest && e.target.closest('.pngm-im-photo-stage'))) {
+          close();
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (!overlay.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
+          close();
+        }
+      });
+    }
+
+    function open(src, opener) {
+      if (!overlay) {
+        build();
+      }
+      openerFocus = opener || null;
+      imgEl.setAttribute('src', src);
+      overlay.hidden = false;
+      document.body.classList.add('pngm-im-photo-open');
+      var btn = overlay.querySelector('.pngm-im-photo-close');
+      if (btn && btn.focus) {
+        try { btn.focus(); } catch (e) {}
+      }
+    }
+
+    function close() {
+      if (!overlay) {
+        return;
+      }
+      overlay.hidden = true;
+      imgEl.removeAttribute('src');
+      document.body.classList.remove('pngm-im-photo-open');
+      if (openerFocus && openerFocus.focus) {
+        try { openerFocus.focus(); } catch (e) {}
+      }
+      openerFocus = null;
+    }
+
+    function onAttachActivate(e) {
+      var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
+      if (!link) {
+        return;
+      }
+      var href = link.getAttribute('href') || '';
+      if (!href || !isImageLink(link)) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
+      open(href, link);
+    }
+
+    document.addEventListener('click', onAttachActivate, true);
+    document.addEventListener('touchend', function (e) {
+      var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
+      if (!link || !isImageLink(link)) {
+        return;
+      }
+      e.preventDefault();
+      onAttachActivate(e);
+    }, { capture: true, passive: false });
+  }
+
+  var pngmAudioCtx = null;
+  var pngmAudioUnlocked = false;
+
+  /**
+   * Short two-tone chime for new messages. Synthesised so no audio asset ships.
+   * Browsers only allow audio after a user gesture, hence the unlock below.
+   */
+  function pngmPlayNotifyChime() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) {
+        return;
+      }
+      if (!pngmAudioCtx) {
+        pngmAudioCtx = new Ctx();
+      }
+      if (pngmAudioCtx.state === 'suspended') {
+        pngmAudioCtx.resume();
+      }
+      var now = pngmAudioCtx.currentTime;
+      [[880, 0], [1180, 0.14]].forEach(function (pair) {
+        var osc = pngmAudioCtx.createOscillator();
+        var gain = pngmAudioCtx.createGain();
+        var at = now + pair[1];
+        osc.type = 'sine';
+        osc.frequency.value = pair[0];
+        gain.gain.setValueAtTime(0, at);
+        gain.gain.linearRampToValueAtTime(0.22, at + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+        osc.connect(gain);
+        gain.connect(pngmAudioCtx.destination);
+        osc.start(at);
+        osc.stop(at + 0.24);
+      });
+      pngmAudioUnlocked = true;
+    } catch (e) {}
+  }
+  window.pngmPlayNotifyChime = pngmPlayNotifyChime;
+
+  function initNotifyChimeUnlock() {
+    function unlock() {
+      pngmAudioUnlocked = true;
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx && !pngmAudioCtx) {
+          pngmAudioCtx = new Ctx();
+        }
+        if (pngmAudioCtx && pngmAudioCtx.state === 'suspended') {
+          pngmAudioCtx.resume();
+        }
+      } catch (e) {}
+      document.removeEventListener('pointerdown', unlock, true);
+      document.removeEventListener('keydown', unlock, true);
+      document.removeEventListener('touchstart', unlock, true);
+    }
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('keydown', unlock, true);
+    document.addEventListener('touchstart', unlock, true);
+
+    if (navigator.serviceWorker && navigator.serviceWorker.addEventListener) {
+      navigator.serviceWorker.addEventListener('message', function (event) {
+        var data = event && event.data ? event.data : null;
+        if (!data || data.type !== 'pngm-push-sound') {
+          return;
+        }
+        pngmPlayNotifyChime();
+      });
+    }
+  }
+
+  /**
    * Header/sidebar unread badges only reflected the state at page render, so a
    * message arriving while the tab sat open went unnoticed. Poll for the counts
    * and update the badges in place.
@@ -4432,11 +4617,20 @@
     var url = base.replace(/ajaxRequest=1.*/, 'page=ajax&action=runhook&hook=pngm_badge_counts');
     var INTERVAL = document.querySelector('.pngm-im-convo-list') ? 12000 : 30000;
     var timer = null;
+    var lastMessages = null;
 
     function paint(counts) {
       if (!counts) {
         return;
       }
+
+      // Desktop Chrome often shows the push banner without a sound, so chime
+      // here whenever the unread message count goes up while the tab is open.
+      var messages = parseInt(counts.messages, 10) || 0;
+      if (lastMessages !== null && messages > lastMessages) {
+        pngmPlayNotifyChime();
+      }
+      lastMessages = messages;
       $('[data-pngm-badge]').each(function () {
         var key = this.getAttribute('data-pngm-badge');
         if (!Object.prototype.hasOwnProperty.call(counts, key)) {
@@ -4820,6 +5014,8 @@
     initBadgePoller();
     initOwnListingChat();
     initNotifyMenu();
+    initNotifyChimeUnlock();
+    initChatPhotoViewer();
   }
 
   if (document.readyState === 'loading') {

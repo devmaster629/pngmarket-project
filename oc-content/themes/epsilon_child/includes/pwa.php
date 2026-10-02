@@ -520,7 +520,18 @@ function pngm_pwa_register_sw_footer()
     navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(function () {});
     navigator.serviceWorker.addEventListener('message', function (event) {
       var data = event && event.data ? event.data : null;
-      if (!data || data.type !== 'pngm-navigate' || !data.url) {
+      if (!data) {
+        return;
+      }
+      if (data.type === 'pngm-push-sound') {
+        try {
+          if (typeof window.pngmPlayNotifyChime === 'function') {
+            window.pngmPlayNotifyChime();
+          }
+        } catch (e) {}
+        return;
+      }
+      if (data.type !== 'pngm-navigate' || !data.url) {
         return;
       }
       try {
