@@ -277,7 +277,7 @@ function pngm_activity_register_route()
         true,
         'custom',
         'pngm-activity',
-        __('Activity', 'epsilon')
+        __('Notifications', 'epsilon')
     );
 }
 osc_add_hook('init', 'pngm_activity_register_route', 5);

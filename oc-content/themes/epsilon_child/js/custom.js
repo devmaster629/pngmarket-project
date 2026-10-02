@@ -4741,8 +4741,46 @@
     var vapid = wrap.getAttribute('data-vapid') || '';
     var subscribeUrl = wrap.getAttribute('data-subscribe-url') || '';
     var pushReadyCache = null;
+    var enableHead = menu.querySelector('.pngm-notify-menu-head');
+    var a2hsBtn = menu.querySelector('[data-pngm-notify-a2hs]');
 
     var menuHost = null;
+
+    function isIosDevice() {
+      var ua = navigator.userAgent || '';
+      if (/iPad|iPhone|iPod/i.test(ua)) return true;
+      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    }
+
+    function isAndroidDevice() {
+      return /Android/i.test(navigator.userAgent || '');
+    }
+
+    function isStandaloneApp() {
+      try {
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+        if (navigator.standalone === true) return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function syncNotifyExtras() {
+      if (enableHead) {
+        if (pushReadyCache === true) {
+          enableHead.setAttribute('hidden', 'hidden');
+        } else {
+          enableHead.removeAttribute('hidden');
+        }
+      }
+      if (a2hsBtn) {
+        if (isAndroidDevice() && !isStandaloneApp()) {
+          a2hsBtn.removeAttribute('hidden');
+        } else {
+          a2hsBtn.setAttribute('hidden', 'hidden');
+        }
+      }
+    }
 
     function openMenu() {
       menu.hidden = false;
@@ -4808,17 +4846,13 @@
     function refreshPushReady() {
       return checkPushReady().then(function (ready) {
         pushReadyCache = ready;
+        syncNotifyExtras();
         return ready;
       });
     }
 
     refreshPushReady();
-
-    function isIosDevice() {
-      var ua = navigator.userAgent || '';
-      if (/iPad|iPhone|iPod/i.test(ua)) return true;
-      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-    }
+    syncNotifyExtras();
 
     function openActivity() {
       closeMenu();
@@ -4829,9 +4863,22 @@
       e.preventDefault();
       e.stopPropagation();
 
-      // iPhone and iPad never offer browser push, so the bell always opens the list.
-      if (isIosDevice()) {
+      // Installed PWA or iPhone: skip the menu and open Activity.
+      if (isStandaloneApp() || isIosDevice()) {
         openActivity();
+        return;
+      }
+
+      function openOrClose() {
+        syncNotifyExtras();
+        if (isOpen()) closeMenu();
+        else openMenu();
+      }
+
+      // Android: always show the menu so Add to Home Screen is available.
+      if (isAndroidDevice()) {
+        openOrClose();
+        refreshPushReady();
         return;
       }
 
@@ -4840,8 +4887,7 @@
           openActivity();
           return;
         }
-        if (isOpen()) closeMenu();
-        else openMenu();
+        openOrClose();
       }
 
       if (pushReadyCache === true) {
@@ -4853,7 +4899,6 @@
         refreshPushReady();
         return;
       }
-      // First click (cache unknown): resolve, then open or navigate.
       refreshPushReady().then(handle);
     });
 
@@ -4871,16 +4916,13 @@
       if (isOpen()) openMenu();
     });
 
-    if (!enableBtn) return;
-
-    function isStandaloneApp() {
-      try {
-        if (window.matchMedia('(display-mode: standalone)').matches) return true;
-        if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
-        if (navigator.standalone === true) return true;
-      } catch (e) {}
-      return false;
+    if (a2hsBtn) {
+      a2hsBtn.addEventListener('click', function () {
+        closeMenu();
+      });
     }
+
+    if (!enableBtn) return;
 
     function urlBase64ToUint8Array(base64String) {
       var padding = '='.repeat((4 - (base64String.length % 4)) % 4);

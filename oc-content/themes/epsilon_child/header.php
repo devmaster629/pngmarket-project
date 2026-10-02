@@ -57,6 +57,13 @@
                 <span data-pngm-notify-enable-label><?php _e('Enable push notifications', 'epsilon'); ?></span>
               </button>
             </div>
+            <button type="button" class="pngm-notify-a2hs" hidden role="menuitem" data-pngm-notify-a2hs data-pngm-pwa-install-btn>
+              <span class="pngm-notify-a2hs-ico" aria-hidden="true"><i class="fas fa-home"></i></span>
+              <span class="pngm-notify-a2hs-copy">
+                <strong><?php _e('Add to Home Screen', 'epsilon'); ?></strong>
+                <em><?php _e('Install PNGMarket on this phone', 'epsilon'); ?></em>
+              </span>
+            </button>
             <a class="pngm-notify-menu-link" role="menuitem" href="<?php echo osc_esc_html($pngm_prefs_href); ?>">
               <i class="fas fa-cog" aria-hidden="true"></i>
               <span><?php _e('Notification Preferences', 'epsilon'); ?></span>
@@ -64,7 +71,7 @@
             </a>
             <a class="pngm-notify-menu-link" role="menuitem" href="<?php echo osc_esc_html($pngm_notif_href); ?>">
               <i class="fas fa-bell" aria-hidden="true"></i>
-              <span><?php _e('View all notifications', 'epsilon'); ?></span>
+              <span><?php _e('Notifications', 'epsilon'); ?></span>
               <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </a>
           </div>

@@ -44,20 +44,20 @@ $listings_url = function_exists('pngm_ua_items_url') ? pngm_ua_items_url('all') 
 <div class="pngm-activity">
   <div class="pngm-activity-head">
     <div class="pngm-activity-head-text">
-      <h1><?php _e('Activity', 'epsilon'); ?></h1>
+      <h1><?php _e('Notifications', 'epsilon'); ?></h1>
       <p class="pngm-activity-sub">
         <?php
           if ($item_count > 0) {
-              echo osc_esc_html(sprintf(_n('%d update', '%d updates', $item_count, 'epsilon'), $item_count));
+              echo osc_esc_html(sprintf(_n('%d notification', '%d notifications', $item_count, 'epsilon'), $item_count));
           } else {
-              _e('Listing and account updates show up here.', 'epsilon');
+              _e('Listing and account alerts show up here.', 'epsilon');
           }
         ?>
       </p>
     </div>
     <div class="pngm-activity-head-actions">
       <?php if ($item_count > 0) { ?>
-        <form method="post" action="<?php echo osc_esc_html($activity_url); ?>" class="pngm-activity-clear-form" onsubmit="return confirm('<?php echo osc_esc_js(__('Clear all activity?', 'epsilon')); ?>');">
+        <form method="post" action="<?php echo osc_esc_html($activity_url); ?>" class="pngm-activity-clear-form" onsubmit="return confirm('<?php echo osc_esc_js(__('Clear all notifications?', 'epsilon')); ?>');">
           <input type="hidden" name="pngm_activity_action" value="clear" />
           <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
           <button type="submit" class="pngm-activity-clear"><?php _e('Clear all', 'epsilon'); ?></button>
@@ -83,13 +83,18 @@ $listings_url = function_exists('pngm_ua_items_url') ? pngm_ua_items_url('all') 
   <?php if ($item_count < 1) { ?>
     <div class="pngm-activity-empty">
       <span class="pngm-activity-empty-ico" aria-hidden="true"><i class="fas fa-bell"></i></span>
-      <h2><?php _e('No activity yet', 'epsilon'); ?></h2>
+      <h2><?php _e('No notifications yet', 'epsilon'); ?></h2>
       <p><?php _e('Listing approvals, expirations, and account updates will appear here.', 'epsilon'); ?></p>
       <a class="pngm-ua-btn" href="<?php echo osc_esc_html($listings_url); ?>"><?php _e('View my listings', 'epsilon'); ?></a>
     </div>
   <?php } else { ?>
     <ul class="pngm-activity-list">
-      <?php foreach ($items as $row) {
+      <?php
+      $pngm_looks_url = function ($text) {
+          $text = trim((string) $text);
+          return $text !== '' && (preg_match('#^https?://#i', $text) || strpos($text, 'index.php?') !== false);
+      };
+      foreach ($items as $row) {
           $id = isset($row['id']) ? (string) $row['id'] : '';
           $title = isset($row['title']) ? (string) $row['title'] : '';
           $body = isset($row['body']) ? (string) $row['body'] : '';
@@ -101,6 +106,12 @@ $listings_url = function_exists('pngm_ua_items_url') ? pngm_ua_items_url('all') 
           $type_mod = preg_replace('/[^a-z0-9_-]+/i', '-', $type);
           if ($type_mod === '') {
               $type_mod = 'update';
+          }
+          if ($title === '' || $pngm_looks_url($title)) {
+              $title = $label !== '' ? $label : __('Notification', 'epsilon');
+          }
+          if ($pngm_looks_url($body)) {
+              $body = '';
           }
           ?>
         <li class="pngm-activity-card is-<?php echo osc_esc_html($type_mod); ?>">

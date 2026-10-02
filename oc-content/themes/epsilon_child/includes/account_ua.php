@@ -483,7 +483,7 @@ function pngm_ua_render_sidebar($active = '')
     $item(
         'activity',
         function_exists('pngm_activity_url') ? pngm_activity_url() : osc_route_url('pngm-activity'),
-        __('Activity', 'epsilon'),
+        __('Notifications', 'epsilon'),
         'fas fa-bell',
         $count_activity,
         'notifications'
