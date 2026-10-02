@@ -109,6 +109,72 @@ $(document).ready(function(){
   // ATTACHMENTS: keep a file list so users can add several and remove any of them
   (function() {
     var pending = [];
+    var previewModal = null;
+    var previewModalUrl = '';
+
+    function isImageFile(file) {
+      var mime = String(file && file.type ? file.type : '').toLowerCase();
+      if(mime.indexOf('image/') === 0) {
+        return true;
+      }
+      return /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)$/i.test(String(file && file.name ? file.name : ''));
+    }
+
+    function closeAttachPreview() {
+      if(!previewModal) {
+        return;
+      }
+      previewModal.hidden = true;
+      document.body.classList.remove('pngm-im-attach-preview-open');
+      var img = previewModal.querySelector('img');
+      if(img) {
+        img.removeAttribute('src');
+      }
+      if(previewModalUrl) {
+        try { URL.revokeObjectURL(previewModalUrl); } catch (e) {}
+        previewModalUrl = '';
+      }
+    }
+
+    function openAttachPreview(file) {
+      if(!file || !isImageFile(file) || !window.URL || typeof URL.createObjectURL !== 'function') {
+        return;
+      }
+      if(!previewModal) {
+        previewModal = document.createElement('div');
+        previewModal.className = 'pngm-im-attach-preview';
+        previewModal.setAttribute('role', 'dialog');
+        previewModal.setAttribute('aria-modal', 'true');
+        previewModal.hidden = true;
+        previewModal.innerHTML =
+          '<button type="button" class="pngm-im-attach-preview-x" data-close aria-label="Close">&times;</button>' +
+          '<div class="pngm-im-attach-preview-stage"><img alt="" /></div>' +
+          '<div class="pngm-im-attach-preview-dock">' +
+            '<button type="button" class="pngm-im-attach-preview-close" data-close>Close</button>' +
+          '</div>';
+        document.body.appendChild(previewModal);
+        previewModal.addEventListener('click', function(e) {
+          if(e.target.closest('[data-close]') || e.target === previewModal) {
+            e.preventDefault();
+            closeAttachPreview();
+          }
+        });
+        document.addEventListener('keydown', function(e) {
+          if(!previewModal.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
+            closeAttachPreview();
+          }
+        });
+      }
+      closeAttachPreview();
+      previewModalUrl = URL.createObjectURL(file);
+      var img = previewModal.querySelector('img');
+      if(img) {
+        img.src = previewModalUrl;
+        img.alt = file.name || '';
+      }
+      previewModal.hidden = false;
+      document.body.classList.add('pngm-im-attach-preview-open');
+    }
 
     function fileInput() {
       return document.getElementById('im-file');
@@ -166,6 +232,7 @@ $(document).ready(function(){
       if(!pending.length) {
         list.hidden = true;
         list.setAttribute('hidden', 'hidden');
+        closeAttachPreview();
         return;
       }
 
@@ -175,6 +242,12 @@ $(document).ready(function(){
         var chip = document.createElement('span');
         chip.className = 'im-file-chip';
         chip.setAttribute('data-file-index', String(index));
+        if(isImageFile(file)) {
+          chip.classList.add('is-image');
+          chip.setAttribute('role', 'button');
+          chip.setAttribute('tabindex', '0');
+          chip.setAttribute('title', 'Tap to preview');
+        }
 
         var name = document.createElement('em');
         name.textContent = file.name;
@@ -202,6 +275,23 @@ $(document).ready(function(){
           }
         });
         chip.appendChild(remove);
+
+        if(isImageFile(file)) {
+          chip.addEventListener('click', function(e) {
+            if(e.target.closest('.im-file-remove')) {
+              return;
+            }
+            e.preventDefault();
+            openAttachPreview(file);
+          });
+          chip.addEventListener('keydown', function(e) {
+            if(e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 32) {
+              e.preventDefault();
+              openAttachPreview(file);
+            }
+          });
+        }
+
         list.appendChild(chip);
       });
     }
@@ -212,6 +302,7 @@ $(document).ready(function(){
 
     window.imResetComposerFiles = function() {
       pending = [];
+      closeAttachPreview();
       var input = fileInput();
       if(input) {
         try {
