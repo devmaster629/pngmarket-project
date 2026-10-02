@@ -4254,6 +4254,11 @@ body.pngm-im-confirm-open {
   line-height: 1.25;
 }
 
+.pngm-im-chat-role.is-buyer,
+.pngm-im-chat-role.is-seller {
+  display: none !important;
+}
+
 .pngm-im-chat-role {
   display: inline-flex;
   flex-wrap: wrap;
@@ -4512,16 +4517,16 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 }
 
 .pngm-im-listing-card {
-  margin: 0 0 8px !important;
+  margin: 0 0 4px !important;
   padding: 0 !important;
 }
 
 .pngm-im-listing-card-link {
   display: flex !important;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
   background: #f7f9fb;
   border: 1px solid #eef1f4;
   text-decoration: none !important;
@@ -4529,10 +4534,10 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 }
 
 .pngm-im-listing-card-thumb {
-  flex: 0 0 56px;
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   overflow: hidden;
   background: #e8edf2;
 }
@@ -4552,8 +4557,16 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   gap: 2px;
 }
 
+.pngm-im-listing-card-meta .im-item-label {
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
 .pngm-im-listing-card-meta .im-item-title {
   font-weight: 700;
+  font-size: 13px;
+  line-height: 1.25;
   color: #16202a;
   white-space: nowrap;
   overflow: hidden;
@@ -4563,7 +4576,8 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 .pngm-im-listing-card-meta .im-item-price {
   color: #2e7d32;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .pngm-im-convo-body {
