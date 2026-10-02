@@ -323,7 +323,13 @@ function pngm_pwa_register_sw_footer()
     $sw = function_exists('pngm_webpush_sw_url')
         ? pngm_webpush_sw_url()
         : (rtrim(osc_base_url(), '/') . '/sw.js');
-    $icon = pngm_pwa_root_url() . 'icon-192.png';
+    $icon_file = pngm_pwa_root_dir() . 'apple-touch-icon.png';
+    $icon_ver = defined('PNGM_CHILD_VERSION') ? PNGM_CHILD_VERSION : '1';
+    if (is_readable($icon_file)) {
+        $icon = pngm_pwa_root_url() . 'apple-touch-icon.png?v=' . (int) filemtime($icon_file) . '-' . $icon_ver;
+    } else {
+        $icon = pngm_pwa_root_url() . 'icon-192.png?v=' . $icon_ver;
+    }
     $name = function_exists('osc_page_title') ? trim((string) osc_page_title()) : 'PNGMarket';
     if ($name === '') {
         $name = 'PNGMarket';
@@ -334,32 +340,36 @@ function pngm_pwa_register_sw_footer()
         $brand = 'PNGMarket';
     }
     $L = array(
-        'title' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
-        'body' => __('Open it like an app from your home screen — faster, and full screen.', 'epsilon'),
+        'title' => sprintf(__('Add %s to your Home Screen', 'epsilon'), $brand),
+        'body' => __('Open it like an app — faster and full screen.', 'epsilon'),
         'install' => __('Add to phone', 'epsilon'),
-        'iosTitle' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
-        'iosBody' => __('iPhone: tap the Share button, then “Add to Home Screen”, then Add.', 'epsilon'),
-        'iosSteps' => __('1) Tap Share (□↑) at the bottom of Safari\n2) Scroll and tap “Add to Home Screen”\n3) Tap Add', 'epsilon'),
-        'androidTitle' => sprintf(__('Add %s to your phone', 'epsilon'), $brand),
-        'androidBody' => __('Android: tap Add to phone, or open the browser menu (⋮) and choose “Install app” / “Add to Home screen”.', 'epsilon'),
-        'androidGuide' => __('Android: tap the browser menu (⋮), then “Install app” or “Add to Home screen”. Open PNGMarket from your home screen afterward.', 'epsilon'),
-        'androidSteps' => __('1) Tap the menu (⋮) in Chrome\n2) Tap “Install app” or “Add to Home screen”\n3) Confirm, then open it from your home screen', 'epsilon'),
+        'iosTitle' => sprintf(__('Add %s to your Home Screen', 'epsilon'), $brand),
+        'iosStep1' => __('Tap Share in Safari', 'epsilon'),
+        'iosStep2' => __('Tap Add to Home Screen', 'epsilon'),
+        'iosStep3' => __('Tap Add', 'epsilon'),
+        'androidTitle' => sprintf(__('Add %s to your Home Screen', 'epsilon'), $brand),
+        'androidStep1' => __('Tap the Chrome menu', 'epsilon'),
+        'androidStep2' => __('Tap Install app', 'epsilon'),
+        'androidStep3' => __('Tap Install', 'epsilon'),
         'gotIt' => __('Got it', 'epsilon'),
         'dismiss' => __('Not now', 'epsilon'),
-        'how' => __('How to add', 'epsilon'),
+        'later' => __('Not now', 'epsilon'),
     );
     ?>
 <div id="pngm-pwa-install" class="pngm-pwa-install" hidden data-pngm-pwa-install>
   <div class="pngm-pwa-install-inner">
-    <img class="pngm-pwa-install-icon" src="<?php echo osc_esc_html($icon); ?>" width="48" height="48" alt="" />
-    <div class="pngm-pwa-install-copy">
-      <strong data-pngm-pwa-title><?php echo osc_esc_html($L['title']); ?></strong>
-      <em data-pngm-pwa-body><?php echo osc_esc_html($L['body']); ?></em>
-      <ol class="pngm-pwa-install-steps" data-pngm-pwa-steps hidden></ol>
+    <button type="button" class="pngm-pwa-install-dismiss" data-pngm-pwa-dismiss aria-label="<?php echo osc_esc_html($L['dismiss']); ?>">&times;</button>
+    <div class="pngm-pwa-install-top">
+      <img class="pngm-pwa-install-icon" src="<?php echo osc_esc_html($icon); ?>" width="48" height="48" alt="" />
+      <div class="pngm-pwa-install-copy">
+        <strong data-pngm-pwa-title><?php echo osc_esc_html($L['title']); ?></strong>
+        <em data-pngm-pwa-body><?php echo osc_esc_html($L['body']); ?></em>
+      </div>
     </div>
+    <ol class="pngm-pwa-install-steps" data-pngm-pwa-steps hidden></ol>
     <div class="pngm-pwa-install-actions">
       <button type="button" class="pngm-pwa-install-btn" data-pngm-pwa-primary><?php echo osc_esc_html($L['install']); ?></button>
-      <button type="button" class="pngm-pwa-install-dismiss" data-pngm-pwa-dismiss aria-label="<?php echo osc_esc_html($L['dismiss']); ?>">&times;</button>
+      <button type="button" class="pngm-pwa-install-later" data-pngm-pwa-later><?php echo osc_esc_html($L['later']); ?></button>
     </div>
   </div>
 </div>
@@ -370,7 +380,9 @@ function pngm_pwa_register_sw_footer()
   var loggedIn = <?php echo (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) ? 'true' : 'false'; ?>;
   var deferredPrompt = null;
   var banner = document.querySelector('[data-pngm-pwa-install]');
-  var storageKey = 'pngm_home_add_dismissed_v2';
+  var storageKey = 'pngm_home_add_dismissed_v5';
+  var SHOW_AFTER_MS =5000;
+  var autoShown = false;
 
   function detectDisplayMode() {
     var mode = 'browser';
@@ -400,11 +412,15 @@ function pngm_pwa_register_sw_footer()
     return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   }
 
-  function isMobileish() {
+  function isPhone() {
+    var ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) return true;
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
     try {
-      return window.matchMedia('(max-width: 900px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      return window.matchMedia('(max-width: 767px)').matches;
     } catch (e) {
-      return true;
+      return false;
     }
   }
 
@@ -422,61 +438,124 @@ function pngm_pwa_register_sw_footer()
     try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
   }
 
-  function fillSteps(text) {
+  function stepIcon(name) {
+    if (name === 'share') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M16.4 9.4h2.3c1.2 0 2.3 1 2.3 2.3v8c0 1.3-1.1 2.3-2.3 2.3H5.3A2.3 2.3 0 0 1 3 19.7v-8c0-1.3 1-2.3 2.3-2.3h2.3v1.8H5.3c-.3 0-.5.2-.5.5v8c0 .3.2.5.5.5h13.4c.3 0 .5-.2.5-.5v-8c0-.3-.2-.5-.5-.5h-2.3V9.4z"/><path fill="currentColor" d="M12 2.1l4.5 4.5-1.3 1.3-2.3-2.2v9.4h-1.8V5.7L8.8 7.9 7.5 6.6 12 2.1z"/></svg>';
+    }
+    if (name === 'plus') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7 3.5h10A3.5 3.5 0 0 1 20.5 7v10a3.5 3.5 0 0 1-3.5 3.5H7A3.5 3.5 0 0 1 3.5 17V7A3.5 3.5 0 0 1 7 3.5zm0 1.8A1.7 1.7 0 0 0 5.3 7v10c0 .94.76 1.7 1.7 1.7h10c.94 0 1.7-.76 1.7-1.7V7c0-.94-.76-1.7-1.7-1.7H7z"/><path fill="currentColor" d="M11.1 7.6h1.8v8.8h-1.8z"/><path fill="currentColor" d="M7.6 11.1h8.8v1.8H7.6z"/></svg>';
+    }
+    if (name === 'menu') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle fill="currentColor" cx="12" cy="5.2" r="2.1"/><circle fill="currentColor" cx="12" cy="12" r="2.1"/><circle fill="currentColor" cx="12" cy="18.8" r="2.1"/></svg>';
+    }
+    if (name === 'download') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M11.1 3.5h1.8v9.2l3.2-3.2 1.3 1.3-5.5 5.5-5.5-5.5 1.3-1.3 3.4 3.2V3.5z"/><path fill="currentColor" d="M4.5 18.2h15v1.8h-15z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9.1 16.7L4.6 12.2l1.5-1.5 3 3 8.7-8.7 1.5 1.5-10.2 10.2z"/></svg>';
+  }
+
+  function fillVisualSteps(items) {
     var list = banner ? banner.querySelector('[data-pngm-pwa-steps]') : null;
     if (!list) return;
     list.innerHTML = '';
-    var lines = String(text || '').split(/\n+/);
     var i;
-    for (i = 0; i < lines.length; i += 1) {
-      var line = lines[i].replace(/^\s+|\s+$/g, '');
-      if (!line) continue;
-      // Strip leading "1) " numbering — <ol> adds numbers.
-      line = line.replace(/^\d+\)\s*/, '');
+    for (i = 0; i < items.length; i += 1) {
+      var item = items[i];
+      if (!item || !item.text) continue;
       var li = document.createElement('li');
-      li.textContent = line;
+      li.className = 'pngm-pwa-step pngm-pwa-step--' + (item.icon || 'check');
+      li.innerHTML = '<span class="pngm-pwa-step-num">' + (i + 1) + '</span>'
+        + '<span class="pngm-pwa-step-ico">' + stepIcon(item.icon) + '</span>'
+        + '<span class="pngm-pwa-step-text"></span>';
+      li.querySelector('.pngm-pwa-step-text').textContent = item.text;
       list.appendChild(li);
     }
     list.hidden = list.children.length === 0;
   }
 
-  function showBanner(mode, force) {
+  function fillBannerCopy() {
     if (!banner) return;
-    // Signed-in phones get the one-time intro modal instead of this banner.
-    if (!force && loggedIn && (isIos() || /Android/i.test(navigator.userAgent || ''))) return;
-    if (!force && (!isMobileish() || wasDismissed())) return;
-    if (mode === 'standalone') return;
     var title = banner.querySelector('[data-pngm-pwa-title]');
     var body = banner.querySelector('[data-pngm-pwa-body]');
     var primary = banner.querySelector('[data-pngm-pwa-primary]');
+    if (body) body.hidden = true;
     if (isIos()) {
       if (title) title.textContent = L.iosTitle || L.title;
-      if (body) body.textContent = L.iosBody;
-      fillSteps(L.iosSteps || '');
+      fillVisualSteps([
+        { icon: 'share', text: L.iosStep1 },
+        { icon: 'plus', text: L.iosStep2 },
+        { icon: 'check', text: L.iosStep3 }
+      ]);
       if (primary) primary.textContent = L.gotIt;
       banner.setAttribute('data-mode', 'ios');
-    } else if (deferredPrompt) {
-      if (title) title.textContent = L.androidTitle || L.title;
-      if (body) body.textContent = L.body;
-      fillSteps('');
+      return;
+    }
+    if (title) title.textContent = L.androidTitle || L.title;
+    fillVisualSteps([
+      { icon: 'menu', text: L.androidStep1 },
+      { icon: 'download', text: L.androidStep2 },
+      { icon: 'check', text: L.androidStep3 }
+    ]);
+    if (deferredPrompt) {
       if (primary) primary.textContent = L.install;
       banner.setAttribute('data-mode', 'android');
     } else {
-      if (title) title.textContent = L.androidTitle || L.title;
-      if (body) body.textContent = L.androidGuide || L.androidBody || L.body;
-      fillSteps(L.androidSteps || '');
       if (primary) primary.textContent = L.gotIt;
       banner.setAttribute('data-mode', 'guide');
     }
+  }
+
+  function alreadyInstalled() {
+    var mode = detectDisplayMode();
+    return mode === 'standalone' || mode === 'fullscreen';
+  }
+
+  function phoneIntroOpen() {
+    var intro = document.getElementById('pngm-phone-intro');
+    return !!(intro && !intro.hidden);
+  }
+
+  function isChatPage() {
+    return !!(document.body && document.body.classList.contains('im-chat-page'));
+  }
+
+  function canAutoShow() {
+    if (!banner || alreadyInstalled() || wasDismissed() || !isPhone()) {
+      return false;
+    }
+    if (isChatPage()) {
+      return false;
+    }
+    if (phoneIntroOpen()) {
+      return false;
+    }
+    return true;
+  }
+
+  function showBanner(mode, force) {
+    if (!banner) return;
+    if (!isPhone()) return;
+    if (!force && !canAutoShow()) return;
+    if (alreadyInstalled()) return;
+    if (banner.parentNode !== document.body) {
+      document.body.appendChild(banner);
+    }
+    fillBannerCopy();
     banner.hidden = false;
+    banner.removeAttribute('hidden');
+    autoShown = true;
   }
 
   function bindBanner() {
     if (!banner) return;
     var primary = banner.querySelector('[data-pngm-pwa-primary]');
     var dismissBtn = banner.querySelector('[data-pngm-pwa-dismiss]');
+    var laterBtn = banner.querySelector('[data-pngm-pwa-later]');
     if (dismissBtn) {
       dismissBtn.addEventListener('click', dismiss);
+    }
+    if (laterBtn) {
+      laterBtn.addEventListener('click', dismiss);
     }
     if (primary) {
       primary.addEventListener('click', function () {
@@ -517,7 +596,9 @@ function pngm_pwa_register_sw_footer()
     e.preventDefault();
     deferredPrompt = e;
     document.documentElement.setAttribute('data-pngm-pwa-installable', '1');
-    showBanner(detectDisplayMode());
+    if (banner && !banner.hidden) {
+      fillBannerCopy();
+    }
   });
 
   window.addEventListener('appinstalled', function () {
@@ -527,15 +608,22 @@ function pngm_pwa_register_sw_footer()
   });
 
   var mode = detectDisplayMode();
-  bindBanner();
-  // iPhone never gets an install prompt — show short how-to after a beat.
-  if (isIos() && mode !== 'standalone') {
-    window.setTimeout(function () { showBanner(mode); }, 1600);
-  } else if (!isIos() && mode !== 'standalone') {
-    window.setTimeout(function () {
-      if (!deferredPrompt) showBanner(detectDisplayMode());
-    }, 3500);
+  if (banner && banner.parentNode !== document.body) {
+    document.body.appendChild(banner);
   }
+  bindBanner();
+  (function tryAutoShow(delay) {
+    window.setTimeout(function () {
+      if (alreadyInstalled() || wasDismissed() || !isPhone() || isChatPage()) {
+        return;
+      }
+      if (phoneIntroOpen()) {
+        tryAutoShow(2000);
+        return;
+      }
+      showBanner(detectDisplayMode());
+    }, delay);
+  })(SHOW_AFTER_MS);
 
   try {
     var mq = window.matchMedia('(display-mode: standalone)');
@@ -594,7 +682,9 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
         'iosBody' => __('Add to Home Screen to receive notifications and get a better experience.', 'epsilon'),
         'showHow' => __('Show me how', 'epsilon'),
         'gotIt' => __('Got it', 'epsilon'),
-        'iosSteps' => __('Tap the Share button (□↑) in Safari\nTap “Add to Home Screen”\nTap Add, then open PNGMarket from that icon', 'epsilon'),
+        'iosStep1' => __('Tap Share in Safari', 'epsilon'),
+        'iosStep2' => __('Tap Add to Home Screen', 'epsilon'),
+        'iosStep3' => __('Tap Add', 'epsilon'),
         'pushTitle' => __('Enable push notifications', 'epsilon'),
         'pushBody' => __('Get notified when someone messages you or when your listing status changes.', 'epsilon'),
         'enable' => __('Enable notifications', 'epsilon'),
@@ -616,7 +706,7 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
     </div>
     <h2 id="pngm-phone-intro-title"></h2>
     <p data-pngm-intro-body></p>
-    <ol data-pngm-intro-steps hidden></ol>
+    <ol class="pngm-pwa-install-steps pngm-phone-intro-steps" data-pngm-intro-steps hidden></ol>
     <button type="button" class="pngm-phone-intro-go" data-pngm-intro-go>
       <svg class="pngm-phone-intro-btn-ico" data-btn-bell hidden viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7v4.2c0 1.4-.5 2.8-1.3 3.9L2.8 18.4A1 1 0 0 0 3.6 20h16.8a1 1 0 0 0 .8-1.6l-.9-1.3c-.8-1.1-1.3-2.5-1.3-3.9V9a7 7 0 0 0-7-7zm0 20a3 3 0 0 0 2.8-2H9.2A3 3 0 0 0 12 22z"/></svg>
       <span data-pngm-intro-go-label></span>
@@ -675,23 +765,45 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
       el.hidden = el.getAttribute('data-ico') !== name;
     });
   }
-  function fillSteps(text) {
+  function stepIcon(name) {
+    if (name === 'share') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M16.4 9.4h2.3c1.2 0 2.3 1 2.3 2.3v8c0 1.3-1.1 2.3-2.3 2.3H5.3A2.3 2.3 0 0 1 3 19.7v-8c0-1.3 1-2.3 2.3-2.3h2.3v1.8H5.3c-.3 0-.5.2-.5.5v8c0 .3.2.5.5.5h13.4c.3 0 .5-.2.5-.5v-8c0-.3-.2-.5-.5-.5h-2.3V9.4z"/><path fill="currentColor" d="M12 2.1l4.5 4.5-1.3 1.3-2.3-2.2v9.4h-1.8V5.7L8.8 7.9 7.5 6.6 12 2.1z"/></svg>';
+    }
+    if (name === 'plus') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7 3.5h10A3.5 3.5 0 0 1 20.5 7v10a3.5 3.5 0 0 1-3.5 3.5H7A3.5 3.5 0 0 1 3.5 17V7A3.5 3.5 0 0 1 7 3.5zm0 1.8A1.7 1.7 0 0 0 5.3 7v10c0 .94.76 1.7 1.7 1.7h10c.94 0 1.7-.76 1.7-1.7V7c0-.94-.76-1.7-1.7-1.7H7z"/><path fill="currentColor" d="M11.1 7.6h1.8v8.8h-1.8z"/><path fill="currentColor" d="M7.6 11.1h8.8v1.8H7.6z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9.1 16.7L4.6 12.2l1.5-1.5 3 3 8.7-8.7 1.5 1.5-10.2 10.2z"/></svg>';
+  }
+  function fillSteps() {
     if (!stepsEl) return;
+    var items = [
+      { icon: 'share', text: copy.iosStep1 },
+      { icon: 'plus', text: copy.iosStep2 },
+      { icon: 'check', text: copy.iosStep3 }
+    ];
     stepsEl.innerHTML = '';
-    String(text || '').split(/\n+/).forEach(function (line) {
-      line = line.replace(/^\s+|\s+$/g, '').replace(/^\d+\)\s*/, '');
-      if (!line) return;
+    var i;
+    for (i = 0; i < items.length; i += 1) {
+      if (!items[i].text) continue;
       var li = document.createElement('li');
-      li.textContent = line;
+      li.className = 'pngm-pwa-step pngm-pwa-step--' + items[i].icon;
+      li.innerHTML = '<span class="pngm-pwa-step-num">' + (i + 1) + '</span>'
+        + '<span class="pngm-pwa-step-ico">' + stepIcon(items[i].icon) + '</span>'
+        + '<span class="pngm-pwa-step-text"></span>';
+      li.querySelector('.pngm-pwa-step-text').textContent = items[i].text;
       stepsEl.appendChild(li);
-    });
+    }
   }
   function closeIntro() {
     root.hidden = true;
     document.body.classList.remove('pngm-phone-intro-open');
   }
   function openIntro() {
+    if (root.parentNode !== document.body) {
+      document.body.appendChild(root);
+    }
     root.hidden = false;
+    root.removeAttribute('hidden');
     document.body.classList.add('pngm-phone-intro-open');
     mark();
     if (goBtn && goBtn.focus) {
@@ -777,7 +889,7 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
     if (bodyEl) bodyEl.textContent = copy.iosBody;
     if (goLabel) goLabel.textContent = copy.showHow;
     if (btnBell) btnBell.hidden = true;
-    fillSteps(copy.iosSteps);
+    fillSteps();
   } else {
     showIco('bell');
     if (titleEl) titleEl.textContent = copy.pushTitle;
@@ -830,31 +942,59 @@ function pngm_pwa_install_css()
 .pngm-pwa-install[hidden]{display:none!important}
 .pngm-pwa-install{
   position:fixed;left:12px;right:12px;
-  bottom:calc(84px + env(safe-area-inset-bottom,0px));
-  z-index:10060;pointer-events:none
+  bottom:calc(72px + env(safe-area-inset-bottom,0px));
+  z-index:10120;pointer-events:none;
+  animation:pngmPwaBannerIn .35s ease
+}
+@keyframes pngmPwaBannerIn{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
 }
 .pngm-pwa-install-inner{
-  pointer-events:auto;display:flex;align-items:flex-start;gap:12px;
-  padding:14px;border-radius:16px;background:#fff;border:1px solid #e6eaf0;
+  pointer-events:auto;position:relative;display:flex;flex-direction:column;gap:12px;
+  padding:16px 14px 12px;border-radius:18px;background:#fff;border:1px solid #e6eaf0;
   box-shadow:0 12px 32px rgba(22,32,42,.18)
 }
-.pngm-pwa-install-icon{width:48px;height:48px;border-radius:12px;flex:0 0 48px;object-fit:cover;background:#fff}
+.pngm-pwa-install-dismiss{
+  appearance:none;position:absolute;top:6px;right:6px;width:36px;height:36px;
+  border:0;background:transparent;color:#8a94a0;font-size:26px;line-height:1;cursor:pointer
+}
+.pngm-pwa-install-top{display:flex;align-items:center;gap:12px;padding-right:28px}
+.pngm-pwa-install-icon{
+  width:52px;height:52px;border-radius:14px;flex:0 0 52px;object-fit:contain;
+  background:#fff;border:1px solid #eef1f5;box-shadow:0 1px 2px rgba(22,32,42,.06)
+}
 .pngm-pwa-install-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
-.pngm-pwa-install-copy strong{font-size:15px;color:#16202a;line-height:1.3;font-weight:700}
+.pngm-pwa-install-copy strong{font-size:16px;color:#16202a;line-height:1.25;font-weight:800}
 .pngm-pwa-install-copy em{font-style:normal;font-size:13px;color:#5a6570;line-height:1.4}
+.pngm-pwa-install-copy em[hidden]{display:none!important}
 .pngm-pwa-install-steps{
-  margin:6px 0 0;padding:0 0 0 1.15em;color:#3a4550;font-size:12.5px;line-height:1.45
+  list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px
 }
 .pngm-pwa-install-steps[hidden]{display:none!important}
-.pngm-pwa-install-steps li{margin:0 0 3px}
-.pngm-pwa-install-actions{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}
-.pngm-pwa-install-btn{
-  appearance:none;border:0;border-radius:10px;background:#006b24;color:#fff;
-  font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap
+.pngm-pwa-step{
+  display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;
+  background:#f3f7f4;border-radius:12px;color:#16202a
 }
-.pngm-pwa-install-dismiss{
-  appearance:none;border:0;background:transparent;color:#8a94a0;
-  font-size:22px;line-height:1;padding:2px 4px;cursor:pointer
+.pngm-pwa-step-num{
+  flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:#006b24;color:#fff;
+  font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center
+}
+.pngm-pwa-step-ico{
+  flex:0 0 36px;width:36px;height:36px;border-radius:10px;background:#fff;color:#006b24;
+  border:1px solid #d7e8dc;display:inline-flex;align-items:center;justify-content:center
+}
+.pngm-pwa-step--share .pngm-pwa-step-ico{color:#007aff;border-color:#cfe0ff}
+.pngm-pwa-step--menu .pngm-pwa-step-ico{color:#3c4043;border-color:#dadce0}
+.pngm-pwa-step-text{flex:1 1 auto;min-width:0;font-size:14px;font-weight:700;line-height:1.3}
+.pngm-pwa-install-actions{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%}
+.pngm-pwa-install-btn{
+  appearance:none;width:100%;border:0;border-radius:12px;background:#006b24;color:#fff;
+  font-weight:700;font-size:15px;min-height:44px;padding:10px 12px;cursor:pointer
+}
+.pngm-pwa-install-later{
+  appearance:none;width:100%;border:0;background:transparent;color:#5a6570;
+  font-size:14px;font-weight:600;padding:8px;cursor:pointer
 }
 html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
 .pngm-phone-intro[hidden]{display:none!important}
@@ -879,11 +1019,10 @@ html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
   margin:0 0 22px;color:#8b939c;font-size:15px;line-height:1.45
 }
 .pngm-phone-intro-card p[hidden]{display:none!important}
-.pngm-phone-intro-card ol{
-  margin:0 0 18px;padding:0 0 0 1.2em;text-align:left;color:#3a4550;font-size:14px;line-height:1.45
+.pngm-phone-intro-steps{
+  margin:0 0 18px;padding:0;text-align:left
 }
-.pngm-phone-intro-card ol[hidden]{display:none!important}
-.pngm-phone-intro-card ol li{margin:0 0 6px}
+.pngm-phone-intro-steps[hidden]{display:none!important}
 .pngm-phone-intro-go{
   appearance:none;width:100%;min-height:50px;border:0;border-radius:12px;
   background:#129438;color:#fff;font-size:16px;font-weight:700;cursor:pointer;
@@ -897,9 +1036,7 @@ html.pngm-pwa-standalone .pngm-pwa-install{display:none!important}
 }
 .pngm-phone-intro-later[hidden]{display:none!important}
 body.pngm-phone-intro-open{overflow:hidden}
-@media (min-width:901px){
-  .pngm-pwa-install{left:auto;right:20px;bottom:20px;width:400px;max-width:calc(100vw - 40px)}
-}
+
 </style>
     <?php
 }
@@ -908,5 +1045,5 @@ if (function_exists('osc_add_hook')) {
     osc_add_hook('init', 'pngm_pwa_ensure_manifest', 3);
     osc_add_hook('header', 'pngm_pwa_head', 8);
     osc_add_hook('header', 'pngm_pwa_install_css', 9);
-    osc_add_hook('footer', 'pngm_pwa_register_sw_footer', 9);
+    osc_add_hook('footer_after', 'pngm_pwa_register_sw_footer', 9);
 }
