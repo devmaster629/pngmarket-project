@@ -113,7 +113,7 @@
                     $sel = ((string) $cc['dial'] === (string) $phone_parts['dial']) ? ' selected' : '';
                   ?>
                     <option value="<?php echo osc_esc_html($cc['dial']); ?>" data-iso="<?php echo osc_esc_html($cc['iso']); ?>" data-flag="<?php echo osc_esc_html($cc['flag']); ?>"<?php echo $sel; ?>>
-                      <?php echo osc_esc_html($cc['flag'] . ' ' . $cc['iso'] . ' +' . $cc['dial']); ?>
+                      <?php echo osc_esc_html($cc['flag'] . ' +' . $cc['dial']); ?>
                     </option>
                   <?php } ?>
                 </select>
