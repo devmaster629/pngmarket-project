@@ -83,7 +83,7 @@
     gap: 4px;
     overflow: visible;
     position: relative;
-    min-height: 387px;
+    min-height: 350px;
   }
   
   /* Kill parent theme decorative :after background image. */
