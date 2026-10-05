@@ -7,7 +7,17 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.42');
+    define('PNGM_CHILD_VERSION', '2.9.43');
+}
+
+/** Set true in Phase 3 when Business Stores / Companies directory launches. */
+if (!defined('PNGM_FEATURE_COMPANIES_NAV')) {
+    define('PNGM_FEATURE_COMPANIES_NAV', false);
+}
+
+/** Set true when subscription plans and billing are live. */
+if (!defined('PNGM_FEATURE_SUBSCRIPTION_PLANS')) {
+    define('PNGM_FEATURE_SUBSCRIPTION_PLANS', false);
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */

@@ -357,7 +357,7 @@
   <?php } ?>
   
 
-  <?php if(function_exists('bpr_companies_block') && eps_param('company_home') == 1) { ?>
+  <?php if(function_exists('pngm_feature_companies_nav_enabled') && pngm_feature_companies_nav_enabled() && function_exists('bpr_companies_block') && eps_param('company_home') == 1) { ?>
     <?php $sellers = ModelBPR::newInstance()->getSellers(1, -1, -1, 10, '', '', '', 'NEW'); ?>
     
     <?php if(is_array($sellers) && count($sellers) > 0) { ?>

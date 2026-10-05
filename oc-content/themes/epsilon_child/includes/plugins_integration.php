@@ -547,4 +547,21 @@ function pngm_admin_plugins_notice()
     echo '</div>';
 }
 
+/**
+ * Whether public nav should show Companies / business directory links.
+ */
+function pngm_feature_companies_nav_enabled()
+{
+    return defined('PNGM_FEATURE_COMPANIES_NAV') && PNGM_FEATURE_COMPANIES_NAV
+        && function_exists('bpr_companies_url');
+}
+
+/**
+ * Whether account and nav should show PNGMarket subscription plans.
+ */
+function pngm_feature_subscription_plans_enabled()
+{
+    return defined('PNGM_FEATURE_SUBSCRIPTION_PLANS') && PNGM_FEATURE_SUBSCRIPTION_PLANS;
+}
+
 osc_add_hook('admin_page_header', 'pngm_admin_plugins_notice', 9);
