@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.57');
+    define('PNGM_CHILD_VERSION', '2.9.59');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -58,6 +58,55 @@ require_once dirname(__FILE__) . '/includes/subscriptions.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
 require_once dirname(__FILE__) . '/includes/item_detail_templates.php';
 require_once dirname(__FILE__) . '/includes/verification.php';
+
+/**
+ * Site logo URL with a filemtime query so replacing logo.png is visible after deploy
+ * (browsers and CDNs otherwise keep serving the old cached image forever).
+ *
+ * @param bool $image_only
+ * @return string
+ */
+function pngm_logo($image_only = false)
+{
+    if (!function_exists('eps_logo')) {
+        return '';
+    }
+
+    $src = eps_logo(true);
+    if ($src === '' || $src === false) {
+        return $image_only ? '' : '';
+    }
+
+    $path = '';
+    if (class_exists('WebThemes')) {
+        $base = WebThemes::newInstance()->getCurrentThemePath() . 'images/';
+        foreach (array('png', 'jpg', 'jpeg', 'webp', 'gif') as $ext) {
+            $try = $base . 'logo.' . $ext;
+            if (is_readable($try)) {
+                $path = $try;
+                break;
+            }
+        }
+        if ($path === '' && function_exists('eps_param') && (string) eps_param('default_logo') === '1') {
+            $try = $base . 'logo-default.png';
+            if (is_readable($try)) {
+                $path = $try;
+            }
+        }
+    }
+
+    if ($path !== '') {
+        $ver = (string) filemtime($path);
+        $src .= (strpos($src, '?') === false ? '?' : '&') . 'v=' . rawurlencode($ver);
+    }
+
+    if ($image_only === true) {
+        return $src;
+    }
+
+    $alt = function_exists('osc_page_title') ? osc_page_title() : 'PNGMarket';
+    return '<img src="' . osc_esc_html($src) . '" alt="' . osc_esc_html($alt) . '"/>';
+}
 
 /**
  * Total active listings matching a default-location cookie (no result limit).

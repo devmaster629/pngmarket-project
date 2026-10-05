@@ -4415,15 +4415,21 @@
   }
 
   /**
-   * Chat image attachments were plain links, so tapping one left the thread for
-   * the raw file URL — on iOS that view has no close control. Open them in an
-   * overlay with an explicit Close button instead.
+   * Chat photos open in an overlay: pinch / wheel / double-click zoom, and a
+   * stable return to the thread (Back, swipe down, or the browser back gesture).
    */
   function initChatPhotoViewer() {
     var IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(\?.*)?$/i;
     var overlay = null;
     var imgEl = null;
-    var openerFocus = null;
+    var stage = null;
+    var zoom = null;
+    var openState = false;
+    var hist = false;
+    var blockUntil = 0;
+    var scrollY = 0;
+    var threadTop = 0;
+    var threadEl = null;
 
     function isImageLink(link) {
       if (!link) return false;
@@ -4436,72 +4442,184 @@
       return IMAGE_RE.test(href) || IMAGE_RE.test(title) || IMAGE_RE.test(name);
     }
 
+    function threadScroller() {
+      return document.querySelector('body.im-chat-page .im-table.im-messages');
+    }
+
+    function restoreThread() {
+      if (threadEl) {
+        threadEl.scrollTop = threadTop;
+      }
+    }
+
+    function lockThread() {
+      threadEl = threadScroller();
+      threadTop = threadEl ? threadEl.scrollTop : 0;
+      scrollY = window.scrollY || window.pageYOffset || 0;
+      document.body.classList.add('pngm-im-photo-open');
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + scrollY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    }
+
+    function unlockThread() {
+      document.body.classList.remove('pngm-im-photo-open');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+      restoreThread();
+      window.requestAnimationFrame(restoreThread);
+      window.setTimeout(restoreThread, 60);
+      window.setTimeout(restoreThread, 280);
+    }
+
     function build() {
       overlay = document.createElement('div');
       overlay.className = 'pngm-im-photo-viewer';
       overlay.setAttribute('role', 'dialog');
       overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-label', 'Photo');
       overlay.hidden = true;
       overlay.innerHTML =
-        '<button type="button" class="pngm-im-photo-x" data-close aria-label="Close">' +
+        '<button type="button" class="pngm-im-photo-x" data-close aria-label="Back to chat">' +
           '<i class="fas fa-times" aria-hidden="true"></i>' +
         '</button>' +
-        '<div class="pngm-im-photo-stage"><img alt="" /></div>' +
+        '<div class="pngm-im-photo-stage"><img alt="" draggable="false" /></div>' +
+        '<p class="pngm-im-photo-hint">Pinch or scroll to zoom · Swipe down to close</p>' +
         '<div class="pngm-im-photo-dock">' +
           '<button type="button" class="pngm-im-photo-close" data-close>' +
-            '<i class="fas fa-times" aria-hidden="true"></i>' +
-            '<span>Close</span>' +
+            '<i class="fas fa-arrow-left" aria-hidden="true"></i>' +
+            '<span>Back to chat</span>' +
           '</button>' +
         '</div>';
       document.body.appendChild(overlay);
       imgEl = overlay.querySelector('img');
+      stage = overlay.querySelector('.pngm-im-photo-stage');
 
-      overlay.addEventListener('click', function (e) {
-        if (e.target.closest('[data-close]')) {
-          e.preventDefault();
-          close();
-          return;
-        }
-        if (e.target === overlay || (e.target.closest && e.target.closest('.pngm-im-photo-stage'))) {
-          close();
+      if (typeof window.pngmCreatePhotoZoom === 'function') {
+        zoom = window.pngmCreatePhotoZoom(stage, function () {
+          return imgEl;
+        }, {
+          overlay: overlay,
+          swipeClose: true,
+          onClose: function () {
+            close(false);
+          }
+        });
+      }
+
+      imgEl.addEventListener('load', function () {
+        if (openState && zoom && !zoom.isZoomed()) {
+          zoom.reset(false);
         }
       });
 
+      stage.addEventListener('dblclick', function (e) {
+        if (!zoom || typeof zoom.zoomToggle !== 'function') {
+          return;
+        }
+        e.preventDefault();
+        zoom.zoomToggle(e.clientX, e.clientY);
+      });
+
+      overlay.addEventListener('click', function (e) {
+        if (Date.now() < blockUntil) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (e.target.closest && e.target.closest('[data-close]')) {
+          e.preventDefault();
+          e.stopPropagation();
+          close(false);
+        }
+      });
+
+      overlay.addEventListener('touchend', function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest('[data-close]') : null;
+        if (!btn) {
+          return;
+        }
+        e.preventDefault();
+        if (Date.now() < blockUntil) {
+          return;
+        }
+        close(false);
+      }, { passive: false });
+
       document.addEventListener('keydown', function (e) {
-        if (!overlay.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
-          close();
+        if (openState && (e.key === 'Escape' || e.keyCode === 27)) {
+          e.preventDefault();
+          close(false);
+        }
+      });
+
+      window.addEventListener('popstate', function () {
+        if (openState) {
+          close(true);
         }
       });
     }
 
-    function open(src, opener) {
+    function open(src) {
+      if (!src) {
+        return;
+      }
       if (!overlay) {
         build();
       }
-      openerFocus = opener || null;
+      blockUntil = Date.now() + 450;
+      if (zoom) {
+        zoom.reset(false);
+      }
       imgEl.setAttribute('src', src);
+      if (openState) {
+        return;
+      }
       overlay.hidden = false;
-      document.body.classList.add('pngm-im-photo-open');
-      var btn = overlay.querySelector('.pngm-im-photo-close');
-      if (btn && btn.focus) {
-        try { btn.focus(); } catch (e) {}
+      lockThread();
+      openState = true;
+      if (!hist) {
+        hist = true;
+        try {
+          history.pushState({ pngmImPhoto: 1 }, '');
+        } catch (err) {
+          hist = false;
+        }
       }
     }
 
-    function close() {
-      if (!overlay) {
+    function close(fromPop) {
+      if (!overlay || !openState) {
         return;
       }
+      openState = false;
       overlay.hidden = true;
-      imgEl.removeAttribute('src');
-      document.body.classList.remove('pngm-im-photo-open');
-      if (openerFocus && openerFocus.focus) {
-        try { openerFocus.focus(); } catch (e) {}
+      overlay.style.background = '';
+      if (zoom) {
+        zoom.reset(false);
       }
-      openerFocus = null;
+      imgEl.removeAttribute('src');
+      unlockThread();
+      if (hist) {
+        hist = false;
+        if (!fromPop) {
+          try { history.back(); } catch (err) {}
+        }
+      }
     }
 
     function onAttachActivate(e) {
+      if (overlay && overlay.contains(e.target)) {
+        return;
+      }
       var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
       if (!link) {
         return;
@@ -4515,11 +4633,14 @@
       if (typeof e.stopImmediatePropagation === 'function') {
         e.stopImmediatePropagation();
       }
-      open(href, link);
+      open(href);
     }
 
     document.addEventListener('click', onAttachActivate, true);
     document.addEventListener('touchend', function (e) {
+      if (overlay && !overlay.hidden && overlay.contains(e.target)) {
+        return;
+      }
       var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
       if (!link || !isImageLink(link)) {
         return;

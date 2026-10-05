@@ -526,8 +526,24 @@
       }, { passive: false });
     });
 
+    function zoomToggle(clientX, clientY) {
+      if (scale > 1.15) {
+        reset(true);
+        return;
+      }
+      zoomAround(clientX, clientY, 2.7);
+      if (scale < 1.05) {
+        reset(false);
+      } else {
+        clampPan(false);
+        apply(true);
+        notifyZoom();
+      }
+    }
+
     return {
       reset: reset,
+      zoomToggle: zoomToggle,
       isZoomed: function () {
         return scale > 1.05;
       },
@@ -941,4 +957,6 @@
       });
     }, 280);
   };
+
+  window.pngmCreatePhotoZoom = createController;
 })();

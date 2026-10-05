@@ -119,7 +119,13 @@
     <div class="pngm-footer-desktop">
       <div class="pngm-footer-col pngm-footer-brand">
         <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
-          <?php if (function_exists('eps_logo')) { echo eps_logo(); } else { ?>
+          <?php
+            if (function_exists('pngm_logo')) {
+              echo pngm_logo();
+            } elseif (function_exists('eps_logo')) {
+              echo eps_logo();
+            } else {
+          ?>
             <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
           <?php } ?>
         </a>
@@ -168,7 +174,13 @@
     <div class="pngm-footer-mobile">
       <div class="pngm-footer-brand">
         <a href="<?php echo osc_base_url(); ?>" class="pngm-footer-logo">
-          <?php if (function_exists('eps_logo')) { echo eps_logo(); } else { ?>
+          <?php
+            if (function_exists('pngm_logo')) {
+              echo pngm_logo();
+            } elseif (function_exists('eps_logo')) {
+              echo eps_logo();
+            } else {
+          ?>
             <span class="pngm-footer-name"><span class="pngm-footer-name-png">PNG</span><span class="pngm-footer-name-market">Market</span></span>
           <?php } ?>
         </a>

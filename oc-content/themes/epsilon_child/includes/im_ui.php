@@ -1636,6 +1636,11 @@ function pngm_im_ui_script()
       }
 
       function onKbTouchStart(e) {
+        if (e.target && e.target.closest && e.target.closest('.pngm-im-photo-viewer')) {
+          kbTouchStartY = null;
+          kbTouchScroller = null;
+          return;
+        }
         if (!iosKeyboardFrameActive() || !e.touches || e.touches.length !== 1) {
           kbTouchStartY = null;
           kbTouchScroller = null;
@@ -1646,6 +1651,9 @@ function pngm_im_ui_script()
       }
 
       function onKbTouchMove(e) {
+        if (e.target && e.target.closest && e.target.closest('.pngm-im-photo-viewer')) {
+          return;
+        }
         if (!iosKeyboardFrameActive() || !e.cancelable) {
           return;
         }
