@@ -80,6 +80,59 @@
         .trim();
     }
 
+    /** Match title token to a single-word keyword (plurals / knife↔knives). */
+    function tokenMatchesCatKeyword(token, kn) {
+      if (!token || !kn || kn.indexOf(' ') !== -1) {
+        return false;
+      }
+      if (token === kn) {
+        return true;
+      }
+      if (kn.length >= 4 && token.length >= kn.length && token.indexOf(kn) === 0) {
+        return token.length <= kn.length + 3;
+      }
+      var singular = token;
+      if (/ies$/.test(token) && token.length > 4) {
+        singular = token.slice(0, -3) + 'y';
+      } else if (/ves$/.test(token) && token.length > 4) {
+        singular = token.slice(0, -3) + 'f';
+      } else if (/s$/.test(token) && token.length > 3 && !/(ss|us|is|as|os)$/.test(token)) {
+        singular = token.slice(0, -1);
+      }
+      if (singular === kn) {
+        return true;
+      }
+      if (kn + 's' === token || kn + 'es' === token) {
+        return true;
+      }
+      if (kn.length > 2 && kn.charAt(kn.length - 1) === 'y' && kn.slice(0, -1) + 'ies' === token) {
+        return true;
+      }
+      if (kn.length > 2 && kn.charAt(kn.length - 1) === 'f' && kn.slice(0, -1) + 'ves' === token) {
+        return true;
+      }
+      if (kn.length > 3 && kn.slice(-2) === 'fe' && kn.slice(0, -2) + 'ves' === token) {
+        return true;
+      }
+      if (kn.length >= 4 && singular.length >= 4 && kn.indexOf(singular) === 0) {
+        return kn.length <= singular.length + 2;
+      }
+      return false;
+    }
+
+    function titleContainsCatKeyword(raw, tokens, kn) {
+      if (!kn || kn.length < 2) {
+        return false;
+      }
+      if (kn.indexOf(' ') !== -1) {
+        return raw.indexOf(kn) !== -1;
+      }
+      if (tokens.some(function (t) { return tokenMatchesCatKeyword(t, kn); })) {
+        return true;
+      }
+      return new RegExp('(?:^|\\s)' + kn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)').test(raw);
+    }
+
     function buildCatIndex() {
       var index = [];
       var byLeafName = {};
@@ -169,13 +222,7 @@
         if (!kn || kn.length < 2) {
           return;
         }
-        var hit = false;
-        if (kn.indexOf(' ') !== -1) {
-          hit = raw.indexOf(kn) !== -1;
-        } else {
-          hit = tokens.indexOf(kn) !== -1 || new RegExp('(?:^|\\s)' + kn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)').test(raw);
-        }
-        if (!hit) {
+        if (!titleContainsCatKeyword(raw, tokens, kn)) {
           return;
         }
         var target = resolveLeafByName(keywords[kw]);
