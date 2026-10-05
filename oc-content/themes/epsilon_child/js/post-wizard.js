@@ -153,6 +153,32 @@
       $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-active');
     }
 
+    function pngmPostChromeReset() {
+      var root = document.documentElement;
+      root.classList.remove('pngm-post-kb');
+      root.style.removeProperty('--pngm-vv-top');
+      try {
+        if (window.scrollX) {
+          window.scrollTo(0, window.scrollY || window.pageYOffset || 0);
+        }
+      } catch (errScroll) {}
+    }
+
+    function pngmPostChromeSync() {
+      var vv = window.visualViewport;
+      var root = document.documentElement;
+      if (!root.classList.contains('pngm-post-kb') || !vv) {
+        return;
+      }
+      var top = Math.max(0, Math.round(vv.offsetTop || 0));
+      root.style.setProperty('--pngm-vv-top', top + 'px');
+    }
+
+    function pngmPostFieldFocused() {
+      var active = document.activeElement;
+      return !!(active && $form.has(active).length && $(active).is('input, textarea, select'));
+    }
+
     function buildCatIndex() {
       var index = [];
       var byLeafName = {};
@@ -400,6 +426,9 @@
           $titleInput.val(titleText);
           $titleInput.trigger('input');
           lastSuggestKey = normalizeText(titleText);
+          if ($titleInput[0] && $titleInput[0].blur) {
+            $titleInput[0].blur();
+          }
         }
       }
 
@@ -417,6 +446,8 @@
         titleText || null
       );
       hideCategorySuggestDropdown();
+      window.setTimeout(pngmPostChromeReset, 60);
+      window.setTimeout(pngmPostChromeReset, 320);
     }
 
     function usesPostSubcatSheet() {
@@ -2215,6 +2246,26 @@
         closePostSubcatSheet();
       }
     });
+
+    $form.on('focusin', 'input, textarea, select', function () {
+      document.documentElement.classList.add('pngm-post-kb');
+      pngmPostChromeSync();
+    });
+
+    $form.on('focusout', 'input, textarea, select', function () {
+      window.setTimeout(function () {
+        if (pngmPostFieldFocused()) {
+          pngmPostChromeSync();
+          return;
+        }
+        pngmPostChromeReset();
+      }, 80);
+    });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', pngmPostChromeSync);
+      window.visualViewport.addEventListener('scroll', pngmPostChromeSync);
+    }
 
     $form.on('mousedown', '.pngm-post-suggest-chip', function (e) {
       // Keep focus handling from closing the list before click applies.
