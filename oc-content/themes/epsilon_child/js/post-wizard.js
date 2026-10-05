@@ -382,12 +382,27 @@
       }, 120);
     }
 
-    function applyCategorySuggestion(rootId, rootName, leafId, leafName) {
+    function applyCategorySuggestion(rootId, rootName, leafId, leafName, itemName) {
       rootId = parseInt(rootId, 10) || 0;
       leafId = parseInt(leafId, 10) || 0;
       if (!rootId || !leafId) {
         return;
       }
+
+      var titleText = String(itemName || '').trim();
+      if (titleText) {
+        var $titleInput = $form.find('input[name^="title"]').first();
+        if ($titleInput.length) {
+          // Cap to title max length used by the wizard counter.
+          if (titleText.length > 100) {
+            titleText = titleText.slice(0, 100);
+          }
+          $titleInput.val(titleText);
+          $titleInput.trigger('input');
+          lastSuggestKey = normalizeText(titleText);
+        }
+      }
+
       $catId.val(String(leafId));
       setRoot(rootId, rootName, true, false);
       fillSubcats(rootId, leafId);
@@ -396,7 +411,11 @@
       updateSubcatPickedUI(leafName || ($sub.find('option:selected').text() || ''));
       $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected is-active');
       $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + leafId + '"]').addClass('is-selected');
-      updateSummary(rootName, leafName || ($sub.find('option:selected').text() || ''));
+      updateSummary(
+        rootName,
+        leafName || ($sub.find('option:selected').text() || ''),
+        titleText || null
+      );
       hideCategorySuggestDropdown();
     }
 
@@ -2208,7 +2227,8 @@
         $chip.data('root-id'),
         $chip.data('root-name'),
         $chip.data('leaf-id'),
-        $chip.data('leaf-name')
+        $chip.data('leaf-name'),
+        $chip.attr('data-item-name') || $chip.data('item-name') || ''
       );
     });
 
