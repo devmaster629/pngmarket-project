@@ -32,6 +32,9 @@
   $notif_url = function_exists('pngm_notif_prefs_url') ? pngm_notif_prefs_url() : osc_user_alerts_url();
   $public_url = osc_user_public_profile_url(osc_logged_user_id());
   $cancel_url = osc_user_dashboard_url();
+  $pngm_profile_photo_uppy = osc_profile_img_users_enabled()
+    && function_exists('osc_profile_picture_library')
+    && osc_profile_picture_library() === 'UPPY';
 ?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" dir="<?php echo eps_language_dir(); ?>" lang="<?php echo str_replace('_', '-', osc_current_user_locale()); ?>">
@@ -67,20 +70,25 @@
         <input type="hidden" name="action" value="profile_post" />
 
         <?php if (osc_profile_img_users_enabled()) { ?>
-          <div class="pngm-profile-photo">
-            <button type="button" class="pngm-profile-avatar" id="pngm-profile-avatar-btn" aria-label="<?php echo osc_esc_html(__('Change photo', 'epsilon')); ?>">
+          <div class="pngm-profile-photo" data-pngm-photo-uppy="<?php echo $pngm_profile_photo_uppy ? '1' : '0'; ?>">
+            <div class="pngm-profile-avatar" id="pngm-profile-avatar-btn" role="button" tabindex="0" aria-label="<?php echo osc_esc_html(__('Change photo', 'epsilon')); ?>">
               <span class="user-img">
                 <span class="img-preview">
                   <img src="<?php echo osc_user_profile_img_url(osc_logged_user_id()); ?>" alt="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
                 </span>
               </span>
               <span class="pngm-profile-avatar-cam" aria-hidden="true"><i class="fas fa-camera"></i></span>
-            </button>
+            </div>
             <div class="pngm-profile-photo-meta">
-              <button type="button" class="pngm-profile-photo-btn" id="pngm-change-photo">
-                <?php _e('Change Photo', 'epsilon'); ?>
-              </button>
-              <span class="pngm-profile-photo-hint"><?php _e('JPG, PNG. Max 2MB.', 'epsilon'); ?></span>
+              <div class="pngm-profile-photo-btn-wrap">
+                <button type="button" class="pngm-profile-photo-btn" id="pngm-change-photo">
+                  <?php _e('Change Photo', 'epsilon'); ?>
+                </button>
+                <?php if (!$pngm_profile_photo_uppy) { ?>
+                  <input type="file" id="pngm-profile-photo-file" class="pngm-profile-photo-file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" title="<?php echo osc_esc_attr(__('Choose profile photo', 'epsilon')); ?>" />
+                <?php } ?>
+              </div>
+              <span class="pngm-profile-photo-hint"><?php echo osc_esc_html(sprintf(__('JPG or PNG, up to %s MB. Large photos are compressed automatically.', 'epsilon'), '20')); ?></span>
               <div class="pngm-profile-upload-raw">
                 <?php UserForm::upload_profile_img(); ?>
               </div>
@@ -320,21 +328,133 @@
       }
       var checkTimer = setInterval(delUserLocCheck, 150);
 
-      // Prefer visible Change Photo; keep UserForm trigger hidden but functional
+      var pngmProfilePhotoUploadUrl = <?php echo json_encode(osc_base_url(true) . '?page=ajax&action=runhook&hook=pngm_profile_photo_upload'); ?>;
+      var pngmProfilePhotoMaxBytes = <?php echo (int) (function_exists('pngm_profile_photo_max_bytes') ? pngm_profile_photo_max_bytes() : (20 * 1024 * 1024)); ?>;
+      var pngmProfilePhotoUsesUppy = <?php echo $pngm_profile_photo_uppy ? 'true' : 'false'; ?>;
+
       $('.pngm-profile-upload-raw > a.start-image-upload, .pngm-profile-upload-raw > a.remove-profile-picture').addClass('pngm-profile-upload-hidden');
-      function pngmOpenProfilePhoto() {
-        var $raw = $('.pngm-profile-upload-raw .start-image-upload').first();
-        if ($raw.length) {
-          $raw.trigger('click');
+
+      function pngmProfilePhotoOpenPicker(e) {
+        if (e && e.preventDefault) {
+          e.preventDefault();
+        }
+        if (pngmProfilePhotoUsesUppy) {
+          var uppyTrigger = document.querySelector('.pngm-profile-upload-raw a.start-image-upload');
+          if (uppyTrigger) {
+            uppyTrigger.click();
+          }
           return;
         }
-        var input = document.querySelector('.pngm-profile-upload-raw input.upload-image');
-        if (input) input.click();
+        var inp = document.getElementById('pngm-profile-photo-file');
+        if (!inp) {
+          return;
+        }
+        inp.value = '';
+        inp.click();
       }
-      $('#pngm-change-photo, #pngm-profile-avatar-btn').on('click', function (e) {
-        e.preventDefault();
-        pngmOpenProfilePhoto();
+
+      $('#pngm-change-photo, #pngm-profile-avatar-btn').on('click', pngmProfilePhotoOpenPicker);
+      $('#pngm-profile-avatar-btn').on('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          pngmProfilePhotoOpenPicker(e);
+        }
       });
+
+      function pngmProfilePhotoRefreshPreview(url) {
+        if (!url) {
+          return;
+        }
+        $('.pngm-profile-avatar .img-preview img, #pngm-profile-form .user-img img').attr('src', url);
+      }
+
+      function pngmProfilePhotoUploadFile(file) {
+        var fd = new FormData();
+        fd.append('photo', file);
+        return $.ajax({
+          url: pngmProfilePhotoUploadUrl,
+          method: 'POST',
+          data: fd,
+          processData: false,
+          contentType: false,
+          dataType: 'json'
+        });
+      }
+
+      function pngmProfilePhotoHandleFile(file) {
+        if (!file) {
+          return;
+        }
+        if (file.size > pngmProfilePhotoMaxBytes) {
+          window.alert(<?php echo json_encode(sprintf(__('That file is too large. Please use a photo under %s MB.', 'epsilon'), '20')); ?>);
+          return;
+        }
+
+        var $pickers = $('#pngm-change-photo, #pngm-profile-avatar-btn');
+        $pickers.prop('disabled', true).css('opacity', '0.65');
+        pngmProfilePhotoUploadFile(file).done(function (res) {
+          if (res && res.ok && res.url) {
+            pngmProfilePhotoRefreshPreview(res.url);
+          } else {
+            window.alert(<?php echo json_encode(__('Could not save your photo. Try a JPG or PNG under 20 MB.', 'epsilon')); ?>);
+          }
+        }).fail(function () {
+          window.alert(<?php echo json_encode(__('Could not save your photo. Try again.', 'epsilon')); ?>);
+        }).always(function () {
+          $pickers.prop('disabled', false).css('opacity', '');
+          var inp = document.getElementById('pngm-profile-photo-file');
+          if (inp) {
+            inp.value = '';
+          }
+        });
+      }
+
+      var pngmPhotoFile = document.getElementById('pngm-profile-photo-file');
+      if (pngmPhotoFile) {
+        pngmPhotoFile.addEventListener('change', function () {
+          var file = pngmPhotoFile.files && pngmPhotoFile.files[0];
+          pngmProfilePhotoHandleFile(file);
+        });
+      }
+
+      var pngmBlobInput = document.querySelector('#pngm-profile-form input[name="pp_blob"]');
+      if (pngmBlobInput) {
+        pngmBlobInput.addEventListener('change', function (e) {
+          var data = pngmBlobInput.value || '';
+          if (!data) {
+            return;
+          }
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          var $cropBtn = $('#pngm-profile-form .btn.crop');
+          $cropBtn.addClass('btn-loading-nofa');
+
+          $.ajax({
+            url: pngmProfilePhotoUploadUrl,
+            method: 'POST',
+            dataType: 'json',
+            data: { blob: data }
+          }).done(function (res) {
+            if (res && res.ok && res.url) {
+              $('.pngm-profile-avatar .img-preview img, .pngm-profile-form .user-img img').attr('src', res.url);
+              pngmBlobInput.value = '';
+              var $cancel = $('#pngm-profile-form .btn.cancel');
+              if ($cancel.length) {
+                $cancel.trigger('click');
+              } else {
+                $('input.upload-image').val('');
+                $('#pngm-profile-form .pp-uploader').hide();
+              }
+            } else {
+              window.alert(<?php echo json_encode(__('Could not save your photo. Try a JPG or PNG under 20 MB.', 'epsilon')); ?>);
+            }
+          }).fail(function () {
+            window.alert(<?php echo json_encode(__('Could not save your photo. Try again.', 'epsilon')); ?>);
+          }).always(function () {
+            $cropBtn.removeClass('btn-loading-nofa');
+          });
+        }, true);
+      }
 
       // About me counter (first locale textarea)
       var $about = $('.pngm-profile-about textarea').first();

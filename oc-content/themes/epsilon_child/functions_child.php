@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.43');
+    define('PNGM_CHILD_VERSION', '2.9.46');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -43,6 +43,7 @@ require_once dirname(__FILE__) . '/includes/duplicate_listings.php';
 require_once dirname(__FILE__) . '/includes/public_profile_gate.php';
 require_once dirname(__FILE__) . '/includes/post_wizard.php';
 require_once dirname(__FILE__) . '/includes/account_ua.php';
+require_once dirname(__FILE__) . '/includes/profile_photo.php';
 // Kill-switch: define('PNGM_DISABLE_WEBPUSH', true) in config.php if push code 500s the site.
 if (!defined('PNGM_DISABLE_WEBPUSH') || !PNGM_DISABLE_WEBPUSH) {
     require_once dirname(__FILE__) . '/includes/web_push.php';
