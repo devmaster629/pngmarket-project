@@ -188,9 +188,13 @@ $pngm_block_row = (trim((string) $thread_target_email) !== '' && class_exists('M
       <?php if (im_param('only_logged') == 1 && !osc_is_web_user_logged_in()) { ?>
         <div class="pngm-im-notice"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
       <?php } elseif ($blocked_by_you == 0) { ?>
-        <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+        <div class="pngm-composer-dock pngm-im-blocked-dock">
+          <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+        </div>
       <?php } elseif ($blocked_you == 0) { ?>
-        <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
+        <div class="pngm-composer-dock pngm-im-blocked-dock">
+          <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
+        </div>
       <?php } elseif ($can_send) { ?>
         <div class="pngm-composer-dock">
           <form id="im-message-form" class="pngm-im-composer im-row im-body im-form-validate" action="<?php echo osc_route_url('im-messages', array('thread-id' => $thread['i_thread_id'], 'secret' => $secret)); ?>" method="POST" enctype="multipart/form-data">

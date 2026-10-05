@@ -4821,15 +4821,35 @@ body.pngm-ua-messages .pngm-im-search input:focus {
 .pngm-im-blocked-notice,
 body.im-chat-page .pngm-im-blocked-notice {
   flex: 0 0 auto;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid #f0c2c2;
   background: #ffd7d7;
   color: #590000;
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.4;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pngm-composer-dock.pngm-im-blocked-dock,
+body.im-chat-page .pngm-composer-dock.pngm-im-blocked-dock {
+  display: flex !important;
+  flex-direction: column;
+  flex: 0 0 auto !important;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 8px 0 10px;
+  border-top: 1px solid #f0d0d0;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: visible !important;
+  z-index: 6;
 }
 
 @media screen and (max-width: 767px) {
@@ -4848,6 +4868,27 @@ body.im-chat-page .pngm-im-blocked-notice {
   .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-block-user span,
   .pngm-im-board-pane .im-alt-head .im-head2 .pngm-im-thread-actions a.im-remove-thread span {
     display: none;
+  }
+
+  body.im-chat-page .pngm-composer-dock.pngm-im-blocked-dock {
+    width: calc(100% + 24px) !important;
+    max-width: none;
+    margin: 8px -12px 0 !important;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    border-radius: 0 0 12px 12px !important;
+    background: #fff7f7;
+  }
+
+  body.im-chat-page .pngm-im-blocked-notice {
+    margin: 0 !important;
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    padding: 14px 14px !important;
+  }
+
+  body.im-chat-page.pngm-im-blocked-thread .pngm-im-board-pane,
+  body.im-chat-page.pngm-im-blocked-thread .pngm-im-board-pane > .im-file-messages {
+    overflow: visible !important;
   }
 }
 

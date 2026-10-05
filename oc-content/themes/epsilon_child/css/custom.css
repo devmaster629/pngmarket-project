@@ -7144,6 +7144,8 @@
     }
   
     body.im-chat-page .pngm-composer-dock,
+    body.im-chat-page .pngm-im-blocked-dock,
+    body.im-chat-page .pngm-im-blocked-notice,
     body.im-chat-page .pngm-im-mobile-back,
     body.im-chat-page .im-alt-head,
     body.im-chat-page .im-row.im-item-context,
@@ -7654,6 +7656,27 @@
       z-index: 5;
       border-top: 1px solid #eef1f4;
       background: #fff;
+    }
+
+    body.im-chat-page .pngm-composer-dock.pngm-im-blocked-dock {
+      z-index: 6;
+      margin: 8px -12px 0 !important;
+      width: calc(100% + 24px) !important;
+      padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+      border-top: 1px solid #f0d0d0;
+      background: #fff7f7;
+    }
+
+    body.im-chat-page .pngm-im-blocked-notice {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
   
     body.im-chat-page #im-message-form {

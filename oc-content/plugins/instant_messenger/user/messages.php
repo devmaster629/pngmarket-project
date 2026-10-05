@@ -573,10 +573,14 @@ if (!$is_chat_refresh && osc_is_web_user_logged_in()) {
     <div class="im-empty flashmessage flashmessage-warning"><?php _e('Please login to send messages', 'instant_messenger'); ?></div>
 
   <?php } else if($blocked_by_you == 0) { ?>
-    <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+    <div class="pngm-composer-dock pngm-im-blocked-dock">
+      <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_by_you_msg); ?></div>
+    </div>
 
   <?php } else if($blocked_you == 0) { ?>
-    <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
+    <div class="pngm-composer-dock pngm-im-blocked-dock">
+      <div class="pngm-im-blocked-notice" role="status"><?php echo osc_esc_html($blocked_you_msg); ?></div>
+    </div>
 
   <?php } else { ?>
     <div class="pngm-composer-dock">

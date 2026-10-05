@@ -3353,11 +3353,20 @@
       }
 
       var dock = document.querySelector('.pngm-composer-dock');
+      var blockedNotice = document.querySelector('.pngm-im-blocked-notice');
       if (dock) {
         dock.style.display = 'flex';
         dock.style.flexDirection = 'column';
         dock.style.flex = '0 0 auto';
         dock.style.overflow = 'visible';
+        dock.style.flexShrink = '0';
+      }
+      if (blockedNotice) {
+        blockedNotice.style.display = 'block';
+        blockedNotice.style.flex = '0 0 auto';
+        document.body.classList.add('pngm-im-blocked-thread');
+      } else {
+        document.body.classList.remove('pngm-im-blocked-thread');
       }
 
       var vv = window.visualViewport || null;
@@ -3370,10 +3379,18 @@
         naviH = navi.offsetHeight;
       }
 
-      // Reserve the whole dock (input row + hint + file chips).
-      var dockH = dock ? dock.offsetHeight : (form ? form.offsetHeight : 0);
-      if (dockH < 56) {
+      // Reserve the footer chrome: composer dock, or the blocked-user notice.
+      var dockH = 0;
+      if (dock) {
+        dockH = dock.offsetHeight;
+      } else if (blockedNotice) {
+        dockH = blockedNotice.offsetHeight;
+      }
+      if (form && dockH < 56) {
         dockH = 56;
+      }
+      if (!form && blockedNotice && dockH < 48) {
+        dockH = Math.max(dockH, blockedNotice.scrollHeight || 48);
       }
 
       if (!kbOpen || document.documentElement.classList.contains('pngm-kb-ios')) {
