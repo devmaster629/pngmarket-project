@@ -156,12 +156,7 @@ function pngm_persist_record_login($user_id, $method, $persisted)
     $data['last_login_method'] = $method;
     $data['last_login_at'] = date('Y-m-d H:i:s');
     $data['last_login_persisted'] = $persisted ? 1 : 0;
-    if ($method === 'google' || $method === 'facebook') {
-        if (!isset($data['connected']) || !is_array($data['connected'])) {
-            $data['connected'] = array('google' => 0, 'facebook' => 0);
-        }
-        $data['connected'][$method] = 1;
-    }
+    // Do not write fake "connected" flags — Account & Security reads plugin OAuth tables.
     pngm_sec_save($user_id, $data);
 
     if (function_exists('pngm_sec_log_activity')) {
@@ -290,6 +285,12 @@ osc_add_hook('after_login', 'pngm_persist_after_login', 9);
  */
 function pngm_login_redirect_homepage($url)
 {
+    // Account & Security "Connect" OAuth must return to that page (see pngm_sec_social_login_redirect).
+    if (function_exists('pngm_sec_social_has_link_intent') && pngm_sec_social_has_link_intent()) {
+        return function_exists('pngm_sec_social_link_return_url')
+            ? pngm_sec_social_link_return_url()
+            : $url;
+    }
     unset($url);
     return osc_base_url();
 }

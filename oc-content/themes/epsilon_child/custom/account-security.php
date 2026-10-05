@@ -146,25 +146,85 @@ if (strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST' && $action !== ''
         exit;
     }
 
-    if ($action === 'connect_toggle') {
+    if ($action === 'social_disconnect') {
         $provider = Params::getParam('provider');
         if (!in_array($provider, array('google', 'facebook'), true)) {
             header('Location: ' . $sec_url);
             exit;
         }
-        $data = pngm_sec_get($user_id);
-        $on = empty($data['connected'][$provider]);
-        $data['connected'][$provider] = $on ? 1 : 0;
-        pngm_sec_save($user_id, $data);
-        pngm_sec_log_activity(
-            $user_id,
-            'social',
-            $on
-                ? sprintf(__('%s connected', 'epsilon'), ucfirst($provider))
-                : sprintf(__('%s disconnected', 'epsilon'), ucfirst($provider))
-        );
-        osc_add_flash_ok_message($on ? __('Account connected', 'epsilon') : __('Account disconnected', 'epsilon'));
-        header('Location: ' . $sec_url);
+        $status = pngm_sec_social_status($user_id);
+        if (empty($status[$provider]['linked'])) {
+            osc_add_flash_error_message(__('That account is not connected.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-connected');
+            exit;
+        }
+        pngm_sec_social_unlink($user_id, $provider);
+        $label = $provider === 'google' ? 'Google' : 'Facebook';
+        pngm_sec_log_activity($user_id, 'social', sprintf(__('%s disconnected', 'epsilon'), $label));
+        osc_add_flash_ok_message(sprintf(__('%s account disconnected', 'epsilon'), $label));
+        header('Location: ' . $sec_url . '#pngm-sec-connected');
+        exit;
+    }
+
+    if ($action === 'social_connect_google') {
+        $status = pngm_sec_social_status($user_id);
+        if (!empty($status['google']['linked'])) {
+            osc_add_flash_ok_message(__('Google is already connected.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-connected');
+            exit;
+        }
+        if (!function_exists('ggl_initialize') || !function_exists('ggl_login_link')) {
+            osc_add_flash_error_message(__('Google login is not available.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-connected');
+            exit;
+        }
+
+        // Build a gentler OAuth URL (login_hint + auto approval) for account linking.
+        $auth_url = '';
+        try {
+            $gClient = ggl_initialize();
+            if (method_exists($gClient, 'setAccessType')) {
+                $gClient->setAccessType('online');
+            }
+            if (method_exists($gClient, 'setApprovalPrompt')) {
+                $gClient->setApprovalPrompt('auto');
+            }
+            $auth_url = (string) $gClient->createAuthUrl();
+            $hint = trim((string) osc_logged_user_email());
+            if ($hint !== '' && $auth_url !== '') {
+                $auth_url .= (strpos($auth_url, '?') !== false ? '&' : '?') . 'login_hint=' . rawurlencode($hint);
+            }
+        } catch (Exception $e) {
+            $auth_url = '';
+        }
+        if ($auth_url === '') {
+            $auth_url = (string) ggl_login_link(1);
+        }
+        if ($auth_url === '') {
+            osc_add_flash_error_message(__('Google login is not configured yet.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-connected');
+            exit;
+        }
+        pngm_sec_social_begin_link('google', $user_id);
+        header('Location: ' . $auth_url);
+        exit;
+    }
+
+    if ($action === 'social_connect_facebook') {
+        $status = pngm_sec_social_status($user_id);
+        if (!empty($status['facebook']['linked'])) {
+            osc_add_flash_ok_message(__('Facebook is already connected.', 'epsilon'));
+            header('Location: ' . $sec_url . '#pngm-sec-connected');
+            exit;
+        }
+        $result = pngm_sec_social_link_facebook_logged_in($user_id);
+        if ($result === true) {
+            pngm_sec_log_activity($user_id, 'social', __('Facebook connected', 'epsilon'));
+            osc_add_flash_ok_message(__('Facebook account connected', 'epsilon'));
+        } else {
+            osc_add_flash_error_message(is_string($result) ? $result : __('Could not connect Facebook.', 'epsilon'));
+        }
+        header('Location: ' . $sec_url . '#pngm-sec-connected');
         exit;
     }
 
@@ -215,8 +275,11 @@ if ($show_setup && !$setup_secret) {
 $setup_uri = ($show_setup && $setup_secret) ? pngm_sec_totp_otpauth_uri($setup_secret, $email) : '';
 $setup_qr = $setup_uri !== '' ? pngm_sec_totp_qr_url($setup_uri) : '';
 $pass_changed = !empty($sec['password_changed_at']) ? pngm_sec_time_label($sec['password_changed_at']) : '';
-$google_on = !empty($sec['connected']['google']);
-$facebook_on = !empty($sec['connected']['facebook']);
+$social = pngm_sec_social_status($user_id);
+$google_on = !empty($social['google']['linked']);
+$facebook_on = !empty($social['facebook']['linked']);
+$google_ready = !empty($social['google']['available']);
+$facebook_ready = !empty($social['facebook']['available']);
 $persist = function_exists('pngm_persist_status') ? pngm_persist_status($user_id) : array('ok' => false, 'method' => 'unknown', 'at' => '', 'cookie_active' => false);
 $persist_method_labels = array(
     'google' => __('Google', 'epsilon'),
@@ -384,6 +447,9 @@ if ($show_pass && $show_email) {
 
       <section class="pngm-sec-card" id="pngm-sec-connected">
         <h2><span>3.</span> <?php _e('Connected accounts', 'epsilon'); ?></h2>
+        <p class="pngm-sec-lead">
+          <?php _e('Connected means Google/Facebook is linked in our database after a successful provider login. “Last sign-in method” only shows how you last signed into PNGMarket — it is not the same as Connected.', 'epsilon'); ?>
+        </p>
 
         <div class="pngm-sec-persist" id="pngm-sec-persist">
           <div class="pngm-sec-persist-head">
@@ -393,7 +459,7 @@ if ($show_pass && $show_email) {
             </span>
           </div>
           <p class="pngm-sec-persist-copy">
-            <?php _e('Google and Facebook sign-in keep you logged in after you close the browser (same as email login).', 'epsilon'); ?>
+            <?php _e('This device stays signed in after you close the browser. Connecting Google/Facebook requires Google or Facebook to approve PNGMarket (being signed into Gmail in this browser is not enough by itself).', 'epsilon'); ?>
           </p>
           <ul class="pngm-sec-persist-meta">
             <li>
@@ -418,6 +484,14 @@ if ($show_pass && $show_email) {
         <?php
           $google_svg = '<svg class="pngm-sec-brand-svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>';
           $fb_svg = '<svg class="pngm-sec-brand-svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1877F2"/><path fill="#fff" d="M13.28 18.5v-5.68h1.9l.28-2.21h-2.18V9.18c0-.64.18-1.08 1.1-1.08h1.17V6.12c-.2-.03-.9-.09-1.71-.09-1.69 0-2.85 1.03-2.85 2.93v1.63H9.2v2.21h1.79V18.5h2.29z"/></svg>';
+          $google_meta = '';
+          if ($google_on) {
+              $google_meta = $social['google']['email'] !== '' ? $social['google']['email'] : $social['google']['name'];
+          }
+          $facebook_meta = '';
+          if ($facebook_on) {
+              $facebook_meta = $social['facebook']['email'] !== '' ? $social['facebook']['email'] : $social['facebook']['name'];
+          }
         ?>
 
         <div class="pngm-sec-row pngm-sec-social-row">
@@ -426,14 +500,27 @@ if ($show_pass && $show_email) {
             <span class="pngm-sec-social-meta">
               <strong>Google</strong>
               <span class="pngm-sec-badge<?php echo $google_on ? ' is-ok' : ''; ?>"><?php echo $google_on ? __('Connected', 'epsilon') : __('Not connected', 'epsilon'); ?></span>
+              <?php if ($google_meta !== '') { ?>
+                <span class="pngm-sec-social-detail"><?php echo osc_esc_html($google_meta); ?></span>
+              <?php } ?>
             </span>
           </div>
-          <form method="post" action="<?php echo osc_esc_html($sec_url); ?>">
-            <input type="hidden" name="pngm_sec_action" value="connect_toggle" />
-            <input type="hidden" name="provider" value="google" />
-            <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
-            <button type="submit" class="pngm-ua-btn is-ghost pngm-sec-btn"><?php echo $google_on ? __('Disconnect', 'epsilon') : __('Connect', 'epsilon'); ?></button>
-          </form>
+          <?php if ($google_on) { ?>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>">
+              <input type="hidden" name="pngm_sec_action" value="social_disconnect" />
+              <input type="hidden" name="provider" value="google" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <button type="submit" class="pngm-ua-btn is-ghost pngm-sec-btn"><?php _e('Disconnect', 'epsilon'); ?></button>
+            </form>
+          <?php } elseif ($google_ready) { ?>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>">
+              <input type="hidden" name="pngm_sec_action" value="social_connect_google" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <button type="submit" class="pngm-ua-btn is-ghost pngm-sec-btn"><?php _e('Connect with Google', 'epsilon'); ?></button>
+            </form>
+          <?php } else { ?>
+            <span class="pngm-sec-muted"><?php _e('Not available', 'epsilon'); ?></span>
+          <?php } ?>
         </div>
 
         <div class="pngm-sec-row pngm-sec-social-row">
@@ -442,14 +529,29 @@ if ($show_pass && $show_email) {
             <span class="pngm-sec-social-meta">
               <strong>Facebook</strong>
               <span class="pngm-sec-badge<?php echo $facebook_on ? ' is-ok' : ''; ?>"><?php echo $facebook_on ? __('Connected', 'epsilon') : __('Not connected', 'epsilon'); ?></span>
+              <?php if ($facebook_meta !== '') { ?>
+                <span class="pngm-sec-social-detail"><?php echo osc_esc_html($facebook_meta); ?></span>
+              <?php } ?>
             </span>
           </div>
-          <form method="post" action="<?php echo osc_esc_html($sec_url); ?>">
-            <input type="hidden" name="pngm_sec_action" value="connect_toggle" />
-            <input type="hidden" name="provider" value="facebook" />
-            <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
-            <button type="submit" class="pngm-ua-btn is-ghost pngm-sec-btn"><?php echo $facebook_on ? __('Disconnect', 'epsilon') : __('Connect', 'epsilon'); ?></button>
-          </form>
+          <?php if ($facebook_on) { ?>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>">
+              <input type="hidden" name="pngm_sec_action" value="social_disconnect" />
+              <input type="hidden" name="provider" value="facebook" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <button type="submit" class="pngm-ua-btn is-ghost pngm-sec-btn"><?php _e('Disconnect', 'epsilon'); ?></button>
+            </form>
+          <?php } elseif ($facebook_ready) { ?>
+            <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" id="pngm-sec-fb-connect-form">
+              <input type="hidden" name="pngm_sec_action" value="social_connect_facebook" />
+              <input type="hidden" name="pngm_fb_auth" id="pngm-fb-auth" value="" />
+              <input type="hidden" name="pngm_fb_profile" id="pngm-fb-profile" value="" />
+              <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
+              <button type="button" class="pngm-ua-btn is-ghost pngm-sec-btn" id="pngm-sec-fb-connect"><?php _e('Connect with Facebook', 'epsilon'); ?></button>
+            </form>
+          <?php } else { ?>
+            <span class="pngm-sec-muted"><?php _e('Not available', 'epsilon'); ?></span>
+          <?php } ?>
         </div>
       </section>
     </div>
@@ -681,3 +783,53 @@ if ($show_pass && $show_email) {
   }
 })();
 </script>
+<?php if (!$facebook_on && $facebook_ready && function_exists('fjl_param') && trim((string) fjl_param('app_id')) !== '') {
+    $pngm_fb_app_id = trim((string) fjl_param('app_id'));
+    $pngm_fb_ver = defined('FB_JS_SDK_VERSION') ? FB_JS_SDK_VERSION : 'v16.0';
+    $pngm_fb_fail = osc_esc_js(__('Facebook login is not available. Please try again later.', 'epsilon'));
+    $pngm_fb_cancel = osc_esc_js(__('Facebook connect was cancelled.', 'epsilon'));
+    ?>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+<script>
+(function () {
+  var btn = document.getElementById('pngm-sec-fb-connect');
+  var form = document.getElementById('pngm-sec-fb-connect-form');
+  if (!btn || !form) return;
+
+  window.fbAsyncInit = function () {
+    if (typeof FB === 'undefined') return;
+    FB.init({
+      appId: <?php echo json_encode($pngm_fb_app_id); ?>,
+      cookie: true,
+      xfbml: false,
+      version: <?php echo json_encode($pngm_fb_ver); ?>
+    });
+  };
+
+  function submitLink(authResponse, profile) {
+    var authInput = document.getElementById('pngm-fb-auth');
+    var profileInput = document.getElementById('pngm-fb-profile');
+    if (!authInput || !profileInput) return;
+    authInput.value = JSON.stringify(authResponse || {});
+    profileInput.value = JSON.stringify(profile || {});
+    form.submit();
+  }
+
+  btn.addEventListener('click', function () {
+    if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
+      window.alert(<?php echo json_encode($pngm_fb_fail); ?>);
+      return;
+    }
+    FB.login(function (response) {
+      if (!response || !response.authResponse) {
+        window.alert(<?php echo json_encode($pngm_fb_cancel); ?>);
+        return;
+      }
+      FB.api('/me', { fields: 'name,email,picture' }, function (profile) {
+        submitLink(response, profile);
+      });
+    }, { scope: 'public_profile,email' });
+  });
+})();
+</script>
+<?php } ?>

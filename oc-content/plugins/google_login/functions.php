@@ -44,9 +44,10 @@ function ggl_login_link($only_link = 1) {
   $gClient = ggl_initialize();
 
   $authUrl = $gClient->createAuthUrl();
-  $link = filter_var($authUrl, FILTER_SANITIZE_URL);
+  // Do not FILTER_SANITIZE_URL — it can strip valid OAuth query characters.
+  $link = (string) $authUrl;
 
-  if($only_link == 1) {
+  if ($only_link == 1) {
     $output = $link;
   } else {
     $output =  '<style>';

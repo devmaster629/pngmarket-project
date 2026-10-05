@@ -36,6 +36,10 @@ function ggl_initialize() {
   );
 
   $gClient->setRedirectUri(osc_route_url('ggl-redirect', array('gglLogin' => 1)));
+  // Avoid approval_prompt=force / offline — forces consent every time and often
+  // trips Google's "We couldn't verify it's you" challenge.
+  $gClient->setAccessType('online');
+  $gClient->setApprovalPrompt('auto');
 
   return $gClient;
 }

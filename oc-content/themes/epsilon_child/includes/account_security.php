@@ -734,6 +734,388 @@ function pngm_sec_after_login_gate($user, $url_redirect = '')
 osc_add_hook('after_login', 'pngm_sec_after_login_gate');
 
 /**
+ * Real Google / Facebook link rows from the login plugins (not preference flags).
+ *
+ * @param int $user_id
+ * @return array{google:array,facebook:array}
+ */
+function pngm_sec_social_status($user_id)
+{
+    $user_id = (int) $user_id;
+    $out = array(
+        'google' => array(
+            'linked' => false,
+            'email' => '',
+            'name' => '',
+            'available' => function_exists('ggl_login_link'),
+        ),
+        'facebook' => array(
+            'linked' => false,
+            'email' => '',
+            'name' => '',
+            'available' => function_exists('pngm_facebook_login_available')
+                ? pngm_facebook_login_available()
+                : (function_exists('fjl_param') && (int) fjl_param('enabled') === 1),
+        ),
+    );
+
+    if ($user_id < 1) {
+        return $out;
+    }
+
+    if (class_exists('ModelGGL')) {
+        $row = ModelGGL::newInstance()->getUser($user_id);
+        if (is_array($row) && !empty($row['s_oauth_uid'])) {
+            $out['google']['linked'] = true;
+            $out['google']['email'] = isset($row['s_email']) ? (string) $row['s_email'] : '';
+            $first = isset($row['s_first_name']) ? (string) $row['s_first_name'] : '';
+            $last = isset($row['s_last_name']) ? (string) $row['s_last_name'] : '';
+            $out['google']['name'] = trim($first . ' ' . $last);
+        }
+    }
+
+    if (class_exists('ModelFJL')) {
+        $row = ModelFJL::newInstance()->getUserFBDataByUserId($user_id);
+        if (is_array($row) && !empty($row['s_oauth_uid'])) {
+            $out['facebook']['linked'] = true;
+            $out['facebook']['email'] = isset($row['s_email']) ? (string) $row['s_email'] : '';
+            $out['facebook']['name'] = isset($row['s_name']) ? (string) $row['s_name'] : '';
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Drop a provider link row for this Osclass user.
+ *
+ * @param int    $user_id
+ * @param string $provider google|facebook
+ * @return bool
+ */
+function pngm_sec_social_unlink($user_id, $provider)
+{
+    $user_id = (int) $user_id;
+    if ($user_id < 1) {
+        return false;
+    }
+
+    if ($provider === 'google' && class_exists('ModelGGL')) {
+        $m = ModelGGL::newInstance();
+        $m->dao->delete($m->getTable_user_ggl(), array('fk_i_user_id' => $user_id));
+        return true;
+    }
+
+    if ($provider === 'facebook' && class_exists('ModelFJL')) {
+        $m = ModelFJL::newInstance();
+        $m->dao->delete($m->getTable_facebook(), array('fk_i_user_id' => $user_id));
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Remember that the next OAuth success should return to Account & Security.
+ *
+ * @param string $provider
+ * @param int    $user_id
+ */
+function pngm_sec_social_begin_link($provider, $user_id)
+{
+    Session::newInstance()->_set('pngm_sec_link_provider', $provider);
+    Session::newInstance()->_set('pngm_sec_link_uid', (int) $user_id);
+    Session::newInstance()->_set('pngm_sec_link_return', pngm_sec_url());
+}
+
+/**
+ * @return bool
+ */
+function pngm_sec_social_has_link_intent()
+{
+    return Session::newInstance()->_get('pngm_sec_link_provider') !== ''
+        && Session::newInstance()->_get('pngm_sec_link_provider') !== null
+        && (int) Session::newInstance()->_get('pngm_sec_link_uid') > 0;
+}
+
+/**
+ * @return string
+ */
+function pngm_sec_social_link_return_url()
+{
+    $url = (string) Session::newInstance()->_get('pngm_sec_link_return');
+    return $url !== '' ? $url : pngm_sec_url();
+}
+
+/**
+ * Clear link-intent session keys.
+ */
+function pngm_sec_social_clear_link_intent()
+{
+    Session::newInstance()->_drop('pngm_sec_link_provider');
+    Session::newInstance()->_drop('pngm_sec_link_uid');
+    Session::newInstance()->_drop('pngm_sec_link_return');
+}
+
+/**
+ * Attach a Google OAuth row to $user_id (replaces any prior row for that user).
+ *
+ * @param int   $user_id
+ * @param array $row
+ * @return bool
+ */
+function pngm_sec_social_attach_google($user_id, $row)
+{
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !is_array($row) || empty($row['s_oauth_uid']) || !class_exists('ModelGGL')) {
+        return false;
+    }
+    $m = ModelGGL::newInstance();
+    $existing = $m->getUser($user_id);
+    $payload = array(
+        'fk_i_user_id' => $user_id,
+        's_oauth_provider' => isset($row['s_oauth_provider']) ? $row['s_oauth_provider'] : 'google',
+        's_oauth_uid' => (string) $row['s_oauth_uid'],
+        's_first_name' => isset($row['s_first_name']) ? $row['s_first_name'] : '',
+        's_last_name' => isset($row['s_last_name']) ? $row['s_last_name'] : '',
+        's_email' => isset($row['s_email']) ? $row['s_email'] : '',
+        's_gender' => isset($row['s_gender']) ? $row['s_gender'] : '',
+        's_locale' => isset($row['s_locale']) ? $row['s_locale'] : '',
+        's_picture' => isset($row['s_picture']) ? $row['s_picture'] : '',
+        's_link' => isset($row['s_link']) ? $row['s_link'] : '',
+        'dt_modified' => date('Y-m-d H:i:s'),
+        'dt_created' => (is_array($existing) && !empty($existing['dt_created']))
+            ? $existing['dt_created']
+            : date('Y-m-d H:i:s'),
+    );
+    $m->dao->replace($m->getTable_user_ggl(), $payload);
+    return true;
+}
+
+/**
+ * Attach a Facebook OAuth row to $user_id.
+ *
+ * @param int   $user_id
+ * @param array $row
+ * @return bool
+ */
+function pngm_sec_social_attach_facebook($user_id, $row)
+{
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !is_array($row) || empty($row['s_oauth_uid']) || !class_exists('ModelFJL')) {
+        return false;
+    }
+    $m = ModelFJL::newInstance();
+    $existing = $m->getUserFBDataByUserId($user_id);
+    $payload = array(
+        'fk_i_user_id' => $user_id,
+        's_oauth_provider' => isset($row['s_oauth_provider']) ? $row['s_oauth_provider'] : 'facebook',
+        's_oauth_uid' => (string) $row['s_oauth_uid'],
+        's_name' => isset($row['s_name']) ? $row['s_name'] : '',
+        's_email' => isset($row['s_email']) ? $row['s_email'] : '',
+        's_picture' => isset($row['s_picture']) ? $row['s_picture'] : '',
+        'dt_modified' => date('Y-m-d H:i:s'),
+        'dt_created' => (is_array($existing) && !empty($existing['dt_created']))
+            ? $existing['dt_created']
+            : date('Y-m-d H:i:s'),
+    );
+    $m->dao->replace($m->getTable_facebook(), $payload);
+    return true;
+}
+
+/**
+ * Restore an Osclass web session for $user_id after a mis-routed OAuth login.
+ *
+ * @param int $user_id
+ * @return bool
+ */
+function pngm_sec_social_restore_session($user_id)
+{
+    $user_id = (int) $user_id;
+    $user = User::newInstance()->findByPrimaryKey($user_id);
+    if (!is_array($user) || empty($user['pk_i_id'])) {
+        return false;
+    }
+    Session::newInstance()->_set('userId', $user['pk_i_id']);
+    Session::newInstance()->_set('userName', $user['s_name']);
+    Session::newInstance()->_set('userEmail', $user['s_email']);
+    Session::newInstance()->_set('userPhone', ($user['s_phone_mobile'] ? $user['s_phone_mobile'] : $user['s_phone_land']));
+    if (function_exists('pngm_persist_web_login')) {
+        pngm_persist_web_login($user);
+    }
+    return true;
+}
+
+/**
+ * After Google OAuth, keep the link on the Account & Security user who started Connect.
+ *
+ * @param array  $user
+ * @param string $url_redirect
+ */
+function pngm_sec_social_after_login_link($user, $url_redirect = '')
+{
+    if (!pngm_sec_social_has_link_intent() || !is_array($user) || empty($user['pk_i_id'])) {
+        return;
+    }
+
+    $provider = (string) Session::newInstance()->_get('pngm_sec_link_provider');
+    $intended = (int) Session::newInstance()->_get('pngm_sec_link_uid');
+    $return = pngm_sec_social_link_return_url();
+    pngm_sec_social_clear_link_intent();
+
+    if ($intended < 1 || ($provider !== 'google' && $provider !== 'facebook')) {
+        return;
+    }
+
+    $oauth_uid = (int) $user['pk_i_id'];
+    $label = $provider === 'google' ? 'Google' : 'Facebook';
+
+    if ($oauth_uid === $intended) {
+        pngm_sec_log_activity($intended, 'social', sprintf(__('%s connected', 'epsilon'), $label));
+        osc_add_flash_ok_message(sprintf(__('%s account connected', 'epsilon'), $label));
+        header('Location: ' . $return);
+        exit;
+    }
+
+    // OAuth resolved to a different Osclass user — move the provider row only when safe.
+    $row = null;
+    $owner_of_oauth = null;
+    if ($provider === 'google' && class_exists('ModelGGL')) {
+        $row = ModelGGL::newInstance()->getUser($oauth_uid);
+        if (is_array($row) && !empty($row['s_oauth_uid'])) {
+            $owner_of_oauth = ModelGGL::newInstance()->getUserByAuthId($row['s_oauth_uid']);
+        }
+    } elseif ($provider === 'facebook' && class_exists('ModelFJL')) {
+        $row = ModelFJL::newInstance()->getUserFBDataByUserId($oauth_uid);
+        if (is_array($row) && !empty($row['s_oauth_uid'])) {
+            $owner_of_oauth = ModelFJL::newInstance()->getUserFBDataByAuthId($row['s_oauth_uid']);
+        }
+    }
+
+    if (!is_array($row) || empty($row['s_oauth_uid'])) {
+        pngm_sec_social_restore_session($intended);
+        osc_add_flash_error_message(sprintf(__('Could not connect %s. Please try again.', 'epsilon'), $label));
+        header('Location: ' . $return);
+        exit;
+    }
+
+    $owner_id = is_array($owner_of_oauth) ? (int) @$owner_of_oauth['fk_i_user_id'] : 0;
+    $other = User::newInstance()->findByPrimaryKey($oauth_uid);
+    $just_created = is_array($other) && !empty($other['dt_reg_date'])
+        && (time() - strtotime($other['dt_reg_date']) < 180);
+
+    // Refuse to steal a provider identity that already belongs to another lasting account.
+    if ($owner_id > 0 && $owner_id !== $intended && !$just_created) {
+        pngm_sec_social_restore_session($intended);
+        osc_add_flash_error_message(
+            sprintf(__('This %s account is already linked to another PNGMarket user.', 'epsilon'), $label)
+        );
+        header('Location: ' . $return);
+        exit;
+    }
+
+    if ($provider === 'google') {
+        pngm_sec_social_attach_google($intended, $row);
+        pngm_sec_social_unlink($oauth_uid, 'google');
+    } else {
+        pngm_sec_social_attach_facebook($intended, $row);
+        pngm_sec_social_unlink($oauth_uid, 'facebook');
+    }
+
+    pngm_sec_social_restore_session($intended);
+    pngm_sec_log_activity($intended, 'social', sprintf(__('%s connected', 'epsilon'), $label));
+    osc_add_flash_ok_message(sprintf(__('%s account connected', 'epsilon'), $label));
+    header('Location: ' . $return);
+    exit;
+}
+// After 2FA gate (default 5) and persist (9): settle Account & Security linking.
+osc_add_hook('after_login', 'pngm_sec_social_after_login_link', 15);
+
+/**
+ * When Connect started OAuth, land back on Account & Security instead of homepage.
+ *
+ * @param string $url
+ * @return string
+ */
+function pngm_sec_social_login_redirect($url)
+{
+    if (pngm_sec_social_has_link_intent()) {
+        return pngm_sec_social_link_return_url();
+    }
+    return $url;
+}
+osc_add_filter('correct_login_url_redirect', 'pngm_sec_social_login_redirect', 5);
+
+/**
+ * Link Facebook to the currently logged-in user (no fake flag, no account switch).
+ * Expects POSTed Instant Login payload fields from the security page SDK bridge.
+ *
+ * @param int $user_id
+ * @return true|string True on success, or error message.
+ */
+function pngm_sec_social_link_facebook_logged_in($user_id)
+{
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !function_exists('fjl_param') || !class_exists('ModelFJL')) {
+        return __('Facebook login is not available.', 'epsilon');
+    }
+    if ((int) fjl_param('enabled') !== 1 || trim((string) fjl_param('app_secret')) === '') {
+        return __('Facebook login is not configured yet.', 'epsilon');
+    }
+
+    $auth_raw = Params::getParam('pngm_fb_auth');
+    $profile_raw = Params::getParam('pngm_fb_profile');
+    // Prefer raw POST — Params may entity-encode JSON quotes.
+    if (isset($_POST['pngm_fb_auth']) && is_string($_POST['pngm_fb_auth'])) {
+        $auth_raw = $_POST['pngm_fb_auth'];
+    }
+    if (isset($_POST['pngm_fb_profile']) && is_string($_POST['pngm_fb_profile'])) {
+        $profile_raw = $_POST['pngm_fb_profile'];
+    }
+    $auth = json_decode((string) $auth_raw, true);
+    $profile = json_decode((string) $profile_raw, true);
+    if (!is_array($auth) || empty($auth['authResponse']['userID']) || empty($auth['authResponse']['signedRequest'])) {
+        return __('Facebook did not return a valid login. Please try again.', 'epsilon');
+    }
+    if (!is_array($profile)) {
+        $profile = array();
+    }
+
+    $signed_request = (string) $auth['authResponse']['signedRequest'];
+    $parts = explode('.', $signed_request);
+    if (count($parts) < 2) {
+        return __('Facebook login could not be verified.', 'epsilon');
+    }
+    $encoded_sig = $parts[0];
+    $encoded_payload = $parts[1];
+    $hashed = hash_hmac('sha256', $encoded_payload, (string) fjl_param('app_secret'), true);
+    if (base64_decode(strtr($encoded_sig, '-_', '+/')) !== $hashed) {
+        return __('Facebook login could not be verified.', 'epsilon');
+    }
+
+    $oauth_uid = (string) $auth['authResponse']['userID'];
+    $owner = ModelFJL::newInstance()->getUserFBDataByAuthId($oauth_uid);
+    if (is_array($owner) && (int) @$owner['fk_i_user_id'] > 0 && (int) $owner['fk_i_user_id'] !== $user_id) {
+        return __('This Facebook account is already linked to another PNGMarket user.', 'epsilon');
+    }
+
+    $picture = '';
+    if (isset($profile['picture']['data']['url'])) {
+        $picture = (string) $profile['picture']['data']['url'];
+    }
+
+    $ok = pngm_sec_social_attach_facebook($user_id, array(
+        's_oauth_provider' => 'facebook',
+        's_oauth_uid' => $oauth_uid,
+        's_name' => isset($profile['name']) ? (string) $profile['name'] : '',
+        's_email' => isset($profile['email']) ? (string) $profile['email'] : '',
+        's_picture' => $picture,
+    ));
+
+    return $ok ? true : __('Could not save Facebook connection.', 'epsilon');
+}
+
+/**
  * Register front routes.
  */
 function pngm_sec_register_route()

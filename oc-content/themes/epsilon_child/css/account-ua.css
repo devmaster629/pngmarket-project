@@ -6722,6 +6722,26 @@ html.pngm-pwa-standalone [data-pngm-display-mode-label].is-ok {
   color: #16202a;
 }
 
+.pngm-sec-social-detail {
+  display: block;
+  width: 100%;
+  font-size: 12px;
+  color: #6b7785;
+  word-break: break-all;
+}
+
+.pngm-sec-lead {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5a6570;
+}
+
+.pngm-sec-muted {
+  font-size: 13px;
+  color: #8a94a0;
+}
+
 .pngm-sec-social-row .pngm-sec-row-copy.is-social {
   flex: 1 1 auto;
 }
