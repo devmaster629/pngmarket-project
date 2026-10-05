@@ -207,6 +207,19 @@
       return preferred[0] || hits[0];
     }
 
+    function titleCaseItemLabel(text) {
+      return String(text || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(function (w) {
+          if (/^[a-z0-9]+$/i.test(w) && w.length <= 3 && /[0-9]/.test(w)) {
+            return w.toUpperCase();
+          }
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        })
+        .join(' ');
+    }
+
     function scoreTitleSuggestions(title) {
       var raw = normalizeText(title);
       if (raw.length < 2) {
@@ -225,18 +238,30 @@
       }
       var scores = {};
 
-      function bump(entry, pts) {
+      function bump(entry, pts, itemLabel) {
         if (!entry || !entry.leafId) {
           return;
         }
-        var key = String(entry.leafId);
+        var item = String(itemLabel || entry.leafName || '').trim();
+        if (!item) {
+          return;
+        }
+        var key = String(entry.leafId) + '|' + normalizeText(item);
         if (!scores[key]) {
-          scores[key] = { entry: entry, score: 0 };
+          scores[key] = {
+            entry: entry,
+            itemName: item,
+            score: 0
+          };
         }
         scores[key].score += pts;
+        // Prefer nicer / longer item label for the same key
+        if (item.length > String(scores[key].itemName || '').length) {
+          scores[key].itemName = item;
+        }
       }
 
-      // Keyword / brand dictionary (multi-word first)
+      // Keyword / brand dictionary → item name + category
       Object.keys(keywords).forEach(function (kw) {
         var kn = normalizeText(kw);
         if (!kn || kn.length < 2) {
@@ -246,16 +271,19 @@
           return;
         }
         var target = resolveLeafByName(keywords[kw]);
-        // Exact / longer keywords score higher; short prefixes score lower
+        if (!target) {
+          return;
+        }
         var exactToken = tokens.some(function (t) { return t === kn; });
-        var base = exactToken ? 48 : (kn.indexOf(tokens[tokens.length - 1]) === 0 ? 28 : 36);
-        bump(target, base + Math.min(20, kn.length));
+        var prefixHit = tokens.some(function (t) { return kn.indexOf(t) === 0; });
+        var base = exactToken ? 52 : (prefixHit ? 34 : 40);
+        bump(target, base + Math.min(24, kn.length), kw);
       });
 
+      // Category / subcategory name matches (item label = subcategory)
       catIndex.index.forEach(function (entry) {
-        // Full subcategory name in title
         if (entry.leafNorm.length >= 2 && raw.indexOf(entry.leafNorm) !== -1) {
-          bump(entry, 55);
+          bump(entry, 55, entry.leafName);
         }
         var leafParts = entry.leafNorm.split(' ').filter(function (p) {
           return p.length >= 2 && !stop[p];
@@ -263,22 +291,21 @@
         leafParts.forEach(function (p) {
           tokens.forEach(function (t) {
             if (t === p) {
-              bump(entry, p.length >= 5 ? 18 : 12);
+              bump(entry, p.length >= 5 ? 18 : 12, entry.leafName);
             } else if (t.length >= 2 && p.indexOf(t) === 0) {
-              bump(entry, t.length >= 4 ? 14 : 10);
+              bump(entry, t.length >= 4 ? 14 : 10, entry.leafName);
             }
           });
         });
-        // Root name token / prefix match (weaker)
         var rootParts = entry.rootNorm.split(/[\s&]+/).filter(function (p) {
           return p.length >= 2 && !stop[p];
         });
         rootParts.forEach(function (p) {
           tokens.forEach(function (t) {
             if (t === p) {
-              bump(entry, 6);
+              bump(entry, 6, entry.leafName);
             } else if (t.length >= 2 && p.indexOf(t) === 0) {
-              bump(entry, 4);
+              bump(entry, 4, entry.leafName);
             }
           });
         });
@@ -287,9 +314,22 @@
       return Object.keys(scores)
         .map(function (k) { return scores[k]; })
         .filter(function (row) { return row.score >= 10; })
-        .sort(function (a, b) { return b.score - a.score; })
-        .slice(0, 6)
-        .map(function (row) { return row.entry; });
+        .sort(function (a, b) {
+          if (b.score !== a.score) {
+            return b.score - a.score;
+          }
+          return String(a.itemName).length - String(b.itemName).length;
+        })
+        .slice(0, 8)
+        .map(function (row) {
+          return {
+            rootId: row.entry.rootId,
+            rootName: row.entry.rootName,
+            leafId: row.entry.leafId,
+            leafName: row.entry.leafName,
+            itemName: titleCaseItemLabel(row.itemName)
+          };
+        });
     }
 
     function renderCategorySuggestions(title) {
@@ -306,16 +346,18 @@
       }
       var selectedLeaf = String($catId.val() || $sub.val() || '');
       suggestions.forEach(function (s, idx) {
+        var path = s.rootName + ' › ' + s.leafName;
         var $btn = $('<button type="button" class="pngm-post-suggest-chip" role="option"/>')
           .attr({
             'data-root-id': s.rootId,
             'data-root-name': s.rootName,
             'data-leaf-id': s.leafId,
             'data-leaf-name': s.leafName,
+            'data-item-name': s.itemName,
             'aria-selected': selectedLeaf && String(s.leafId) === selectedLeaf ? 'true' : 'false'
           })
-          .append($('<span class="pngm-post-suggest-leaf"/>').text(s.leafName))
-          .append($('<span class="pngm-post-suggest-root"/>').text(s.rootName));
+          .append($('<span class="pngm-post-suggest-item"/>').text(s.itemName))
+          .append($('<span class="pngm-post-suggest-path"/>').text(path));
         if (selectedLeaf && String(s.leafId) === selectedLeaf) {
           $btn.addClass('is-selected');
         }

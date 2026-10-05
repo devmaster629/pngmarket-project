@@ -625,6 +625,14 @@ body.pngm-post-wizard .pngm-post-page-title {
   color: #1b5e20;
 }
 
+.pngm-post-suggest-chip .pngm-post-suggest-item {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: inherit;
+}
+
+.pngm-post-suggest-chip .pngm-post-suggest-path,
 .pngm-post-suggest-chip .pngm-post-suggest-root {
   display: block;
   font-size: 12px;

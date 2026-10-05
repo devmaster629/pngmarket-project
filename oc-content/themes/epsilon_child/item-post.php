@@ -144,8 +144,8 @@
                 <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
               </div>
               <div class="pngm-post-suggest" id="pngm-cat-suggest" hidden>
-                <p class="pngm-post-suggest-label"><?php _e('Suggested categories', 'epsilon'); ?></p>
-                <div class="pngm-post-suggest-chips" id="pngm-cat-suggest-chips" role="listbox" aria-label="<?php echo osc_esc_html(__('Suggested categories', 'epsilon')); ?>"></div>
+                <p class="pngm-post-suggest-label"><?php _e('Suggested items', 'epsilon'); ?></p>
+                <div class="pngm-post-suggest-chips" id="pngm-cat-suggest-chips" role="listbox" aria-label="<?php echo osc_esc_html(__('Suggested items', 'epsilon')); ?>"></div>
               </div>
             </div>
             <p class="pngm-post-field-error is-hidden" data-for="title" hidden><?php _e('Please enter a title.', 'epsilon'); ?></p>
@@ -740,7 +740,7 @@
       'noContact' => __('No contact options selected', 'epsilon'),
       'publishing' => __('Publishing…', 'epsilon'),
       'publishingHint' => __('Publishing your listing, please wait…', 'epsilon'),
-      'suggestedCats' => __('Suggested categories', 'epsilon'),
+      'suggestedCats' => __('Suggested items', 'epsilon'),
       'suggestHint' => __('Tap a suggestion or pick a category below.', 'epsilon'),
       'pickSubcategory' => __('Choose a subcategory', 'epsilon'),
       'changeSubcategory' => __('Change', 'epsilon'),
