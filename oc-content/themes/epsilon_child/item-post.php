@@ -139,17 +139,17 @@
         <div class="pngm-post-card">
           <div class="pngm-post-field pngm-post-title-field">
             <label for="title[<?php echo $locale; ?>]"><?php _e('Title', 'epsilon'); ?> <span class="req">*</span></label>
-            <div class="input-box">
-              <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
+            <div class="pngm-post-title-wrap">
+              <div class="input-box">
+                <?php ItemForm::title_input('title', $locale, osc_esc_html(eps_post_item_title())); ?>
+              </div>
+              <div class="pngm-post-suggest" id="pngm-cat-suggest" hidden>
+                <p class="pngm-post-suggest-label"><?php _e('Suggested categories', 'epsilon'); ?></p>
+                <div class="pngm-post-suggest-chips" id="pngm-cat-suggest-chips" role="listbox" aria-label="<?php echo osc_esc_html(__('Suggested categories', 'epsilon')); ?>"></div>
+              </div>
             </div>
             <p class="pngm-post-field-error is-hidden" data-for="title" hidden><?php _e('Please enter a title.', 'epsilon'); ?></p>
             <div class="pngm-post-counter" data-counter-for="title"><span>0</span>/100</div>
-          </div>
-
-          <div class="pngm-post-suggest" id="pngm-cat-suggest" hidden>
-            <p class="pngm-post-suggest-label"><?php _e('Suggested categories', 'epsilon'); ?></p>
-            <div class="pngm-post-suggest-chips" id="pngm-cat-suggest-chips" role="list"></div>
-            <p class="pngm-post-muted pngm-post-suggest-hint"><?php _e('Tap a suggestion or pick a category below.', 'epsilon'); ?></p>
           </div>
 
           <h3 class="pngm-post-card-title"><?php _e('Select Category', 'epsilon'); ?></h3>

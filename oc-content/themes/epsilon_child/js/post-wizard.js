@@ -80,12 +80,16 @@
         .trim();
     }
 
-    /** Match title token to a single-word keyword (plurals / knife↔knives). */
+    /** Match title token to a single-word keyword (prefix, plurals / knife↔knives). */
     function tokenMatchesCatKeyword(token, kn) {
       if (!token || !kn || kn.indexOf(' ') !== -1) {
         return false;
       }
       if (token === kn) {
+        return true;
+      }
+      // Typed prefix of keyword: "mo" → mobile, "moto" → motorcycle
+      if (token.length >= 2 && kn.indexOf(token) === 0) {
         return true;
       }
       if (kn.length >= 4 && token.length >= kn.length && token.indexOf(kn) === 0) {
@@ -100,6 +104,9 @@
         singular = token.slice(0, -1);
       }
       if (singular === kn) {
+        return true;
+      }
+      if (singular.length >= 2 && kn.indexOf(singular) === 0) {
         return true;
       }
       if (kn + 's' === token || kn + 'es' === token) {
@@ -125,12 +132,25 @@
         return false;
       }
       if (kn.indexOf(' ') !== -1) {
-        return raw.indexOf(kn) !== -1;
+        if (raw.indexOf(kn) !== -1) {
+          return true;
+        }
+        // Prefix into a multi-word keyword: "moto" in "motorbike tyre"
+        return tokens.some(function (t) {
+          return t.length >= 2 && kn.split(' ').some(function (part) {
+            return part.indexOf(t) === 0;
+          });
+        });
       }
       if (tokens.some(function (t) { return tokenMatchesCatKeyword(t, kn); })) {
         return true;
       }
       return new RegExp('(?:^|\\s)' + kn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)').test(raw);
+    }
+
+    function hideCategorySuggestDropdown() {
+      $suggestBox.prop('hidden', true).attr('hidden', 'hidden');
+      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-active');
     }
 
     function buildCatIndex() {
@@ -189,7 +209,7 @@
 
     function scoreTitleSuggestions(title) {
       var raw = normalizeText(title);
-      if (raw.length < 3) {
+      if (raw.length < 2) {
         return [];
       }
       var stop = {
@@ -198,7 +218,7 @@
         buy: 1, free: 1, png: 1, good: 1, great: 1, nice: 1, brand: 1, model: 1
       };
       var tokens = raw.split(' ').filter(function (t) {
-        return t.length > 1 && !stop[t];
+        return t.length >= 2 && !stop[t];
       });
       if (!tokens.length) {
         return [];
@@ -226,39 +246,49 @@
           return;
         }
         var target = resolveLeafByName(keywords[kw]);
-        // Longer / more specific keywords score higher
-        bump(target, 40 + Math.min(20, kn.length));
+        // Exact / longer keywords score higher; short prefixes score lower
+        var exactToken = tokens.some(function (t) { return t === kn; });
+        var base = exactToken ? 48 : (kn.indexOf(tokens[tokens.length - 1]) === 0 ? 28 : 36);
+        bump(target, base + Math.min(20, kn.length));
       });
 
       catIndex.index.forEach(function (entry) {
         // Full subcategory name in title
-        if (entry.leafNorm.length >= 3 && raw.indexOf(entry.leafNorm) !== -1) {
+        if (entry.leafNorm.length >= 2 && raw.indexOf(entry.leafNorm) !== -1) {
           bump(entry, 55);
         }
         var leafParts = entry.leafNorm.split(' ').filter(function (p) {
-          return p.length > 2 && !stop[p];
+          return p.length >= 2 && !stop[p];
         });
         leafParts.forEach(function (p) {
-          if (tokens.indexOf(p) !== -1) {
-            bump(entry, p.length >= 5 ? 18 : 12);
-          }
+          tokens.forEach(function (t) {
+            if (t === p) {
+              bump(entry, p.length >= 5 ? 18 : 12);
+            } else if (t.length >= 2 && p.indexOf(t) === 0) {
+              bump(entry, t.length >= 4 ? 14 : 10);
+            }
+          });
         });
-        // Root name token match (weaker)
+        // Root name token / prefix match (weaker)
         var rootParts = entry.rootNorm.split(/[\s&]+/).filter(function (p) {
-          return p.length > 3 && !stop[p];
+          return p.length >= 2 && !stop[p];
         });
         rootParts.forEach(function (p) {
-          if (tokens.indexOf(p) !== -1) {
-            bump(entry, 6);
-          }
+          tokens.forEach(function (t) {
+            if (t === p) {
+              bump(entry, 6);
+            } else if (t.length >= 2 && p.indexOf(t) === 0) {
+              bump(entry, 4);
+            }
+          });
         });
       });
 
       return Object.keys(scores)
         .map(function (k) { return scores[k]; })
-        .filter(function (row) { return row.score >= 12; })
+        .filter(function (row) { return row.score >= 10; })
         .sort(function (a, b) { return b.score - a.score; })
-        .slice(0, 3)
+        .slice(0, 6)
         .map(function (row) { return row.entry; });
     }
 
@@ -271,22 +301,26 @@
       var suggestions = scoreTitleSuggestions(title);
       $suggestChips.empty();
       if (!suggestions.length) {
-        $suggestBox.prop('hidden', true).attr('hidden', 'hidden');
+        hideCategorySuggestDropdown();
         return;
       }
       var selectedLeaf = String($catId.val() || $sub.val() || '');
-      suggestions.forEach(function (s) {
-        var label = s.rootName + ' › ' + s.leafName;
-        var $btn = $('<button type="button" class="pngm-post-suggest-chip" role="listitem"/>')
+      suggestions.forEach(function (s, idx) {
+        var $btn = $('<button type="button" class="pngm-post-suggest-chip" role="option"/>')
           .attr({
             'data-root-id': s.rootId,
             'data-root-name': s.rootName,
             'data-leaf-id': s.leafId,
-            'data-leaf-name': s.leafName
+            'data-leaf-name': s.leafName,
+            'aria-selected': selectedLeaf && String(s.leafId) === selectedLeaf ? 'true' : 'false'
           })
-          .text(label);
+          .append($('<span class="pngm-post-suggest-leaf"/>').text(s.leafName))
+          .append($('<span class="pngm-post-suggest-root"/>').text(s.rootName));
         if (selectedLeaf && String(s.leafId) === selectedLeaf) {
           $btn.addClass('is-selected');
+        }
+        if (idx === 0) {
+          $btn.addClass('is-active');
         }
         $suggestChips.append($btn);
       });
@@ -296,8 +330,14 @@
     function scheduleCategorySuggestions() {
       window.clearTimeout(suggestTimer);
       suggestTimer = window.setTimeout(function () {
-        renderCategorySuggestions($form.find('input[name^="title"]').val() || '');
-      }, 180);
+        var title = $form.find('input[name^="title"]').val() || '';
+        if (normalizeText(title).length < 2) {
+          lastSuggestKey = '';
+          hideCategorySuggestDropdown();
+          return;
+        }
+        renderCategorySuggestions(title);
+      }, 120);
     }
 
     function applyCategorySuggestion(rootId, rootName, leafId, leafName) {
@@ -312,9 +352,10 @@
       $sub.val(String(leafId));
       syncCatFromSubcategory();
       updateSubcatPickedUI(leafName || ($sub.find('option:selected').text() || ''));
-      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected');
+      $suggestChips.find('.pngm-post-suggest-chip').removeClass('is-selected is-active');
       $suggestChips.find('.pngm-post-suggest-chip[data-leaf-id="' + leafId + '"]').addClass('is-selected');
       updateSummary(rootName, leafName || ($sub.find('option:selected').text() || ''));
+      hideCategorySuggestDropdown();
     }
 
     function usesPostSubcatSheet() {
@@ -2114,6 +2155,11 @@
       }
     });
 
+    $form.on('mousedown', '.pngm-post-suggest-chip', function (e) {
+      // Keep focus handling from closing the list before click applies.
+      e.preventDefault();
+    });
+
     $form.on('click', '.pngm-post-suggest-chip', function () {
       var $chip = $(this);
       applyCategorySuggestion(
@@ -2129,6 +2175,51 @@
       updateSummary(null, null, t || '—');
       scheduleCategorySuggestions();
       scheduleDuplicateTitleCheck();
+    });
+
+    $form.on('focus', 'input[name^="title"]', function () {
+      var t = $.trim($(this).val() || '');
+      if (normalizeText(t).length >= 2) {
+        lastSuggestKey = '';
+        scheduleCategorySuggestions();
+      }
+    });
+
+    $form.on('keydown', 'input[name^="title"]', function (e) {
+      var $items = $suggestChips.find('.pngm-post-suggest-chip');
+      if (!$items.length || $suggestBox.prop('hidden')) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+          hideCategorySuggestDropdown();
+        }
+        return;
+      }
+      var $active = $items.filter('.is-active');
+      var idx = $items.index($active);
+      if (e.key === 'ArrowDown' || e.keyCode === 40) {
+        e.preventDefault();
+        $items.removeClass('is-active');
+        idx = idx < $items.length - 1 ? idx + 1 : 0;
+        $items.eq(idx).addClass('is-active');
+      } else if (e.key === 'ArrowUp' || e.keyCode === 38) {
+        e.preventDefault();
+        $items.removeClass('is-active');
+        idx = idx > 0 ? idx - 1 : $items.length - 1;
+        $items.eq(idx).addClass('is-active');
+      } else if (e.key === 'Enter' || e.keyCode === 13) {
+        if ($active.length) {
+          e.preventDefault();
+          $active.trigger('click');
+        }
+      } else if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        hideCategorySuggestDropdown();
+      }
+    });
+
+    $(document).on('mousedown.pngmCatSuggest', function (e) {
+      if (!$(e.target).closest('.pngm-post-title-wrap').length) {
+        hideCategorySuggestDropdown();
+      }
     });
 
     $form.on('blur', 'input[name^="title"]', function () {
