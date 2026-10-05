@@ -312,9 +312,14 @@ function pngm_pwa_head()
  */
 function pngm_pwa_register_sw_footer()
 {
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
     if (defined('OC_ADMIN') && OC_ADMIN) {
         return;
     }
+    $printed = true;
 
     if (function_exists('pngm_webpush_ensure_sw_file')) {
         pngm_webpush_ensure_sw_file();
@@ -375,14 +380,33 @@ function pngm_pwa_register_sw_footer()
 </div>
 <script>
 (function () {
+  if (window.__pngmPwaInstallBooted) {
+    var dupes = document.querySelectorAll('[data-pngm-pwa-install]');
+    var di;
+    for (di = 1; di < dupes.length; di += 1) {
+      if (dupes[di].parentNode) dupes[di].parentNode.removeChild(dupes[di]);
+    }
+    return;
+  }
+  window.__pngmPwaInstallBooted = true;
+
   var swUrl = <?php echo json_encode($sw); ?>;
   var L = <?php echo json_encode($L); ?>;
   var loggedIn = <?php echo (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in()) ? 'true' : 'false'; ?>;
   var deferredPrompt = null;
-  var banner = document.querySelector('[data-pngm-pwa-install]');
+  var banners = document.querySelectorAll('[data-pngm-pwa-install]');
+  var banner = banners[0] || null;
+  var bi;
+  for (bi = 1; bi < banners.length; bi += 1) {
+    if (banners[bi].parentNode) banners[bi].parentNode.removeChild(banners[bi]);
+  }
   var storageKey = 'pngm_home_add_dismissed_v5';
-  var SHOW_AFTER_MS =5000;
+  var seenKey = 'pngm_home_add_seen_v1';
+  var SHOW_AFTER_MS = 5000;
   var autoShown = false;
+  var pendingShow = false;
+  var pausedForKeyboard = false;
+  var shownThisLoad = false;
 
   function detectDisplayMode() {
     var mode = 'browser';
@@ -426,16 +450,52 @@ function pngm_pwa_register_sw_footer()
 
   function wasDismissed() {
     try {
-      return window.localStorage.getItem(storageKey) === '1';
-    } catch (e) {
-      return false;
-    }
+      if (window.localStorage.getItem(storageKey) === '1') return true;
+    } catch (e) {}
+    if (document.cookie && document.cookie.indexOf(storageKey + '=1') !== -1) return true;
+    return false;
+  }
+
+  function seenAlready() {
+    if (wasDismissed()) return true;
+    try {
+      if (window.localStorage.getItem(seenKey) === '1') return true;
+    } catch (e) {}
+    try {
+      if (window.sessionStorage.getItem(seenKey) === '1') return true;
+    } catch (e) {}
+    if (document.cookie && document.cookie.indexOf(seenKey + '=1') !== -1) return true;
+    return false;
+  }
+
+  function markSeen() {
+    shownThisLoad = true;
+    try { window.localStorage.setItem(seenKey, '1'); } catch (e) {}
+    try { window.sessionStorage.setItem(seenKey, '1'); } catch (e) {}
+    document.cookie = seenKey + '=1; path=/; max-age=31536000; SameSite=Lax';
   }
 
   function dismiss() {
     if (!banner) return;
+    pendingShow = false;
+    pausedForKeyboard = false;
     banner.hidden = true;
+    banner.setAttribute('hidden', 'hidden');
+    banner.removeAttribute('data-shown');
     try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
+    try { window.sessionStorage.setItem(seenKey, '1'); } catch (e) {}
+    document.cookie = storageKey + '=1; path=/; max-age=31536000; SameSite=Lax';
+  }
+
+  function keepSingleBanner() {
+    var nodes = document.querySelectorAll('[data-pngm-pwa-install]');
+    var i;
+    if (!banner && nodes.length) banner = nodes[0];
+    for (i = 0; i < nodes.length; i += 1) {
+      if (nodes[i] !== banner && nodes[i].parentNode) {
+        nodes[i].parentNode.removeChild(nodes[i]);
+      }
+    }
   }
 
   function stepIcon(name) {
@@ -519,8 +579,27 @@ function pngm_pwa_register_sw_footer()
     return !!(document.body && document.body.classList.contains('im-chat-page'));
   }
 
+  function keyboardOpen() {
+    var el = document.activeElement;
+    if (el) {
+      var tag = (el.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable) {
+        var type = (el.getAttribute('type') || '').toLowerCase();
+        if (type !== 'button' && type !== 'submit' && type !== 'checkbox' && type !== 'radio' && type !== 'file' && type !== 'hidden') {
+          return true;
+        }
+      }
+    }
+    try {
+      if (window.visualViewport && (window.innerHeight - window.visualViewport.height) > 140) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   function canAutoShow() {
-    if (!banner || alreadyInstalled() || wasDismissed() || !isPhone()) {
+    if (!banner || alreadyInstalled() || seenAlready() || !isPhone()) {
       return false;
     }
     if (isChatPage()) {
@@ -529,7 +608,28 @@ function pngm_pwa_register_sw_footer()
     if (phoneIntroOpen()) {
       return false;
     }
+    if (keyboardOpen()) {
+      return false;
+    }
     return true;
+  }
+
+  function revealBanner(force) {
+    keepSingleBanner();
+    if (!banner || alreadyInstalled()) return;
+    if (!force && (wasDismissed() || seenAlready())) return;
+    if (banner.getAttribute('data-shown') === '1' && !banner.hidden) return;
+    if (banner.parentNode !== document.body) {
+      document.body.appendChild(banner);
+    }
+    fillBannerCopy();
+    banner.hidden = false;
+    banner.removeAttribute('hidden');
+    banner.setAttribute('data-shown', '1');
+    autoShown = true;
+    pendingShow = false;
+    pausedForKeyboard = false;
+    markSeen();
   }
 
   function showBanner(mode, force) {
@@ -537,13 +637,14 @@ function pngm_pwa_register_sw_footer()
     if (!isPhone()) return;
     if (!force && !canAutoShow()) return;
     if (alreadyInstalled()) return;
-    if (banner.parentNode !== document.body) {
-      document.body.appendChild(banner);
+    if (!force && keyboardOpen()) {
+      pendingShow = true;
+      return;
     }
-    fillBannerCopy();
-    banner.hidden = false;
-    banner.removeAttribute('hidden');
-    autoShown = true;
+    if (!force && banner.getAttribute('data-shown') === '1' && !banner.hidden) {
+      return;
+    }
+    revealBanner(!!force);
   }
 
   function bindBanner() {
@@ -612,12 +713,42 @@ function pngm_pwa_register_sw_footer()
     document.body.appendChild(banner);
   }
   bindBanner();
-  (function tryAutoShow(delay) {
+
+  function resumeAfterKeyboard() {
     window.setTimeout(function () {
-      if (alreadyInstalled() || wasDismissed() || !isPhone() || isChatPage()) {
+      pausedForKeyboard = false;
+      pendingShow = false;
+    }, 350);
+  }
+
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!t || !banner || banner.hidden) return;
+    if (!keyboardOpen()) return;
+    pausedForKeyboard = true;
+    pendingShow = true;
+    banner.hidden = true;
+  });
+  document.addEventListener('focusout', resumeAfterKeyboard);
+  if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+    window.visualViewport.addEventListener('resize', function () {
+      if (!banner) return;
+      if (keyboardOpen() && !banner.hidden) {
+        pausedForKeyboard = true;
+        pendingShow = true;
+        banner.hidden = true;
         return;
       }
-      if (phoneIntroOpen()) {
+      if (!keyboardOpen()) resumeAfterKeyboard();
+    });
+  }
+
+  (function tryAutoShow(delay) {
+    window.setTimeout(function () {
+      if (autoShown || shownThisLoad || alreadyInstalled() || seenAlready() || !isPhone() || isChatPage()) {
+        return;
+      }
+      if (phoneIntroOpen() || keyboardOpen()) {
         tryAutoShow(2000);
         return;
       }
@@ -925,6 +1056,7 @@ function pngm_pwa_install_css()
     ?>
 <style id="pngm-pwa-install-css">
 .pngm-pwa-install[hidden]{display:none!important}
+.pngm-pwa-install ~ .pngm-pwa-install{display:none!important}
 .pngm-pwa-install{
   position:fixed;left:12px;right:12px;
   bottom:calc(72px + env(safe-area-inset-bottom,0px));
@@ -932,8 +1064,8 @@ function pngm_pwa_install_css()
   animation:pngmPwaBannerIn .35s ease
 }
 @keyframes pngmPwaBannerIn{
-  from{opacity:0;transform:translateY(16px)}
-  to{opacity:1;transform:translateY(0)}
+  from{opacity:0}
+  to{opacity:1}
 }
 .pngm-pwa-install-inner{
   pointer-events:auto;position:relative;display:flex;flex-direction:column;gap:12px;
