@@ -208,9 +208,30 @@ function pngm_item_contact_pref_save($item)
         $pref = 'message';
     }
 
-    // WhatsApp as preferred only makes sense with WhatsApp opt-in.
-    if ($pref === 'whatsapp' && !pngm_item_whatsapp_enabled($item_id)) {
-        $pref = 'message';
+    // Choosing WhatsApp as preferred also turns the public WhatsApp button on.
+    if ($pref === 'whatsapp') {
+        if (function_exists('osc_set_preference')) {
+            osc_set_preference(pngm_item_whatsapp_pref_key($item_id), '1', 'pngm_whatsapp', 'BOOLEAN');
+        }
+        if (class_exists('Preference')) {
+            Preference::newInstance()->set(pngm_item_whatsapp_pref_key($item_id), '1', 'pngm_whatsapp');
+        }
+        if (class_exists('ModelWAC')) {
+            try {
+                $model = ModelWAC::newInstance();
+                $data = $model->getData($item_id);
+                if (is_array($data) && isset($data['fk_i_item_id'])) {
+                    $model->updateData($item_id, array('b_enable' => 1));
+                } else {
+                    $model->insertData(array(
+                        'fk_i_item_id' => $item_id,
+                        'b_enable' => 1,
+                    ));
+                }
+            } catch (Throwable $e) {
+                // Ignore plugin sync failures.
+            }
+        }
     }
 
     if (function_exists('osc_set_preference')) {

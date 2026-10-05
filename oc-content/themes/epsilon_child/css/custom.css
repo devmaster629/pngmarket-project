@@ -3705,7 +3705,7 @@
     margin-top: 0;
   }
   
-  @media (max-width: 767px) {
+    @media (max-width: 767px) {
     body#item #item-side {
       margin-top: 6px;
       padding-top: 0;
@@ -3713,6 +3713,8 @@
   
     .pngm-contact-panel {
       padding: 10px 0 2px;
+      overflow: visible;
+      max-width: 100%;
     }
   
     .pngm-contact-title {
@@ -3720,20 +3722,35 @@
       font-size: 15px;
     }
   
-    .pngm-contact-actions {
+    /* Two columns, third button full width — a zoomed iPhone was clipping WhatsApp off the right. */
+    .pngm-contact-actions,
+    .pngm-contact-actions.pngm-contact-count-3 {
+      grid-template-columns: 1fr 1fr;
       gap: 6px;
+    }
+
+    .pngm-contact-actions.pngm-contact-count-3 .pngm-contact-action:nth-child(3),
+    .pngm-contact-actions.pngm-contact-count-1 {
+      grid-column: 1 / -1;
+    }
+
+    .pngm-contact-actions.pngm-contact-count-1 {
+      grid-template-columns: 1fr;
     }
   
     .pngm-contact-action {
-      min-height: 36px;
-      padding: 7px 6px;
+      min-height: 40px;
+      min-width: 0;
+      padding: 8px 8px;
       border-radius: 9px;
-      font-size: 12px;
+      font-size: 13px;
       gap: 5px;
+      white-space: normal;
     }
   
     .pngm-contact-action i {
-      font-size: 13px;
+      font-size: 14px;
+      flex: 0 0 auto;
     }
   
     body#item #item-main .row.description.pngm-item-detail-block,
@@ -10686,4 +10703,14 @@
     object-fit: contain;
     border-radius: 6px;
   }
+
+/* 16px minimum on phones: iOS Safari / the home-screen PWA zooms the whole page
+   into any focused field smaller than 16px and keeps that zoom until the user pinches out. */
+@media screen and (max-width: 767px) {
+  html body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="range"]):not([type="image"]),
+  html body select,
+  html body textarea {
+    font-size: 16px !important;
+  }
+}
   
