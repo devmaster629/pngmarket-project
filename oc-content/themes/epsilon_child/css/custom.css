@@ -7515,7 +7515,28 @@
       border: 0 !important;
       box-shadow: none !important;
     }
-  
+
+    /* Inbox (im-threads) wraps the split in .pngm-im-inbox — that wrapper must
+       fill #user-main or height:100% on the split fails and the list is clipped.
+       Do not target bare .pngm-im: on open threads that class sits ON the split. */
+    body.im-chat-page #user-main .pngm-im-inbox,
+    body.im-chat-page #user-main .im-html.pngm-im-inbox {
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 1 auto !important;
+      width: 100% !important;
+      min-height: 0 !important;
+      height: 100% !important;
+      max-height: 100% !important;
+      overflow: hidden !important;
+      box-sizing: border-box;
+    }
+
+    body.im-chat-page #user-main .pngm-im-inbox > .pngm-im-split {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
+
     body.im-chat-page .pngm-im-split {
       display: grid !important;
       grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) !important;

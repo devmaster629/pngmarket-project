@@ -3135,12 +3135,24 @@
     var form = document.getElementById('im-message-form');
     var board = document.querySelector('.im-table.im-messages');
     var pinTimers = [];
+    var hasSplit = !!document.querySelector('.pngm-im-split, .pngm-im-chat-layout');
+    var hasThread = !!(form || document.querySelector('.im-file-messages') || document.querySelector('.im-table.im-messages'));
 
-    if (!form && !document.querySelector('.im-file-messages')) {
+    // Desktop inbox (list + empty board) and open threads both need the shell.
+    // After Messages stopped auto-opening a chat, inbox had no form/board yet,
+    // so this never ran and AJAX-opened chats grew taller than the sidebar.
+    if (!hasSplit && !hasThread) {
       return;
     }
 
     document.body.classList.add('im-chat-page');
+    if (window.__pngmChatLayoutBooted) {
+      if (typeof window.pngmLayoutChat === 'function') {
+        window.pngmLayoutChat({ pinBottom: true });
+      }
+      return;
+    }
+    window.__pngmChatLayoutBooted = true;
 
     /**
      * Ask the browser to shrink the LAYOUT viewport for the soft keyboard.
@@ -3286,46 +3298,61 @@
     // listing/thread header down the screen character by character.
     var frozenBoardTop = null;
 
+    function syncDesktopShellHeight() {
+      if (window.innerWidth <= 767) {
+        return false;
+      }
+      var menu = document.getElementById('user-menu');
+      var main = document.getElementById('user-main');
+      var shell = document.querySelector('.container.primary.pngm-ua-shell, .container.primary');
+      if (!menu || !main) {
+        return false;
+      }
+      // Temporarily clear so sidebar reports its natural content height.
+      if (shell) {
+        shell.style.removeProperty('--pngm-im-shell-h');
+      }
+      main.style.height = '';
+      main.style.maxHeight = '';
+      var sideH = Math.ceil(menu.getBoundingClientRect().height);
+      if (sideH > 120) {
+        var hPx = sideH + 'px';
+        if (shell) {
+          shell.style.setProperty('--pngm-im-shell-h', hPx);
+        }
+        main.style.height = hPx;
+        main.style.maxHeight = hPx;
+      }
+      return true;
+    }
+
     function layout(opts) {
       form = document.getElementById('im-message-form');
       board = document.querySelector('.im-table.im-messages');
-      if (!board) {
-        return;
-      }
 
       var pinBottom = !!(opts && opts.pinBottom);
       var typing = !!(opts && opts.typing);
-      var nearBottom = (board.scrollHeight - board.scrollTop - board.clientHeight) < 80;
+      var nearBottom = board
+        ? ((board.scrollHeight - board.scrollTop - board.clientHeight) < 80)
+        : false;
 
       // Desktop: match list+board height to sidebar (no empty stretch below Logout).
       if (window.innerWidth > 767) {
-        var menu = document.getElementById('user-menu');
-        var main = document.getElementById('user-main');
-        var shell = document.querySelector('.container.primary.pngm-ua-shell, .container.primary');
-        if (menu && main) {
-          // Temporarily clear so sidebar reports its natural content height.
-          if (shell) {
-            shell.style.removeProperty('--pngm-im-shell-h');
-          }
-          main.style.height = '';
-          main.style.maxHeight = '';
-          var sideH = Math.ceil(menu.getBoundingClientRect().height);
-          if (sideH > 120) {
-            var hPx = sideH + 'px';
-            if (shell) {
-              shell.style.setProperty('--pngm-im-shell-h', hPx);
-            }
-            main.style.height = hPx;
-            main.style.maxHeight = hPx;
-          }
+        syncDesktopShellHeight();
+        if (board) {
+          board.style.maxHeight = '';
+          board.style.height = '';
+          board.style.overflowY = '';
         }
-        board.style.maxHeight = '';
-        board.style.height = '';
-        board.style.overflowY = '';
         frozenBoardTop = null;
-        if (pinBottom || nearBottom) {
+        if (board && (pinBottom || nearBottom)) {
           pinChatBottom({ delays: pinBottom ? [0, 50, 150, 350, 700] : [0, 50] });
         }
+        return;
+      }
+
+      // Mobile needs a message board; inbox-only has nothing to size.
+      if (!board) {
         return;
       }
 
@@ -3441,8 +3468,16 @@
     }
 
     window.pngmLayoutChat = layout;
+    window.pngmSyncImShellHeight = syncDesktopShellHeight;
     measureShellChrome();
     layout({ pinBottom: true });
+    // Inbox paints after fonts/sidebar; remeasure so the first open matches a refreshed chat.
+    window.requestAnimationFrame(function () {
+      layout({ pinBottom: true });
+      window.setTimeout(function () {
+        layout({ pinBottom: true });
+      }, 120);
+    });
     window.addEventListener('resize', function () {
       // While the keyboard is open the visualViewport handler owns the layout;
       // reacting to resize here re-measures a shrunken viewport and jumps.
@@ -3456,7 +3491,9 @@
       frozenBoardTop = null;
       layout({ pinBottom: true });
     });
-    pinChatBottom({ delays: [0, 80, 200] });
+    if (board) {
+      pinChatBottom({ delays: [0, 80, 200] });
+    }
 
     // Plugin autosize uses a 50–85px floor, so one keystroke already grows the field
     // and can push the send-hint under the overflow clip on mobile.
@@ -4790,13 +4827,18 @@
         if (activeCard) {
           activeHref = activeCard.getAttribute('href') || '';
         }
+        var bumpIds = [];
         document.querySelectorAll('.pngm-im-convo[data-thread-id]').forEach(function (card) {
           var tid = String(card.getAttribute('data-thread-id') || '');
+          var prev = parseInt(card.getAttribute('data-unread') || '0', 10) || 0;
           var n = parseInt(counts.threads[tid], 10) || 0;
           var isActive = card.classList.contains('is-active')
             || (activeHref !== '' && card.getAttribute('href') === activeHref);
           if (isActive) {
             n = 0;
+          }
+          if (!isActive && n > prev) {
+            bumpIds.push(tid);
           }
           card.setAttribute('data-unread', String(n));
           card.classList.toggle('is-unread', n > 0);
@@ -4824,6 +4866,12 @@
             dot.parentNode.removeChild(dot);
           }
         });
+        // Newest activity first: threads that just received mail move to the top.
+        if (typeof window.pngmImBumpConversation === 'function') {
+          bumpIds.forEach(function (tid) {
+            window.pngmImBumpConversation(tid);
+          });
+        }
       }
     }
 
@@ -5185,6 +5233,7 @@
     initLiveSearchBoard();
     initMobileSearchFilters();
     initChatLayout();
+    window.pngmInitChatLayout = initChatLayout;
     initItemDescriptionClamp();
     initLocationModalUx();
     initSearchSortUi();

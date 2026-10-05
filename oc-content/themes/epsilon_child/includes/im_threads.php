@@ -1,8 +1,8 @@
 <?php
 /**
- * Messages tab entry.
- * Desktop: redirect to latest conversation (split list + board).
- * Mobile: show conversation list; tap a chat to open details.
+ * Messages tab entry — conversation list.
+ * Desktop: list + empty board pane (pick a thread; AJAX loads the chat).
+ * Mobile: list only; tap opens the full thread page.
  */
 
 if (!defined('ABS_PATH')) {
@@ -14,18 +14,6 @@ require_once dirname(__FILE__) . '/im_ui.php';
 $user_id = (int) osc_logged_user_id();
 $rows = pngm_im_prepare_conversations($user_id, 50, 0);
 $is_mobile = pngm_im_is_mobile_request();
-
-// Desktop: open latest thread (list sits beside the board there)
-if (!$is_mobile && is_array($rows) && !empty($rows[0]['url'])) {
-    $go = $rows[0]['url'];
-    if (!headers_sent()) {
-        header('Location: ' . $go);
-        exit;
-    }
-    echo '<script>window.location.replace(' . json_encode($go) . ');</script>';
-    echo '<noscript><meta http-equiv="refresh" content="0;url=' . osc_esc_html($go) . '"></noscript>';
-    exit;
-}
 ?>
 <link href="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/css/tipped.css" rel="stylesheet" type="text/css" />
 <script src="<?php echo osc_base_url(); ?>oc-content/plugins/instant_messenger/js/tipped.js"></script>
@@ -39,7 +27,21 @@ if (!$is_mobile && is_array($rows) && !empty($rows[0]['url'])) {
       <?php }
   } ?>
 
-  <?php pngm_im_render_conversation_list($rows, 0); ?>
+  <?php if (!$is_mobile) { ?>
+  <div class="pngm-im-split">
+  <?php } ?>
+
+    <?php pngm_im_render_conversation_list($rows, 0); ?>
+
+  <?php if (!$is_mobile) { ?>
+    <div class="pngm-im-board-pane pngm-im-board-pane--idle" aria-label="<?php echo osc_esc_html(__('Conversation', 'epsilon')); ?>">
+      <div class="pngm-im-board-placeholder">
+        <i class="fas fa-comments" aria-hidden="true"></i>
+        <p><?php _e('Select a conversation to read and reply', 'epsilon'); ?></p>
+      </div>
+    </div>
+  </div>
+  <?php } ?>
 
   <div class="pngm-im-blocked">
     <?php

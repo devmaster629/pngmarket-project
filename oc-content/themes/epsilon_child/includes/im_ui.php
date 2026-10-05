@@ -344,6 +344,8 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
         $last = ModelIM::newInstance()->getLastMessageByThreadId($thread_id);
         $snippet = '';
         $time_label = '';
+        // Prefer last message time — thread.d_datetime can lag or use mixed date formats.
+        $updated_raw = '';
         if (is_array($last)) {
             $snippet = trim(strip_tags((string) @$last['s_message']));
             if (function_exists('mb_substr')) {
@@ -351,15 +353,17 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             } else {
                 $snippet = substr($snippet, 0, 80);
             }
-            $dt = (string) @$last['d_datetime'];
-            if ($dt === '') {
-                $dt = (string) @$t['d_datetime'];
-            }
-            if ($dt !== '' && function_exists('im_get_time_diff')) {
-                $time_label = im_get_time_diff($dt);
-            }
-        } elseif (!empty($t['d_datetime']) && function_exists('im_get_time_diff')) {
-            $time_label = im_get_time_diff($t['d_datetime']);
+            $updated_raw = (string) @$last['d_datetime'];
+        }
+        if ($updated_raw === '') {
+            $updated_raw = (string) @$t['d_datetime'];
+        }
+        if ($updated_raw !== '' && function_exists('im_get_time_diff')) {
+            $time_label = im_get_time_diff($updated_raw);
+        }
+        $updated_ts = $updated_raw !== '' ? (int) strtotime($updated_raw) : 0;
+        if ($updated_ts < 0) {
+            $updated_ts = 0;
         }
 
         $avatar = function_exists('im_profile_img_url') ? im_profile_img_url($peer_id, $peer_name) : '';
@@ -393,6 +397,7 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             'avatar' => $avatar,
             'snippet' => $snippet !== '' ? $snippet : __('No messages yet', 'epsilon'),
             'time' => $time_label,
+            'updated_ts' => $updated_ts,
             'unread' => $unread,
             'unread_count' => $unread_n,
             'url' => $url,
@@ -405,6 +410,16 @@ function pngm_im_prepare_conversations($user_id, $limit = 50, $offset = 0)
             'listing_url' => $listing_url,
         );
     }
+
+    // Newest activity first (last message), not thread-create / stale thread stamp.
+    usort($out, function ($a, $b) {
+        $ta = isset($a['updated_ts']) ? (int) $a['updated_ts'] : 0;
+        $tb = isset($b['updated_ts']) ? (int) $b['updated_ts'] : 0;
+        if ($ta === $tb) {
+            return ((int) @$b['thread_id']) - ((int) @$a['thread_id']);
+        }
+        return ($tb > $ta) ? 1 : -1;
+    });
 
     return $out;
 }
@@ -559,6 +574,7 @@ function pngm_im_render_conversation_list($rows, $active_thread_id = 0)
           <a class="pngm-im-convo<?php echo $row['unread'] ? ' is-unread' : ''; ?><?php echo $is_active ? ' is-active' : ''; ?>"
              href="<?php echo osc_esc_html($row['url']); ?>"
              data-thread-id="<?php echo (int) $row['thread_id']; ?>"
+             data-updated="<?php echo (int) (!empty($row['updated_ts']) ? $row['updated_ts'] : 0); ?>"
              data-unread="<?php echo (int) (!empty($row['unread_count']) ? $row['unread_count'] : ($row['unread'] ? 1 : 0)); ?>"
              data-search="<?php echo osc_esc_html($row['search_hay']); ?>">
             <span class="pngm-im-convo-av">
@@ -693,6 +709,41 @@ function pngm_im_ui_script()
     }
   }
 
+  /**
+   * Keep the conversation list in latest-activity order: move a thread to the
+   * top when it gets a new message (sent or received).
+   */
+  function bumpConversationToTop(threadId, snippet, timeLabel) {
+    if (!list || !threadId) {
+      return;
+    }
+    var card = list.querySelector('.pngm-im-convo[data-thread-id="' + String(threadId) + '"]');
+    if (!card) {
+      return;
+    }
+    card.setAttribute('data-updated', String(Math.floor(Date.now() / 1000)));
+    if (snippet != null && snippet !== '') {
+      var em = card.querySelector('.pngm-im-convo-bottom em');
+      if (em) {
+        em.textContent = String(snippet);
+      }
+    }
+    if (timeLabel != null && timeLabel !== '') {
+      var timeEl = card.querySelector('.pngm-im-convo-top time');
+      if (timeEl) {
+        timeEl.textContent = String(timeLabel);
+      }
+    }
+    var empty = document.getElementById('pngm-messages-empty');
+    if (list.firstChild !== card) {
+      list.insertBefore(card, list.firstChild);
+    }
+    if (empty && empty.parentNode === list) {
+      list.appendChild(empty);
+    }
+  }
+  window.pngmImBumpConversation = bumpConversationToTop;
+
   function extractScriptVar(doc, varName) {
     var scripts = doc.querySelectorAll('script');
     var re = new RegExp('var\\s+' + varName + '\\s*=\\s*["\']([^"\']+)["\']');
@@ -775,6 +826,11 @@ function pngm_im_ui_script()
     }
     if (typeof window.pngmLayoutChat === 'function') {
       window.pngmLayoutChat({ pinBottom: true });
+    } else if (typeof window.pngmInitChatLayout === 'function') {
+      window.pngmInitChatLayout();
+    }
+    if (typeof window.pngmSyncImShellHeight === 'function') {
+      window.pngmSyncImShellHeight();
     }
     if (typeof window.pngmPinChatBottom === 'function') {
       window.pngmPinChatBottom({ delays: [0, 50, 150, 350, 700] });
@@ -872,6 +928,7 @@ function pngm_im_ui_script()
         window.location.href = url;
         return;
       }
+      boardPane.classList.remove('pngm-im-board-pane--idle');
       boardPane.innerHTML = nextBoard ? nextBoard.innerHTML : nextMessages.outerHTML;
 
       syncRefreshUrls(doc, url);
@@ -1259,6 +1316,13 @@ function pngm_im_ui_script()
               if (res.id) {
                 $rows.last().attr('data-message-id', res.id);
               }
+            }
+            if (typeof window.pngmImBumpConversation === 'function') {
+              window.pngmImBumpConversation(
+                meta.threadId,
+                text || (fileNames.length ? fileNames[0] : ''),
+                res.time || '<?php echo osc_esc_js(__('Just now', 'epsilon')); ?>'
+              );
             }
             // Swap pending bubbles for real server HTML (links, stored names).
             if (hasFile && typeof window.imRefreshMessages === 'function') {

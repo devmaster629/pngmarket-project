@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.60');
+    define('PNGM_CHILD_VERSION', '2.9.64');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -2001,54 +2001,6 @@ function pngm_recaptcha_incognito_fix()
 
 // Must be 0–10: Osclass ignores higher footer priorities.
 osc_add_hook('footer', 'pngm_recaptcha_incognito_fix', 9);
-
-/**
- * Messages tab should open the latest conversation on desktop only.
- * Mobile keeps the conversation list first, then opens a thread on tap.
- */
-function pngm_im_redirect_threads_to_latest()
-{
-    if (!osc_is_web_user_logged_in()) {
-        return;
-    }
-
-    $route = (string) Params::getParam('route');
-    if ($route !== 'im-threads' && $route !== 'im-thread-page') {
-        return;
-    }
-
-    // Let threads.php handle block / flag / notify / remove actions first
-    if (Params::getParam('action') === 'block_email') {
-        return;
-    }
-    if ((int) Params::getParam('remove-id') > 0
-        || (int) Params::getParam('thread-flag-id') > 0
-        || (int) Params::getParam('thread-notify-id') > 0
-        || (int) Params::getParam('thread-remove-id') > 0
-    ) {
-        return;
-    }
-
-    $ui = WebThemes::newInstance()->getCurrentThemePath() . 'includes/im_ui.php';
-    if (!file_exists($ui)) {
-        return;
-    }
-    require_once $ui;
-
-    if (function_exists('pngm_im_is_mobile_request') && pngm_im_is_mobile_request()) {
-        return;
-    }
-
-    $rows = pngm_im_prepare_conversations((int) osc_logged_user_id(), 1, 0);
-    if (!is_array($rows) || empty($rows[0]['url'])) {
-        return;
-    }
-
-    header('Location: ' . $rows[0]['url']);
-    exit;
-}
-
-osc_add_hook('init', 'pngm_im_redirect_threads_to_latest', 9);
 
 /**
  * AJAX listing report — always records the mark (core skips some browsers).

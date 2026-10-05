@@ -4680,6 +4680,34 @@ body.pngm-ua-messages .pngm-im-search input:focus {
   color: #2e7d32;
 }
 
+.pngm-im-board-pane--idle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 32px 24px;
+}
+
+.pngm-im-board-placeholder {
+  text-align: center;
+  max-width: 300px;
+  color: #6b7785;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.pngm-im-board-placeholder i {
+  display: block;
+  margin: 0 auto 14px;
+  font-size: 36px;
+  color: #2e7d32;
+  opacity: 0.85;
+}
+
+.pngm-im-board-placeholder p {
+  margin: 0;
+}
+
 .pngm-im-thread-head {
   display: flex;
   align-items: center;
@@ -6034,8 +6062,32 @@ body.im-chat-page #im-message-form #im-file {
 }
 
 .pngm-im-inbox .pngm-im-list-pane {
-  min-height: 560px;
-  width: 100%;
+  min-height: 0;
+  width: auto;
+}
+
+body.pngm-ua-messages.file-threads .pngm-im-inbox {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+body.pngm-ua-messages.file-threads .pngm-im-inbox > .pngm-im-split {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+@media screen and (min-width: 768px) {
+  /* Keep desktop Messages shell flush with the sidebar; blocked users stay on mobile list. */
+  body.pngm-ua-messages.file-threads .pngm-im-blocked {
+    display: none;
+  }
 }
 
 body.pngm-ua-messages.file-messages .pngm-im-list-side {
