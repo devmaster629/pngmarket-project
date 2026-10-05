@@ -666,8 +666,8 @@ function pngm_pwa_register_sw_footer()
 }
 
 /**
- * One-time phone modal after login. iPhone adds to Home Screen; Android enables push.
- * Not shown on Windows or Mac desktops.
+ * One-time phone modal after login for push notifications (Android / standalone).
+ * iPhone Safari never shows this — Home Screen install is covered by the main banner.
  *
  * @param string $sw
  * @param string $brand
@@ -877,41 +877,26 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
 
   var kind = deviceKind();
   if (kind === 'desktop' || seen()) return;
-  mode = (kind === 'ios' && !isStandalone()) ? 'home' : 'push';
-  if (mode === 'push' && (typeof Notification === 'undefined' || Notification.permission !== 'default')) {
+  // iPhone / iPad: the main “Add to Home Screen” banner already covers install steps.
+  // Never show this second modal with the same content again.
+  if (kind === 'ios' && !isStandalone()) {
+    mark();
+    return;
+  }
+  mode = 'push';
+  if (typeof Notification === 'undefined' || Notification.permission !== 'default') {
     mark();
     return;
   }
 
-  if (mode === 'home') {
-    showIco('phone');
-    if (titleEl) titleEl.textContent = isIpad() ? copy.ipadTitle : copy.iosTitle;
-    if (bodyEl) bodyEl.textContent = copy.iosBody;
-    if (goLabel) goLabel.textContent = copy.showHow;
-    if (btnBell) btnBell.hidden = true;
-    fillSteps();
-  } else {
-    showIco('bell');
-    if (titleEl) titleEl.textContent = copy.pushTitle;
-    if (bodyEl) bodyEl.textContent = copy.pushBody;
-    if (goLabel) goLabel.textContent = copy.enable;
-    if (btnBell) btnBell.hidden = false;
-  }
+  showIco('bell');
+  if (titleEl) titleEl.textContent = copy.pushTitle;
+  if (bodyEl) bodyEl.textContent = copy.pushBody;
+  if (goLabel) goLabel.textContent = copy.enable;
+  if (btnBell) btnBell.hidden = false;
 
   if (goBtn) {
     goBtn.addEventListener('click', function () {
-      if (mode === 'home' && !stepsOpen) {
-        stepsOpen = true;
-        if (bodyEl) bodyEl.hidden = true;
-        if (stepsEl) stepsEl.hidden = false;
-        if (goLabel) goLabel.textContent = copy.gotIt;
-        if (laterBtn) laterBtn.hidden = true;
-        return;
-      }
-      if (mode === 'home') {
-        closeIntro();
-        return;
-      }
       enablePush();
     });
   }

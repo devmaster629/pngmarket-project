@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.54');
+    define('PNGM_CHILD_VERSION', '2.9.55');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
