@@ -2465,3 +2465,43 @@ body.pngm-post-wizard .pngm-post-captcha .g-recaptcha {
   max-width: 100% !important;
   overflow: visible !important;
 }
+
+@media screen and (max-width: 767px) {
+  /* 16px minimum: iOS Safari zooms the whole page into any focused field with a
+     smaller font and keeps that zoom through later steps (Condition options get clipped).
+     Same fix as the login form. */
+  body.pngm-post-wizard input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+  body.pngm-post-wizard textarea,
+  body.pngm-post-wizard select,
+  body.pngm-post-wizard .pngm-post-field input[type="text"],
+  body.pngm-post-wizard .pngm-post-field input[type="tel"],
+  body.pngm-post-wizard .pngm-post-field input[type="email"],
+  body.pngm-post-wizard .pngm-post-field input[type="number"],
+  body.pngm-post-wizard .pngm-post-field input[type="search"],
+  body.pngm-post-wizard .pngm-post-field textarea,
+  body.pngm-post-wizard .pngm-post-field select,
+  body.pngm-post-wizard .item-publish input[type="text"],
+  body.pngm-post-wizard .item-publish input[type="tel"],
+  body.pngm-post-wizard .item-publish input[type="email"],
+  body.pngm-post-wizard .item-publish input[type="number"],
+  body.pngm-post-wizard .item-publish input[type="search"],
+  body.pngm-post-wizard .item-publish textarea,
+  body.pngm-post-wizard .item-publish select,
+  body.pngm-post-wizard #sCondition,
+  body.pngm-post-wizard select.sCondition,
+  body.pngm-post-wizard select.mini,
+  body.pngm-post-wizard .pngm-post-phone-row input,
+  body.pngm-post-wizard .pngm-post-phone-row input[type="tel"],
+  body.pngm-post-wizard .pngm-post-phone-row input[type="text"],
+  body.pngm-post-wizard .pngm-post-price-box input#price,
+  body.pngm-post-wizard .pngm-post-price-box select#currency,
+  body.pngm-post-wizard .pngm-post-price-box select.currency,
+  body.pngm-post-wizard .atr-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+  body.pngm-post-wizard .atr-form select,
+  body.pngm-post-wizard .atr-form textarea,
+  body.pngm-post-wizard #post-hooks input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+  body.pngm-post-wizard #post-hooks select,
+  body.pngm-post-wizard #post-hooks textarea {
+    font-size: 16px !important;
+  }
+}
