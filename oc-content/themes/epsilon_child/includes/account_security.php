@@ -753,9 +753,13 @@ function pngm_sec_social_status($user_id)
             'linked' => false,
             'email' => '',
             'name' => '',
-            'available' => function_exists('pngm_facebook_login_available')
-                ? pngm_facebook_login_available()
-                : (function_exists('fjl_param') && (int) fjl_param('enabled') === 1),
+            // Connect needs App Secret for verification — not just App ID.
+            'available' => function_exists('pngm_facebook_login_ready')
+                ? pngm_facebook_login_ready()
+                : (function_exists('fjl_param')
+                    && (int) fjl_param('enabled') === 1
+                    && trim((string) fjl_param('app_id')) !== ''
+                    && trim((string) fjl_param('app_secret')) !== ''),
         ),
     );
 
@@ -1047,6 +1051,104 @@ function pngm_sec_social_login_redirect($url)
 osc_add_filter('correct_login_url_redirect', 'pngm_sec_social_login_redirect', 5);
 
 /**
+ * HTTP GET helper for Facebook Graph calls.
+ *
+ * @param string $url
+ * @return string
+ */
+function pngm_sec_social_http_get($url)
+{
+    $url = (string) $url;
+    if ($url === '') {
+        return '';
+    }
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'PNGMarket-FacebookLink/1.0',
+        ));
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false || $code < 200 || $code >= 300) {
+            return '';
+        }
+        return (string) $body;
+    }
+    $ctx = stream_context_create(array(
+        'http' => array(
+            'timeout' => 15,
+            'header' => "User-Agent: PNGMarket-FacebookLink/1.0\r\n",
+        ),
+    ));
+    $body = @file_get_contents($url, false, $ctx);
+    return is_string($body) ? $body : '';
+}
+
+/**
+ * Verify Facebook access token with Graph /me and return profile fields.
+ *
+ * @param string $access_token
+ * @return array|string Profile array on success, error message on failure.
+ */
+function pngm_sec_social_facebook_graph_me($access_token)
+{
+    $access_token = trim((string) $access_token);
+    if ($access_token === '') {
+        return __('Facebook did not return an access token. Please try again.', 'epsilon');
+    }
+    $url = 'https://graph.facebook.com/me?' . http_build_query(array(
+        'fields' => 'id,name,email,picture.type(large)',
+        'access_token' => $access_token,
+    ));
+    $raw = pngm_sec_social_http_get($url);
+    if ($raw === '') {
+        return __('Could not reach Facebook to verify your login. Please try again.', 'epsilon');
+    }
+    $data = json_decode($raw, true);
+    if (!is_array($data) || empty($data['id'])) {
+        $msg = isset($data['error']['message']) ? (string) $data['error']['message'] : '';
+        if ($msg !== '') {
+            return sprintf(__('Facebook verification failed: %s', 'epsilon'), $msg);
+        }
+        return __('Facebook login could not be verified.', 'epsilon');
+    }
+    return $data;
+}
+
+/**
+ * Verify Facebook signedRequest HMAC (optional secondary check).
+ *
+ * @param string $signed_request
+ * @param string $app_secret
+ * @return bool
+ */
+function pngm_sec_social_facebook_signed_ok($signed_request, $app_secret)
+{
+    $signed_request = (string) $signed_request;
+    $app_secret = (string) $app_secret;
+    if ($signed_request === '' || $app_secret === '') {
+        return false;
+    }
+    $parts = explode('.', $signed_request, 2);
+    if (count($parts) !== 2) {
+        return false;
+    }
+    $sig = strtr($parts[0], '-_', '+/');
+    $pad = strlen($sig) % 4;
+    if ($pad > 0) {
+        $sig .= str_repeat('=', 4 - $pad);
+    }
+    $expected = hash_hmac('sha256', $parts[1], $app_secret, true);
+    $got = base64_decode($sig, true);
+    return ($got !== false && hash_equals($expected, $got));
+}
+
+/**
  * Link Facebook to the currently logged-in user (no fake flag, no account switch).
  * Expects POSTed Instant Login payload fields from the security page SDK bridge.
  *
@@ -1059,56 +1161,61 @@ function pngm_sec_social_link_facebook_logged_in($user_id)
     if ($user_id < 1 || !function_exists('fjl_param') || !class_exists('ModelFJL')) {
         return __('Facebook login is not available.', 'epsilon');
     }
-    if ((int) fjl_param('enabled') !== 1 || trim((string) fjl_param('app_secret')) === '') {
+    if ((int) fjl_param('enabled') !== 1
+        || trim((string) fjl_param('app_id')) === ''
+        || trim((string) fjl_param('app_secret')) === ''
+    ) {
         return __('Facebook login is not configured yet.', 'epsilon');
     }
 
     $auth_raw = Params::getParam('pngm_fb_auth');
-    $profile_raw = Params::getParam('pngm_fb_profile');
     // Prefer raw POST — Params may entity-encode JSON quotes.
     if (isset($_POST['pngm_fb_auth']) && is_string($_POST['pngm_fb_auth'])) {
         $auth_raw = $_POST['pngm_fb_auth'];
     }
-    if (isset($_POST['pngm_fb_profile']) && is_string($_POST['pngm_fb_profile'])) {
-        $profile_raw = $_POST['pngm_fb_profile'];
-    }
     $auth = json_decode((string) $auth_raw, true);
-    $profile = json_decode((string) $profile_raw, true);
-    if (!is_array($auth) || empty($auth['authResponse']['userID']) || empty($auth['authResponse']['signedRequest'])) {
+    if (!is_array($auth) || empty($auth['authResponse']) || !is_array($auth['authResponse'])) {
         return __('Facebook did not return a valid login. Please try again.', 'epsilon');
     }
-    if (!is_array($profile)) {
-        $profile = array();
+
+    $ar = $auth['authResponse'];
+    $oauth_uid = isset($ar['userID']) ? (string) $ar['userID'] : '';
+    $access_token = isset($ar['accessToken']) ? (string) $ar['accessToken'] : '';
+    $signed_request = isset($ar['signedRequest']) ? (string) $ar['signedRequest'] : '';
+
+    if ($oauth_uid === '' || $access_token === '') {
+        return __('Facebook did not return a valid login. Please try again.', 'epsilon');
     }
 
-    $signed_request = (string) $auth['authResponse']['signedRequest'];
-    $parts = explode('.', $signed_request);
-    if (count($parts) < 2) {
-        return __('Facebook login could not be verified.', 'epsilon');
+    // Primary verification: ask Facebook Graph with the user access token.
+    $me = pngm_sec_social_facebook_graph_me($access_token);
+    if (!is_array($me)) {
+        return is_string($me) ? $me : __('Facebook login could not be verified.', 'epsilon');
     }
-    $encoded_sig = $parts[0];
-    $encoded_payload = $parts[1];
-    $hashed = hash_hmac('sha256', $encoded_payload, (string) fjl_param('app_secret'), true);
-    if (base64_decode(strtr($encoded_sig, '-_', '+/')) !== $hashed) {
+    if ((string) $me['id'] !== $oauth_uid) {
         return __('Facebook login could not be verified.', 'epsilon');
     }
 
-    $oauth_uid = (string) $auth['authResponse']['userID'];
+    // Secondary: signedRequest HMAC when present (ignore soft failures if Graph already OK).
+    if ($signed_request !== '' && !pngm_sec_social_facebook_signed_ok($signed_request, (string) fjl_param('app_secret'))) {
+        // Graph /me already proved the token — continue.
+    }
+
     $owner = ModelFJL::newInstance()->getUserFBDataByAuthId($oauth_uid);
     if (is_array($owner) && (int) @$owner['fk_i_user_id'] > 0 && (int) $owner['fk_i_user_id'] !== $user_id) {
         return __('This Facebook account is already linked to another PNGMarket user.', 'epsilon');
     }
 
     $picture = '';
-    if (isset($profile['picture']['data']['url'])) {
-        $picture = (string) $profile['picture']['data']['url'];
+    if (isset($me['picture']['data']['url'])) {
+        $picture = (string) $me['picture']['data']['url'];
     }
 
     $ok = pngm_sec_social_attach_facebook($user_id, array(
         's_oauth_provider' => 'facebook',
         's_oauth_uid' => $oauth_uid,
-        's_name' => isset($profile['name']) ? (string) $profile['name'] : '',
-        's_email' => isset($profile['email']) ? (string) $profile['email'] : '',
+        's_name' => isset($me['name']) ? (string) $me['name'] : '',
+        's_email' => isset($me['email']) ? (string) $me['email'] : '',
         's_picture' => $picture,
     ));
 

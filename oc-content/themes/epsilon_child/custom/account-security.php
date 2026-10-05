@@ -545,7 +545,6 @@ if ($show_pass && $show_email) {
             <form method="post" action="<?php echo osc_esc_html($sec_url); ?>" id="pngm-sec-fb-connect-form">
               <input type="hidden" name="pngm_sec_action" value="social_connect_facebook" />
               <input type="hidden" name="pngm_fb_auth" id="pngm-fb-auth" value="" />
-              <input type="hidden" name="pngm_fb_profile" id="pngm-fb-profile" value="" />
               <?php if (function_exists('osc_csrf_token_form')) { osc_csrf_token_form(); } ?>
               <button type="button" class="pngm-ua-btn is-ghost pngm-sec-btn" id="pngm-sec-fb-connect"><?php _e('Connect with Facebook', 'epsilon'); ?></button>
             </form>
@@ -786,16 +785,22 @@ if ($show_pass && $show_email) {
 <?php if (!$facebook_on && $facebook_ready && function_exists('fjl_param') && trim((string) fjl_param('app_id')) !== '') {
     $pngm_fb_app_id = trim((string) fjl_param('app_id'));
     $pngm_fb_ver = defined('FB_JS_SDK_VERSION') ? FB_JS_SDK_VERSION : 'v16.0';
-    $pngm_fb_fail = osc_esc_js(__('Facebook login is not available. Please try again later.', 'epsilon'));
-    $pngm_fb_cancel = osc_esc_js(__('Facebook connect was cancelled.', 'epsilon'));
+    $pngm_fb_fail = __('Facebook login is not available. Please try again later.', 'epsilon');
+    $pngm_fb_cancel = __('Facebook connect was cancelled.', 'epsilon');
+    $pngm_fb_wait = __('Facebook is still loading. Please wait a moment and try again.', 'epsilon');
+    $pngm_fb_busy = __('Connecting…', 'epsilon');
     ?>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 <script>
 (function () {
   var btn = document.getElementById('pngm-sec-fb-connect');
   var form = document.getElementById('pngm-sec-fb-connect-form');
   if (!btn || !form) return;
 
+  var fbReady = false;
+  var connecting = false;
+  var defaultLabel = btn.textContent;
+
+  // Must be defined BEFORE loading sdk.js (Facebook requirement).
   window.fbAsyncInit = function () {
     if (typeof FB === 'undefined') return;
     FB.init({
@@ -804,32 +809,39 @@ if ($show_pass && $show_email) {
       xfbml: false,
       version: <?php echo json_encode($pngm_fb_ver); ?>
     });
+    fbReady = true;
   };
 
-  function submitLink(authResponse, profile) {
+  function submitLink(authResponse) {
     var authInput = document.getElementById('pngm-fb-auth');
-    var profileInput = document.getElementById('pngm-fb-profile');
-    if (!authInput || !profileInput) return;
+    if (!authInput) return;
     authInput.value = JSON.stringify(authResponse || {});
-    profileInput.value = JSON.stringify(profile || {});
     form.submit();
   }
 
   btn.addEventListener('click', function () {
-    if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
-      window.alert(<?php echo json_encode($pngm_fb_fail); ?>);
+    if (connecting) return;
+    if (!fbReady || typeof FB === 'undefined' || typeof FB.login !== 'function') {
+      window.alert(<?php echo json_encode($pngm_fb_wait); ?>);
       return;
     }
+    connecting = true;
+    btn.disabled = true;
+    btn.textContent = <?php echo json_encode($pngm_fb_busy); ?>;
+
     FB.login(function (response) {
-      if (!response || !response.authResponse) {
+      if (!response || !response.authResponse || !response.authResponse.accessToken) {
+        connecting = false;
+        btn.disabled = false;
+        btn.textContent = defaultLabel;
         window.alert(<?php echo json_encode($pngm_fb_cancel); ?>);
         return;
       }
-      FB.api('/me', { fields: 'name,email,picture' }, function (profile) {
-        submitLink(response, profile);
-      });
-    }, { scope: 'public_profile,email' });
+      // Profile is fetched server-side from Graph with the access token.
+      submitLink(response);
+    }, { scope: 'public_profile,email', return_scopes: true });
   });
 })();
 </script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 <?php } ?>
