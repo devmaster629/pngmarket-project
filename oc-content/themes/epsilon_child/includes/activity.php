@@ -96,7 +96,6 @@ function pngm_activity_icon($type)
         'listing_renewed' => 'fas fa-redo',
         'saved_search' => 'fas fa-bookmark',
         'security' => 'fas fa-shield-alt',
-        'subscription' => 'fas fa-credit-card',
     );
     $type = (string) $type;
     return isset($map[$type]) ? $map[$type] : 'fas fa-bell';
@@ -118,7 +117,6 @@ function pngm_activity_type_label($type)
         'listing_renewed' => __('Renewed', 'epsilon'),
         'saved_search' => __('Saved search', 'epsilon'),
         'security' => __('Security', 'epsilon'),
-        'subscription' => __('Subscription', 'epsilon'),
     );
     $type = (string) $type;
     return isset($map[$type]) ? $map[$type] : __('Update', 'epsilon');

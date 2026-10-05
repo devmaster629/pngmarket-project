@@ -7,17 +7,12 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.64');
+    define('PNGM_CHILD_VERSION', '2.9.65');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
 if (!defined('PNGM_FEATURE_COMPANIES_NAV')) {
     define('PNGM_FEATURE_COMPANIES_NAV', false);
-}
-
-/** Set true when subscription plans and billing are live. */
-if (!defined('PNGM_FEATURE_SUBSCRIPTION_PLANS')) {
-    define('PNGM_FEATURE_SUBSCRIPTION_PLANS', false);
 }
 
 /** Minimum password length for registration / password change (complexity is advisory only). */
@@ -54,7 +49,6 @@ require_once dirname(__FILE__) . '/includes/pwa.php';
 require_once dirname(__FILE__) . '/includes/activity.php';
 require_once dirname(__FILE__) . '/includes/account_security.php';
 require_once dirname(__FILE__) . '/includes/persistent_login.php';
-require_once dirname(__FILE__) . '/includes/subscriptions.php';
 require_once dirname(__FILE__) . '/includes/attributes_display.php';
 require_once dirname(__FILE__) . '/includes/item_detail_templates.php';
 require_once dirname(__FILE__) . '/includes/verification.php';
@@ -335,7 +329,6 @@ function pngm_enqueue_assets()
             || (strpos((string) Params::getParam('route'), 'osp-') === 0)
             || (Params::getParam('route') === 'pngm-notif-prefs')
             || (Params::getParam('route') === 'pngm-account-security')
-            || (Params::getParam('route') === 'pngm-subscriptions')
             || (Params::getParam('route') === 'pngm-activity');
     }
     if (Params::getParam('action') === 'pub_profile'

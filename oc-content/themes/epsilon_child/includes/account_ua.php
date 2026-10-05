@@ -34,9 +34,6 @@ function pngm_ua_active_key()
     if ($loc === 'user' && $sec === 'alerts') {
         return 'alerts';
     }
-    if ($route === 'pngm-subscriptions' || $sec === 'pngm-sub') {
-        return 'subscriptions';
-    }
     if ($loc === 'user' && $sec === 'profile') {
         return 'profile';
     }
@@ -488,9 +485,6 @@ function pngm_ua_render_sidebar($active = '')
         $count_activity,
         'notifications'
     );
-    if (function_exists('pngm_feature_subscription_plans_enabled') && pngm_feature_subscription_plans_enabled()) {
-        $item('subscriptions', function_exists('pngm_sub_url') ? pngm_sub_url() : osc_route_url('pngm-subscriptions'), __('Subscriptions', 'epsilon'), 'fas fa-credit-card');
-    }
     echo '</div>';
 
     echo '<div class="pngm-ua-nav-group"><div class="pngm-ua-nav-label">' . osc_esc_html(__('Profile', 'epsilon')) . '</div>';
