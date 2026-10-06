@@ -400,9 +400,9 @@ function pngm_pwa_register_sw_footer()
   for (bi = 1; bi < banners.length; bi += 1) {
     if (banners[bi].parentNode) banners[bi].parentNode.removeChild(banners[bi]);
   }
-  var storageKey = 'pngm_home_add_dismissed_v5';
-  var seenKey = 'pngm_home_add_seen_v1';
-  var SHOW_AFTER_MS = 5000;
+  var sessionDismissKey = 'pngm_home_add_session_dismiss_v1';
+  var installedKey = 'pngm_pwa_installed_v1';
+  var SHOW_AFTER_MS = 3500;
   var autoShown = false;
   var pendingShow = false;
   var pausedForKeyboard = false;
@@ -422,11 +422,11 @@ function pngm_pwa_register_sw_footer()
       }
     } catch (e) {}
     document.documentElement.setAttribute('data-pngm-display-mode', mode);
-    document.documentElement.classList.toggle('pngm-pwa-standalone', mode === 'standalone');
+    document.documentElement.classList.toggle('pngm-pwa-standalone', mode === 'standalone' || mode === 'fullscreen');
     var nodes = document.querySelectorAll('[data-pngm-display-mode-label]');
     Array.prototype.forEach.call(nodes, function (el) {
       el.textContent = mode;
-      el.classList.toggle('is-ok', mode === 'standalone');
+      el.classList.toggle('is-ok', mode === 'standalone' || mode === 'fullscreen');
     });
     return mode;
   }
@@ -448,31 +448,38 @@ function pngm_pwa_register_sw_footer()
     }
   }
 
-  function wasDismissed() {
+  function markInstalled() {
+    try { window.localStorage.setItem(installedKey, '1'); } catch (e) {}
+    document.cookie = installedKey + '=1; path=/; max-age=31536000; SameSite=Lax';
+  }
+
+  /**
+   * True only when this page is running as the installed home-screen app.
+   * Safari/Chrome tabs always return false — we cannot know about other
+   * browsers' icons, but we can detect "opened from the installed PWA".
+   */
+  function alreadyInstalled() {
+    var mode = detectDisplayMode();
+    if (mode === 'standalone' || mode === 'fullscreen') {
+      markInstalled();
+      return true;
+    }
     try {
-      if (window.localStorage.getItem(storageKey) === '1') return true;
+      if (typeof navigator !== 'undefined' && navigator.standalone === true) {
+        markInstalled();
+        return true;
+      }
     } catch (e) {}
-    if (document.cookie && document.cookie.indexOf(storageKey + '=1') !== -1) return true;
     return false;
   }
 
-  function seenAlready() {
-    if (wasDismissed()) return true;
+  // "Not now" only hides for this browser tab/session — next visit shows again if still not installed.
+  function wasDismissedThisSession() {
     try {
-      if (window.localStorage.getItem(seenKey) === '1') return true;
-    } catch (e) {}
-    try {
-      if (window.sessionStorage.getItem(seenKey) === '1') return true;
-    } catch (e) {}
-    if (document.cookie && document.cookie.indexOf(seenKey + '=1') !== -1) return true;
-    return false;
-  }
-
-  function markSeen() {
-    shownThisLoad = true;
-    try { window.localStorage.setItem(seenKey, '1'); } catch (e) {}
-    try { window.sessionStorage.setItem(seenKey, '1'); } catch (e) {}
-    document.cookie = seenKey + '=1; path=/; max-age=31536000; SameSite=Lax';
+      return window.sessionStorage.getItem(sessionDismissKey) === '1';
+    } catch (e) {
+      return false;
+    }
   }
 
   function dismiss() {
@@ -482,9 +489,7 @@ function pngm_pwa_register_sw_footer()
     banner.hidden = true;
     banner.setAttribute('hidden', 'hidden');
     banner.removeAttribute('data-shown');
-    try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
-    try { window.sessionStorage.setItem(seenKey, '1'); } catch (e) {}
-    document.cookie = storageKey + '=1; path=/; max-age=31536000; SameSite=Lax';
+    try { window.sessionStorage.setItem(sessionDismissKey, '1'); } catch (e) {}
   }
 
   function keepSingleBanner() {
@@ -599,7 +604,7 @@ function pngm_pwa_register_sw_footer()
   }
 
   function canAutoShow() {
-    if (!banner || alreadyInstalled() || seenAlready() || !isPhone()) {
+    if (!banner || alreadyInstalled() || wasDismissedThisSession() || !isPhone()) {
       return false;
     }
     if (isChatPage()) {
@@ -617,7 +622,7 @@ function pngm_pwa_register_sw_footer()
   function revealBanner(force) {
     keepSingleBanner();
     if (!banner || alreadyInstalled()) return;
-    if (!force && (wasDismissed() || seenAlready())) return;
+    if (!force && wasDismissedThisSession()) return;
     if (banner.getAttribute('data-shown') === '1' && !banner.hidden) return;
     if (banner.parentNode !== document.body) {
       document.body.appendChild(banner);
@@ -629,7 +634,9 @@ function pngm_pwa_register_sw_footer()
     autoShown = true;
     pendingShow = false;
     pausedForKeyboard = false;
-    markSeen();
+    shownThisLoad = true;
+    // Once per browser session; next visit shows again if still not installed.
+    try { window.sessionStorage.setItem(sessionDismissKey, '1'); } catch (e) {}
   }
 
   function showBanner(mode, force) {
@@ -665,6 +672,7 @@ function pngm_pwa_register_sw_footer()
           deferredPrompt.prompt();
           deferredPrompt.userChoice.then(function () {
             deferredPrompt = null;
+            markInstalled();
             dismiss();
           }).catch(function () {
             dismiss();
@@ -681,13 +689,16 @@ function pngm_pwa_register_sw_footer()
     var btn = e.target && e.target.closest ? e.target.closest('[data-pngm-pwa-install-btn]') : null;
     if (!btn) return;
     e.preventDefault();
-    if (detectDisplayMode() === 'standalone') {
+    if (alreadyInstalled()) {
       window.alert(<?php echo json_encode(__('PNGMarket is already on this phone’s home screen.', 'epsilon')); ?>);
       return;
     }
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function () { deferredPrompt = null; }).catch(function () {});
+      deferredPrompt.userChoice.then(function () {
+        deferredPrompt = null;
+        markInstalled();
+      }).catch(function () {});
       return;
     }
     showBanner(detectDisplayMode(), true);
@@ -704,6 +715,7 @@ function pngm_pwa_register_sw_footer()
 
   window.addEventListener('appinstalled', function () {
     deferredPrompt = null;
+    markInstalled();
     dismiss();
     detectDisplayMode();
   });
@@ -716,8 +728,21 @@ function pngm_pwa_register_sw_footer()
 
   function resumeAfterKeyboard() {
     window.setTimeout(function () {
+      if (keyboardOpen()) return;
       pausedForKeyboard = false;
+      if (!pendingShow || alreadyInstalled() || !isPhone()) {
+        pendingShow = false;
+        return;
+      }
       pendingShow = false;
+      // Restore the same banner if it was only hidden for the keyboard.
+      if (banner && banner.getAttribute('data-shown') === '1') {
+        banner.hidden = false;
+        banner.removeAttribute('hidden');
+        return;
+      }
+      if (wasDismissedThisSession()) return;
+      showBanner(detectDisplayMode());
     }, 350);
   }
 
@@ -745,10 +770,11 @@ function pngm_pwa_register_sw_footer()
 
   (function tryAutoShow(delay) {
     window.setTimeout(function () {
-      if (autoShown || shownThisLoad || alreadyInstalled() || seenAlready() || !isPhone() || isChatPage()) {
+      if (autoShown || alreadyInstalled() || wasDismissedThisSession() || !isPhone() || isChatPage()) {
         return;
       }
       if (phoneIntroOpen() || keyboardOpen()) {
+        pendingShow = true;
         tryAutoShow(2000);
         return;
       }
