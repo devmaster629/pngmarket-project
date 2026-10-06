@@ -140,40 +140,25 @@ $(document).ready(function(){
       if(!file || !isImageFile(file) || !window.URL || typeof URL.createObjectURL !== 'function') {
         return;
       }
-      if(!previewModal) {
-        previewModal = document.createElement('div');
-        previewModal.className = 'pngm-im-attach-preview';
-        previewModal.setAttribute('role', 'dialog');
-        previewModal.setAttribute('aria-modal', 'true');
-        previewModal.hidden = true;
-        previewModal.innerHTML =
-          '<button type="button" class="pngm-im-attach-preview-x" data-close aria-label="Close">&times;</button>' +
-          '<div class="pngm-im-attach-preview-stage"><img alt="" /></div>' +
-          '<div class="pngm-im-attach-preview-dock">' +
-            '<button type="button" class="pngm-im-attach-preview-close" data-close>Close</button>' +
-          '</div>';
-        document.body.appendChild(previewModal);
-        previewModal.addEventListener('click', function(e) {
-          if(e.target.closest('[data-close]') || e.target === previewModal) {
-            e.preventDefault();
-            closeAttachPreview();
-          }
-        });
-        document.addEventListener('keydown', function(e) {
-          if(!previewModal.hidden && (e.key === 'Escape' || e.keyCode === 27)) {
-            closeAttachPreview();
-          }
-        });
+      if(previewModalUrl) {
+        try { URL.revokeObjectURL(previewModalUrl); } catch (e) {}
+        previewModalUrl = '';
       }
-      closeAttachPreview();
       previewModalUrl = URL.createObjectURL(file);
-      var img = previewModal.querySelector('img');
-      if(img) {
-        img.src = previewModalUrl;
-        img.alt = file.name || '';
+      if(typeof window.pngmOpenStandalonePhoto === 'function') {
+        window.pngmOpenStandalonePhoto(previewModalUrl, {
+          bodyClass: 'pngm-im-photo-open',
+          historyKey: 'pngmImPhoto',
+          onAfterClose: function() {
+            if(previewModalUrl) {
+              try { URL.revokeObjectURL(previewModalUrl); } catch (e2) {}
+              previewModalUrl = '';
+            }
+          }
+        });
+        return;
       }
-      previewModal.hidden = false;
-      document.body.classList.add('pngm-im-attach-preview-open');
+      window.open(previewModalUrl, '_blank');
     }
 
     function fileInput() {

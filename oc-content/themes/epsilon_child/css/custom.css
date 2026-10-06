@@ -10694,7 +10694,9 @@
   }
 
   body.pngm-im-photo-open #navi-bar,
-  body.pngm-im-photo-open header {
+  body.pngm-im-photo-open header,
+  body.pngm-lg-open.pngm-im-photo-open #navi-bar,
+  body.pngm-lg-open.pngm-im-photo-open header {
     visibility: hidden;
     pointer-events: none;
   }

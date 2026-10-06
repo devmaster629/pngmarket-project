@@ -1004,7 +1004,7 @@ function pngm_im_ui_script()
       // The chat photo viewer owns one history entry (open = pushState, close =
       // back). Reloading the board for that pop re-rendered the thread under the
       // user and threw away their scroll position.
-      if (document.body && document.body.classList.contains('pngm-im-photo-open')) {
+      if (document.body && (document.body.classList.contains('pngm-im-photo-open') || document.body.classList.contains('pngm-lg-open'))) {
         return;
       }
       if (window.__pngmImPhotoBackAt && (Date.now() - window.__pngmImPhotoBackAt) < 1500) {
@@ -1780,7 +1780,7 @@ function pngm_im_ui_script()
       }
 
       function onKbTouchStart(e) {
-        if (e.target && e.target.closest && e.target.closest('.pngm-im-photo-viewer')) {
+        if (e.target && e.target.closest && (e.target.closest('.pngm-im-photo-viewer') || e.target.closest('.pngm-native-viewer'))) {
           kbTouchStartY = null;
           kbTouchScroller = null;
           return;
@@ -1795,7 +1795,7 @@ function pngm_im_ui_script()
       }
 
       function onKbTouchMove(e) {
-        if (e.target && e.target.closest && e.target.closest('.pngm-im-photo-viewer')) {
+        if (e.target && e.target.closest && (e.target.closest('.pngm-im-photo-viewer') || e.target.closest('.pngm-native-viewer'))) {
           return;
         }
         var kbActive = iosKeyboardFrameActive();

@@ -959,4 +959,236 @@
   };
 
   window.pngmCreatePhotoZoom = createController;
+
+  /**
+   * Fullscreen photo lightbox used by Messages (same pinch/pan/wheel stack as
+   * listing photos). Opens one image with swipe-down / Back to close.
+   *
+   * @param {string} src
+   * @param {object} [opts]
+   * @param {function} [opts.onBeforeOpen]
+   * @param {function} [opts.onAfterClose]
+   * @param {string} [opts.bodyClass]
+   * @param {string} [opts.historyKey]
+   */
+  window.pngmOpenStandalonePhoto = (function () {
+    var overlay = null;
+    var stage = null;
+    var viewerImg = null;
+    var hintEl = null;
+    var zoom = null;
+    var open = false;
+    var hist = false;
+    var scrollY = 0;
+    var hintTimer = 0;
+    var bodyClass = '';
+    var historyKey = 'pngmNvPhoto';
+    var onAfterClose = null;
+    var gesturesReady = false;
+
+    function lockBody() {
+      scrollY = window.scrollY || window.pageYOffset || 0;
+      document.body.classList.add('pngm-lg-open');
+      if (bodyClass) {
+        document.body.classList.add(bodyClass);
+      }
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + scrollY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    }
+
+    function unlockBody() {
+      document.body.classList.remove('pngm-lg-open');
+      if (bodyClass) {
+        document.body.classList.remove(bodyClass);
+      }
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    }
+
+    function bindGestures() {
+      if (gesturesReady || !overlay) {
+        return;
+      }
+      gesturesReady = true;
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (type) {
+        document.addEventListener(type, function (e) {
+          if (open || (e.target && e.target.closest && e.target.closest('.pngm-native-viewer'))) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+      });
+      overlay.addEventListener('touchmove', function (e) {
+        if (open) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
+
+    function ensure() {
+      if (overlay) {
+        return;
+      }
+      overlay = document.createElement('div');
+      overlay.className = 'pngm-native-viewer pngm-standalone-photo';
+      overlay.setAttribute('hidden', 'hidden');
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-label', 'Photo');
+      overlay.innerHTML =
+        '<div class="pngm-nv-ui">' +
+          '<button type="button" class="pngm-nv-close" aria-label="Close">&times;</button>' +
+        '</div>' +
+        '<div class="pngm-nv-stage"><img class="pngm-nv-img" alt="" draggable="false" /></div>' +
+        '<div class="pngm-nv-hint">Pinch to zoom · Swipe down to close</div>';
+      document.body.appendChild(overlay);
+      stage = overlay.querySelector('.pngm-nv-stage');
+      viewerImg = overlay.querySelector('.pngm-nv-img');
+      hintEl = overlay.querySelector('.pngm-nv-hint');
+
+      zoom = createController(stage, function () {
+        return viewerImg;
+      }, {
+        overlay: overlay,
+        swipeClose: true,
+        wheelZoom: true,
+        onClose: function () {
+          closeViewer(false);
+        }
+      });
+
+      viewerImg.addEventListener('load', function () {
+        if (open && zoom) {
+          zoom.reset(false);
+        }
+      });
+
+      overlay.querySelector('.pngm-nv-close').addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeViewer(false);
+      });
+
+      stage.addEventListener('dblclick', function (e) {
+        if (!zoom) {
+          return;
+        }
+        e.preventDefault();
+        zoom.zoomToggle(e.clientX, e.clientY);
+      });
+
+      window.addEventListener('popstate', function () {
+        if (open) {
+          closeViewer(true);
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (!open) {
+          return;
+        }
+        if (e.key === 'Escape' || e.keyCode === 27) {
+          e.preventDefault();
+          closeViewer(false);
+        }
+      });
+
+      bindGestures();
+    }
+
+    function closeViewer(fromPop) {
+      if (!open || !overlay) {
+        return;
+      }
+      open = false;
+      overlay.setAttribute('hidden', 'hidden');
+      overlay.classList.remove('is-open');
+      overlay.style.background = '';
+      if (zoom) {
+        zoom.reset(false);
+      }
+      if (viewerImg) {
+        viewerImg.removeAttribute('src');
+      }
+      unlockBody();
+      if (hintTimer) {
+        window.clearTimeout(hintTimer);
+        hintTimer = 0;
+      }
+      var after = onAfterClose;
+      onAfterClose = null;
+      if (typeof after === 'function') {
+        try { after(); } catch (err) {}
+      }
+      if (hist) {
+        hist = false;
+        if (!fromPop) {
+          var st = null;
+          try { st = history.state; } catch (errState) {}
+          if (st && st[historyKey]) {
+            window.__pngmImPhotoBackAt = Date.now();
+            try { history.back(); } catch (err) {}
+          }
+        }
+      }
+    }
+
+    return function openStandalonePhoto(src, opts) {
+      if (!src) {
+        return;
+      }
+      opts = opts || {};
+      ensure();
+      bodyClass = opts.bodyClass || '';
+      historyKey = opts.historyKey || 'pngmNvPhoto';
+      onAfterClose = typeof opts.onAfterClose === 'function' ? opts.onAfterClose : null;
+
+      if (typeof opts.onBeforeOpen === 'function') {
+        try { opts.onBeforeOpen(); } catch (err) {}
+      }
+
+      if (zoom) {
+        zoom.reset(false);
+      }
+      viewerImg.setAttribute('src', src);
+
+      if (open) {
+        return;
+      }
+      open = true;
+      overlay.removeAttribute('hidden');
+      overlay.classList.add('is-open');
+      overlay.style.background = '';
+      lockBody();
+
+      if (hintEl) {
+        hintEl.classList.remove('is-gone');
+        if (hintTimer) {
+          window.clearTimeout(hintTimer);
+        }
+        hintTimer = window.setTimeout(function () {
+          hintEl.classList.add('is-gone');
+        }, 2800);
+      }
+
+      if (!hist) {
+        hist = true;
+        try {
+          var state = {};
+          state[historyKey] = 1;
+          history.pushState(state, '');
+        } catch (err) {
+          hist = false;
+        }
+      }
+    };
+  })();
 })();

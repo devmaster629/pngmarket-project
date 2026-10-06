@@ -4469,21 +4469,14 @@
   }
 
   /**
-   * Chat photos open in an overlay: pinch / wheel / double-click zoom, and a
-   * stable return to the thread (Back, swipe down, or the browser back gesture).
+   * Chat photos open in the same native lightbox as listing photos
+   * (pinch / wheel / double-click zoom via gallery.js).
    */
   function initChatPhotoViewer() {
     var IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp|heic|heif)(\?.*)?$/i;
-    var overlay = null;
-    var imgEl = null;
-    var stage = null;
-    var zoom = null;
-    var openState = false;
-    var hist = false;
-    var blockUntil = 0;
-    var scrollY = 0;
     var threadTop = 0;
     var threadEl = null;
+    var scrollY = 0;
 
     function isImageLink(link) {
       if (!link) return false;
@@ -4500,201 +4493,53 @@
       return document.querySelector('body.im-chat-page .im-table.im-messages');
     }
 
-    function restoreThread() {
-      if (threadEl) {
-        threadEl.scrollTop = threadTop;
-      }
-    }
-
-    function lockThread() {
+    function rememberThread() {
       threadEl = threadScroller();
       threadTop = threadEl ? threadEl.scrollTop : 0;
       scrollY = window.scrollY || window.pageYOffset || 0;
-      document.body.classList.add('pngm-im-photo-open');
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = '-' + scrollY + 'px';
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.width = '100%';
     }
 
-    function unlockThread() {
-      document.body.classList.remove('pngm-im-photo-open');
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = '';
+    function restoreThread() {
       window.scrollTo(0, scrollY);
-      restoreThread();
-      window.requestAnimationFrame(restoreThread);
-      window.setTimeout(restoreThread, 60);
-      window.setTimeout(restoreThread, 280);
-    }
-
-    // Pinch / wheel / double-tap zoom and swipe-to-close come from gallery.js.
-    // Attach lazily so the viewer still gains them if that script lands late.
-    function ensureZoom() {
-      if (zoom || !stage || typeof window.pngmCreatePhotoZoom !== 'function') {
-        return;
+      if (threadEl) {
+        threadEl.scrollTop = threadTop;
       }
-      zoom = window.pngmCreatePhotoZoom(stage, function () {
-        return imgEl;
-      }, {
-        overlay: overlay,
-        swipeClose: true,
-        onClose: function () {
-          close(false);
-        }
+      window.requestAnimationFrame(function () {
+        if (threadEl) threadEl.scrollTop = threadTop;
       });
-    }
-
-    function build() {
-      overlay = document.createElement('div');
-      overlay.className = 'pngm-im-photo-viewer';
-      overlay.setAttribute('role', 'dialog');
-      overlay.setAttribute('aria-modal', 'true');
-      overlay.setAttribute('aria-label', 'Photo');
-      overlay.hidden = true;
-      overlay.innerHTML =
-        '<button type="button" class="pngm-im-photo-x" data-close aria-label="Back to chat">' +
-          '<i class="fas fa-times" aria-hidden="true"></i>' +
-        '</button>' +
-        '<div class="pngm-im-photo-stage"><img alt="" draggable="false" /></div>' +
-        '<p class="pngm-im-photo-hint">Pinch or scroll to zoom · Swipe down to close</p>' +
-        '<div class="pngm-im-photo-dock">' +
-          '<button type="button" class="pngm-im-photo-close" data-close>' +
-            '<i class="fas fa-arrow-left" aria-hidden="true"></i>' +
-            '<span>Back to chat</span>' +
-          '</button>' +
-        '</div>';
-      document.body.appendChild(overlay);
-      imgEl = overlay.querySelector('img');
-      stage = overlay.querySelector('.pngm-im-photo-stage');
-
-      ensureZoom();
-
-      imgEl.addEventListener('load', function () {
-        if (openState && zoom && !zoom.isZoomed()) {
-          zoom.reset(false);
-        }
-      });
-
-      stage.addEventListener('dblclick', function (e) {
-        if (!zoom || typeof zoom.zoomToggle !== 'function') {
-          return;
-        }
-        e.preventDefault();
-        zoom.zoomToggle(e.clientX, e.clientY);
-      });
-
-      overlay.addEventListener('click', function (e) {
-        if (Date.now() < blockUntil) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        if (e.target.closest && e.target.closest('[data-close]')) {
-          e.preventDefault();
-          e.stopPropagation();
-          close(false);
-        }
-      });
-
-      overlay.addEventListener('touchend', function (e) {
-        var btn = e.target && e.target.closest ? e.target.closest('[data-close]') : null;
-        if (!btn) {
-          return;
-        }
-        e.preventDefault();
-        if (Date.now() < blockUntil) {
-          return;
-        }
-        close(false);
-      }, { passive: false });
-
-      document.addEventListener('keydown', function (e) {
-        if (openState && (e.key === 'Escape' || e.keyCode === 27)) {
-          e.preventDefault();
-          close(false);
-        }
-      });
-
-      window.addEventListener('popstate', function () {
-        if (openState) {
-          close(true);
-        }
-      });
+      window.setTimeout(function () {
+        if (threadEl) threadEl.scrollTop = threadTop;
+      }, 60);
+      window.setTimeout(function () {
+        if (threadEl) threadEl.scrollTop = threadTop;
+      }, 280);
     }
 
     function open(src) {
       if (!src) {
         return;
       }
-      if (!overlay) {
-        build();
-      }
-      ensureZoom();
-      blockUntil = Date.now() + 450;
-      if (zoom) {
-        zoom.reset(false);
-      }
-      imgEl.setAttribute('src', src);
-      if (openState) {
+      if (typeof window.pngmOpenStandalonePhoto !== 'function') {
+        window.open(src, '_blank');
         return;
       }
-      // A prevented touch does not blur the composer on iOS, which left the
-      // keyboard (and the keyboard-pinned body frame) up underneath the viewer.
       try {
         var ae = document.activeElement;
         if (ae && ae !== document.body && typeof ae.blur === 'function' && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) {
           ae.blur();
         }
       } catch (errBlur) {}
-      overlay.hidden = false;
-      lockThread();
-      openState = true;
-      if (!hist) {
-        hist = true;
-        try {
-          history.pushState({ pngmImPhoto: 1 }, '');
-        } catch (err) {
-          hist = false;
-        }
-      }
-    }
 
-    function close(fromPop) {
-      if (!overlay || !openState) {
-        return;
-      }
-      openState = false;
-      overlay.hidden = true;
-      overlay.style.background = '';
-      if (zoom) {
-        zoom.reset(false);
-      }
-      imgEl.removeAttribute('src');
-      unlockThread();
-      if (hist) {
-        hist = false;
-        if (!fromPop) {
-          var st = null;
-          try { st = history.state; } catch (errState) {}
-          // Only pop our own entry: a stale flag must never navigate away from
-          // the thread. The timestamp lets the Messages board ignore this pop.
-          if (st && st.pngmImPhoto) {
-            window.__pngmImPhotoBackAt = Date.now();
-            try { history.back(); } catch (err) {}
-          }
-        }
-      }
+      rememberThread();
+      window.pngmOpenStandalonePhoto(src, {
+        bodyClass: 'pngm-im-photo-open',
+        historyKey: 'pngmImPhoto',
+        onAfterClose: restoreThread
+      });
     }
 
     function onAttachActivate(e) {
-      if (overlay && overlay.contains(e.target)) {
+      if (e.target && e.target.closest && e.target.closest('.pngm-native-viewer')) {
         return;
       }
       var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
@@ -4715,8 +4560,6 @@
 
     document.addEventListener('click', onAttachActivate, true);
 
-    // touchend fires at the end of a scroll too, so a finger that merely
-    // scrolled the thread and lifted over a photo must not open it.
     var tapStartX = 0;
     var tapStartY = 0;
     var tapStartT = 0;
@@ -4727,7 +4570,7 @@
       tapStartT = Date.now();
     }, { capture: true, passive: true });
     document.addEventListener('touchend', function (e) {
-      if (overlay && !overlay.hidden && overlay.contains(e.target)) {
+      if (e.target && e.target.closest && e.target.closest('.pngm-native-viewer')) {
         return;
       }
       var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
