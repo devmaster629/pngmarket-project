@@ -540,6 +540,50 @@
                 <input type="hidden" name="pngm_contact_pref" id="pngm_contact_pref" value="<?php echo osc_esc_html($pngm_contact_pref); ?>" />
               </div>
 
+              <div class="pngm-post-field pngm-post-duration-field">
+                <span class="pngm-post-label"><?php _e('Listing duration', 'epsilon'); ?> <span class="req">*</span></span>
+                <p class="pngm-post-muted pngm-post-field-hint"><?php _e('How long should this listing stay active? After expiry it becomes Inactive in your account — you can renew it anytime.', 'epsilon'); ?></p>
+                <?php
+                  $pngm_expiry_mode = (string) (int) (defined('PNGM_LISTING_ACTIVE_DAYS') ? PNGM_LISTING_ACTIVE_DAYS : 30);
+                  $pngm_expiry_date = '';
+                  $pngm_expiry_max = (int) (defined('PNGM_LISTING_MAX_DAYS') ? PNGM_LISTING_MAX_DAYS : 60);
+                  $pngm_expiry_min_date = date('Y-m-d');
+                  $pngm_expiry_max_date = date('Y-m-d', strtotime('+' . $pngm_expiry_max . ' days'));
+                  if ($edit && function_exists('osc_item_id') && (int) osc_item_id() > 0) {
+                      if (function_exists('pngm_listing_expiry_mode')) {
+                          $pngm_expiry_mode = pngm_listing_expiry_mode((int) osc_item_id());
+                      }
+                      if ($pngm_expiry_mode === 'date' && function_exists('osc_item_dt_expiration')) {
+                          $exp_raw = (string) osc_item_dt_expiration();
+                          if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $exp_raw, $em)) {
+                              $pngm_expiry_date = $em[1];
+                          }
+                      }
+                  }
+                  $pngm_dt_value = ($pngm_expiry_mode === 'date' && $pngm_expiry_date !== '')
+                      ? $pngm_expiry_date
+                      : $pngm_expiry_mode;
+                ?>
+                <div class="pngm-post-pills pngm-post-duration-pills" data-pills="duration" role="radiogroup" aria-label="<?php echo osc_esc_html(__('Listing duration', 'epsilon')); ?>">
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_expiry_mode === '7' ? ' is-selected' : ''; ?>" data-value="7"><?php _e('7 days', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_expiry_mode === '14' ? ' is-selected' : ''; ?>" data-value="14"><?php _e('14 days', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo ($pngm_expiry_mode === '30' || !in_array($pngm_expiry_mode, array('7', '14', '30', '60', 'date'), true)) ? ' is-selected' : ''; ?>" data-value="30"><?php _e('30 days', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_expiry_mode === '60' ? ' is-selected' : ''; ?>" data-value="60"><?php _e('60 days', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo $pngm_expiry_mode === 'date' ? ' is-selected' : ''; ?>" data-value="date"><?php _e('Choose expiry date', 'epsilon'); ?></button>
+                </div>
+                <div class="pngm-post-expiry-date-wrap<?php echo $pngm_expiry_mode === 'date' ? '' : ' is-hidden'; ?>" id="pngm-expiry-date-wrap"<?php echo $pngm_expiry_mode === 'date' ? '' : ' hidden'; ?>>
+                  <label for="pngm_expiry_date"><?php _e('Expiry date', 'epsilon'); ?></label>
+                  <div class="input-box">
+                    <?php /* No HTML min/max — jquery.validate parses them as Number() → NaN and always fails. Limits enforced in JS/PHP. */ ?>
+                    <input type="date" name="pngm_expiry_date" id="pngm_expiry_date" class="pngm-post-expiry-date" value="<?php echo osc_esc_html($pngm_expiry_date); ?>" data-min="<?php echo osc_esc_html($pngm_expiry_min_date); ?>" data-max="<?php echo osc_esc_html($pngm_expiry_max_date); ?>"<?php echo $pngm_expiry_mode === 'date' ? '' : ' disabled="disabled"'; ?> />
+                  </div>
+                  <p class="pngm-post-muted pngm-post-field-hint"><?php echo osc_esc_html(sprintf(__('Pick a date within the next %d days (e.g. when a promo price ends).', 'epsilon'), $pngm_expiry_max)); ?></p>
+                  <p class="pngm-post-field-error is-hidden" data-for="pngm_expiry_date" hidden><?php _e('Please choose a valid expiry date.', 'epsilon'); ?></p>
+                </div>
+                <input type="hidden" name="pngm_expiry_mode" id="pngm_expiry_mode" value="<?php echo osc_esc_html($pngm_expiry_mode === 'date' || in_array($pngm_expiry_mode, array('7', '14', '30', '60'), true) ? $pngm_expiry_mode : '30'); ?>" />
+                <input type="hidden" name="dt_expiration" id="dt_expiration" value="<?php echo osc_esc_html($pngm_dt_value); ?>" />
+              </div>
+
               <div class="pngm-post-field pngm-post-msg-prefs">
                 <span class="pngm-post-label"><?php _e('Message Preferences', 'epsilon'); ?></span>
                 <label class="pngm-post-check">
@@ -691,6 +735,8 @@
     'homeUrl' => osc_base_url(),
     'ajaxUrl' => osc_base_url(true),
     'itemId' => ($edit ? (int) osc_item_id() : 0),
+    'maxExpiryDays' => (int) (defined('PNGM_LISTING_MAX_DAYS') ? PNGM_LISTING_MAX_DAYS : 60),
+    'defaultExpiryDays' => (int) (defined('PNGM_LISTING_ACTIVE_DAYS') ? PNGM_LISTING_ACTIVE_DAYS : 30),
     'labels' => array(
       'category' => __('Category', 'epsilon'),
       'subcategory' => __('Subcategory', 'epsilon'),
@@ -721,6 +767,13 @@
       'needPhone' => __('Please enter a phone number.', 'epsilon'),
       'needAvail' => __('Please select call availability.', 'epsilon'),
       'needEmail' => __('Please enter a valid email.', 'epsilon'),
+      'needExpiryDate' => __('Please choose a valid expiry date (within 60 days).', 'epsilon'),
+      'duration' => __('Duration', 'epsilon'),
+      'expiresOn' => __('Expires on', 'epsilon'),
+      'days7' => __('7 days', 'epsilon'),
+      'days14' => __('14 days', 'epsilon'),
+      'days30' => __('30 days', 'epsilon'),
+      'days60' => __('60 days', 'epsilon'),
       'postedBy' => __('Posted by', 'epsilon'),
       'phone' => __('Phone', 'epsilon'),
       'whatsapp' => __('WhatsApp', 'epsilon'),
@@ -755,7 +808,7 @@
     if ($.fn.validate && !$('form[name="item"]').data('validator')) {
       $('form[name="item"]').validate({
         // Do NOT ignore :hidden — wizard steps use display:none but must validate on Publish
-        ignore: 'input[type=hidden], .is-sr-only, .is-sr-only *, .pngm-post-tx-native, .pngm-post-tx-native *',
+        ignore: 'input[type=hidden], #pngm_expiry_date, .is-sr-only, .is-sr-only *, .pngm-post-tx-native, .pngm-post-tx-native *',
         errorLabelContainer: '#error_list',
         wrapper: 'li',
         onkeyup: false,

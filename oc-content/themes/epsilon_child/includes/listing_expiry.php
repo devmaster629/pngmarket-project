@@ -1,9 +1,10 @@
 <?php
 /**
- * Listing expiry policy: 30 days active, 7-day reminder, soft Expired (no delete), renew.
+ * Listing expiry policy: seller-chosen duration (7/14/30/60 or calendar date, max 60),
+ * default 30 days, 7-day reminder, soft Expired (no delete), renew.
  *
- * Uses Osclass core: category i_expiration_days, warn_expiration cron mail, renew action.
- * Premium is a visibility badge only — it does not keep ads public past 30 days.
+ * Category i_expiration_days is the Osclass max (60). The post form sets dt_expiration
+ * per listing. Premium is a visibility badge only — it does not bypass expiry.
  */
 
 if (isset($_SERVER['SCRIPT_FILENAME'])
@@ -13,14 +14,20 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
 }
 
 if (!defined('PNGM_LISTING_ACTIVE_DAYS')) {
+    // Default duration when the seller does not pick another option.
     define('PNGM_LISTING_ACTIVE_DAYS', 30);
+}
+if (!defined('PNGM_LISTING_MAX_DAYS')) {
+    // Hard cap for category max, calendar picker, and validation.
+    define('PNGM_LISTING_MAX_DAYS', 60);
 }
 if (!defined('PNGM_LISTING_WARN_DAYS')) {
     define('PNGM_LISTING_WARN_DAYS', 7);
 }
 if (!defined('PNGM_LISTING_EXPIRY_POLICY_VER')) {
-    // v2: premium no longer bypasses the 30-day public visibility rule.
-    define('PNGM_LISTING_EXPIRY_POLICY_VER', 'v2');
+    // v3: category max raised to 60; per-listing duration chosen at post time.
+    // Does not bulk-recalculate existing dt_expiration values.
+    define('PNGM_LISTING_EXPIRY_POLICY_VER', 'v3');
 }
 
 /**
@@ -54,7 +61,7 @@ function pngm_listing_expiry_enforce_prefs()
 /**
  * Soft-expire premium ads whose dt_expiration has passed.
  * Osclass core treats b_premium=1 as never-hidden; PNG Market still ends public
- * visibility after 30 days (premium is a badge/boost while active only).
+ * visibility after the listing's expiry date (premium is a badge/boost while active only).
  *
  * @param DBCommandClass|null $comm
  * @return void
@@ -90,9 +97,8 @@ function pngm_listing_expiry_demote_expired_premium($comm = null)
 }
 
 /**
- * One-shot (versioned): set all categories to 30-day expiry and recalculate
- * item dt_expiration for every listing — including premium. Existing rows stay
- * in the DB (soft Expired via date — never deleted by this policy).
+ * One-shot (versioned): raise category max expiry to 60 days and enforce prefs.
+ * Existing listing dt_expiration values are left alone so custom dates stay intact.
  *
  * @param bool $force
  */
@@ -111,7 +117,7 @@ function pngm_listing_expiry_apply_policy($force = false)
         return;
     }
 
-    $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    $days = (int) PNGM_LISTING_MAX_DAYS;
     $prefix = DB_TABLE_PREFIX;
 
     try {
@@ -119,22 +125,12 @@ function pngm_listing_expiry_apply_policy($force = false)
         $data = $conn->getOsclassDb();
         $comm = new DBCommandClass($data);
 
+        // Category max only — do not bulk-rewrite item expiration dates.
         $comm->query(sprintf(
             'UPDATE %st_category SET i_expiration_days = %d WHERE i_expiration_days IS NULL OR i_expiration_days <> %d',
             $prefix,
             $days,
             $days
-        ));
-
-        // Soft expiry from publish date + category days for ALL listings.
-        // Premium keeps its badge only while dt_expiration is still in the future.
-        $comm->query(sprintf(
-            'UPDATE %st_item AS a
-             INNER JOIN %st_category AS b ON b.pk_i_id = a.fk_i_category_id
-             SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)
-             WHERE b.i_expiration_days > 0',
-            $prefix,
-            $prefix
         ));
 
         pngm_listing_expiry_demote_expired_premium($comm);
@@ -149,7 +145,7 @@ function pngm_listing_expiry_apply_policy($force = false)
 }
 
 /**
- * Keep every category on the 30-day policy (covers newly added categories).
+ * Keep every category on the max-days policy (covers newly added categories).
  */
 function pngm_listing_expiry_enforce_category_days()
 {
@@ -157,7 +153,7 @@ function pngm_listing_expiry_enforce_category_days()
         return;
     }
 
-    $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    $days = (int) PNGM_LISTING_MAX_DAYS;
     $prefix = DB_TABLE_PREFIX;
 
     try {
@@ -174,6 +170,235 @@ function pngm_listing_expiry_enforce_category_days()
         return;
     }
 }
+
+/**
+ * Allowed fixed duration options (days).
+ *
+ * @return int[]
+ */
+function pngm_listing_expiry_duration_options()
+{
+    return array(7, 14, 30, 60);
+}
+
+/**
+ * Preference key for the seller's chosen renew span (days).
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_listing_expiry_days_key($item_id)
+{
+    return 'expiry_days_' . (int) $item_id;
+}
+
+/**
+ * Preference key for UI mode: 7|14|30|60|date
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_listing_expiry_mode_key($item_id)
+{
+    return 'expiry_mode_' . (int) $item_id;
+}
+
+/**
+ * Stored preferred renew span for an item (1–60), default ACTIVE_DAYS.
+ *
+ * @param int $item_id
+ * @return int
+ */
+function pngm_listing_expiry_preferred_days($item_id = 0)
+{
+    $item_id = (int) $item_id;
+    $default = (int) PNGM_LISTING_ACTIVE_DAYS;
+    $max = (int) PNGM_LISTING_MAX_DAYS;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return $default;
+    }
+    $days = (int) osc_get_preference(pngm_listing_expiry_days_key($item_id), 'pngm_expiry');
+    if ($days < 1 || $days > $max) {
+        return $default;
+    }
+    return $days;
+}
+
+/**
+ * Stored UI mode for an item.
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_listing_expiry_mode($item_id = 0)
+{
+    $item_id = (int) $item_id;
+    $default = (string) (int) PNGM_LISTING_ACTIVE_DAYS;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return $default;
+    }
+    $mode = strtolower(trim((string) osc_get_preference(pngm_listing_expiry_mode_key($item_id), 'pngm_expiry')));
+    if ($mode === 'date') {
+        return 'date';
+    }
+    if (in_array((int) $mode, pngm_listing_expiry_duration_options(), true)) {
+        return (string) (int) $mode;
+    }
+    return $default;
+}
+
+/**
+ * Persist preferred duration + UI mode for renew / edit.
+ *
+ * @param int    $item_id
+ * @param int    $days
+ * @param string $mode
+ * @return void
+ */
+function pngm_listing_expiry_store_choice($item_id, $days, $mode)
+{
+    $item_id = (int) $item_id;
+    $days = (int) $days;
+    $max = (int) PNGM_LISTING_MAX_DAYS;
+    if ($item_id <= 0) {
+        return;
+    }
+    if ($days < 1) {
+        $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    }
+    if ($days > $max) {
+        $days = $max;
+    }
+    $mode = strtolower(trim((string) $mode));
+    if ($mode !== 'date' && !in_array((int) $mode, pngm_listing_expiry_duration_options(), true)) {
+        $mode = (string) $days;
+        if (!in_array((int) $mode, pngm_listing_expiry_duration_options(), true)) {
+            $mode = 'date';
+        }
+    }
+
+    if (function_exists('osc_set_preference')) {
+        osc_set_preference(pngm_listing_expiry_days_key($item_id), (string) $days, 'pngm_expiry', 'INTEGER');
+        osc_set_preference(pngm_listing_expiry_mode_key($item_id), $mode, 'pngm_expiry', 'STRING');
+    }
+    if (class_exists('Preference')) {
+        Preference::newInstance()->set(pngm_listing_expiry_days_key($item_id), (string) $days, 'pngm_expiry');
+        Preference::newInstance()->set(pngm_listing_expiry_mode_key($item_id), $mode, 'pngm_expiry');
+    }
+}
+
+/**
+ * Read seller duration choice from the post/edit request.
+ *
+ * @return array{mode:string,days:int,dt_expiration:string}
+ */
+function pngm_listing_expiry_resolve_request()
+{
+    $max = (int) PNGM_LISTING_MAX_DAYS;
+    $default = (int) PNGM_LISTING_ACTIVE_DAYS;
+    $mode = '';
+    $raw = '';
+
+    if (class_exists('Params')) {
+        $mode = strtolower(trim((string) Params::getParam('pngm_expiry_mode')));
+        $raw = trim((string) Params::getParam('dt_expiration'));
+    }
+    if ($mode === '' && isset($_POST['pngm_expiry_mode'])) {
+        $mode = strtolower(trim((string) $_POST['pngm_expiry_mode']));
+    }
+    if ($raw === '' && isset($_POST['dt_expiration'])) {
+        $raw = trim((string) $_POST['dt_expiration']);
+    }
+
+    $out = array(
+        'mode' => (string) $default,
+        'days' => $default,
+        'dt_expiration' => (string) $default,
+    );
+
+    if ($mode === 'date' || preg_match('/^\d{4}-\d{2}-\d{2}/', $raw)) {
+        $date = $raw;
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $date) && class_exists('Params')) {
+            $date = trim((string) Params::getParam('pngm_expiry_date'));
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $date) && isset($_POST['pngm_expiry_date'])) {
+            $date = trim((string) $_POST['pngm_expiry_date']);
+        }
+        if (!preg_match('/^(\d{4}-\d{2}-\d{2})/', $date, $m)) {
+            return $out;
+        }
+        $date = $m[1];
+
+        $ts = strtotime($date . ' 23:59:59');
+        $min_ts = strtotime(date('Y-m-d') . ' 00:00:00');
+        $max_ts = strtotime('+' . $max . ' days', $min_ts);
+        if ($ts === false || $ts < $min_ts || $ts > ($max_ts + 86399)) {
+            return $out;
+        }
+
+        $days = (int) ceil(($ts - time()) / 86400);
+        if ($days < 1) {
+            $days = 1;
+        }
+        if ($days > $max) {
+            $days = $max;
+        }
+
+        $out['mode'] = 'date';
+        $out['days'] = $days;
+        $out['dt_expiration'] = $date . ' 23:59:59';
+        return $out;
+    }
+
+    $days = ctype_digit($raw) ? (int) $raw : (int) $mode;
+    if (!in_array($days, pngm_listing_expiry_duration_options(), true)) {
+        $days = $default;
+    }
+    $out['mode'] = (string) $days;
+    $out['days'] = $days;
+    $out['dt_expiration'] = (string) $days;
+    return $out;
+}
+
+/**
+ * Apply validated seller duration after core insert/update.
+ *
+ * @param array $item
+ * @return void
+ */
+function pngm_listing_expiry_apply_from_request($item)
+{
+    $item_id = 0;
+    if (is_array($item) && isset($item['pk_i_id'])) {
+        $item_id = (int) $item['pk_i_id'];
+    }
+    if ($item_id <= 0 || !class_exists('Item')) {
+        return;
+    }
+
+    $choice = pngm_listing_expiry_resolve_request();
+    Item::newInstance()->updateExpirationDate($item_id, $choice['dt_expiration']);
+    pngm_listing_expiry_store_choice($item_id, $choice['days'], $choice['mode']);
+}
+osc_add_hook('posted_item', 'pngm_listing_expiry_apply_from_request', 8);
+osc_add_hook('edited_item', 'pngm_listing_expiry_apply_from_request', 8);
+
+/**
+ * Renew uses category max by default — re-apply the seller's preferred span.
+ *
+ * @param int $item_id
+ * @return void
+ */
+function pngm_listing_renew_apply_preferred_days($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !class_exists('Item')) {
+        return;
+    }
+    $days = pngm_listing_expiry_preferred_days($item_id);
+    Item::newInstance()->updateExpirationDate($item_id, (string) $days);
+}
+osc_add_hook('renew_item', 'pngm_listing_renew_apply_preferred_days', 5);
 
 /**
  * Public search must require a future dt_expiration even for premium rows.
@@ -384,6 +609,7 @@ function pngm_listing_renew_remember_expiry($item_id)
         return;
     }
     $GLOBALS['pngm_renew_flash_expiration'] = (string) $item['dt_expiration'];
+    $GLOBALS['pngm_renew_flash_days'] = pngm_listing_expiry_preferred_days($item_id);
 }
 osc_add_hook('renew_item', 'pngm_listing_renew_remember_expiry', 9);
 
@@ -404,6 +630,15 @@ function pngm_listing_renew_flash_message($msg, $section = 'pubMessages', $type 
     unset($GLOBALS['pngm_renew_flash_expiration']);
     $exp = function_exists('osc_format_date') ? osc_format_date($exp_raw) : $exp_raw;
     $days = (int) PNGM_LISTING_ACTIVE_DAYS;
+    if (!empty($GLOBALS['pngm_renew_flash_days'])) {
+        $days = (int) $GLOBALS['pngm_renew_flash_days'];
+        unset($GLOBALS['pngm_renew_flash_days']);
+    } else {
+        $ts = strtotime($exp_raw);
+        if ($ts !== false) {
+            $days = max(1, (int) ceil(($ts - time()) / 86400));
+        }
+    }
     return sprintf(
         __('The listing has been renewed. It is active again and expires on %1$s (%2$d days).', 'epsilon'),
         $exp,
@@ -429,8 +664,7 @@ function pngm_listing_expiry_warn_email_body($body, $aItem)
     $listings_url = function_exists('osc_user_items_url') ? osc_user_items_url() : osc_base_url();
     $extra  = '<div class="pngm-expiry-warn-extra">';
     $extra .= '<p>' . sprintf(
-        __('Listings stay active for %1$d days. Yours expires in about %2$d days and will become Expired (not deleted). After it expires, renew it from My Listings.', 'epsilon'),
-        (int) PNGM_LISTING_ACTIVE_DAYS,
+        __('Your listing will become Expired (not deleted) in about %1$d days. After it expires, renew it from My Listings for another period.', 'epsilon'),
         (int) PNGM_LISTING_WARN_DAYS
     ) . '</p>';
     $extra .= '<p><a href="' . osc_esc_html($listings_url) . '">' . osc_esc_html(__('Open My Listings', 'epsilon')) . '</a></p>';
@@ -720,7 +954,7 @@ function pngm_listing_expiry_notify_expired_item($item)
     $item_url = function_exists('osc_item_url') ? osc_item_url() : osc_base_url();
     $renew_url = pngm_listing_renew_url($item);
     $listings_url = function_exists('osc_user_items_url') ? osc_user_items_url() : osc_base_url();
-    $days_label = (string) PNGM_LISTING_ACTIVE_DAYS;
+    $days_label = (string) pngm_listing_expiry_preferred_days($id);
     $name = !empty($item['s_contact_name']) ? $item['s_contact_name'] : __('there', 'epsilon');
 
     $subject = sprintf(__('Listing expired: %s', 'epsilon'), $title);

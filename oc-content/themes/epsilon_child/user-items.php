@@ -117,7 +117,7 @@
       <?php if ($current_type === 'expired') { ?>
         <div class="pngm-listings-policy" role="note">
           <i class="fas fa-info-circle" aria-hidden="true"></i>
-          <p><?php _e('Expired listings are inactive and hidden from search — they are not deleted. Use Renew on any listing below to reactivate it for another 30 days with a new expiry date.', 'epsilon'); ?></p>
+          <p><?php _e('Expired listings are inactive and hidden from search — they are not deleted. Use Renew on any listing below to reactivate it for another period with a new expiry date.', 'epsilon'); ?></p>
         </div>
       <?php } ?>
 
@@ -238,7 +238,7 @@
           <div class="pngm-listings-empty">
             <?php if ($current_type === 'expired') { ?>
               <p><strong><?php _e('No expired listings', 'epsilon'); ?></strong></p>
-              <p><?php _e('When a listing reaches 30 days, it becomes inactive here (not deleted) so you can renew it.', 'epsilon'); ?></p>
+              <p><?php _e('When a listing reaches its expiry date, it becomes inactive here (not deleted) so you can renew it.', 'epsilon'); ?></p>
               <a class="pngm-ua-btn" href="<?php echo osc_esc_html(pngm_ua_items_url('active')); ?>"><?php _e('View active listings', 'epsilon'); ?></a>
             <?php } else { ?>
               <p><strong><?php _e('No listings found', 'epsilon'); ?></strong></p>

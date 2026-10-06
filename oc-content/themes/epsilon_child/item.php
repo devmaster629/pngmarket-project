@@ -233,7 +233,12 @@
                 <i class="fas fa-sync-alt" aria-hidden="true"></i>
                 <?php _e('Renew listing', 'epsilon'); ?>
               </a>
-              <span><?php echo sprintf(__('Renew for another %d days. Your listing was not deleted.', 'epsilon'), defined('PNGM_LISTING_ACTIVE_DAYS') ? (int) PNGM_LISTING_ACTIVE_DAYS : 30); ?></span>
+              <span><?php
+                $pngm_renew_days = function_exists('pngm_listing_expiry_preferred_days')
+                  ? (int) pngm_listing_expiry_preferred_days((int) osc_item_id())
+                  : (defined('PNGM_LISTING_ACTIVE_DAYS') ? (int) PNGM_LISTING_ACTIVE_DAYS : 30);
+                echo sprintf(__('Renew for another %d days. Your listing was not deleted.', 'epsilon'), $pngm_renew_days);
+              ?></span>
             </p>
           <?php } ?>
             

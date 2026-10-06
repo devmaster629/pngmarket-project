@@ -957,6 +957,49 @@ body.pngm-post-wizard .pngm-post-price-box select#currency:focus {
   color: #fff !important;
 }
 
+.pngm-post-duration-pills {
+  margin-bottom: 8px;
+}
+
+.pngm-post-expiry-date-wrap {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #e5e9ef;
+  border-radius: 12px;
+  background: #f8fafb;
+}
+
+.pngm-post-expiry-date-wrap.is-hidden,
+.pngm-post-expiry-date-wrap[hidden] {
+  display: none !important;
+}
+
+.pngm-post-expiry-date-wrap label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.pngm-post-expiry-date-wrap .input-box input[type="date"] {
+  width: 100%;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid #d7dee5;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #16202a;
+  background: #fff;
+}
+
+body.pngm-post-wizard .pngm-post-field.is-invalid input[type="date"],
+body.pngm-post-wizard .item-publish input[type="date"].is-invalid,
+body.pngm-post-wizard .item-publish input[type="date"].error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px #dc2626 !important;
+}
+
 /* Contact preferred method — outline selected (mockup) */
 .pngm-post-contact-pref .pngm-post-pill.is-selected {
   background: #fff !important;

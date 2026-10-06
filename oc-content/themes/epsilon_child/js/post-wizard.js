@@ -1504,6 +1504,13 @@
           showError($email, labels.needEmail || 'Please enter a valid email.');
           okContact = false;
         }
+        if (!syncDurationFields()) {
+          var $dateInp = $('#pngm_expiry_date');
+          showError($dateInp.length ? $dateInp : $('.pngm-post-duration-field'), labels.needExpiryDate || 'Please choose a valid expiry date.');
+          var $dateErr = $form.find('.pngm-post-field-error[data-for="pngm_expiry_date"]');
+          showFieldError($dateErr, labels.needExpiryDate || 'Please choose a valid expiry date.');
+          okContact = false;
+        }
         if (!okContact) {
           focusFirstInvalid();
         }
@@ -1691,6 +1698,19 @@
       phone = phone.replace(/^\+?675\s*/, '');
       meta.push([labels.phone || 'Phone', phone ? ('+675 ' + phone) : '—']);
       meta.push([labels.whatsapp || 'WhatsApp', $('#pngm_whatsapp').is(':checked') ? (labels.yes || 'Yes') : (labels.no || 'No')]);
+      syncDurationFields();
+      var durMode = String($('#pngm_expiry_mode').val() || '30');
+      var durLabel = labels.days30 || '30 days';
+      if (durMode === '7') {
+        durLabel = labels.days7 || '7 days';
+      } else if (durMode === '14') {
+        durLabel = labels.days14 || '14 days';
+      } else if (durMode === '60') {
+        durLabel = labels.days60 || '60 days';
+      } else if (durMode === 'date') {
+        durLabel = $.trim($('#pngm_expiry_date').val() || '') || '—';
+      }
+      meta.push([durMode === 'date' ? (labels.expiresOn || 'Expires on') : (labels.duration || 'Duration'), durLabel]);
 
       var $meta = $('#pngm-review-meta').empty();
       meta.forEach(function (row) {
@@ -2385,7 +2405,84 @@
       if ($group.data('pills') === 'contact-pref') {
         $('#pngm_contact_pref').val(value);
       }
+      if ($group.data('pills') === 'duration') {
+        syncDurationFields(value);
+      }
     });
+
+    $form.on('change', '#pngm_expiry_date', function () {
+      syncDurationFields('date');
+    });
+
+    function pad2(n) {
+      return (n < 10 ? '0' : '') + n;
+    }
+
+    function ymdFromDate(d) {
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+
+    function syncDurationFields(forcedMode) {
+      var maxDays = parseInt(cfg.maxExpiryDays, 10) || 60;
+      var defaultDays = parseInt(cfg.defaultExpiryDays, 10) || 30;
+      var $wrap = $('#pngm-expiry-date-wrap');
+      var $date = $('#pngm_expiry_date');
+      var $mode = $('#pngm_expiry_mode');
+      var $dt = $('#dt_expiration');
+      if (!$mode.length || !$dt.length) {
+        return true;
+      }
+
+      var mode = forcedMode != null
+        ? String(forcedMode)
+        : String($('.pngm-post-duration-pills .pngm-post-pill.is-selected').data('value') || $mode.val() || defaultDays);
+
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var maxDate = new Date(today.getTime());
+      maxDate.setDate(maxDate.getDate() + maxDays);
+      var minStr = ymdFromDate(today);
+      var maxStr = ymdFromDate(maxDate);
+      if ($date.length) {
+        // Store limits as data-* only — never set HTML min/max (jquery.validate
+        // coerces them with Number() → NaN and blocks publish).
+        $date.attr({ 'data-min': minStr, 'data-max': maxStr });
+        $date.removeAttr('min').removeAttr('max');
+      }
+
+      // Clear our own error styling when the user changes the choice.
+      $date.removeClass('error is-invalid pngm-field-invalid');
+      $date.closest('.pngm-post-field, .input-box').removeClass('is-invalid');
+      var $dateErr = $form.find('.pngm-post-field-error[data-for="pngm_expiry_date"]');
+      if ($dateErr.length) {
+        $dateErr.addClass('is-hidden').prop('hidden', true).text('');
+      }
+
+      if (mode === 'date') {
+        $mode.val('date');
+        $wrap.removeClass('is-hidden').prop('hidden', false);
+        $date.prop('disabled', false);
+        var dateVal = $.trim($date.val() || '');
+        if (!dateVal || dateVal < minStr || dateVal > maxStr) {
+          $dt.val('');
+          return false;
+        }
+        $dt.val(dateVal);
+        return true;
+      }
+
+      $wrap.addClass('is-hidden').prop('hidden', true);
+      $date.prop('disabled', true);
+      if (['7', '14', '30', '60'].indexOf(mode) === -1) {
+        mode = String(defaultDays);
+      }
+      $mode.val(mode);
+      $dt.val(mode);
+      return true;
+    }
+
+    // Initialise duration fields (edit prefill or default 30).
+    syncDurationFields();
 
     $form.on('change', '#pngm_whatsapp', function () {
       if ($(this).is(':checked')) {
