@@ -4995,7 +4995,8 @@
 
     function syncNotifyExtras() {
       if (enableHead) {
-        if (pushReadyCache === true) {
+        // iPhone: hide “Enable push notifications” (permission UX is unreliable).
+        if (isIosDevice() || pushReadyCache === true) {
           enableHead.setAttribute('hidden', 'hidden');
         } else {
           enableHead.removeAttribute('hidden');

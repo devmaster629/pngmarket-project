@@ -823,8 +823,8 @@ function pngm_pwa_register_sw_footer()
 }
 
 /**
- * One-time phone modal after login for push notifications (Android / standalone).
- * iPhone Safari never shows this — Home Screen install is covered by the main banner.
+ * One-time phone modal after login for push notifications (Android only).
+ * iPhone / iPad never see this — Safari/PWA push permission UX is unreliable.
  *
  * @param string $sw
  * @param string $brand
@@ -1034,9 +1034,9 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
 
   var kind = deviceKind();
   if (kind === 'desktop' || seen()) return;
-  // iPhone / iPad: the main “Add to Home Screen” banner already covers install steps.
-  // Never show this second modal with the same content again.
-  if (kind === 'ios' && !isStandalone()) {
+  // iPhone / iPad: do not show the push-notifications modal (Safari/PWA
+  // permission UX is unreliable). Android only.
+  if (kind === 'ios' || kind !== 'android') {
     mark();
     return;
   }

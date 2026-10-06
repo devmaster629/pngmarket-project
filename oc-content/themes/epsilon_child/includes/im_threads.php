@@ -42,14 +42,5 @@ $is_mobile = pngm_im_is_mobile_request();
     </div>
   </div>
   <?php } ?>
-
-  <div class="pngm-im-blocked">
-    <?php
-      $im_block = osc_plugins_path() . 'instant_messenger/user/block.php';
-      if (file_exists($im_block)) {
-          require $im_block;
-      }
-    ?>
-  </div>
 </div>
 <?php pngm_im_ui_script(); ?>
