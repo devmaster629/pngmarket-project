@@ -4902,7 +4902,8 @@ body.im-chat-page .pngm-composer-dock.pngm-im-blocked-dock {
     width: calc(100% + 24px) !important;
     max-width: none;
     margin: 8px -12px 0 !important;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Sits above the bottom nav, which already carries the safe-area inset. */
+    padding: 10px 12px 12px !important;
     border-radius: 0 0 12px 12px !important;
     background: #fff7f7;
   }

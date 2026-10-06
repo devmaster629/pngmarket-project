@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.70');
+    define('PNGM_CHILD_VERSION', '2.9.71');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -385,7 +385,12 @@ function pngm_viewport_meta()
 {
     $content = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
     echo '<meta name="viewport" content="' . $content . '" />' . "\n";
-    echo '<script>(function(){var c=' . json_encode($content) . ';var m=document.querySelectorAll(\'meta[name="viewport"]\');for(var i=0;i<m.length;i++){m[i].setAttribute("content",c);}})();</script>' . "\n";
+    echo '<script>(function(){var c=' . json_encode($content) . ';var m=document.querySelectorAll(\'meta[name="viewport"]\');for(var i=0;i<m.length;i++){m[i].setAttribute("content",c);}'
+        // iPhone/iPad hook for CSS + JS. iOS Safari is the only engine that
+        // auto-zooms into small fields and rubber-bands a pinned page, so those
+        // fixes key off html.pngm-ios and never touch Android or desktop.
+        . 'try{var u=navigator.userAgent||"";var ios=/iPad|iPhone|iPod/i.test(u)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);if(ios){document.documentElement.classList.add("pngm-ios");if(navigator.standalone===true){document.documentElement.classList.add("pngm-ios-standalone");}}}catch(e){}'
+        . '})();</script>' . "\n";
 }
 
 osc_add_hook('header', 'pngm_viewport_meta', 1);
@@ -2121,6 +2126,29 @@ function pngm_ajax_im_send()
     }
 
     $type = (int) $ctx['send_type'];
+
+    // Blocked in either direction: answer with the real notice. The plugin's own
+    // check inside im_insert_message() redirects, which this JSON caller could
+    // only report as a generic "could not be sent".
+    if (function_exists('im_check_block') && function_exists('im_check_block_reversed')) {
+        $t = $thread + array('i_to_user_id' => 0, 'i_from_user_id' => 0, 's_to_user_email' => '', 's_from_user_email' => '');
+        $to_user_id   = (int) ($type === 0 ? $t['i_to_user_id'] : $t['i_from_user_id']);
+        $to_email     = (string) ($type === 0 ? $t['s_to_user_email'] : $t['s_from_user_email']);
+        $from_user_id = (int) ($type === 0 ? $t['i_from_user_id'] : $t['i_to_user_id']);
+        $from_email   = (string) ($type === 0 ? $t['s_from_user_email'] : $t['s_to_user_email']);
+        $block_msg = '';
+        if (im_check_block($to_user_id, $from_email, true, $block_msg) == 0
+            || im_check_block_reversed($from_user_id, $to_email, true, $block_msg) == 0
+        ) {
+            echo json_encode(array(
+                'ok' => 0,
+                'error' => 'blocked',
+                'message' => ($block_msg !== '' ? $block_msg : __('You can no longer send messages in this conversation.', 'epsilon')),
+            ));
+            return;
+        }
+    }
+
     $message_text = nl2br(htmlspecialchars(function_exists('im_str') ? im_str($message_raw) : (string) $message_raw, ENT_QUOTES, 'UTF-8'));
 
     $files = array();

@@ -2491,6 +2491,9 @@ html.pngm-post-kb body.pngm-post-wizard #navi-bar {
   transform: translateY(110%);
 }
 
+/* iPhone/iPad only: -webkit-touch-callout exists in WebKit on iOS alone, so
+   Android and desktop keep their original field sizes. */
+@supports (-webkit-touch-callout: none) {
 @media screen and (max-width: 767px) {
   /* 16px minimum: iOS Safari zooms the whole page into any focused field with a
      smaller font and keeps that zoom through later steps (Condition options get clipped).
@@ -2529,4 +2532,5 @@ html.pngm-post-kb body.pngm-post-wizard #navi-bar {
   body.pngm-post-wizard #post-hooks textarea {
     font-size: 16px !important;
   }
+}
 }

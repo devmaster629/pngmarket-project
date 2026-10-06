@@ -1001,6 +1001,15 @@ function pngm_im_ui_script()
       if (!document.querySelector('.pngm-im-split') || isMobileImLayout()) {
         return;
       }
+      // The chat photo viewer owns one history entry (open = pushState, close =
+      // back). Reloading the board for that pop re-rendered the thread under the
+      // user and threw away their scroll position.
+      if (document.body && document.body.classList.contains('pngm-im-photo-open')) {
+        return;
+      }
+      if (window.__pngmImPhotoBackAt && (Date.now() - window.__pngmImPhotoBackAt) < 1500) {
+        return;
+      }
       syncRefreshUrls(null, window.location.href);
       loadBoard(window.location.href, false);
     });
@@ -1346,6 +1355,34 @@ function pngm_im_ui_script()
               } else if (typeof window.pngmShowToast === 'function') {
                 window.pngmShowToast('<?php echo osc_esc_js(__('File type not supported', 'epsilon')); ?>', true);
               }
+            } else if (errCode === 'blocked') {
+              var blockedMsg = (res && res.message) ? String(res.message) : '<?php echo osc_esc_js(__('You can no longer send messages in this conversation.', 'epsilon')); ?>';
+              // Mirror the server state in place: swap the composer for the same
+              // notice the thread shows after a reload, so the block is visible
+              // without leaving the conversation.
+              try {
+                var dockEl = $form[0] ? $form[0].closest('.pngm-composer-dock') : null;
+                var noticeEl = document.createElement('div');
+                noticeEl.className = 'pngm-im-blocked-notice';
+                noticeEl.setAttribute('role', 'status');
+                noticeEl.textContent = blockedMsg;
+                if (dockEl) {
+                  dockEl.className = 'pngm-composer-dock pngm-im-blocked-dock';
+                  dockEl.innerHTML = '';
+                  dockEl.appendChild(noticeEl);
+                } else if ($form[0] && $form[0].parentNode) {
+                  var wrapEl = document.createElement('div');
+                  wrapEl.className = 'pngm-composer-dock pngm-im-blocked-dock';
+                  wrapEl.appendChild(noticeEl);
+                  $form[0].parentNode.replaceChild(wrapEl, $form[0]);
+                }
+                if (typeof window.pngmLayoutChat === 'function') {
+                  window.pngmLayoutChat({ pinBottom: true });
+                }
+              } catch (errBlocked) {}
+              if (typeof window.pngmShowToast === 'function') {
+                window.pngmShowToast(blockedMsg, true);
+              }
             } else if (typeof window.pngmShowToast === 'function') {
               window.pngmShowToast('<?php echo osc_esc_js(__('Message could not be sent', 'epsilon')); ?>', true);
             }
@@ -1540,12 +1577,24 @@ function pngm_im_ui_script()
         var kb = 0;
 
         if (vv) {
-          var inset = Math.round(window.innerHeight - vv.height - vv.offsetTop);
-          if (vv.offsetTop > 40) {
-            inset = Math.max(inset, Math.round(vv.offsetTop));
-          }
-          if (inset >= 40) {
-            kb = inset;
+          var vvScale = (typeof vv.scale === 'number' && vv.scale > 0) ? vv.scale : 1;
+          if (Math.abs(vvScale - 1) > 0.02) {
+            // Pinch-zoomed page (iPhone): the visual viewport is small because of
+            // the zoom, not a keyboard, and offsetTop is the user's pan. Reading
+            // either as a keyboard toggled pngm-kb-open on every scroll tick and
+            // made the whole chat jump around. Compare at the same scale instead.
+            var zoomInset = Math.round(window.innerHeight - vv.height * vvScale);
+            if (zoomInset >= 40) {
+              kb = zoomInset;
+            }
+          } else {
+            var inset = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+            if (vv.offsetTop > 40) {
+              inset = Math.max(inset, Math.round(vv.offsetTop));
+            }
+            if (inset >= 40) {
+              kb = inset;
+            }
           }
         }
 
@@ -1680,6 +1729,37 @@ function pngm_im_ui_script()
         return document.documentElement.classList.contains('pngm-kb-ios');
       }
 
+      function pngmImIsIos() {
+        if (document.documentElement.classList.contains('pngm-ios')) {
+          return true;
+        }
+        var ua = navigator.userAgent || '';
+        return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      }
+
+      /**
+       * iPhone, keyboard closed: the chat shell is pinned (body overflow hidden),
+       * so any drag the message list cannot consume rubber-bands the whole app.
+       * That is the "glitch" when swiping down to refresh, or past either end of
+       * the thread, in the home-screen app. Same body-scroll-lock rule as the
+       * keyboard case, but only on iOS, only on the phone layout, and never
+       * while the page is pinch-zoomed (the drag is then a legitimate pan).
+       * Android and desktop never enter this path.
+       */
+      function iosShellGuardActive() {
+        if (!document.body || !document.body.classList.contains('im-chat-page')) {
+          return false;
+        }
+        if (!isNarrowViewport() || !pngmImIsIos()) {
+          return false;
+        }
+        var vv = window.visualViewport;
+        if (vv && typeof vv.scale === 'number' && Math.abs(vv.scale - 1) > 0.02) {
+          return false;
+        }
+        return true;
+      }
+
       function findTouchScroller(node) {
         var el = node;
         var limit = document.body;
@@ -1705,7 +1785,7 @@ function pngm_im_ui_script()
           kbTouchScroller = null;
           return;
         }
-        if (!iosKeyboardFrameActive() || !e.touches || e.touches.length !== 1) {
+        if ((!iosKeyboardFrameActive() && !iosShellGuardActive()) || !e.touches || e.touches.length !== 1) {
           kbTouchStartY = null;
           kbTouchScroller = null;
           return;
@@ -1718,12 +1798,20 @@ function pngm_im_ui_script()
         if (e.target && e.target.closest && e.target.closest('.pngm-im-photo-viewer')) {
           return;
         }
-        if (!iosKeyboardFrameActive() || !e.cancelable) {
+        var kbActive = iosKeyboardFrameActive();
+        if ((!kbActive && !iosShellGuardActive()) || !e.cancelable) {
           return;
         }
-        // Two fingers = pinch; letting it through would zoom-pan the pinned page.
+        // Two fingers = pinch. While the keyboard is up, letting it through would
+        // zoom-pan the pinned page; with the keyboard closed pinch zoom stays available.
         if (e.touches && e.touches.length > 1) {
-          e.preventDefault();
+          if (kbActive) {
+            e.preventDefault();
+          }
+          return;
+        }
+        // Keyboard closed: caret / selection drags inside a field belong to the field.
+        if (!kbActive && e.target && e.target.closest && e.target.closest('textarea, input, select, [contenteditable]')) {
           return;
         }
         var el = kbTouchScroller;

@@ -4534,6 +4534,23 @@
       window.setTimeout(restoreThread, 280);
     }
 
+    // Pinch / wheel / double-tap zoom and swipe-to-close come from gallery.js.
+    // Attach lazily so the viewer still gains them if that script lands late.
+    function ensureZoom() {
+      if (zoom || !stage || typeof window.pngmCreatePhotoZoom !== 'function') {
+        return;
+      }
+      zoom = window.pngmCreatePhotoZoom(stage, function () {
+        return imgEl;
+      }, {
+        overlay: overlay,
+        swipeClose: true,
+        onClose: function () {
+          close(false);
+        }
+      });
+    }
+
     function build() {
       overlay = document.createElement('div');
       overlay.className = 'pngm-im-photo-viewer';
@@ -4557,17 +4574,7 @@
       imgEl = overlay.querySelector('img');
       stage = overlay.querySelector('.pngm-im-photo-stage');
 
-      if (typeof window.pngmCreatePhotoZoom === 'function') {
-        zoom = window.pngmCreatePhotoZoom(stage, function () {
-          return imgEl;
-        }, {
-          overlay: overlay,
-          swipeClose: true,
-          onClose: function () {
-            close(false);
-          }
-        });
-      }
+      ensureZoom();
 
       imgEl.addEventListener('load', function () {
         if (openState && zoom && !zoom.isZoomed()) {
@@ -4629,6 +4636,7 @@
       if (!overlay) {
         build();
       }
+      ensureZoom();
       blockUntil = Date.now() + 450;
       if (zoom) {
         zoom.reset(false);
@@ -4637,6 +4645,14 @@
       if (openState) {
         return;
       }
+      // A prevented touch does not blur the composer on iOS, which left the
+      // keyboard (and the keyboard-pinned body frame) up underneath the viewer.
+      try {
+        var ae = document.activeElement;
+        if (ae && ae !== document.body && typeof ae.blur === 'function' && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) {
+          ae.blur();
+        }
+      } catch (errBlur) {}
       overlay.hidden = false;
       lockThread();
       openState = true;
@@ -4665,7 +4681,14 @@
       if (hist) {
         hist = false;
         if (!fromPop) {
-          try { history.back(); } catch (err) {}
+          var st = null;
+          try { st = history.state; } catch (errState) {}
+          // Only pop our own entry: a stale flag must never navigate away from
+          // the thread. The timestamp lets the Messages board ignore this pop.
+          if (st && st.pngmImPhoto) {
+            window.__pngmImPhotoBackAt = Date.now();
+            try { history.back(); } catch (err) {}
+          }
         }
       }
     }
@@ -4691,12 +4714,31 @@
     }
 
     document.addEventListener('click', onAttachActivate, true);
+
+    // touchend fires at the end of a scroll too, so a finger that merely
+    // scrolled the thread and lifted over a photo must not open it.
+    var tapStartX = 0;
+    var tapStartY = 0;
+    var tapStartT = 0;
+    document.addEventListener('touchstart', function (e) {
+      var t = e.touches && e.touches[0];
+      tapStartX = t ? t.clientX : 0;
+      tapStartY = t ? t.clientY : 0;
+      tapStartT = Date.now();
+    }, { capture: true, passive: true });
     document.addEventListener('touchend', function (e) {
       if (overlay && !overlay.hidden && overlay.contains(e.target)) {
         return;
       }
       var link = e.target && e.target.closest ? e.target.closest('a.im-download, a.pngm-im-attach') : null;
       if (!link || !isImageLink(link)) {
+        return;
+      }
+      var t = e.changedTouches && e.changedTouches[0];
+      if (t && (Math.abs(t.clientX - tapStartX) > 10 || Math.abs(t.clientY - tapStartY) > 10)) {
+        return;
+      }
+      if (Date.now() - tapStartT > 700) {
         return;
       }
       e.preventDefault();
@@ -5213,38 +5255,50 @@
       var mobileIm = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
       document.cookie = 'pngm_im_mobile=' + (mobileIm ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax';
     } catch (e) {}
-    initCategories();
-    initStickyHomeSearch();
-    initPatternSearchLocation();
-    initPopularCitiesOrder();
-    initPostingCityGrouping();
-    initSearchableLocationSelects();
-    initVehicleMakeOther();
-    initVehicleSearchModelLabel();
-    initItemGallery();
-    initUserAccountUx();
-    initPostingPlaceholders();
-    initGeoLocate();
-    initSearchSubcats();
-    initItemPostMinlength();
-    initItemPostValidation();
-    initPostPhotoPreview();
-    initUppyOverNav();
-    initLiveSearchBoard();
-    initMobileSearchFilters();
-    initChatLayout();
+    // One module throwing must not take the rest of the page down with it:
+    // everything after the failure (the chat photo viewer is last) used to be
+    // skipped silently.
+    function run(fn) {
+      try {
+        fn();
+      } catch (err) {
+        if (window.console && console.error) {
+          console.error('pngm init', err);
+        }
+      }
+    }
+    run(initCategories);
+    run(initStickyHomeSearch);
+    run(initPatternSearchLocation);
+    run(initPopularCitiesOrder);
+    run(initPostingCityGrouping);
+    run(initSearchableLocationSelects);
+    run(initVehicleMakeOther);
+    run(initVehicleSearchModelLabel);
+    run(initItemGallery);
+    run(initUserAccountUx);
+    run(initPostingPlaceholders);
+    run(initGeoLocate);
+    run(initSearchSubcats);
+    run(initItemPostMinlength);
+    run(initItemPostValidation);
+    run(initPostPhotoPreview);
+    run(initUppyOverNav);
+    run(initLiveSearchBoard);
+    run(initMobileSearchFilters);
+    run(initChatLayout);
     window.pngmInitChatLayout = initChatLayout;
-    initItemDescriptionClamp();
-    initLocationModalUx();
-    initSearchSortUi();
-    initSearchRecentScroll();
-    initItemReport();
-    initFlashToasts();
-    initBadgePoller();
-    initOwnListingChat();
-    initNotifyMenu();
-    initNotifyChimeUnlock();
-    initChatPhotoViewer();
+    run(initItemDescriptionClamp);
+    run(initLocationModalUx);
+    run(initSearchSortUi);
+    run(initSearchRecentScroll);
+    run(initItemReport);
+    run(initFlashToasts);
+    run(initBadgePoller);
+    run(initOwnListingChat);
+    run(initNotifyMenu);
+    run(initNotifyChimeUnlock);
+    run(initChatPhotoViewer);
   }
 
   if (document.readyState === 'loading') {

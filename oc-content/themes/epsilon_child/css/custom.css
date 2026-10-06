@@ -7034,11 +7034,15 @@
        (--pngm-chat-navh). --pngm-kb is only non-zero on browsers that shrink the
        visual viewport but NOT the layout viewport (iOS Safari); Android Chrome
        shrinks 100dvh itself via interactive-widget=resizes-content. */
+    /* --pngm-chat-navh is measured from #navi-bar, whose own padding already
+       holds env(safe-area-inset-bottom). Subtracting the inset a second time
+       left the composer / blocked notice clipped above a blank strip on the
+       iPhone home-screen app. The inset is 0 on Android and desktop. */
     body.im-chat-page .container.primary {
       display: flex;
       flex-direction: column;
-      height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-chat-navh, 56px) - env(safe-area-inset-bottom, 0px) - var(--pngm-kb, 0px));
-      max-height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-chat-navh, 56px) - env(safe-area-inset-bottom, 0px) - var(--pngm-kb, 0px));
+      height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-chat-navh, 56px) - var(--pngm-kb, 0px));
+      max-height: calc(100dvh - var(--pngm-chat-top, 102px) - var(--pngm-chat-navh, 56px) - var(--pngm-kb, 0px));
       margin-bottom: 0 !important;
       padding-bottom: 0;
       overflow: hidden;
@@ -7683,7 +7687,8 @@
       z-index: 6;
       margin: 8px -12px 0 !important;
       width: calc(100% + 24px) !important;
-      padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+      /* Sits above the bottom nav, which already carries the safe-area inset. */
+      padding: 10px 12px 12px !important;
       border-top: 1px solid #f0d0d0;
       background: #fff7f7;
     }
@@ -10781,13 +10786,51 @@
     user-select: none;
   }
 
-/* 16px minimum on phones: iOS Safari / the home-screen PWA zooms the whole page
-   into any focused field smaller than 16px and keeps that zoom until the user pinches out. */
-@media screen and (max-width: 767px) {
-  html body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="range"]):not([type="image"]),
-  html body select,
-  html body textarea {
-    font-size: 16px !important;
+/* ==========================================================================
+   iPhone / iPad only.
+   Every iOS browser runs WebKit, the only engine that understands
+   -webkit-touch-callout, so this block never applies on Android, Windows or
+   macOS: those keep rendering exactly as before.
+   ========================================================================== */
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-width: 767px) {
+    /* 16px minimum: iOS Safari and the home-screen app zoom the whole page into
+       any focused field smaller than 16px and keep that zoom until the user
+       pinches out (search box, login, post wizard, chat composer...). */
+    html body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="range"]):not([type="image"]),
+    html body select,
+    html body textarea {
+      font-size: 16px !important;
+    }
+
+    /* A double tap no longer zooms the page; pinch zoom still works. */
+    html body {
+      touch-action: manipulation;
+    }
+
+    /* Post wizard: the parent theme turns .status-wrap into a shrink-wrapped
+       inline-block, which WebKit can collapse around a 100%-wide <select>.
+       Lay the Condition field out like every other field. */
+    html body.item-publish.pngm-post-wizard .pngm-post-field.status-wrap {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+    html body.pngm-post-wizard #sCondition,
+    html body.pngm-post-wizard select.sCondition {
+      height: 44px;
+      line-height: normal;
+    }
+
+    /* Messages: the page shell never scrolls, so a swipe past either end of the
+       list must not rubber-band the whole app or drag the header down. */
+    html body.im-chat-page {
+      overscroll-behavior: none;
+    }
+    html body.im-chat-page .im-table.im-messages,
+    html body.im-chat-page .pngm-im-board {
+      overscroll-behavior-y: contain;
+    }
   }
 }
   

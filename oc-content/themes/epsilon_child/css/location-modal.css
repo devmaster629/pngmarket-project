@@ -575,7 +575,7 @@ button.pngm-loc-apply:hover,
 /* Top-right location toast (replaces full-width flash banner) */
 .pngm-loc-toast-host {
   position: fixed;
-  top: 18px;
+  top: calc(18px + env(safe-area-inset-top, 0px));
   right: 18px;
   z-index: 11060;
   display: flex;
@@ -771,7 +771,7 @@ button.pngm-loc-apply:hover,
   }
 
   .pngm-loc-toast-host {
-    top: 12px;
+    top: calc(12px + env(safe-area-inset-top, 0px));
     right: 12px;
     left: 12px;
     max-width: none;
