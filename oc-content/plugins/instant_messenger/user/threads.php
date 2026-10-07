@@ -229,8 +229,6 @@
                 <a target="_blank" href="<?php echo osc_item_url_from_item($item); ?>"><?php echo osc_highlight($item['s_title'], 50); ?></a>
               <?php } else if((int)$t['fk_i_item_id'] > 0) { ?>
                 <?php echo __('Listing removed', 'instant_messenger'); ?>
-              <?php } else { ?>
-                <?php echo __('General seller inquiry', 'epsilon'); ?>
               <?php } ?>
               
               <div class="im-recipient im-only-mobile"><?php echo $recipient; ?></div>

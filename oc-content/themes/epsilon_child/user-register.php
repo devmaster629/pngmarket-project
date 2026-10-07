@@ -86,19 +86,6 @@
               <?php pngm_auth_show_recaptcha('register'); ?>
             </div>
 
-            <?php if (function_exists('pngm_antispam_public_status')) {
-                $pngm_limits = pngm_antispam_public_status();
-                if (!empty($pngm_limits['registration']['label'])) {
-                ?>
-              <div class="pngm-auth-limits" id="pngm-auth-limits">
-                <strong><?php _e('Abuse protection active', 'epsilon'); ?></strong>
-                <ul>
-                  <li><?php echo osc_esc_html($pngm_limits['registration']['label']); ?></li>
-                </ul>
-              </div>
-            <?php }
-            } ?>
-
             <label class="pngm-auth-check pngm-auth-terms">
               <input type="checkbox" name="pngm_terms" id="pngm_terms" value="1" required />
               <span>

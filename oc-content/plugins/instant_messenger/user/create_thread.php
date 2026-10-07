@@ -95,14 +95,6 @@ if(Params::getParam('im-action') == 'create_thread') {
 
   <?php if(($result['mode'] == 'item' || $result['mode'] == 'user_redirect') && $result['item_id'] > 0) { ?>
     <?php echo im_render_item_context($result['item_id'], $result['item'], $result['item_details']); ?>
-  <?php } elseif (function_exists('pngm_im_render_general_inquiry')) { ?>
-    <?php echo pngm_im_render_general_inquiry(); ?>
-  <?php } else { ?>
-    <div class="im-row im-item-context im-body pngm-im-general-inquiry" role="status">
-      <div class="im-col-24">
-        <div class="im-line im-item-title"><?php echo osc_esc_html(__('General seller inquiry', 'epsilon')); ?></div>
-      </div>
-    </div>
   <?php } ?>
 
   <ul id="im-error-list" class="error-list im-error-list im-body"></ul>

@@ -577,7 +577,7 @@
                     <?php /* No HTML min/max — jquery.validate parses them as Number() → NaN and always fails. Limits enforced in JS/PHP. */ ?>
                     <input type="date" name="pngm_expiry_date" id="pngm_expiry_date" class="pngm-post-expiry-date" value="<?php echo osc_esc_html($pngm_expiry_date); ?>" data-min="<?php echo osc_esc_html($pngm_expiry_min_date); ?>" data-max="<?php echo osc_esc_html($pngm_expiry_max_date); ?>"<?php echo $pngm_expiry_mode === 'date' ? '' : ' disabled="disabled"'; ?> />
                   </div>
-                  <p class="pngm-post-muted pngm-post-field-hint"><?php echo osc_esc_html(sprintf(__('Pick a date within the next %d days (e.g. when a promo price ends).', 'epsilon'), $pngm_expiry_max)); ?></p>
+                  <p class="pngm-post-muted pngm-post-field-hint"><?php echo osc_esc_html(sprintf(__('Pick a date within the next %d days.', 'epsilon'), $pngm_expiry_max)); ?></p>
                   <p class="pngm-post-field-error is-hidden" data-for="pngm_expiry_date" hidden><?php _e('Please choose a valid expiry date.', 'epsilon'); ?></p>
                 </div>
                 <input type="hidden" name="pngm_expiry_mode" id="pngm_expiry_mode" value="<?php echo osc_esc_html($pngm_expiry_mode === 'date' || in_array($pngm_expiry_mode, array('7', '14', '30', '60'), true) ? $pngm_expiry_mode : '30'); ?>" />

@@ -465,21 +465,13 @@ function pngm_im_render_listing_card($item, $owns_listing = null)
 }
 
 /**
- * Banner for profile / no-listing threads (QD-006).
+ * Former "General seller inquiry" banner — intentionally empty (not shown).
  *
  * @return string
  */
 function pngm_im_render_general_inquiry()
 {
-    $label = __('General seller inquiry', 'epsilon');
-    $html  = '<div class="im-row im-item-context im-body pngm-im-general-inquiry" role="status">';
-    $html .= '<div class="pngm-im-general-inquiry-inner">';
-    $html .= '<span class="pngm-im-general-inquiry-icon" aria-hidden="true"><i class="fas fa-comments"></i></span>';
-    $html .= '<span class="pngm-im-general-inquiry-text">';
-    $html .= '<span class="im-line im-item-label">' . osc_esc_html(__('Conversation', 'epsilon')) . '</span>';
-    $html .= '<span class="im-line im-item-title">' . osc_esc_html($label) . '</span>';
-    $html .= '</span></div></div>';
-    return $html;
+    return '';
 }
 
 /**

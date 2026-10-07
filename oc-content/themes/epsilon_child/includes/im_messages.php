@@ -118,12 +118,7 @@ $pngm_block_row = (trim((string) $thread_target_email) !== '' && class_exists('M
             <span class="pngm-im-listing-view"><?php _e('View listing', 'epsilon'); ?> →</span>
           </span>
         </a>
-      <?php } else {
-        $thread_item_id = isset($thread['fk_i_item_id']) ? (int) $thread['fk_i_item_id'] : 0;
-        if ($thread_item_id <= 0) {
-          echo pngm_im_render_general_inquiry();
-        }
-      } ?>
+      <?php } ?>
 
       <?php if ($offer) { ?>
         <a href="<?php echo osc_route_url('mo-show-offers', array('offerId' => $thread['i_offer_id'])); ?>" class="pngm-im-offer-banner">
