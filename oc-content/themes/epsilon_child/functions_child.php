@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.83');
+    define('PNGM_CHILD_VERSION', '2.9.85');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -1896,8 +1896,8 @@ function pngm_recaptcha_incognito_fix()
   }
 
   /**
-   * Google preloads a hidden challenge iframe. Only restyle shells that the
-   * user actually opened — otherwise our layout CSS unmasks the popup early.
+   * Google parks challenge iframes off-screen / hidden until the checkbox is
+   * clicked. Only restyle shells that are actually open.
    */
   function isChallengeShellVisible(shell) {
     if (!shell) {
@@ -1926,7 +1926,6 @@ function pngm_recaptcha_incognito_fix()
     if (!rect || rect.width < 40 || rect.height < 40) {
       return false;
     }
-    // Off-screen / parked challenge (Google parks it far left/top).
     if (rect.bottom < 0 || rect.right < 0 || rect.top > (window.innerHeight || 0) + 80) {
       return false;
     }
@@ -1934,67 +1933,120 @@ function pngm_recaptcha_incognito_fix()
   }
 
   /**
-   * Google's image-select challenge is ~400px wide; on narrow phones it sits
-   * off-center and the Verify button is clipped. Re-center + scale the shell.
+   * Walk up from the bframe to the challenge "bubble" (not the full-screen
+   * backdrop). Android Chrome mis-places this bubble next to the checkbox.
+   */
+  function findChallengeBubble(iframe) {
+    if (!iframe || !iframe.parentElement) {
+      return null;
+    }
+    var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    var node = iframe.parentElement;
+    var bubble = null;
+    var guard = 0;
+    while (node && node !== document.body && guard < 10) {
+      var st = window.getComputedStyle(node);
+      if (st && (st.position === 'absolute' || st.position === 'fixed')) {
+        var rect = node.getBoundingClientRect();
+        var isBackdrop = rect.width >= vw * 0.85 && rect.height >= vh * 0.85;
+        if (!isBackdrop) {
+          bubble = node;
+          break;
+        }
+      }
+      node = node.parentElement;
+      guard += 1;
+    }
+    return bubble || iframe.parentElement;
+  }
+
+  /**
+   * Center + scale the open challenge in the viewport.
+   * Android: Google's absolute left/top (relative to checkbox) often pushes
+   * the bubble off the right edge and clips Verify — force fixed centering.
    */
   function fitChallengePopup() {
     var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    if (vw <= 0 || vw > 520) {
+    var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    if (vw <= 0 || vw > 560) {
+      document.documentElement.classList.remove('pngm-recaptcha-challenge-open');
+      document.body && document.body.classList.remove('pngm-recaptcha-challenge-open');
       return;
     }
 
     var frames = document.querySelectorAll(
-      'iframe[src*="recaptcha/api2/bframe"], iframe[src*="recaptcha/enterprise/bframe"], iframe[src*="bframe"]'
+      'iframe[src*="recaptcha/api2/bframe"], iframe[src*="recaptcha/enterprise/bframe"], iframe[src*="bframe"][src*="recaptcha"]'
     );
+    var anyOpen = false;
+
     Array.prototype.forEach.call(frames, function (iframe) {
       if (!iframe || !iframe.parentElement) {
         return;
       }
-      // Walk up to the absolute/fixed challenge shell Google injects under body.
-      var shell = iframe.parentElement;
-      var guard = 0;
-      while (shell && shell !== document.body && guard < 6) {
-        var st = window.getComputedStyle(shell);
-        if (st && (st.position === 'absolute' || st.position === 'fixed') && shell.querySelector('iframe')) {
-          break;
-        }
-        shell = shell.parentElement;
-        guard += 1;
-      }
-      if (!shell || shell === document.body) {
-        shell = iframe.parentElement;
-      }
-
-      if (!isChallengeShellVisible(shell)) {
+      var shell = findChallengeBubble(iframe);
+      if (!shell || !isChallengeShellVisible(shell)) {
         return;
       }
+      anyOpen = true;
 
-      var natural = 400;
+      var naturalW = 400;
+      var naturalH = 580;
       try {
         var iw = parseInt(iframe.getAttribute('width'), 10);
+        var ih = parseInt(iframe.getAttribute('height'), 10);
         if (iw > 200) {
-          natural = iw;
+          naturalW = iw;
         } else if (iframe.offsetWidth > 200) {
-          natural = iframe.offsetWidth;
+          naturalW = iframe.offsetWidth;
+        }
+        if (ih > 200) {
+          naturalH = ih;
+        } else if (iframe.offsetHeight > 200) {
+          naturalH = iframe.offsetHeight;
         }
       } catch (e) {}
 
-      var pad = 16;
-      var scale = Math.min(1, (vw - pad) / natural);
-      if (scale < 0.55) {
-        scale = 0.55;
+      var padX = 12;
+      var padY = 16;
+      var scale = Math.min(1, (vw - padX * 2) / naturalW, (vh - padY * 2) / naturalH);
+      if (scale < 0.5) {
+        scale = 0.5;
       }
 
+      // Let the iframe keep its natural size; scale the bubble instead.
+      iframe.style.setProperty('max-width', 'none', 'important');
+      iframe.style.setProperty('width', naturalW + 'px', 'important');
+      iframe.style.removeProperty('height');
+
+      shell.style.setProperty('position', 'fixed', 'important');
+      shell.style.setProperty('top', '50%', 'important');
       shell.style.setProperty('left', '50%', 'important');
       shell.style.setProperty('right', 'auto', 'important');
-      shell.style.setProperty('margin-left', '0', 'important');
-      shell.style.setProperty('max-width', '100vw', 'important');
-      shell.style.setProperty('transform', 'translateX(-50%) scale(' + scale.toFixed(3) + ')', 'important');
-      shell.style.setProperty('-webkit-transform', 'translateX(-50%) scale(' + scale.toFixed(3) + ')', 'important');
-      shell.style.setProperty('transform-origin', 'center top', 'important');
-      shell.style.setProperty('-webkit-transform-origin', 'center top', 'important');
+      shell.style.setProperty('bottom', 'auto', 'important');
+      shell.style.setProperty('margin', '0', 'important');
+      shell.style.setProperty('width', naturalW + 'px', 'important');
+      shell.style.setProperty('max-width', 'none', 'important');
+      shell.style.setProperty('transform', 'translate(-50%, -50%) scale(' + scale.toFixed(3) + ')', 'important');
+      shell.style.setProperty('-webkit-transform', 'translate(-50%, -50%) scale(' + scale.toFixed(3) + ')', 'important');
+      shell.style.setProperty('transform-origin', 'center center', 'important');
+      shell.style.setProperty('-webkit-transform-origin', 'center center', 'important');
       shell.style.setProperty('z-index', '2147483646', 'important');
+      shell.style.setProperty('visibility', 'visible', 'important');
+      shell.style.setProperty('opacity', '1', 'important');
     });
+
+    if (anyOpen) {
+      document.documentElement.classList.add('pngm-recaptcha-challenge-open');
+      if (document.body) {
+        document.body.classList.add('pngm-recaptcha-challenge-open');
+      }
+    } else {
+      document.documentElement.classList.remove('pngm-recaptcha-challenge-open');
+      if (document.body) {
+        document.body.classList.remove('pngm-recaptcha-challenge-open');
+      }
+    }
   }
 
   function watchChallengePopup() {
@@ -2002,17 +2054,34 @@ function pngm_recaptcha_incognito_fix()
       return;
     }
     window.__pngmRecaptchaChallengeWatch = 1;
-    fitChallengePopup();
+    var burstTimer = null;
+
+    // Android Chrome often repositions the bubble after paint — re-fit briefly.
+    function scheduleFitBurst() {
+      var n = 0;
+      window.clearInterval(burstTimer);
+      fitChallengePopup();
+      burstTimer = window.setInterval(function () {
+        fitChallengePopup();
+        n += 1;
+        if (n >= 12) {
+          window.clearInterval(burstTimer);
+          burstTimer = null;
+        }
+      }, 350);
+    }
+
+    scheduleFitBurst();
     var obs = new MutationObserver(function () {
       window.clearTimeout(window.__pngmRecaptchaChallengeT);
-      window.__pngmRecaptchaChallengeT = window.setTimeout(fitChallengePopup, 40);
+      window.__pngmRecaptchaChallengeT = window.setTimeout(scheduleFitBurst, 40);
     });
     try {
-      obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'src'] });
+      obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'src', 'class'] });
     } catch (e) {}
     window.addEventListener('resize', fitChallengePopup);
     window.addEventListener('orientationchange', function () {
-      window.setTimeout(fitChallengePopup, 200);
+      window.setTimeout(scheduleFitBurst, 200);
     });
   }
 

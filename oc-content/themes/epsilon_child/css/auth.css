@@ -329,26 +329,18 @@ body.pngm-auth-v2 .pngm-auth-control input:-webkit-autofill:focus {
   max-width: 100% !important;
   margin: 0 auto !important;
   min-height: 78px !important;
-  height: 78px !important;
   overflow: visible !important;
+  transform: none !important;
+  -webkit-transform: none !important;
 }
 
-/* Do not constrain challenge iframes — only the checkbox widget is in-flow */
+/* Never scale/clip the checkbox — Android then mis-places the challenge bubble. */
 .pngm-auth-captcha .g-recaptcha > div {
-  width: 304px !important;
   max-width: 100% !important;
-  height: 78px !important;
   margin-left: auto !important;
   margin-right: auto !important;
-}
-
-@media screen and (max-width: 340px) {
-  .pngm-auth-captcha .g-recaptcha,
-  .pngm-auth-captcha .g-recaptcha > div {
-    width: 100% !important;
-    transform: scale(0.92);
-    transform-origin: center top;
-  }
+  transform: none !important;
+  -webkit-transform: none !important;
 }
 
 .pngm-auth-captcha-note {
