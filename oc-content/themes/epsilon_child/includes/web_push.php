@@ -202,6 +202,10 @@ function pngm_webpush_upsert_subscription($user_id, $sub)
         return false;
     }
 
+    // One browser endpoint must belong to one account only. Otherwise a message
+    // meant for user A can pop up on this phone while user B is logged in.
+    pngm_webpush_detach_endpoint_from_others($user_id, $endpoint);
+
     $subs = pngm_webpush_get_subscriptions($user_id);
     $found = false;
     foreach ($subs as $i => $row) {
@@ -254,6 +258,61 @@ function pngm_webpush_remove_subscription($user_id, $endpoint)
         $out[] = $row;
     }
     pngm_webpush_save_subscriptions($user_id, $out);
+}
+
+/**
+ * Drop an endpoint from every other user's subscription list.
+ *
+ * @param int    $keep_user_id
+ * @param string $endpoint
+ * @return void
+ */
+function pngm_webpush_detach_endpoint_from_others($keep_user_id, $endpoint)
+{
+    $keep_user_id = (int) $keep_user_id;
+    $endpoint = trim((string) $endpoint);
+    if ($keep_user_id <= 0 || $endpoint === '' || !defined('DB_TABLE_PREFIX') || !class_exists('DBCommandClass')) {
+        return;
+    }
+
+    try {
+        $conn = DBConnectionClass::newInstance();
+        $data = $conn->getOsclassDb();
+        $comm = new DBCommandClass($data);
+        $comm->select('s_name');
+        $comm->from(DB_TABLE_PREFIX . 't_preference');
+        $comm->where('s_section', PNGM_WEBPUSH_PREF_SECTION);
+        $comm->like('s_name', 'subs_%', 'after');
+        $result = $comm->get();
+        if ($result === false) {
+            return;
+        }
+        $rows = $result->result();
+        if (!is_array($rows)) {
+            return;
+        }
+        foreach ($rows as $row) {
+            if (!is_array($row) || empty($row['s_name'])) {
+                continue;
+            }
+            $other_id = (int) substr((string) $row['s_name'], 5);
+            if ($other_id <= 0 || $other_id === $keep_user_id) {
+                continue;
+            }
+            $subs = pngm_webpush_get_subscriptions($other_id);
+            if (empty($subs)) {
+                continue;
+            }
+            foreach ($subs as $sub) {
+                if (is_array($sub) && isset($sub['endpoint']) && (string) $sub['endpoint'] === $endpoint) {
+                    pngm_webpush_remove_subscription($other_id, $endpoint);
+                    break;
+                }
+            }
+        }
+    } catch (Exception $e) {
+        return;
+    }
 }
 
 /**

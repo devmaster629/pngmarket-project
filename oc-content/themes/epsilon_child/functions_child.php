@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.77');
+    define('PNGM_CHILD_VERSION', '2.9.78');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -2126,6 +2126,13 @@ function pngm_ajax_im_send()
     }
 
     $type = (int) $ctx['send_type'];
+    // Hard-pin type from membership so a flipped thread context cannot notify the sender.
+    $logged_id = (int) osc_logged_user_id();
+    if ($logged_id > 0 && (int) @$thread['i_from_user_id'] === $logged_id) {
+        $type = 0;
+    } elseif ($logged_id > 0 && (int) @$thread['i_to_user_id'] === $logged_id) {
+        $type = 1;
+    }
 
     // Blocked in either direction: answer with the real notice. The plugin's own
     // check inside im_insert_message() redirects, which this JSON caller could

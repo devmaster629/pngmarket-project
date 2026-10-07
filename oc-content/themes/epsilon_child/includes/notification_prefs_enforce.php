@@ -639,31 +639,60 @@ function pngm_im_on_insert_queue_push($message_id)
     }
 
     $type = isset($msg['i_type']) ? (int) $msg['i_type'] : 0;
-    // type 0 = from-user wrote → notify to-user; type 1 = reverse.
-    if ($type === 0) {
-        if ((int) @$thread['i_to_user_notify'] !== 1) {
-            return;
+    $from_id = (int) @$thread['i_from_user_id'];
+    $to_id = (int) @$thread['i_to_user_id'];
+
+    // Default from stored i_type: 0 = from-user wrote → notify to-user; 1 = reverse.
+    $author_id = ($type === 0) ? $from_id : $to_id;
+    $user_id = ($type === 0) ? $to_id : $from_id;
+    $from_name = ($type === 0)
+        ? (isset($thread['s_from_user_name']) ? (string) $thread['s_from_user_name'] : '')
+        : (isset($thread['s_to_user_name']) ? (string) $thread['s_to_user_name'] : '');
+    $notify_ok = ($type === 0)
+        ? ((int) @$thread['i_to_user_notify'] === 1)
+        : ((int) @$thread['i_from_user_notify'] === 1);
+    $recipient_is_to = ($type === 0);
+
+    // Prefer the logged-in author: always notify the *other* party. This stops the
+    // sender getting "Reply from …" for their own message when i_type is wrong.
+    $logged = (function_exists('osc_is_web_user_logged_in') && osc_is_web_user_logged_in())
+        ? (int) osc_logged_user_id()
+        : 0;
+    if ($logged > 0 && ($logged === $from_id || $logged === $to_id)) {
+        $author_id = $logged;
+        if ($logged === $from_id) {
+            $user_id = $to_id;
+            $from_name = isset($thread['s_from_user_name']) ? (string) $thread['s_from_user_name'] : '';
+            $notify_ok = ((int) @$thread['i_to_user_notify'] === 1);
+            $recipient_is_to = true;
+        } else {
+            $user_id = $from_id;
+            $from_name = isset($thread['s_to_user_name']) ? (string) $thread['s_to_user_name'] : '';
+            $notify_ok = ((int) @$thread['i_from_user_notify'] === 1);
+            $recipient_is_to = false;
         }
-        $user_id = (int) @$thread['i_to_user_id'];
-        $from_name = isset($thread['s_from_user_name']) ? (string) $thread['s_from_user_name'] : __('Someone', 'epsilon');
-    } else {
-        if ((int) @$thread['i_from_user_notify'] !== 1) {
-            return;
-        }
-        $user_id = (int) @$thread['i_from_user_id'];
-        $from_name = isset($thread['s_to_user_name']) ? (string) $thread['s_to_user_name'] : __('Someone', 'epsilon');
+    }
+
+    if (!$notify_ok) {
+        return;
+    }
+
+    if ($from_name === '') {
+        $from_name = __('Someone', 'epsilon');
     }
 
     if ($user_id <= 0) {
         // Guest recipient — try email lookup.
-        $email = ($type === 0)
+        $email = $recipient_is_to
             ? (isset($thread['s_to_user_email']) ? (string) $thread['s_to_user_email'] : '')
             : (isset($thread['s_from_user_email']) ? (string) $thread['s_from_user_email'] : '');
         if ($email !== '' && function_exists('pngm_notif_user_id_by_email')) {
             $user_id = pngm_notif_user_id_by_email($email);
         }
     }
-    if ($user_id <= 0) {
+
+    // Never notify the author (own message).
+    if ($user_id <= 0 || ($author_id > 0 && $user_id === $author_id) || ($logged > 0 && $user_id === $logged)) {
         return;
     }
 
@@ -691,7 +720,7 @@ function pngm_im_on_insert_queue_push($message_id)
 
     $url = osc_base_url() . 'index.php?page=custom&file=instant_messenger/user/threads.php';
     if (function_exists('osc_route_url')) {
-        $secret = ($type === 0)
+        $secret = $recipient_is_to
             ? (isset($thread['s_to_secret']) ? (string) $thread['s_to_secret'] : '')
             : (isset($thread['s_from_secret']) ? (string) $thread['s_from_secret'] : '');
         if ($secret === '') {
