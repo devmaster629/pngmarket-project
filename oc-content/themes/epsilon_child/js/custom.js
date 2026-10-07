@@ -4264,7 +4264,59 @@
     }
   }
 
-  function pngmShowToast(message, isError) {
+  function pngmSanitizeToastHtml(html) {
+    var doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
+    var root = doc.body.firstChild;
+    if (!root) {
+      return '';
+    }
+
+    function clean(node) {
+      var children = Array.prototype.slice.call(node.childNodes);
+      children.forEach(function (child) {
+        if (child.nodeType === 3) {
+          return;
+        }
+        if (child.nodeType !== 1) {
+          if (child.parentNode) {
+            child.parentNode.removeChild(child);
+          }
+          return;
+        }
+        var tag = child.tagName.toLowerCase();
+        if (tag === 'br') {
+          return;
+        }
+        if (tag === 'a') {
+          var href = child.getAttribute('href') || '';
+          if (!href || /^javascript:/i.test(href) || /^data:/i.test(href)) {
+            child.removeAttribute('href');
+          } else if (!/^(https?:\/\/|\/|\?|#)/i.test(href)) {
+            child.removeAttribute('href');
+          }
+          Array.prototype.slice.call(child.attributes || []).forEach(function (attr) {
+            if (attr.name !== 'href') {
+              child.removeAttribute(attr.name);
+            }
+          });
+          if (child.getAttribute('href')) {
+            child.setAttribute('rel', 'noopener noreferrer');
+          }
+          clean(child);
+          return;
+        }
+        while (child.firstChild) {
+          node.insertBefore(child.firstChild, child);
+        }
+        node.removeChild(child);
+      });
+    }
+
+    clean(root);
+    return root.innerHTML;
+  }
+
+  function pngmShowToast(message, isError, allowHtml) {
     var host = document.getElementById('pngm-loc-toast-host');
     if (!host) {
       host = document.createElement('div');
@@ -4279,7 +4331,12 @@
     toast.innerHTML =
       '<span class="pngm-loc-toast-msg"></span>' +
       '<button type="button" class="pngm-loc-toast-close" aria-label="Dismiss">&times;</button>';
-    toast.querySelector('.pngm-loc-toast-msg').textContent = message || '';
+    var msgEl = toast.querySelector('.pngm-loc-toast-msg');
+    if (allowHtml && message && /<[a-z][\s\S]*>/i.test(String(message))) {
+      msgEl.innerHTML = pngmSanitizeToastHtml(String(message));
+    } else {
+      msgEl.textContent = message || '';
+    }
     host.appendChild(toast);
 
     function dismiss() {
@@ -4289,7 +4346,8 @@
     }
 
     toast.querySelector('.pngm-loc-toast-close').addEventListener('click', dismiss);
-    window.setTimeout(dismiss, 4800);
+    var ttl = msgEl.querySelector('a') ? 16000 : 4800;
+    window.setTimeout(dismiss, ttl);
   }
 
   window.pngmShowToast = pngmShowToast;
@@ -4328,7 +4386,12 @@
         return;
       }
       var isError = el.className.indexOf('flashmessage-error') !== -1;
-      pngmShowToast(text, isError);
+      var hasLink = !!clone.querySelector('a[href]');
+      if (hasLink) {
+        pngmShowToast(clone.innerHTML, isError, true);
+      } else {
+        pngmShowToast(text, isError);
+      }
     });
 
     box.innerHTML = '';

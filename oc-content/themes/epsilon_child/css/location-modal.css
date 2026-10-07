@@ -622,6 +622,22 @@ button.pngm-loc-apply:hover,
   min-width: 0;
 }
 
+.pngm-loc-toast-msg a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pngm-loc-toast.is-error .pngm-loc-toast-msg a {
+  color: #991b1b;
+}
+
+.pngm-loc-toast-msg a:hover,
+.pngm-loc-toast-msg a:focus {
+  opacity: 0.85;
+}
+
 .pngm-loc-toast-close {
   flex: 0 0 auto;
   width: 28px;

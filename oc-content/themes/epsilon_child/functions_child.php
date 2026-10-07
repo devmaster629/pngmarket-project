@@ -7,7 +7,7 @@
  */
 
 if (!defined('PNGM_CHILD_VERSION')) {
-    define('PNGM_CHILD_VERSION', '2.9.80');
+    define('PNGM_CHILD_VERSION', '2.9.83');
 }
 
 /** Set true in Phase 3 when Business Stores / Companies directory launches. */
@@ -1547,6 +1547,41 @@ osc_add_hook('before_user_register', 'pngm_require_recaptcha_on_register');
 osc_add_hook('init_contact', 'pngm_require_recaptcha_on_contact');
 
 /**
+ * After email-validation registration, Osclass would redirect to the homepage.
+ * Exit here instead and send the user to login with a verify notice.
+ *
+ * @param int $userId
+ */
+function pngm_redirect_register_to_login($userId)
+{
+    if (!function_exists('osc_user_validation_enabled') || !osc_user_validation_enabled()) {
+        return;
+    }
+    // Front-end register only (not oc-admin user create).
+    if (Params::getParam('page') !== 'register') {
+        return;
+    }
+    $action = Params::getParam('action');
+    if ($action !== 'register_post' && $action !== '') {
+        return;
+    }
+
+    // New account must still need activation (success == 1 path).
+    $user = User::newInstance()->findByPrimaryKey((int) $userId);
+    if (!$user || !empty($user['b_active'])) {
+        return;
+    }
+
+    Session::newInstance()->_dropMessage('pubMessages');
+    osc_add_flash_ok_message(
+        __('We sent a verification email. Please verify your account before logging in.', 'epsilon')
+    );
+    // Exits — prevents register.php from redirecting to the homepage.
+    osc_redirect_to(osc_user_login_url());
+}
+osc_add_hook('user_register_completed', 'pngm_redirect_register_to_login');
+
+/**
  * Mobile-safe reCAPTCHA loader (Android + iPhone).
  * - Prefer recaptcha.net (works when google.com is treated as a tracker)
  * - Always use the one-line checkbox so the login button stays on screen
@@ -1639,27 +1674,16 @@ function pngm_recaptcha_incognito_fix()
       return;
     }
     var wrap = el.closest('.pngm-auth-captcha');
-    var available = wrap.clientWidth;
-    if (!available) {
-      return;
-    }
-    var naturalW = 304;
-    var naturalH = 78;
-    var scale = Math.min(1, available / naturalW);
-    if (scale > 0.99) {
-      el.style.removeProperty('transform');
-      el.style.removeProperty('transform-origin');
-      el.style.removeProperty('margin-left');
-      el.style.removeProperty('margin-bottom');
+    // Never CSS-scale the checkbox. Transform marks the widget as
+    // "obscured" for Google and can auto-open the image challenge.
+    el.style.removeProperty('transform');
+    el.style.removeProperty('transform-origin');
+    el.style.removeProperty('margin-left');
+    el.style.removeProperty('margin-bottom');
+    if (wrap) {
       wrap.style.removeProperty('height');
-      return;
+      wrap.style.overflow = 'visible';
     }
-    el.style.setProperty('transform', 'scale(' + scale + ')', 'important');
-    el.style.setProperty('transform-origin', 'left top', 'important');
-    el.style.setProperty('margin-left', ((available - naturalW * scale) / 2) + 'px', 'important');
-    el.style.setProperty('margin-bottom', (naturalH * (scale - 1)) + 'px', 'important');
-    wrap.style.height = (naturalH * scale) + 'px';
-    wrap.style.overflow = 'hidden';
   }
 
   function renderOne(el) {
@@ -1872,6 +1896,44 @@ function pngm_recaptcha_incognito_fix()
   }
 
   /**
+   * Google preloads a hidden challenge iframe. Only restyle shells that the
+   * user actually opened — otherwise our layout CSS unmasks the popup early.
+   */
+  function isChallengeShellVisible(shell) {
+    if (!shell) {
+      return false;
+    }
+    var node = shell;
+    while (node && node !== document.documentElement) {
+      var st;
+      try {
+        st = window.getComputedStyle(node);
+      } catch (e) {
+        return false;
+      }
+      if (!st) {
+        return false;
+      }
+      if (st.display === 'none' || st.visibility === 'hidden') {
+        return false;
+      }
+      if (parseFloat(st.opacity || '1') === 0) {
+        return false;
+      }
+      node = node.parentElement;
+    }
+    var rect = shell.getBoundingClientRect();
+    if (!rect || rect.width < 40 || rect.height < 40) {
+      return false;
+    }
+    // Off-screen / parked challenge (Google parks it far left/top).
+    if (rect.bottom < 0 || rect.right < 0 || rect.top > (window.innerHeight || 0) + 80) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * Google's image-select challenge is ~400px wide; on narrow phones it sits
    * off-center and the Verify button is clipped. Re-center + scale the shell.
    */
@@ -1901,6 +1963,10 @@ function pngm_recaptcha_incognito_fix()
       }
       if (!shell || shell === document.body) {
         shell = iframe.parentElement;
+      }
+
+      if (!isChallengeShellVisible(shell)) {
+        return;
       }
 
       var natural = 400;

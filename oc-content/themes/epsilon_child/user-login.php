@@ -144,22 +144,28 @@
         return /id=["']user-login["']/.test(html || '');
       }
 
-      function errorTexts(html) {
+      function errorMessages(html) {
         var doc = new DOMParser().parseFromString(html || '', 'text/html');
         var nodes = doc.querySelectorAll('.flashmessage-error');
-        var texts = [];
+        var out = [];
+        var seen = {};
         Array.prototype.forEach.call(nodes, function (el) {
           var clone = el.cloneNode(true);
-          var closer = clone.querySelector('.ico-close, .close');
+          var closer = clone.querySelector('.ico-close, .close, a.ico-close, .btn.ico-close');
           if (closer && closer.parentNode) {
             closer.parentNode.removeChild(closer);
           }
           var text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
-          if (text && texts.indexOf(text) === -1) {
-            texts.push(text);
+          if (!text || seen[text]) {
+            return;
           }
+          seen[text] = 1;
+          out.push({
+            text: text,
+            html: clone.querySelector('a[href]') ? clone.innerHTML : null
+          });
         });
-        return texts;
+        return out;
       }
 
       $form.on('submit', function (e) {
@@ -208,18 +214,29 @@
             window.location.replace(homeUrl);
             return;
           }
-          var errors = errorTexts(payload.html);
+          var errors = errorMessages(payload.html);
           if (!errors.length) {
-            errors = [failMsg];
+            errors = [{ text: failMsg, html: null }];
           }
           errors.forEach(function (msg) {
             if (typeof window.pngmShowToast === 'function') {
-              window.pngmShowToast(msg, true);
+              if (msg.html) {
+                window.pngmShowToast(msg.html, true, true);
+              } else {
+                window.pngmShowToast(msg.text, true);
+              }
             }
           });
-          if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
-            try { window.grecaptcha.reset(); } catch (err) {}
-          }
+          // Soft-clear token only — full reset can reopen the challenge popup.
+          try {
+            var tokenField = formEl.querySelector('textarea[name="g-recaptcha-response"]');
+            if (tokenField) {
+              tokenField.value = '';
+            }
+            if (window.grecaptcha && typeof window.grecaptcha.reset === 'function') {
+              window.grecaptcha.reset();
+            }
+          } catch (err) {}
           $pass.trigger('focus');
           $form.data('pngm-busy', 0);
           $btn.prop('disabled', false);
