@@ -282,7 +282,7 @@
           <h2><i class="fas fa-align-left" aria-hidden="true"></i> <?php _e('Description', 'epsilon'); ?></h2>
 
           <div class="desc-parts">
-            <div class="desc-text pngm-desc" data-max-lines="5">
+            <div class="desc-text pngm-desc" data-max-lines="10">
               <div class="text visible">
                 <?php if(function_exists('show_qrcode')) { ?>
                   <div class="qr-code">

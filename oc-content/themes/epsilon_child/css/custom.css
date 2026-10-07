@@ -3548,11 +3548,12 @@
     clear: both;
   }
   
-  /* Description: slightly stronger wash so it reads as a distinct content box */
+  /* Description: clearer content box so it reads before the map */
   body#item #item-main .row.description.pngm-item-detail-block {
-    background: #f3f5f7;
-    border-color: #dbe1e6;
-    padding: 12px 14px;
+    background: #fff;
+    border-color: #cfd8e0;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(22, 32, 42, 0.04);
   }
   
   body#item #item-main .location.pngm-item-detail-block {
@@ -3570,12 +3571,12 @@
     width: 100%;
   }
   
-  /* Collapse long descriptions to 5 lines; "Show more" only when needed (JS) */
+  /* Collapse long descriptions; "Show more" only when needed (JS) */
   body#item #item-main .description .pngm-desc.is-collapsed .pngm-desc-body {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 5;
-    line-clamp: 5;
+    -webkit-line-clamp: 10;
+    line-clamp: 10;
     overflow: hidden;
   }
   
@@ -3624,7 +3625,7 @@
     font-size: 15px;
   }
   
-  /* Map preview — identical on desktop + mobile */
+  /* Map preview — compact so description stays the focus */
   body#item #item-main .pngm-item-map {
     display: block;
     width: 100%;
@@ -3633,15 +3634,15 @@
     overflow: hidden;
     border: 1px solid #e5e7eb;
     background: #eef2f0;
-    aspect-ratio: 16 / 9;
-    max-height: 240px;
+    aspect-ratio: 2.4 / 1;
+    max-height: 140px;
   }
   
   body#item #item-main .pngm-item-map-frame {
     display: block;
     width: 100%;
     height: 100%;
-    min-height: 160px;
+    min-height: 110px;
     border: 0;
     pointer-events: auto;
   }
@@ -3660,8 +3661,8 @@
   /* Description body copy */
   body#item #item-main .description .text,
   body#item #item-main .description .desc-text-raw {
-    font-size: 14px;
-    line-height: 1.45;
+    font-size: 15px;
+    line-height: 1.5;
     color: #1f2937;
   }
   
@@ -3768,18 +3769,19 @@
   
     body#item #item-main .description .text,
     body#item #item-main .description .desc-text-raw {
-      font-size: 13px;
-      line-height: 1.4;
+      font-size: 14px;
+      line-height: 1.45;
     }
   
     body#item #item-main .pngm-item-map {
-      max-height: 200px;
+      max-height: 120px;
+      aspect-ratio: 2.6 / 1;
       margin-bottom: 6px;
       border-radius: 8px;
     }
   
     body#item #item-main .pngm-item-map-frame {
-      min-height: 140px;
+      min-height: 96px;
     }
   
     body#item #item-main .location .directions {
