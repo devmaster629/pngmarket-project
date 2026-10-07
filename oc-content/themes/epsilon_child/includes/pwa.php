@@ -823,8 +823,10 @@ function pngm_pwa_register_sw_footer()
 }
 
 /**
- * One-time phone modal after login for push notifications (Android only).
- * iPhone / iPad never see this — Safari/PWA push permission UX is unreliable.
+ * Phone modal after login for push notifications.
+ * Android + desktop-capable browsers: same as before (once).
+ * iPhone/iPad Safari: never (Web Push unsupported in the tab).
+ * iPhone/iPad Home Screen PWA: same modal as Android, every open until enabled.
  *
  * @param string $sw
  * @param string $brand
@@ -955,14 +957,17 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
     root.hidden = true;
     document.body.classList.remove('pngm-phone-intro-open');
   }
-  function openIntro() {
+  function openIntro(persistSeen) {
     if (root.parentNode !== document.body) {
       document.body.appendChild(root);
     }
     root.hidden = false;
     root.removeAttribute('hidden');
     document.body.classList.add('pngm-phone-intro-open');
-    mark();
+    // Android: remember dismissal. iOS PWA: re-ask every launch until enabled.
+    if (persistSeen !== false) {
+      mark();
+    }
     if (goBtn && goBtn.focus) {
       try { goBtn.focus(); } catch (e) {}
     }
@@ -1018,6 +1023,7 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
         }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
       }).then(function (res) {
         if (!res || !res.ok) throw new Error('save_failed');
+        mark();
         if (goLabel) goLabel.textContent = copy.enabled;
         window.setTimeout(closeIntro, 700);
       });
@@ -1033,39 +1039,69 @@ function pngm_pwa_phone_intro_markup($sw, $brand)
   }
 
   var kind = deviceKind();
-  if (kind === 'desktop' || seen()) return;
-  // iPhone / iPad: do not show the push-notifications modal (Safari/PWA
-  // permission UX is unreliable). Android only.
-  if (kind === 'ios' || kind !== 'android') {
+  var standalone = isStandalone();
+  // Safari on iPhone/iPad: never show (push unsupported in the browser tab).
+  if (kind === 'ios' && !standalone) {
+    return;
+  }
+  // Desktop: skip this phone modal (install banner / prefs handle that).
+  if (kind === 'desktop') {
+    return;
+  }
+  // Only Android browser, or iOS Home Screen PWA.
+  if (kind !== 'android' && !(kind === 'ios' && standalone)) {
+    return;
+  }
+  if (typeof Notification === 'undefined') {
+    return;
+  }
+  // Already on — stop asking.
+  if (Notification.permission === 'granted') {
     mark();
     return;
   }
-  mode = 'push';
-  if (typeof Notification === 'undefined' || Notification.permission !== 'default') {
+  // System blocked — don't nag every open.
+  if (Notification.permission === 'denied') {
     mark();
+    return;
+  }
+  // Android: show once. iOS PWA: every open until enabled ("Not now" does not suppress).
+  if (kind === 'android' && seen()) {
     return;
   }
 
+  mode = 'push';
   showIco('bell');
   if (titleEl) titleEl.textContent = copy.pushTitle;
   if (bodyEl) bodyEl.textContent = copy.pushBody;
   if (goLabel) goLabel.textContent = copy.enable;
   if (btnBell) btnBell.hidden = false;
 
+  var persistSeen = (kind === 'android');
+
+  function dismissForNow() {
+    if (persistSeen) {
+      mark();
+    }
+    closeIntro();
+  }
+
   if (goBtn) {
     goBtn.addEventListener('click', function () {
       enablePush();
     });
   }
-  if (laterBtn) laterBtn.addEventListener('click', closeIntro);
+  if (laterBtn) laterBtn.addEventListener('click', dismissForNow);
   root.addEventListener('click', function (e) {
-    if (e.target === root) closeIntro();
+    if (e.target === root) dismissForNow();
   });
   document.addEventListener('keydown', function (e) {
-    if (!root.hidden && e.key === 'Escape') closeIntro();
+    if (!root.hidden && e.key === 'Escape') dismissForNow();
   });
 
-  window.setTimeout(openIntro, 600);
+  window.setTimeout(function () {
+    openIntro(persistSeen);
+  }, 600);
 })();
 </script>
     <?php
