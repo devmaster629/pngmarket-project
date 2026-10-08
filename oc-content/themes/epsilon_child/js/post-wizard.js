@@ -1659,6 +1659,10 @@
 
       $('#pngm-review-title').text(title || '—');
       $('#pngm-review-price').text(priceText);
+      $('#pngm-review-price-line').text(priceText);
+      var desc = $.trim($form.find('textarea[name^="description"]').val() || '');
+      desc = desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      $('#pngm-review-desc').text(desc || '—');
 
       var meta = [];
       meta.push([labels.category || 'Category', $('[data-sum="root"]').first().text()]);

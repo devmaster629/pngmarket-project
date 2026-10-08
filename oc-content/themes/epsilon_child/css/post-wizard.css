@@ -1713,10 +1713,25 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
 }
 
 .pngm-post-review-title {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   font-size: 18px;
   font-weight: 700;
   color: #16202a;
+}
+
+.pngm-post-review-price-line {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.pngm-post-review-desc {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3d4a57;
+  white-space: pre-wrap;
 }
 
 .pngm-post-review-meta {

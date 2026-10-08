@@ -714,9 +714,7 @@ function pngm_im_on_insert_queue_push($message_id)
         return;
     }
 
-    $title = ($pref_key === 'msg_new')
-        ? sprintf(__('New message from %s', 'epsilon'), $from_name)
-        : sprintf(__('Reply from %s', 'epsilon'), $from_name);
+    $title = $from_name;
     $body = isset($msg['s_message']) ? trim(strip_tags((string) $msg['s_message'])) : '';
     if ($body === '' && !empty($msg['s_file'])) {
         $body = __('Sent an attachment', 'epsilon');
