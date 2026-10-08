@@ -123,7 +123,11 @@
       <?php } ?>
       
       <div class="contact isDetail">
-        <?php if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
+        <?php
+          $pngm_loop_msg_ok = !function_exists('pngm_item_allow_messages_enabled')
+            || pngm_item_allow_messages_enabled((int) osc_item_id());
+        ?>
+        <?php if($pngm_loop_msg_ok && getBoolPreference('item_contact_form_disabled') != 1) { ?>
            <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
             <a class="contact" href="<?php echo im_contact_button(osc_item(), true); ?>"><i class="fas fa-envelope-open"></i> <span><?php _e('Send message', 'epsilon'); ?></span></a>
            <?php } else if(osc_reg_user_can_contact() && osc_is_web_user_logged_in() || !osc_reg_user_can_contact()) { ?>

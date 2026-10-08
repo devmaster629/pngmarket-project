@@ -531,10 +531,18 @@
                       $pngm_contact_pref = pngm_item_contact_pref((int) osc_item_id());
                   }
                 ?>
+                <?php
+                  // Message pref pills render before Message Preferences; peek item id for disable state.
+                  $pngm_msg_gate_id = function_exists('osc_item_id') ? (int) osc_item_id() : 0;
+                  $pngm_msg_gate_on = true;
+                  if ($pngm_msg_gate_id > 0 && function_exists('pngm_item_allow_messages_enabled')) {
+                      $pngm_msg_gate_on = pngm_item_allow_messages_enabled($pngm_msg_gate_id);
+                  }
+                ?>
                 <div class="pngm-post-pills pngm-post-contact-pref" data-pills="contact-pref" role="radiogroup">
                   <button type="button" class="pngm-post-pill<?php echo $pngm_contact_pref === 'call' ? ' is-selected' : ''; ?>" data-value="call"><?php _e('Call', 'epsilon'); ?></button>
                   <button type="button" class="pngm-post-pill<?php echo $pngm_contact_pref === 'whatsapp' ? ' is-selected' : ''; ?>" data-value="whatsapp"><?php _e('WhatsApp', 'epsilon'); ?></button>
-                  <button type="button" class="pngm-post-pill<?php echo ($pngm_contact_pref === 'message' || !in_array($pngm_contact_pref, array('call', 'whatsapp', 'message'), true)) ? ' is-selected' : ''; ?>" data-value="message"><?php _e('Message', 'epsilon'); ?></button>
+                  <button type="button" class="pngm-post-pill<?php echo ($pngm_contact_pref === 'message' || !in_array($pngm_contact_pref, array('call', 'whatsapp', 'message'), true)) ? ' is-selected' : ''; ?><?php echo $pngm_msg_gate_on ? '' : ' is-disabled'; ?>" data-value="message"<?php echo $pngm_msg_gate_on ? '' : ' disabled aria-disabled="true"'; ?>><?php _e('Message', 'epsilon'); ?></button>
                 </div>
                 <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Shown to buyers as a small Preferred badge on your listing.', 'epsilon'); ?></p>
                 <input type="hidden" name="pngm_contact_pref" id="pngm_contact_pref" value="<?php echo osc_esc_html($pngm_contact_pref); ?>" />
@@ -586,21 +594,31 @@
 
               <div class="pngm-post-field pngm-post-msg-prefs">
                 <span class="pngm-post-label"><?php _e('Message Preferences', 'epsilon'); ?></span>
-                <label class="pngm-post-check">
-                  <input type="checkbox" name="pngm_allow_messages" id="pngm_allow_messages" value="1" checked />
-                  <span><?php _e('Allow buyers to send me messages on PNGMarket', 'epsilon'); ?></span>
-                </label>
-                <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Lets buyers contact you through the site messenger.', 'epsilon'); ?></p>
                 <?php
+                  $pngm_msg_item_id = function_exists('osc_item_id') ? (int) osc_item_id() : 0;
+                  $pngm_allow_messages_on = true;
                   $pngm_email_notify_on = true;
-                  $pngm_email_item_id = function_exists('osc_item_id') ? (int) osc_item_id() : 0;
-                  if ($pngm_email_item_id > 0 && function_exists('pngm_item_message_email_enabled')) {
-                      $pngm_email_notify_on = pngm_item_message_email_enabled($pngm_email_item_id);
+                  if ($pngm_msg_item_id > 0 && function_exists('pngm_item_allow_messages_enabled')) {
+                      $pngm_allow_messages_on = pngm_item_allow_messages_enabled($pngm_msg_item_id);
+                  }
+                  if ($pngm_msg_item_id > 0 && function_exists('pngm_item_message_email_enabled')) {
+                      $pngm_email_notify_on = pngm_item_message_email_enabled($pngm_msg_item_id);
+                  }
+                  if (!$pngm_allow_messages_on) {
+                      $pngm_email_notify_on = false;
                   }
                 ?>
                 <input type="hidden" name="pngm_msg_prefs" value="1" />
+                <?php /* Hidden 0 + checkbox 1: unchecked boxes still POST as 0 */ ?>
+                <input type="hidden" name="pngm_allow_messages" value="0" />
                 <label class="pngm-post-check">
-                  <input type="checkbox" name="pngm_email_notify" id="pngm_email_notify" value="1"<?php echo $pngm_email_notify_on ? ' checked' : ''; ?> />
+                  <input type="checkbox" name="pngm_allow_messages" id="pngm_allow_messages" value="1"<?php echo $pngm_allow_messages_on ? ' checked' : ''; ?> />
+                  <span><?php _e('Allow buyers to send me messages on PNGMarket', 'epsilon'); ?></span>
+                </label>
+                <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Lets buyers contact you through the site messenger.', 'epsilon'); ?></p>
+                <input type="hidden" name="pngm_email_notify" value="0" />
+                <label class="pngm-post-check">
+                  <input type="checkbox" name="pngm_email_notify" id="pngm_email_notify" value="1"<?php echo $pngm_email_notify_on ? ' checked' : ''; ?><?php echo $pngm_allow_messages_on ? '' : ' disabled'; ?> />
                   <span><?php _e('Email me when I receive a new message', 'epsilon'); ?></span>
                 </label>
                 <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Send a notification to your email for each new buyer message.', 'epsilon'); ?></p>

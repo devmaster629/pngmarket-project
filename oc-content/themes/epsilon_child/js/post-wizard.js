@@ -2172,6 +2172,43 @@
       }
     }
 
+    function syncAllowMessagesUi() {
+      var allow = $('#pngm_allow_messages').is(':checked');
+      var $email = $('#pngm_email_notify');
+      var $msgPill = $form.find('.pngm-post-pills[data-pills="contact-pref"] .pngm-post-pill[data-value="message"]');
+      if ($email.length) {
+        if (!allow) {
+          $email.prop('checked', false).prop('disabled', true);
+        } else {
+          $email.prop('disabled', false);
+        }
+      }
+      if ($msgPill.length) {
+        $msgPill.toggleClass('is-disabled', !allow).prop('disabled', !allow)
+          .attr('aria-disabled', allow ? 'false' : 'true');
+      }
+      syncEmailFieldVisibility();
+      if (!allow) {
+        var pref = String($('#pngm_contact_pref').val() || 'message');
+        if (pref === 'message') {
+          var $fallback = $form.find('.pngm-post-pills[data-pills="contact-pref"] .pngm-post-pill[data-value="call"]');
+          if ($('#pngm_whatsapp').is(':checked')) {
+            var $wa = $form.find('.pngm-post-pills[data-pills="contact-pref"] .pngm-post-pill[data-value="whatsapp"]');
+            if ($wa.length) {
+              $fallback = $wa;
+            }
+          }
+          if ($fallback.length) {
+            $fallback.trigger('click');
+          } else {
+            $('#pngm_contact_pref').val('call');
+            $form.find('.pngm-post-pills[data-pills="contact-pref"] .pngm-post-pill').removeClass('is-selected');
+            $form.find('.pngm-post-pills[data-pills="contact-pref"] .pngm-post-pill[data-value="call"]').addClass('is-selected');
+          }
+        }
+      }
+    }
+
     // Counters
     function bindCounter(sel, max) {
       var $input = $form.find(sel);
@@ -2405,6 +2442,12 @@
       var $btn = $(this);
       var $group = $btn.closest('.pngm-post-pills');
       var value = String($btn.data('value') || '');
+      if ($btn.hasClass('is-disabled') || $btn.prop('disabled')) {
+        return;
+      }
+      if ($group.data('pills') === 'contact-pref' && value === 'message' && !$('#pngm_allow_messages').is(':checked')) {
+        return;
+      }
       if ($group.data('pills') === 'contact-pref' && value === 'whatsapp' && !$('#pngm_whatsapp').is(':checked')) {
         $('#pngm_whatsapp').prop('checked', true);
       }
@@ -2500,10 +2543,14 @@
         return;
       }
       if (String($('#pngm_contact_pref').val() || '') === 'whatsapp') {
-        var $msg = $form.find('.pngm-post-contact-pref .pngm-post-pill[data-value="message"]');
-        $form.find('.pngm-post-contact-pref .pngm-post-pill').removeClass('is-selected');
-        $msg.addClass('is-selected');
-        $('#pngm_contact_pref').val('message');
+        var allowMsg = $('#pngm_allow_messages').is(':checked');
+        var $group = $form.find('.pngm-post-contact-pref .pngm-post-pill');
+        var $fallback = allowMsg
+          ? $form.find('.pngm-post-contact-pref .pngm-post-pill[data-value="message"]')
+          : $form.find('.pngm-post-contact-pref .pngm-post-pill[data-value="call"]');
+        $group.removeClass('is-selected');
+        $fallback.addClass('is-selected');
+        $('#pngm_contact_pref').val(allowMsg ? 'message' : 'call');
       }
     });
 
@@ -2587,6 +2634,12 @@
         $('#price').val('0');
       } else if (mode === 'CHECK') {
         $('#price').val('');
+      }
+
+      // Re-sync before POST so unchecked "allow messages" cannot leave Message preferred.
+      syncAllowMessagesUi();
+      if (!$('#pngm_allow_messages').is(':checked') && String($('#pngm_contact_pref').val() || '') === 'message') {
+        $('#pngm_contact_pref').val('call');
       }
 
       startPublishing();
@@ -2737,8 +2790,9 @@
     }
 
     updateMapPreview();
-    syncEmailFieldVisibility();
+    syncAllowMessagesUi();
     $form.on('change', '#pngm_email_notify', syncEmailFieldVisibility);
+    $form.on('change', '#pngm_allow_messages', syncAllowMessagesUi);
     // Load leaf attributes into #post-hooks (Make/Brand for parts, etc.).
     // Osclass also AJAX-fills #plugin-hook; we own #post-hooks so sellers see fields.
     if (cfg.leaf) {

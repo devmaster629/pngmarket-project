@@ -157,9 +157,13 @@
             <?php } ?>
 
             <?php if (function_exists('pngm_viewer_can_contact_seller') && pngm_viewer_can_contact_seller()) { ?>
-              <?php if(eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
+              <?php
+                $pngm_mobile_msg_ok = !function_exists('pngm_item_allow_messages_enabled')
+                  || pngm_item_allow_messages_enabled((int) osc_item_id());
+              ?>
+              <?php if($pngm_mobile_msg_ok && eps_param('messenger_replace_button') == 1 && function_exists('im_contact_button') && im_contact_button(osc_item(), true) !== false) { ?>
                 <a href="<?php echo im_contact_button(osc_item(), true); ?>" class="mlink contact isMobile"><i class="fas fa-envelope-open"></i></a>
-              <?php } else if(getBoolPreference('item_contact_form_disabled') != 1) { ?>
+              <?php } else if($pngm_mobile_msg_ok && getBoolPreference('item_contact_form_disabled') != 1) { ?>
                 <a href="<?php echo eps_item_fancy_url('contact'); ?>" data-type="contact" class="mlink contact isMobile open-form"><i class="fas fa-envelope-open"></i></a>
               <?php } ?>
             <?php } ?>

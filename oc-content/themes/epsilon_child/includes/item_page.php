@@ -159,8 +159,49 @@ if (function_exists('osc_add_hook')) {
     osc_add_hook('edited_item', 'pngm_item_contact_pref_save', 9);
     osc_add_hook('posted_item', 'pngm_item_call_availability_save', 9);
     osc_add_hook('edited_item', 'pngm_item_call_availability_save', 9);
-    osc_add_hook('posted_item', 'pngm_item_message_email_save', 9);
-    osc_add_hook('edited_item', 'pngm_item_message_email_save', 9);
+    osc_add_hook('posted_item', 'pngm_item_message_prefs_save', 9);
+    osc_add_hook('edited_item', 'pngm_item_message_prefs_save', 9);
+}
+
+/**
+ * Preference key: allow buyers to message the seller about this listing.
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_item_allow_messages_key($item_id)
+{
+    return 'allow_msg_' . (int) $item_id;
+}
+
+/**
+ * Whether buyers may start a site messenger chat for this listing.
+ * Missing value means yes (older listings).
+ *
+ * @param int $item_id
+ * @return bool
+ */
+function pngm_item_allow_messages_enabled($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return true;
+    }
+    $key = pngm_item_allow_messages_key($item_id);
+    $raw = osc_get_preference($key, 'pngm_contact');
+    // Missing key → legacy listings keep messaging on.
+    if ($raw === '' || $raw === null) {
+        return true;
+    }
+    // Explicit off: 0 / false / "false" / "off"
+    if ($raw === false || $raw === 0 || $raw === 0.0) {
+        return false;
+    }
+    $s = strtolower(trim((string) $raw));
+    if ($s === '0' || $s === 'false' || $s === 'off' || $s === 'no') {
+        return false;
+    }
+    return $s === '1' || $s === 'true' || $s === 'on' || $s === 'yes';
 }
 
 /**
@@ -195,13 +236,13 @@ function pngm_item_message_email_enabled($item_id)
 }
 
 /**
- * Persist "Email me when I receive a new message" from the post form.
+ * Persist message preference checkboxes from the post form.
  * Unchecked boxes are omitted from POST, so the hidden pngm_msg_prefs marker
  * is required before we treat a missing checkbox as opt-out.
  *
  * @param array $item
  */
-function pngm_item_message_email_save($item)
+function pngm_item_message_prefs_save($item)
 {
     $item_id = 0;
     if (is_array($item) && isset($item['pk_i_id'])) {
@@ -222,28 +263,75 @@ function pngm_item_message_email_save($item)
         return;
     }
 
-    $on = '0';
-    $posted = '';
-    if (class_exists('Params')) {
-        $posted = (string) Params::getParam('pngm_email_notify');
+    $allow = '0';
+    $allow_posted = '';
+    if (isset($_POST['pngm_allow_messages'])) {
+        $allow_posted = $_POST['pngm_allow_messages'];
+        if (is_array($allow_posted)) {
+            $allow_posted = end($allow_posted);
+        }
+        $allow_posted = (string) $allow_posted;
+    } elseif (class_exists('Params')) {
+        $allow_posted = (string) Params::getParam('pngm_allow_messages');
     }
-    if ($posted === '' && isset($_POST['pngm_email_notify'])) {
-        $posted = (string) $_POST['pngm_email_notify'];
-    }
-    if ($posted === '1') {
-        $on = '1';
+    if ($allow_posted === '1') {
+        $allow = '1';
     }
 
+    $email_on = '0';
+    $email_posted = '';
+    if (isset($_POST['pngm_email_notify'])) {
+        $email_posted = $_POST['pngm_email_notify'];
+        if (is_array($email_posted)) {
+            $email_posted = end($email_posted);
+        }
+        $email_posted = (string) $email_posted;
+    } elseif (class_exists('Params')) {
+        $email_posted = (string) Params::getParam('pngm_email_notify');
+    }
+    if ($email_posted === '1') {
+        $email_on = '1';
+    }
+
+    // Messaging off also turns off message email alerts.
+    if ($allow !== '1') {
+        $email_on = '0';
+    }
+
+    // STRING keeps "0" reliably (BOOLEAN false can look like "missing" on read).
     if (function_exists('osc_set_preference')) {
-        osc_set_preference(pngm_item_message_email_key($item_id), $on, 'pngm_contact', 'BOOLEAN');
+        osc_set_preference(pngm_item_allow_messages_key($item_id), $allow, 'pngm_contact', 'STRING');
+        osc_set_preference(pngm_item_message_email_key($item_id), $email_on, 'pngm_contact', 'STRING');
     }
     if (class_exists('Preference')) {
-        Preference::newInstance()->set(pngm_item_message_email_key($item_id), $on, 'pngm_contact');
+        Preference::newInstance()->set(pngm_item_allow_messages_key($item_id), $allow, 'pngm_contact');
+        Preference::newInstance()->set(pngm_item_message_email_key($item_id), $email_on, 'pngm_contact');
     }
 
-    if ($on === '0') {
+    if ($allow !== '1') {
+        // Preferred contact cannot stay on Message when chat is disabled.
+        $pref = function_exists('pngm_item_contact_pref') ? pngm_item_contact_pref($item_id) : 'message';
+        if ($pref === 'message' && function_exists('osc_set_preference')) {
+            $fallback = 'call';
+            if (function_exists('pngm_item_whatsapp_enabled') && pngm_item_whatsapp_enabled($item_id)) {
+                $fallback = 'whatsapp';
+            }
+            osc_set_preference(pngm_item_contact_pref_key($item_id), $fallback, 'pngm_contact', 'STRING');
+            if (class_exists('Preference')) {
+                Preference::newInstance()->set(pngm_item_contact_pref_key($item_id), $fallback, 'pngm_contact');
+            }
+        }
+    }
+
+    if ($email_on === '0') {
         pngm_item_silence_owner_message_email($item_id);
     }
+}
+
+/** @deprecated Use pngm_item_message_prefs_save() */
+function pngm_item_message_email_save($item)
+{
+    pngm_item_message_prefs_save($item);
 }
 
 /**
@@ -382,7 +470,14 @@ function pngm_item_contact_pref($item_id = 0)
     }
 
     if ($pref === 'whatsapp' && !pngm_item_whatsapp_enabled($item_id)) {
-        return 'message';
+        $pref = 'message';
+    }
+
+    if ($pref === 'message' && !pngm_item_allow_messages_enabled($item_id)) {
+        if (pngm_item_whatsapp_enabled($item_id)) {
+            return 'whatsapp';
+        }
+        return 'call';
     }
 
     return $pref;
@@ -733,8 +828,9 @@ function pngm_render_seller_contact_buttons()
         && osc_is_web_user_logged_in()
         && $seller_id > 0
         && $seller_id === (int) osc_logged_user_id();
+    $messages_allowed = pngm_item_allow_messages_enabled($item_id);
 
-    if (function_exists('im_contact_button')) {
+    if ($messages_allowed && function_exists('im_contact_button')) {
         if ($is_own_listing) {
             $chat = array(
                 'key'   => 'message',
@@ -1091,3 +1187,89 @@ function pngm_seller_other_ads($card_type = 'normal', $limit = 8)
 }
 
 /* Contact row is rendered directly in item.php after Location (mockup order). */
+
+/**
+ * Block starting a new IM thread when the seller disabled messages for the listing.
+ */
+function pngm_im_guard_messages_disabled()
+{
+    if (!function_exists('pngm_item_allow_messages_enabled') || !class_exists('Params')) {
+        return;
+    }
+
+    $item_id = (int) Params::getParam('item-id');
+    if ($item_id <= 0) {
+        $item_id = (int) Params::getParam('itemId');
+    }
+    if ($item_id <= 0) {
+        return;
+    }
+    if (pngm_item_allow_messages_enabled($item_id)) {
+        return;
+    }
+
+    $is_create = false;
+    $route = (string) Params::getParam('route');
+    if ($route === 'im-create-thread') {
+        $is_create = true;
+    }
+    if (class_exists('Rewrite')) {
+        $rw = Rewrite::newInstance();
+        $loc = method_exists($rw, 'get_location') ? (string) $rw->get_location() : '';
+        $sec = method_exists($rw, 'get_section') ? (string) $rw->get_section() : '';
+        if ($loc === 'im' && $sec === 'create-thread') {
+            $is_create = true;
+        }
+    }
+    $file = (string) Params::getParam('file');
+    if (!$is_create && strpos($file, 'instant_messenger/user/create_thread.php') !== false) {
+        $is_create = true;
+    }
+    // Also catch POST create on the same route.
+    if (!$is_create && (string) Params::getParam('im-action') === 'create_thread') {
+        $is_create = true;
+    }
+    if (!$is_create) {
+        return;
+    }
+
+    osc_add_flash_error_message(__('The seller does not accept messages for this listing.', 'epsilon'));
+    if (class_exists('Item') && function_exists('osc_item_url_from_item')) {
+        $item = Item::newInstance()->findByPrimaryKey($item_id);
+        if (is_array($item) && !empty($item['pk_i_id'])) {
+            osc_redirect_to(osc_item_url_from_item($item));
+        }
+    }
+    osc_redirect_to(osc_base_url());
+}
+osc_add_hook('init', 'pngm_im_guard_messages_disabled', 7);
+osc_add_hook('before_html', 'pngm_im_guard_messages_disabled', 1);
+
+/**
+ * Block Instant Messenger contact-seller shortcut when messages are disabled.
+ *
+ * @param array $aItem
+ */
+function pngm_im_block_contact_seller_when_disabled($aItem)
+{
+    if (!is_array($aItem) || !function_exists('pngm_item_allow_messages_enabled')) {
+        return;
+    }
+    $item_id = isset($aItem['id']) ? (int) $aItem['id'] : 0;
+    if ($item_id <= 0) {
+        return;
+    }
+    if (pngm_item_allow_messages_enabled($item_id)) {
+        return;
+    }
+
+    osc_add_flash_error_message(__('The seller does not accept messages for this listing.', 'epsilon'));
+    if (class_exists('Item') && function_exists('osc_item_url_from_item')) {
+        $item = Item::newInstance()->findByPrimaryKey($item_id);
+        if (is_array($item) && !empty($item['pk_i_id'])) {
+            osc_redirect_to(osc_item_url_from_item($item));
+        }
+    }
+    osc_redirect_to(osc_base_url());
+}
+osc_add_hook('hook_email_item_inquiry', 'pngm_im_block_contact_seller_when_disabled', 0);

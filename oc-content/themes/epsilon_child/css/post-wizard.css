@@ -957,6 +957,13 @@ body.pngm-post-wizard .pngm-post-price-box select#currency:focus {
   color: #fff !important;
 }
 
+.pngm-post-pill.is-disabled,
+.pngm-post-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .pngm-post-duration-pills {
   margin-bottom: 8px;
 }
