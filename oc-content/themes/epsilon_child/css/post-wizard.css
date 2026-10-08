@@ -1712,22 +1712,57 @@ body.pngm-post-wizard .uppy-Dashboard--modal .uppy-Dashboard-close {
   object-fit: cover;
 }
 
-.pngm-post-review-title {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #16202a;
+.pngm-post-review-meta.pngm-post-review-meta-top {
+  margin: 0 0 12px;
 }
 
-.pngm-post-review-price-line {
-  margin: 0 0 8px;
-  font-size: 16px;
+.pngm-post-review-meta.pngm-post-review-meta-top > div {
+  align-items: center;
+  border-bottom: 0;
+  padding: 0 0 10px;
+  font-size: inherit;
+  gap: 12px;
+}
+
+.pngm-post-review-meta.pngm-post-review-meta-top dt,
+.pngm-post-review-meta.pngm-post-review-meta-top dd {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
   font-weight: 700;
-  color: #15803d;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.pngm-post-review-meta.pngm-post-review-meta-top dt {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #111827;
+  text-align: left;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.pngm-post-review-meta.pngm-post-review-meta-top dd {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #006b24;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pngm-post-review-desc-block {
+  margin: 0 0 12px;
+}
+
+.pngm-post-review-desc-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7785;
 }
 
 .pngm-post-review-desc {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 14px;
   line-height: 1.45;
   color: #3d4a57;

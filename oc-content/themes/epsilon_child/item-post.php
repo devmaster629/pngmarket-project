@@ -649,9 +649,16 @@
                   <span class="pngm-post-review-badge" id="pngm-review-price">—</span>
                 </div>
                 <div class="pngm-post-review-thumbs" id="pngm-review-thumbs"></div>
-                <h3 class="pngm-post-review-title" id="pngm-review-title">—</h3>
-                <p class="pngm-post-review-price-line" id="pngm-review-price-line">—</p>
-                <p class="pngm-post-review-desc" id="pngm-review-desc">—</p>
+                <dl class="pngm-post-review-meta pngm-post-review-meta-top">
+                  <div>
+                    <dt id="pngm-review-title">—</dt>
+                    <dd id="pngm-review-price-line">—</dd>
+                  </div>
+                </dl>
+                <div class="pngm-post-review-desc-block">
+                  <h4 class="pngm-post-review-desc-label"><?php _e('Description', 'epsilon'); ?></h4>
+                  <p class="pngm-post-review-desc" id="pngm-review-desc">—</p>
+                </div>
                 <dl class="pngm-post-review-meta" id="pngm-review-meta"></dl>
               </div>
             </div>
