@@ -591,8 +591,16 @@
                   <span><?php _e('Allow buyers to send me messages on PNGMarket', 'epsilon'); ?></span>
                 </label>
                 <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Lets buyers contact you through the site messenger.', 'epsilon'); ?></p>
+                <?php
+                  $pngm_email_notify_on = true;
+                  $pngm_email_item_id = function_exists('osc_item_id') ? (int) osc_item_id() : 0;
+                  if ($pngm_email_item_id > 0 && function_exists('pngm_item_message_email_enabled')) {
+                      $pngm_email_notify_on = pngm_item_message_email_enabled($pngm_email_item_id);
+                  }
+                ?>
+                <input type="hidden" name="pngm_msg_prefs" value="1" />
                 <label class="pngm-post-check">
-                  <input type="checkbox" name="pngm_email_notify" id="pngm_email_notify" value="1" checked />
+                  <input type="checkbox" name="pngm_email_notify" id="pngm_email_notify" value="1"<?php echo $pngm_email_notify_on ? ' checked' : ''; ?> />
                   <span><?php _e('Email me when I receive a new message', 'epsilon'); ?></span>
                 </label>
                 <p class="pngm-post-muted pngm-post-field-hint"><?php _e('Send a notification to your email for each new buyer message.', 'epsilon'); ?></p>

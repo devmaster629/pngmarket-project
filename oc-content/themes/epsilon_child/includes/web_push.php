@@ -335,11 +335,13 @@ function pngm_webpush_send_to_subscription($row, $title, $body, $url = '')
         return array('ok' => false, 'status' => 0, 'error' => 'no_vapid');
     }
 
+    $author_id = isset($row['author_id']) ? (int) $row['author_id'] : 0;
     $payload = json_encode(array(
         'title' => (string) $title,
         'body' => (string) $body,
         'url' => (string) $url,
         'icon' => osc_base_url() . 'pwa/icon-192.png',
+        'authorId' => $author_id,
     ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
         return array('ok' => false, 'status' => 0, 'error' => 'json');
@@ -394,10 +396,11 @@ function pngm_webpush_send_to_subscription($row, $title, $body, $url = '')
  * @param string $url
  * @return int
  */
-function pngm_webpush_send_to_user($user_id, $title, $body, $url = '')
+function pngm_webpush_send_to_user($user_id, $title, $body, $url = '', $exclude_user_id = 0)
 {
     $user_id = (int) $user_id;
-    if ($user_id <= 0) {
+    $exclude_user_id = (int) $exclude_user_id;
+    if ($user_id <= 0 || ($exclude_user_id > 0 && $user_id === $exclude_user_id)) {
         return 0;
     }
 
@@ -406,13 +409,29 @@ function pngm_webpush_send_to_user($user_id, $title, $body, $url = '')
         return 0;
     }
 
+    // Same phone can still hold the sender's endpoint on the recipient record.
+    $skip = array();
+    if ($exclude_user_id > 0) {
+        foreach (pngm_webpush_get_subscriptions($exclude_user_id) as $own) {
+            if (is_array($own) && !empty($own['endpoint'])) {
+                $skip[(string) $own['endpoint']] = true;
+            }
+        }
+    }
+
     $ok = 0;
     $keep = array();
     foreach ($subs as $row) {
         if (!is_array($row)) {
             continue;
         }
-        $res = pngm_webpush_send_to_subscription($row, $title, $body, $url);
+        if (!empty($row['endpoint']) && isset($skip[(string) $row['endpoint']])) {
+            $keep[] = $row;
+            continue;
+        }
+        $send_row = $row;
+        $send_row['author_id'] = $exclude_user_id;
+        $res = pngm_webpush_send_to_subscription($send_row, $title, $body, $url);
         if (!empty($res['gone'])) {
             continue; // drop expired endpoint
         }
@@ -479,6 +498,7 @@ function pngm_webpush_footer()
   var items = <?php echo json_encode($payload); ?>;
   var icon = <?php echo json_encode($icon); ?>;
   var subscribeUrl = <?php echo json_encode($ajax); ?>;
+  var loggedUserId = <?php echo (int) osc_logged_user_id(); ?>;
 
   function urlBase64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -566,7 +586,21 @@ function pngm_webpush_footer()
     return;
   }
 
+  function tellSwWho(reg) {
+    var worker = (reg && reg.active) ? reg.active : (navigator.serviceWorker.controller || null);
+    if (worker && loggedUserId > 0) {
+      try { worker.postMessage({ type: 'pngm-user', userId: loggedUserId }); } catch (e) {}
+    }
+  }
+
   navigator.serviceWorker.register(swUrl, { scope: '/' }).then(function (reg) {
+    tellSwWho(reg);
+    if (reg && typeof reg.update === 'function') {
+      reg.update();
+    }
+    navigator.serviceWorker.ready.then(function (readyReg) {
+      tellSwWho(readyReg);
+    });
     deliver(reg);
     ensurePushSubscription(reg);
   }).catch(function () {

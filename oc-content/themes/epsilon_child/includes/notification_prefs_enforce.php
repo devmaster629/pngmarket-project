@@ -276,6 +276,10 @@ function pngm_notif_pre_send_mail_filter($params, $type = '')
         if (!pngm_notif_user_allows($user_id, $pref_key, 'email')) {
             return array('stop' => true);
         }
+        $im_ctx = pngm_notif_im_mail_context();
+        if ($im_ctx !== null && pngm_im_owner_email_blocked($im_ctx[0], $user_id)) {
+            return array('stop' => true);
+        }
         return $params;
     }
 
@@ -296,17 +300,22 @@ osc_add_filter('pre_send_mail_filter', 'pngm_notif_pre_send_mail_filter', 10);
  * @param string $body
  * @param string $url
  */
-function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '')
+function pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url = '', $author_id = 0)
 {
     $user_id = (int) $user_id;
+    $author_id = (int) $author_id;
     $pref_key = (string) $pref_key;
+    // Never banner the person who just sent the message.
+    if ($author_id > 0 && $user_id === $author_id) {
+        return;
+    }
     if ($user_id <= 0 || !pngm_notif_user_allows($user_id, $pref_key, 'push')) {
         return;
     }
 
     // Prefer real Web Push (works while the site is closed).
     if (function_exists('pngm_webpush_send_to_user')) {
-        $sent = (int) pngm_webpush_send_to_user($user_id, (string) $title, (string) $body, (string) $url);
+        $sent = (int) pngm_webpush_send_to_user($user_id, (string) $title, (string) $body, (string) $url, $author_id);
         if ($sent > 0) {
             return;
         }
@@ -737,9 +746,51 @@ function pngm_im_on_insert_queue_push($message_id)
         }
     }
 
-    pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url);
+    pngm_notif_queue_push($user_id, $pref_key, $title, $body, $url, $author_id);
 }
 osc_add_hook('im_insert_message', 'pngm_im_on_insert_queue_push', 8);
+
+/**
+ * Listing owner turned off "Email me when I receive a new message".
+ *
+ * @param int $thread_id
+ * @param int $recipient_user_id
+ * @return bool
+ */
+function pngm_im_owner_email_blocked($thread_id, $recipient_user_id)
+{
+    $thread_id = (int) $thread_id;
+    $recipient_user_id = (int) $recipient_user_id;
+    if ($thread_id <= 0 || $recipient_user_id <= 0 || !class_exists('ModelIM')) {
+        return false;
+    }
+    if (!function_exists('pngm_item_message_email_enabled') || !function_exists('pngm_item_silence_owner_message_email')) {
+        return false;
+    }
+
+    $thread = ModelIM::newInstance()->getThreadById($thread_id);
+    if (!is_array($thread)) {
+        return false;
+    }
+    $item_id = isset($thread['fk_i_item_id']) ? (int) $thread['fk_i_item_id'] : 0;
+    if ($item_id <= 0 || pngm_item_message_email_enabled($item_id)) {
+        return false;
+    }
+
+    $owner_id = 0;
+    if (class_exists('Item')) {
+        $item = Item::newInstance()->findByPrimaryKey($item_id);
+        if (is_array($item) && isset($item['fk_i_user_id'])) {
+            $owner_id = (int) $item['fk_i_user_id'];
+        }
+    }
+    if ($owner_id <= 0 || $owner_id !== $recipient_user_id) {
+        return false;
+    }
+
+    pngm_item_silence_owner_message_email($item_id);
+    return true;
+}
 
 /**
  * Send IM notification email for a stored message (respects thread notify + prefs).
@@ -769,6 +820,17 @@ function pngm_im_deliver_email_for_message($message_id)
     $type = isset($msg['i_type']) ? (int) $msg['i_type'] : 0;
     $thread = ModelIM::newInstance()->getThreadById($thread_id);
     if (!is_array($thread) || (function_exists('im_is_valid_thread') && !im_is_valid_thread($thread))) {
+        return false;
+    }
+
+    $recipient_id = ($type === 0)
+        ? (int) @$thread['i_to_user_id']
+        : (int) @$thread['i_from_user_id'];
+    if (pngm_im_owner_email_blocked($thread_id, $recipient_id)) {
+        if (method_exists(ModelIM::newInstance(), 'updateEmailSent')) {
+            $dt = isset($msg['d_datetime']) ? (string) $msg['d_datetime'] : date('Y-m-d H:i:s');
+            ModelIM::newInstance()->updateEmailSent($thread_id, $type, $dt);
+        }
         return false;
     }
 

@@ -159,6 +159,120 @@ if (function_exists('osc_add_hook')) {
     osc_add_hook('edited_item', 'pngm_item_contact_pref_save', 9);
     osc_add_hook('posted_item', 'pngm_item_call_availability_save', 9);
     osc_add_hook('edited_item', 'pngm_item_call_availability_save', 9);
+    osc_add_hook('posted_item', 'pngm_item_message_email_save', 9);
+    osc_add_hook('edited_item', 'pngm_item_message_email_save', 9);
+}
+
+/**
+ * Preference key: email the seller when a buyer messages this listing.
+ *
+ * @param int $item_id
+ * @return string
+ */
+function pngm_item_message_email_key($item_id)
+{
+    return 'msg_email_' . (int) $item_id;
+}
+
+/**
+ * Whether the seller asked for email on new messages for this listing.
+ * Missing value means yes (older listings).
+ *
+ * @param int $item_id
+ * @return bool
+ */
+function pngm_item_message_email_enabled($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !function_exists('osc_get_preference')) {
+        return true;
+    }
+    $raw = osc_get_preference(pngm_item_message_email_key($item_id), 'pngm_contact');
+    if ($raw === '' || $raw === null || $raw === false) {
+        return true;
+    }
+    return (string) $raw === '1';
+}
+
+/**
+ * Persist "Email me when I receive a new message" from the post form.
+ * Unchecked boxes are omitted from POST, so the hidden pngm_msg_prefs marker
+ * is required before we treat a missing checkbox as opt-out.
+ *
+ * @param array $item
+ */
+function pngm_item_message_email_save($item)
+{
+    $item_id = 0;
+    if (is_array($item) && isset($item['pk_i_id'])) {
+        $item_id = (int) $item['pk_i_id'];
+    }
+    if ($item_id <= 0) {
+        return;
+    }
+
+    $marker = '';
+    if (class_exists('Params')) {
+        $marker = (string) Params::getParam('pngm_msg_prefs');
+    }
+    if ($marker === '' && isset($_POST['pngm_msg_prefs'])) {
+        $marker = (string) $_POST['pngm_msg_prefs'];
+    }
+    if ($marker !== '1') {
+        return;
+    }
+
+    $on = '0';
+    $posted = '';
+    if (class_exists('Params')) {
+        $posted = (string) Params::getParam('pngm_email_notify');
+    }
+    if ($posted === '' && isset($_POST['pngm_email_notify'])) {
+        $posted = (string) $_POST['pngm_email_notify'];
+    }
+    if ($posted === '1') {
+        $on = '1';
+    }
+
+    if (function_exists('osc_set_preference')) {
+        osc_set_preference(pngm_item_message_email_key($item_id), $on, 'pngm_contact', 'BOOLEAN');
+    }
+    if (class_exists('Preference')) {
+        Preference::newInstance()->set(pngm_item_message_email_key($item_id), $on, 'pngm_contact');
+    }
+
+    if ($on === '0') {
+        pngm_item_silence_owner_message_email($item_id);
+    }
+}
+
+/**
+ * Turn off IM email alerts for the listing owner on every thread about this item.
+ *
+ * @param int $item_id
+ */
+function pngm_item_silence_owner_message_email($item_id)
+{
+    $item_id = (int) $item_id;
+    if ($item_id <= 0 || !class_exists('ModelIM') || !class_exists('Item')) {
+        return;
+    }
+    $item = Item::newInstance()->findByPrimaryKey($item_id);
+    $owner_id = (is_array($item) && isset($item['fk_i_user_id'])) ? (int) $item['fk_i_user_id'] : 0;
+    if ($owner_id <= 0) {
+        return;
+    }
+
+    $model = ModelIM::newInstance();
+    $table = $model->getTable_threads();
+    $model->dao->query(
+        'UPDATE ' . $table . ' SET i_to_user_notify = 0 WHERE fk_i_item_id = ' . $item_id
+        . ' AND i_to_user_id = ' . $owner_id
+    );
+    $model->dao->query(
+        'UPDATE ' . $table . ' SET i_from_user_notify = 0 WHERE fk_i_item_id = ' . $item_id
+        . ' AND i_from_user_id = ' . $owner_id
+    );
 }
 
 /**

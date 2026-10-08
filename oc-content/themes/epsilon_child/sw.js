@@ -1,5 +1,5 @@
 /* PNG Market service worker — PWA installability + light offline shell + notifications */
-var PNGM_SW_CACHE = 'pngm-shell-v12';
+var PNGM_SW_CACHE = 'pngm-shell-v13';
 var PNGM_SHELL = [
   './',
   './manifest.webmanifest',
@@ -107,7 +107,18 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
-/* VAPID Web Push payloads (JSON: title, body, url, icon) */
+self.addEventListener('message', function (event) {
+  var data = event && event.data ? event.data : null;
+  if (!data || data.type !== 'pngm-user') {
+    return;
+  }
+  var id = parseInt(data.userId, 10) || 0;
+  if (id > 0) {
+    self.pngmUserId = id;
+  }
+});
+
+/* VAPID Web Push payloads (JSON: title, body, url, icon, authorId) */
 self.addEventListener('push', function (event) {
   var data = { title: 'PNG Market', body: '', url: '/', icon: './pwa/icon-192.png' };
   try {
@@ -118,6 +129,7 @@ self.addEventListener('push', function (event) {
         data.body = parsed.body || '';
         data.url = parsed.url || data.url;
         if (parsed.icon) data.icon = parsed.icon;
+        if (parsed.authorId) data.authorId = parseInt(parsed.authorId, 10) || 0;
       }
     }
   } catch (e) {
@@ -125,6 +137,13 @@ self.addEventListener('push', function (event) {
       data.body = event.data ? event.data.text() : '';
     } catch (e2) {}
   }
+  // Don't banner the person who just sent the message (same phone / same login).
+  var authorId = parseInt(data.authorId, 10) || 0;
+  var me = parseInt(self.pngmUserId, 10) || 0;
+  if (authorId > 0 && me > 0 && authorId === me) {
+    return;
+  }
+
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
